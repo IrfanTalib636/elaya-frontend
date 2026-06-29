@@ -1,0 +1,106 @@
+/*
+ * Admin Dashboard — reusable component patterns from prototype
+ * Apply on a container with .theme-admin
+ */
+
+@layer components {
+  .theme-admin .elaya-sidebar {
+    width: var(--admin-sidebar-width);
+    background: var(--admin-bg-card);
+    border-right: 1px solid var(--admin-line);
+  }
+
+  .theme-admin .elaya-main {
+    margin-left: var(--admin-sidebar-width);
+    padding: var(--admin-main-padding-y) var(--admin-main-padding-x);
+  }
+
+  .theme-admin .elaya-card {
+    background: var(--admin-bg-card);
+    border: 1px solid var(--admin-line);
+    border-radius: var(--radius-xl);
+    padding: 24px 22px;
+  }
+
+  .theme-admin .elaya-kpi-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--admin-emerald);
+  }
+
+  .theme-admin .elaya-btn {
+    padding: 12px;
+    border-radius: var(--radius-lg);
+    border: none;
+    background: var(--admin-emerald);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: background var(--duration-normal) var(--ease-default);
+  }
+
+  .theme-admin .elaya-btn:hover {
+    background: var(--admin-emerald-soft);
+  }
+
+  .theme-admin .elaya-btn:disabled {
+    background: var(--admin-line);
+    color: var(--admin-dim-2);
+    cursor: not-allowed;
+  }
+
+  .theme-admin .elaya-input {
+    width: 100%;
+    padding: 14px;
+    border-radius: var(--radius-lg);
+    border: 1.5px solid var(--admin-line);
+    background: var(--admin-bg-card);
+    color: var(--admin-ivory);
+    outline: none;
+    transition: border-color var(--duration-normal) var(--ease-default);
+  }
+
+  .theme-admin .elaya-input:focus {
+    border-color: var(--admin-emerald);
+  }
+
+  .theme-admin .elaya-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    font-size: 19px;
+    letter-spacing: 0.4px;
+    color: var(--admin-dim);
+    cursor: pointer;
+    transition:
+      background var(--duration-fast) var(--ease-default),
+      color var(--duration-fast) var(--ease-default);
+  }
+
+  .theme-admin .elaya-nav-item:hover {
+    background: var(--admin-bg-card-2);
+    color: var(--admin-ivory);
+  }
+
+  .theme-admin .elaya-nav-item-active {
+    background: var(--admin-emerald);
+    color: #fff;
+  }
+
+  .theme-admin .elaya-logo {
+    mix-blend-mode: screen;
+    background: transparent;
+  }
+
+  .theme-admin .elaya-pin-shake {
+    animation: elaya-pin-shake 0.4s var(--ease-default);
+  }
+}

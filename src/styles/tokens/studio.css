@@ -1,0 +1,75 @@
+/*
+ * Studio Dashboard theme
+ * Source: inkderm-prototype/public/studio/index.html (const S + layout CSS)
+ */
+
+.theme-studio {
+  /* Backgrounds */
+  --studio-bg: #0a0f16;
+  --studio-bg-2: #0f1720;
+  --studio-bg-3: #151f2c;
+  --studio-bg-4: #1d2b3c;
+  --studio-bg-5: #243648;
+  --studio-sidebar: #0c1219;
+
+  /* Brand accents */
+  --studio-gold: #c9a84c;
+  --studio-gold-2: #e8cc72;
+  --studio-gold-3: #f2dfa0;
+  --studio-teal: #2da888;
+  --studio-teal-2: #4dd4b2;
+
+  /* Semantic */
+  --studio-green: #3aa870;
+  --studio-red: #c85858;
+  --studio-amber: #c88830;
+  --studio-blue: #5882c8;
+
+  /* Text */
+  --studio-white: #f4f8fc;
+  --studio-w1: #eef4f8;
+  --studio-w2: #c8dce8;
+  --studio-w3: #7a98b0;
+  --studio-w4: #4a6478;
+
+  /* Borders & overlays */
+  --studio-border: rgba(255, 255, 255, 0.04);
+  --studio-border-strong: rgba(255, 255, 255, 0.08);
+  --studio-overlay: rgba(0, 0, 0, 0.7);
+  --studio-gold-soft: rgba(201, 168, 76, 0.08);
+  --studio-gold-border: rgba(201, 168, 76, 0.25);
+  --studio-teal-soft: rgba(45, 168, 136, 0.08);
+  --studio-teal-border: rgba(45, 168, 136, 0.15);
+  --studio-red-soft: rgba(200, 88, 88, 0.1);
+  --studio-red-border: rgba(200, 88, 88, 0.3);
+
+  /* Gradients */
+  --studio-gradient-gold: linear-gradient(135deg, #e8cc72, #c9a84c);
+  --studio-gradient-progress: linear-gradient(90deg, var(--studio-teal-2), var(--studio-gold-2));
+
+  /* Mapped semantic aliases (use inside .theme-studio) */
+  --app-bg: var(--studio-bg);
+  --app-bg-elevated: var(--studio-bg-3);
+  --app-sidebar: var(--studio-sidebar);
+  --app-text: var(--studio-white);
+  --app-text-muted: var(--studio-w3);
+  --app-text-subtle: var(--studio-w4);
+  --app-accent: var(--studio-gold-2);
+  --app-accent-secondary: var(--studio-teal-2);
+  --app-border: var(--studio-border);
+  --app-font-sans: var(--font-studio-sans);
+  --app-font-display: var(--font-studio-display);
+}
+
+.theme-studio {
+  color: var(--studio-white);
+  background-color: var(--studio-bg);
+  font-family: var(--font-studio-sans);
+}
+
+.theme-studio input,
+.theme-studio select,
+.theme-studio textarea,
+.theme-studio button {
+  font-family: var(--font-studio-sans);
+}

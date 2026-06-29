@@ -1,0 +1,52 @@
+/*
+ * Admin Dashboard theme
+ * Source: inkderm-prototype/public/admin/index.html (:root CSS variables)
+ */
+
+.theme-admin {
+  /* Brand accents */
+  --admin-emerald: #1a6b55;
+  --admin-emerald-soft: #1f7d63;
+  --admin-carmine: #7b1c2e;
+  --admin-navy: #0e2a4a;
+
+  /* Backgrounds */
+  --admin-bg: #0a0a0a;
+  --admin-bg-card: #141414;
+  --admin-bg-card-2: #1b1b1b;
+
+  /* Text */
+  --admin-ivory: #f0ece4;
+  --admin-dim: #8a8a8a;
+  --admin-dim-2: #5e5e5e;
+
+  /* Borders */
+  --admin-line: #262626;
+
+  /* Mapped semantic aliases (use inside .theme-admin) */
+  --app-bg: var(--admin-bg);
+  --app-bg-elevated: var(--admin-bg-card);
+  --app-sidebar: var(--admin-bg-card);
+  --app-text: var(--admin-ivory);
+  --app-text-muted: var(--admin-dim);
+  --app-text-subtle: var(--admin-dim-2);
+  --app-accent: var(--admin-emerald);
+  --app-accent-secondary: var(--admin-emerald-soft);
+  --app-border: var(--admin-line);
+  --app-font-sans: var(--font-admin-serif);
+  --app-font-display: var(--font-admin-serif);
+}
+
+.theme-admin {
+  color: var(--admin-ivory);
+  background-color: var(--admin-bg);
+  font-family: var(--font-admin-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+.theme-admin input,
+.theme-admin select,
+.theme-admin textarea,
+.theme-admin button {
+  font-family: var(--font-admin-serif);
+}

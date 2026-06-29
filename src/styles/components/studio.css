@@ -1,0 +1,125 @@
+/*
+ * Studio Dashboard — reusable component patterns from prototype
+ * Apply on a container with .theme-studio
+ */
+
+@layer components {
+  .theme-studio .elaya-sidebar {
+    width: var(--studio-sidebar-width);
+    background: var(--studio-sidebar);
+    border-right: 1px solid var(--studio-border);
+  }
+
+  .theme-studio .elaya-main {
+    margin-left: var(--studio-sidebar-width);
+    padding: var(--studio-main-padding-y) var(--studio-main-padding-x);
+  }
+
+  .theme-studio .elaya-card {
+    background: var(--studio-bg-3);
+    border: 1px solid var(--studio-border);
+    border-radius: var(--radius-xl);
+    padding: 16px;
+  }
+
+  .theme-studio .elaya-btn {
+    padding: 12px 20px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--studio-bg-4);
+    color: var(--studio-white);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-default);
+  }
+
+  .theme-studio .elaya-btn-gold {
+    background: var(--studio-gradient-gold);
+    color: var(--studio-bg);
+  }
+
+  .theme-studio .elaya-btn-outline {
+    background: transparent;
+    border: 1px solid var(--studio-bg-5);
+    color: var(--studio-w2);
+  }
+
+  .theme-studio .elaya-btn-red {
+    background: var(--studio-red);
+    color: white;
+  }
+
+  .theme-studio .elaya-btn-sm {
+    padding: 8px 14px;
+    font-size: 11px;
+  }
+
+  .theme-studio .elaya-input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--studio-border-strong);
+    background: var(--studio-bg-3);
+    color: var(--studio-white);
+    font-size: 13px;
+    outline: none;
+  }
+
+  .theme-studio .elaya-input:focus {
+    border-color: var(--studio-teal);
+  }
+
+  .theme-studio .elaya-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--studio-white);
+    margin-bottom: 6px;
+  }
+
+  .theme-studio .elaya-hint {
+    font-size: 11px;
+    color: var(--studio-w4);
+    line-height: 1.5;
+  }
+
+  .theme-studio .elaya-section-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--studio-w4);
+  }
+
+  .theme-studio .elaya-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--studio-w3);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-default);
+  }
+
+  .theme-studio .elaya-nav-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--studio-w2);
+  }
+
+  .theme-studio .elaya-nav-item-active {
+    background: var(--studio-gold-soft);
+    color: var(--studio-gold-2);
+  }
+
+  .theme-studio .elaya-logo {
+    mix-blend-mode: screen;
+    background: transparent;
+  }
+
+  .theme-studio .elaya-fade-in {
+    animation: elaya-fade-in var(--duration-slow) var(--ease-default);
+  }
+}

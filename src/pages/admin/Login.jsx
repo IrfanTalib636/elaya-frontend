@@ -1,0 +1,147 @@
+import { useState } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import toast from 'react-hot-toast'
+import elayadLogo from '../../assets/elaya-logo.png'
+import { adminAuth, common, toast as toastMessages } from '../../content'
+import useAuthStore from '../../store/authStore'
+import { ADMIN_ROLES } from '../../constants/roles'
+import { getApiErrorMessage } from '../../lib/apiError'
+
+export default function AdminLogin() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const signIn = useAuthStore((state) => state.login)
+  const logout = useAuthStore((state) => state.logout)
+
+  const [form, setForm] = useState({ email: '', password: '' })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value })
+    setError('')
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!form.email || !form.password) {
+      setError(common.required)
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const { user } = await signIn({ email: form.email, password: form.password })
+
+      if (!ADMIN_ROLES.includes(user.role)) {
+        await logout()
+        setError(toastMessages.wrongPortal)
+        toast.error(toastMessages.wrongPortal)
+        return
+      }
+
+      toast.success(toastMessages.loginSuccess)
+      const redirectTo = location.state?.from?.pathname || '/admin'
+      navigate(redirectTo, { replace: true })
+    } catch (err) {
+      const message = getApiErrorMessage(err)
+      setError(message)
+      toast.error(message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-admin-bg flex flex-col items-center justify-center font-admin px-4">
+      <div className="w-full max-w-[360px] bg-admin-bg-card border border-admin-line rounded-2xl p-8 flex flex-col gap-6">
+        <div className="flex flex-col items-center gap-4">
+          <img
+            src={elayadLogo}
+            alt="Elaya"
+            className="w-[90px] mix-blend-screen bg-transparent"
+          />
+          <div className="text-center">
+            <h1 className="text-admin-ivory font-bold text-xl m-0 leading-tight tracking-wide">
+              {adminAuth.loginTitle}
+            </h1>
+            <p className="text-admin-dim text-[12px] mt-1 m-0 tracking-widest uppercase">
+              {adminAuth.loginSubtitle}
+            </p>
+          </div>
+        </div>
+
+        <div className="h-px bg-admin-line" />
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <Field label={common.email}>
+            <Input
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={form.email}
+              onChange={handleChange}
+              placeholder="admin@mail.ch"
+            />
+          </Field>
+
+          <Field label={common.password}>
+            <Input
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              value={form.password}
+              onChange={handleChange}
+              placeholder="••••••••"
+            />
+          </Field>
+
+          {error && <p className="text-red-400 text-[12px] m-0">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-[11px] rounded-[8px] border border-admin-emerald font-bold text-[13px]
+              cursor-pointer transition-all bg-admin-emerald text-admin-ivory hover:bg-admin-emerald-soft
+              disabled:opacity-60 disabled:cursor-not-allowed mt-1 font-sans tracking-wide"
+          >
+            {loading ? common.loading : common.login}
+          </button>
+        </form>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        className="mt-6 text-admin-dim text-[12px] bg-transparent border-0 cursor-pointer hover:text-admin-ivory transition-colors font-sans"
+      >
+        ← {common.back}
+      </button>
+    </div>
+  )
+}
+
+function Field({ label, children }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-admin-ivory text-[11px] font-semibold tracking-widest uppercase">
+        {label}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+function Input({ className = '', ...props }) {
+  return (
+    <input
+      {...props}
+      className={`w-full px-[14px] py-[10px] rounded-[8px] border border-admin-line bg-admin-bg-card-2
+        text-admin-ivory text-[13px] outline-none focus:border-admin-emerald transition-colors
+        placeholder:text-admin-dim-2 font-sans ${className}`}
+    />
+  )
+}

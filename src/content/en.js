@@ -36,11 +36,24 @@ export const toast = {
 }
 
 export const landing = {
+  badge: 'Tattoo Removal Platform',
   tagline: 'Tattoo removal — intelligently managed',
-  customerLabel: '📱 Customer App',
-  studioLabel: '🖥 Studio Dashboard',
-  adminLabel: '⚙️ Admin',
+  subtitle: 'The professional platform for studios, clients and clinic management.',
+  portalHeading: 'Choose your portal',
+
+  customerLabel: 'Customer App',
+  customerSub: 'Book appointments, track progress and manage Elaycoins.',
+  customerCta: 'Open App',
+  customerBadge: 'Mobile only',
+
+  studioLabel: 'Studio Dashboard',
+  studioSub: 'Appointment management, customer care and studio analytics.',
+  studioCta: 'Sign in',
+
+  adminLabel: 'Admin',
   adminSub: 'Platform management',
+  adminCta: 'Admin access',
+
   footer: `© ${new Date().getFullYear()} Elaya · Moro Concept Group GmbH`,
 }
 

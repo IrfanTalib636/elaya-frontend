@@ -86,15 +86,6 @@ html[data-theme="light"] .theme-admin {
   --admin-line: rgba(30, 111, 217, 0.14);
 }
 
-/* Logo — screen blend works on dark; multiply removes white bg on light.
-   Must beat .theme-studio .elaya-logo (specificity 0,2,0) */
-html[data-theme="light"] img[alt="Elaya"],
-html[data-theme="light"] .theme-studio .elaya-logo,
-html[data-theme="light"] .theme-admin .elaya-logo {
-  mix-blend-mode: multiply;
-  background: transparent;
-}
-
 /* Scrollbar thumb */
 html[data-theme="light"] ::-webkit-scrollbar-thumb {
   background: rgba(30, 111, 217, 0.2);

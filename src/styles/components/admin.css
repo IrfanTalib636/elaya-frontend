@@ -95,11 +95,6 @@
     color: var(--nav-active-text);
   }
 
-  .theme-admin .elaya-logo {
-    mix-blend-mode: screen;
-    background: transparent;
-  }
-
   .theme-admin .elaya-pin-shake {
     animation: elaya-pin-shake 0.4s var(--ease-default);
   }

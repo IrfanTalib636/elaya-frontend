@@ -1,14 +1,10 @@
 import { Link } from 'react-router-dom'
-import elayadLogo from '../../assets/elaya-logo.png'
+import ElayaLogo from '../../components/ElayaLogo'
 
 const StudioForgotPassword = () => (
   <div className="min-h-screen bg-studio-bg flex flex-col items-center justify-center font-sans px-4">
-    <div className="w-full max-w-[380px] bg-studio-bg-3 border border-elaya-border rounded-2xl p-8 flex flex-col gap-4 text-center">
-      <img
-        src={elayadLogo}
-        alt="Elaya"
-        className="w-[90px] mix-blend-screen bg-transparent mx-auto"
-      />
+    <div className="w-full max-w-[380px] bg-studio-bg-3 border border-elaya-border rounded-2xl p-8 flex flex-col items-center gap-4 text-center">
+      <ElayaLogo size="md" />
       <h1 className="text-studio-white font-bold text-xl m-0">Passwort Vergessen</h1>
       <p className="text-studio-w2 text-[13px] m-0 leading-relaxed">
         Diese Funktion ist noch nicht verfügbar.

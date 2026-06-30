@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 28 28" fill="none" role="img" aria-labelledby="title">
+  <title id="title">Elaya logo</title>
+  <path d="M14 3C8.477 3 4 7.477 4 13s4.477 10 10 10" stroke="#4A9AFF" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <path d="M14 7C10.686 7 8 9.686 8 13s2.686 6 6 6" stroke="#1E6FD9" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <path d="M4 13 Q14 9 24 13" stroke="#4A9AFF" stroke-width="1.1" stroke-linecap="round" fill="none"/>
+  <circle cx="23.5" cy="7.5" r="1.3" fill="#4A9AFF"/>
+</svg>

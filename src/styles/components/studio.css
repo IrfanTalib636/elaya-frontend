@@ -114,11 +114,6 @@
     color: var(--nav-active-text);
   }
 
-  .theme-studio .elaya-logo {
-    mix-blend-mode: screen;
-    background: transparent;
-  }
-
   .theme-studio .elaya-fade-in {
     animation: elaya-fade-in var(--duration-slow) var(--ease-default);
   }

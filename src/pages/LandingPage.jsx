@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Smartphone, Monitor, ArrowRight, Settings } from 'lucide-react'
-import elayadLogo from '../assets/elaya-logo.png'
+import ElayaLogo from '../components/ElayaLogo'
 import { landing } from '../content'
 
 const LandingPage = () => {
@@ -11,11 +11,7 @@ const LandingPage = () => {
 
       {/* Nav */}
       <nav className="flex items-center justify-between px-8 py-4 shrink-0">
-        <img
-          src={elayadLogo}
-          alt="Elaya"
-          className="h-14 mix-blend-screen bg-transparent"
-        />
+        <ElayaLogo size="md" />
       </nav>
 
       {/* Hero — fills remaining height */}

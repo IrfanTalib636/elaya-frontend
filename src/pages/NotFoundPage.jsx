@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import elayadLogo from '../assets/elaya-logo.png'
+import ElayaLogo from '../components/ElayaLogo'
 import { notFound } from '../content'
 
 const NotFoundPage = () => {
@@ -7,11 +7,7 @@ const NotFoundPage = () => {
 
   return (
     <div className="min-h-screen bg-landing-bg flex flex-col items-center justify-center font-sans px-4 text-center gap-6">
-      <img
-        src={elayadLogo}
-        alt="Elaya"
-        className="w-[120px] mix-blend-screen bg-transparent opacity-80"
-      />
+      <ElayaLogo size="lg" />
 
       <div className="flex flex-col gap-2">
         <p className="text-studio-gold text-6xl font-bold m-0 leading-none">{notFound.title}</p>

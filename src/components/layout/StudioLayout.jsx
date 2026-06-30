@@ -1,5 +1,5 @@
 import { LogOut } from 'lucide-react'
-import elayadLogo from '../../assets/elaya-logo.png'
+import ElayaLogo from '../ElayaLogo'
 import { common } from '../../content'
 
 const StudioLayout = ({ onLogout, children }) => {
@@ -7,7 +7,7 @@ const StudioLayout = ({ onLogout, children }) => {
     <div className="theme-studio min-h-screen bg-studio-bg font-sans flex">
       <aside className="elaya-sidebar fixed left-0 top-0 z-50 flex h-screen w-studio-sidebar flex-col border-r border-elaya-border bg-studio-sidebar px-4 py-5">
         <div className="px-2">
-          <img src={elayadLogo} alt="Elaya" className="elaya-logo block w-[120px]" />
+          <ElayaLogo size="sm" />
         </div>
 
         <div className="flex-1" />

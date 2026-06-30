@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import elayadLogo from '../../assets/elaya-logo.png'
+import ElayaLogo from '../../components/ElayaLogo'
 import { adminAuth, common, toast as toastMessages } from '../../content'
 import useAuthStore from '../../store/authStore'
 import { ADMIN_ROLES } from '../../constants/roles'
@@ -79,11 +79,7 @@ const AdminLogin = () => {
     <div className="min-h-screen bg-admin-bg flex flex-col items-center justify-center font-admin px-4">
       <div className="w-full max-w-[360px] bg-admin-bg-card border border-admin-line rounded-2xl p-8 flex flex-col gap-6">
         <div className="flex flex-col items-center gap-4">
-          <img
-            src={elayadLogo}
-            alt="Elaya"
-            className="w-[90px] mix-blend-screen bg-transparent"
-          />
+          <ElayaLogo size="md" />
           <div className="text-center">
             <h1 className="text-admin-ivory font-bold text-xl m-0 leading-tight tracking-wide">
               {adminAuth.loginTitle}

@@ -21,4 +21,4 @@ const AdminDashboard = () => {
   )
 }
 
-export default Dashboard
+export default AdminDashboard

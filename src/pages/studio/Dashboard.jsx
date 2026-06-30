@@ -22,4 +22,4 @@ const StudioDashboard = () => {
   )
 }
 
-export default Dashboard
+export default StudioDashboard

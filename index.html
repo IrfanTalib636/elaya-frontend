@@ -11,6 +11,21 @@
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@1,700&display=swap"
       rel="stylesheet"
     />
+    <!-- Apply saved theme before React loads to prevent flash -->
+    <script>
+      (function () {
+        try {
+          var saved = JSON.parse(localStorage.getItem('elaya_theme') || '{}')
+          var pref = (saved && saved.state && saved.state.preference) || 'system'
+          var isDark =
+            pref === 'dark' ||
+            (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark')
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

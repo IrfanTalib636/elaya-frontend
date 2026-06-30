@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom'
 import useAuthStore from '../store/authStore'
 import { getDashboardPathForRole } from '../lib/authRedirect'
 
-export default function GuestRoute({ children }) {
+const GuestRoute = ({ children }) => {
   const { isAuthenticated, user } = useAuthStore()
 
   if (isAuthenticated && user?.role) {
@@ -11,3 +11,5 @@ export default function GuestRoute({ children }) {
 
   return children
 }
+
+export default GuestRoute

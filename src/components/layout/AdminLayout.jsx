@@ -2,7 +2,7 @@ import { LogOut } from 'lucide-react'
 import elayadLogo from '../../assets/elaya-logo.png'
 import { common } from '../../content'
 
-export default function AdminLayout({ onLogout, children }) {
+const AdminLayout = ({ onLogout, children }) => {
   return (
     <div className="theme-admin min-h-screen bg-admin-bg font-admin flex">
       <aside className="elaya-sidebar fixed left-0 top-0 z-50 flex h-screen w-admin-sidebar flex-col border-r border-admin-line bg-admin-bg-card px-4 py-5">
@@ -30,3 +30,5 @@ export default function AdminLayout({ onLogout, children }) {
     </div>
   )
 }
+
+export default AdminLayout

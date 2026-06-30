@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import elayadLogo from '../assets/elaya-logo.png'
 import { notFound } from '../content'
 
-export default function NotFoundPage() {
+const NotFoundPage = () => {
   const navigate = useNavigate()
 
   return (
@@ -29,3 +29,5 @@ export default function NotFoundPage() {
     </div>
   )
 }
+
+export default NotFoundPage

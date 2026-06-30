@@ -14,23 +14,40 @@
   --font-admin-serif: "Cormorant Garamond", Georgia, serif;
   --font-mono: ui-monospace, "Cascadia Code", monospace;
 
-  /* Layout — Studio Dashboard */
-  --studio-sidebar-width: 220px;
+  /* Layout — Web sidebars (200px per client spec) */
+  --studio-sidebar-width: 200px;
   --studio-main-padding-x: 28px;
   --studio-main-padding-y: 24px;
+  --admin-sidebar-width: 200px;
+  --admin-main-padding-x: 40px;
+  --admin-main-padding-y: 32px;
 
-  /* Layout — Admin Dashboard */
-  --admin-sidebar-width: 248px;
-  --admin-main-padding-x: 48px;
-  --admin-main-padding-y: 42px;
-
-  /* Radii */
+  /* Radii — client spec */
+  --radius-card: 16px;      /* cards: 15–18px */
+  --radius-btn: 12px;       /* buttons */
+  --radius-pill-sm: 4px;    /* pills/tags */
+  --radius-frame: 38px;     /* avatar/frame */
+  /* kept for backward compat */
   --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
-  --radius-xl: 14px;
-  --radius-2xl: 20px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 16px;
+  --radius-2xl: 18px;
   --radius-pill: 9999px;
+
+  /* Progress bar */
+  --progress-height: 5px;
+  --progress-fill: #1e6fd9;
+  --progress-track-dark: rgba(255, 255, 255, 0.07);
+  --progress-track-light: #e0e8f4;
+
+  /* Coin-card — always navy regardless of theme */
+  --coin-card-bg: #0a1628;
+  --coin-card-text: rgba(255, 255, 255, 0.92);
+
+  /* Active nav item — 14% blue per client spec */
+  --nav-active-bg: rgba(30, 111, 217, 0.14);
+  --nav-active-text: #4a9aff;
 
   /* Motion */
   --duration-fast: 150ms;

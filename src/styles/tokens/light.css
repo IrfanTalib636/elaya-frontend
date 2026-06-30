@@ -1,0 +1,101 @@
+/*
+ * Elaya — Light theme overrides
+ * Uses html[data-theme="light"] for higher specificity than :root (from @theme)
+ */
+
+html[data-theme="light"] {
+  /* Studio surfaces */
+  --color-studio-bg: #f2f5fa;
+  --color-studio-bg-2: #ebf0f8;
+  --color-studio-bg-3: #ffffff;
+  --color-studio-bg-4: #f0f4fc;
+  --color-studio-bg-5: #e8eff9;
+  --color-studio-sidebar: #ffffff;
+
+  /* Day text — t1/t2/t3 per client spec */
+  --color-studio-white: #0a1628;
+  --color-studio-w1: #2d3f58;
+  --color-studio-w2: #6b7a99;
+  --color-studio-w3: #b0bdd4;
+  --color-studio-w4: #cdd7e8;
+
+  /* Shared border tokens */
+  --color-elaya-border: rgba(30, 111, 217, 0.14);
+  --color-elaya-border-strong: rgba(30, 111, 217, 0.22);
+
+  /* Landing */
+  --color-landing-bg: #f2f5fa;
+  --color-landing-btn-dark: #ffffff;
+
+  /* Admin surfaces */
+  --color-admin-bg: #f2f5fa;
+  --color-admin-bg-card: #ffffff;
+  --color-admin-bg-card-2: #f0f4fc;
+
+  /* Admin day text — t1/t2/t3 */
+  --color-admin-ivory: #0a1628;
+  --color-admin-dim: #6b7a99;
+  --color-admin-dim-2: #b0bdd4;
+
+  /* Admin border */
+  --color-admin-line: rgba(30, 111, 217, 0.14);
+
+  /* Progress bar — day track */
+  --progress-track-dark: #e0e8f4;
+}
+
+/* Coin-card always stays navy — even in day mode */
+html[data-theme="light"] .elaya-coin-card {
+  background: var(--coin-card-bg) !important;
+  color: var(--coin-card-text) !important;
+}
+
+/* Component CSS var overrides — studio */
+html[data-theme="light"] .theme-studio {
+  --studio-bg: #f2f5fa;
+  --studio-bg-2: #ebf0f8;
+  --studio-bg-3: #ffffff;
+  --studio-bg-4: #f0f4fc;
+  --studio-bg-5: #e8eff9;
+  --studio-sidebar: #ffffff;
+
+  --studio-white: #0a1628;
+  --studio-w1: #2d3f58;
+  --studio-w2: #6b7a99;
+  --studio-w3: #b0bdd4;
+  --studio-w4: #cdd7e8;
+
+  --studio-border: rgba(30, 111, 217, 0.1);
+  --studio-border-strong: rgba(30, 111, 217, 0.18);
+  --studio-gold-soft: rgba(30, 111, 217, 0.07);
+  --studio-gold-border: rgba(30, 111, 217, 0.2);
+  --studio-teal-soft: rgba(46, 204, 138, 0.08);
+  --studio-red-soft: rgba(224, 85, 85, 0.08);
+}
+
+/* Component CSS var overrides — admin */
+html[data-theme="light"] .theme-admin {
+  --admin-bg: #f2f5fa;
+  --admin-bg-card: #ffffff;
+  --admin-bg-card-2: #f0f4fc;
+
+  --admin-ivory: #0a1628;
+  --admin-dim: #6b7a99;
+  --admin-dim-2: #b0bdd4;
+
+  --admin-line: rgba(30, 111, 217, 0.14);
+}
+
+/* Logo — screen blend works on dark; multiply removes white bg on light.
+   Must beat .theme-studio .elaya-logo (specificity 0,2,0) */
+html[data-theme="light"] img[alt="Elaya"],
+html[data-theme="light"] .theme-studio .elaya-logo,
+html[data-theme="light"] .theme-admin .elaya-logo {
+  mix-blend-mode: multiply;
+  background: transparent;
+}
+
+/* Scrollbar thumb */
+html[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(30, 111, 217, 0.2);
+}

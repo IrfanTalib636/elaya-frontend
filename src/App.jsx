@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import ProtectedRoute from './components/ProtectedRoute'
 import GuestRoute from './components/GuestRoute'
+import ThemeSwitcher from './components/ThemeSwitcher'
+import useTheme from './hooks/useTheme'
 import { STUDIO_ROLES, ADMIN_ROLES } from './constants/roles'
 import LandingPage from './pages/LandingPage'
 import StudioLogin from './pages/studio/Login'
@@ -12,28 +14,35 @@ import AdminLogin from './pages/admin/Login'
 import AdminDashboard from './pages/admin/Dashboard'
 import NotFoundPage from './pages/NotFoundPage'
 
-const App = () => {
+const AppInner = () => {
+  useTheme()
+
   return (
-    <BrowserRouter>
+    <>
       <Toaster
-        position="top-right"
+        position="top-center"
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#151f2c',
-            color: '#f4f8fc',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'var(--color-studio-bg-3)',
+            color: 'var(--color-studio-white)',
+            border: '1px solid var(--color-elaya-border)',
             fontFamily: 'DM Sans, sans-serif',
             fontSize: '13px',
           },
-          success: { iconTheme: { primary: '#2da888', secondary: '#151f2c' } },
-          error: { iconTheme: { primary: '#c85858', secondary: '#151f2c' } },
+          success: { iconTheme: { primary: '#2ecc8a', secondary: 'var(--color-studio-bg-3)' } },
+          error: { iconTheme: { primary: '#e05555', secondary: 'var(--color-studio-bg-3)' } },
         }}
       />
+
+      <div className="fixed top-3 right-4 z-9999">
+        <ThemeSwitcher />
+      </div>
+
       <Routes>
         <Route path="/" element={<LandingPage />} />
 
-        {/* Studio auth — redirect to dashboard if already logged in */}
+        {/* Studio auth — guest only */}
         <Route path="/studio/login" element={<GuestRoute><StudioLogin /></GuestRoute>} />
         <Route path="/studio/register" element={<GuestRoute><StudioRegister /></GuestRoute>} />
         <Route path="/studio/forgot-password" element={<GuestRoute><StudioForgotPassword /></GuestRoute>} />
@@ -46,7 +55,7 @@ const App = () => {
           }
         />
 
-        {/* Admin auth */}
+        {/* Admin auth — guest only */}
         <Route path="/admin/login" element={<GuestRoute><AdminLogin /></GuestRoute>} />
         <Route
           path="/admin"
@@ -59,8 +68,14 @@ const App = () => {
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </BrowserRouter>
+    </>
   )
 }
+
+const App = () => (
+  <BrowserRouter>
+    <AppInner />
+  </BrowserRouter>
+)
 
 export default App

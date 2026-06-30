@@ -110,8 +110,8 @@
   }
 
   .theme-studio .elaya-nav-item-active {
-    background: var(--studio-gold-soft);
-    color: var(--studio-gold-2);
+    background: var(--nav-active-bg);
+    color: var(--nav-active-text);
   }
 
   .theme-studio .elaya-logo {

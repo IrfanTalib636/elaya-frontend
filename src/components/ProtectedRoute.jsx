@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import useAuthStore from '../store/authStore'
 
-export default function ProtectedRoute({ children, allowedRoles, loginPath }) {
+const ProtectedRoute = ({ children, allowedRoles, loginPath }) => {
   const location = useLocation()
   const { isAuthenticated, user } = useAuthStore()
 
@@ -15,3 +15,5 @@ export default function ProtectedRoute({ children, allowedRoles, loginPath }) {
 
   return children
 }
+
+export default ProtectedRoute

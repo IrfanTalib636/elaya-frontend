@@ -7,7 +7,25 @@ import useAuthStore from '../../store/authStore'
 import { ADMIN_ROLES } from '../../constants/roles'
 import { getApiErrorMessage } from '../../lib/apiError'
 
-export default function AdminLogin() {
+const Field = ({ label, children }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-admin-ivory text-[11px] font-semibold tracking-wide">
+      {label}
+    </label>
+    {children}
+  </div>
+)
+
+const Input = ({ className = '', ...props }) => (
+  <input
+    {...props}
+    className={`w-full px-[14px] py-[10px] rounded-[8px] border-[1.5px] border-admin-line bg-admin-bg-card-2
+      text-admin-ivory text-[13px] outline-none focus:border-admin-emerald transition-colors
+      placeholder:text-admin-dim-2 font-sans ${className}`}
+  />
+)
+
+const AdminLogin = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const signIn = useAuthStore((state) => state.login)
@@ -101,13 +119,13 @@ export default function AdminLogin() {
             />
           </Field>
 
-          {error && <p className="text-red-400 text-[12px] m-0">{error}</p>}
+          {error && <p className="text-admin-carmine text-[12px] m-0">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-[11px] rounded-[8px] border border-admin-emerald font-bold text-[13px]
-              cursor-pointer transition-all bg-admin-emerald text-admin-ivory hover:bg-admin-emerald-soft
+            className="w-full py-[11px] rounded-[12px] border border-admin-emerald font-bold text-[13px]
+              cursor-pointer transition-all bg-admin-emerald text-white hover:bg-admin-emerald-soft
               disabled:opacity-60 disabled:cursor-not-allowed mt-1 font-sans tracking-wide"
           >
             {loading ? common.loading : common.login}
@@ -126,24 +144,4 @@ export default function AdminLogin() {
   )
 }
 
-function Field({ label, children }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-admin-ivory text-[11px] font-semibold tracking-wide">
-        {label}
-      </label>
-      {children}
-    </div>
-  )
-}
-
-function Input({ className = '', ...props }) {
-  return (
-    <input
-      {...props}
-      className={`w-full px-[14px] py-[10px] rounded-[8px] border border-admin-line bg-admin-bg-card-2
-        text-admin-ivory text-[13px] outline-none focus:border-admin-emerald transition-colors
-        placeholder:text-admin-dim-2 font-sans ${className}`}
-    />
-  )
-}
+export default AdminLogin

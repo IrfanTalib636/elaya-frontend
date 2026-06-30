@@ -3,48 +3,57 @@
 @import "./styles/tokens/shared.css";
 @import "./styles/tokens/studio.css";
 @import "./styles/tokens/admin.css";
+@import "./styles/tokens/light.css";
 @import "./styles/components/studio.css";
 @import "./styles/components/admin.css";
 
 @theme {
-  /* Studio Dashboard palette */
-  --color-studio-bg: #0a0f16;
-  --color-studio-bg-2: #0f1720;
-  --color-studio-bg-3: #151f2c;
-  --color-studio-bg-4: #1d2b3c;
-  --color-studio-bg-5: #243648;
-  --color-studio-sidebar: #0c1219;
-  --color-studio-gold: #c9a84c;
-  --color-studio-gold-2: #e8cc72;
-  --color-studio-gold-3: #f2dfa0;
-  --color-studio-teal: #2da888;
-  --color-studio-teal-2: #4dd4b2;
-  --color-studio-green: #3aa870;
-  --color-studio-red: #c85858;
-  --color-studio-amber: #c88830;
-  --color-studio-blue: #5882c8;
-  --color-studio-white: #f4f8fc;
-  --color-studio-w1: #eef4f8;
-  --color-studio-w2: #c8dce8;
-  --color-studio-w3: #7a98b0;
-  --color-studio-w4: #4a6478;
+  /* ── Elaya Blue palette ────────────────────────────── */
+
+  /* Studio Dashboard */
+  --color-studio-bg: #0a1628;
+  --color-studio-bg-2: #0c1a30;
+  --color-studio-bg-3: #0d1c35;
+  --color-studio-bg-4: #102040;
+  --color-studio-bg-5: #132448;
+  --color-studio-sidebar: #081220;
+  --color-studio-gold: #1e6fd9;
+  --color-studio-gold-2: #4a9aff;
+  --color-studio-gold-3: #80b8ff;
+  --color-studio-teal: #2ecc8a;
+  --color-studio-teal-2: #50dda8;
+  --color-studio-green: #2ecc8a;
+  --color-studio-red: #e05555;
+  --color-studio-amber: #f0a030;
+  --color-studio-blue: #4a9aff;
+  /* Night text — t1/t2/t3 per client spec */
+  --color-studio-white: rgba(255, 255, 255, 0.92);
+  --color-studio-w1: rgba(255, 255, 255, 0.70);
+  --color-studio-w2: rgba(255, 255, 255, 0.50);
+  --color-studio-w3: rgba(255, 255, 255, 0.26);
+  --color-studio-w4: rgba(255, 255, 255, 0.12);
 
   /* Landing page */
-  --color-landing-bg: #080e16;
-  --color-landing-btn-dark: #0e1620;
+  --color-landing-bg: #0a1628;
+  --color-landing-btn-dark: #0d1c35;
 
-  /* Admin Dashboard palette */
-  --color-admin-emerald: #1a6b55;
-  --color-admin-emerald-soft: #1f7d63;
-  --color-admin-carmine: #7b1c2e;
-  --color-admin-navy: #0e2a4a;
-  --color-admin-bg: #0a0a0a;
-  --color-admin-bg-card: #141414;
-  --color-admin-bg-card-2: #1b1b1b;
-  --color-admin-ivory: #f0ece4;
-  --color-admin-dim: #8a8a8a;
-  --color-admin-dim-2: #5e5e5e;
-  --color-admin-line: #262626;
+  /* Admin Dashboard */
+  --color-admin-emerald: #1e6fd9;
+  --color-admin-emerald-soft: #2a7de8;
+  --color-admin-carmine: #e05555;
+  --color-admin-navy: #0a1628;
+  --color-admin-bg: #0a1628;
+  --color-admin-bg-card: #0d1c35;
+  --color-admin-bg-card-2: #102040;
+  /* Night text — t1/t2/t3 */
+  --color-admin-ivory: rgba(255, 255, 255, 0.92);
+  --color-admin-dim: rgba(255, 255, 255, 0.50);
+  --color-admin-dim-2: rgba(255, 255, 255, 0.26);
+  --color-admin-line: rgba(74, 154, 255, 0.12);
+
+  /* Shared border tokens (theme-aware) */
+  --color-elaya-border: rgba(74, 154, 255, 0.1);
+  --color-elaya-border-strong: rgba(74, 154, 255, 0.18);
 
   /* Typography */
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
@@ -52,9 +61,9 @@
   --font-admin: "Cormorant Garamond", Georgia, serif;
   --font-mono: ui-monospace, "Cascadia Code", monospace;
 
-  /* Layout widths */
-  --spacing-studio-sidebar: 220px;
-  --spacing-admin-sidebar: 248px;
+  /* Layout widths — 200px per client spec */
+  --spacing-studio-sidebar: 200px;
+  --spacing-admin-sidebar: 200px;
 
   /* Animations */
   --animate-elaya-fade-in: elaya-fade-in 250ms ease;
@@ -89,6 +98,6 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(74, 154, 255, 0.2);
   border-radius: 2px;
 }

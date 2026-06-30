@@ -4,7 +4,7 @@ import useAuthStore from '../../store/authStore'
 import { toast as toastMessages } from '../../content'
 import StudioLayout from '../../components/layout/StudioLayout'
 
-export default function StudioDashboard() {
+const StudioDashboard = () => {
   const navigate = useNavigate()
   const { logout } = useAuthStore()
 
@@ -21,3 +21,5 @@ export default function StudioDashboard() {
     </StudioLayout>
   )
 }
+
+export default Dashboard

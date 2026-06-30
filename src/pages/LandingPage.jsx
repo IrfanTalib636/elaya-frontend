@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import elayadLogo from '../assets/elaya-logo.png'
 import { landing } from '../content'
 
-export default function LandingPage() {
+const LandingPage = () => {
   const navigate = useNavigate()
 
   return (
@@ -49,3 +49,5 @@ export default function LandingPage() {
     </div>
   )
 }
+
+export default LandingPage

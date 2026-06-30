@@ -16,7 +16,23 @@ const INITIAL_FORM = {
   confirmPassword: '',
 }
 
-export default function StudioRegister() {
+const Field = ({ label, children }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-studio-white text-[12px] font-semibold">{label}</label>
+    {children}
+  </div>
+)
+
+const Input = ({ className = '', ...props }) => (
+  <input
+    {...props}
+    className={`w-full px-[14px] py-[10px] rounded-[10px] border-[1.5px] border-elaya-border-strong bg-studio-bg-3
+      text-studio-white text-[13px] outline-none focus:border-studio-gold transition-colors
+      placeholder:text-studio-w3 ${className}`}
+  />
+)
+
+const StudioRegister = () => {
   const navigate = useNavigate()
   const [form, setForm] = useState(INITIAL_FORM)
   const [loading, setLoading] = useState(false)
@@ -73,7 +89,7 @@ export default function StudioRegister() {
 
   return (
     <div className="min-h-screen bg-studio-bg flex flex-col items-center justify-center font-sans px-4 py-10">
-      <div className="w-full max-w-[420px] bg-studio-bg-3 border border-white/4 rounded-2xl p-8 flex flex-col gap-6">
+      <div className="w-full max-w-[420px] bg-studio-bg-3 border border-elaya-border rounded-2xl p-8 flex flex-col gap-6">
         <div className="flex flex-col items-center gap-3">
           <img
             src={elayadLogo}
@@ -84,7 +100,7 @@ export default function StudioRegister() {
             <h1 className="text-studio-white font-bold text-xl m-0 leading-tight">
               {studioAuth.registerTitle}
             </h1>
-            <p className="text-studio-w3 text-[13px] mt-1 m-0">
+            <p className="text-studio-w2 text-[13px] mt-1 m-0">
               {studioAuth.registerSubtitle}
             </p>
           </div>
@@ -131,15 +147,15 @@ export default function StudioRegister() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-[12px] rounded-[8px] border-0 font-bold text-[13px] cursor-pointer transition-all
-              bg-linear-to-br from-studio-gold-2 to-studio-gold text-landing-bg
+            className="w-full py-[12px] rounded-[12px] border-0 font-bold text-[13px] cursor-pointer transition-all
+              bg-linear-to-br from-studio-gold-2 to-studio-gold text-white
               disabled:opacity-60 disabled:cursor-not-allowed mt-1"
           >
             {loading ? common.loading : studioAuth.registerButton}
           </button>
         </form>
 
-        <p className="text-center text-studio-w4 text-[12px] m-0">
+        <p className="text-center text-studio-w2 text-[12px] m-0">
           {studioAuth.loginPrompt}{' '}
           <Link
             to="/studio/login"
@@ -153,7 +169,7 @@ export default function StudioRegister() {
       <button
         type="button"
         onClick={() => navigate('/')}
-        className="mt-6 text-studio-w4 text-[12px] bg-transparent border-0 cursor-pointer hover:text-studio-w3 transition-colors"
+        className="mt-6 text-studio-w2 text-[12px] bg-transparent border-0 cursor-pointer hover:text-studio-white transition-colors"
       >
         ← {common.back}
       </button>
@@ -161,22 +177,4 @@ export default function StudioRegister() {
   )
 }
 
-function Field({ label, children }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-studio-white text-[12px] font-semibold">{label}</label>
-      {children}
-    </div>
-  )
-}
-
-function Input({ className = '', ...props }) {
-  return (
-    <input
-      {...props}
-      className={`w-full px-[14px] py-[10px] rounded-[10px] border border-white/8 bg-studio-bg-3
-        text-studio-white text-[13px] outline-none focus:border-studio-teal transition-colors
-        placeholder:text-studio-w4 ${className}`}
-    />
-  )
-}
+export default StudioRegister

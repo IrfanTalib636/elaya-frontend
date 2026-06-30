@@ -5,23 +5,23 @@
 
 .theme-admin {
   /* Brand accents */
-  --admin-emerald: #1a6b55;
-  --admin-emerald-soft: #1f7d63;
-  --admin-carmine: #7b1c2e;
-  --admin-navy: #0e2a4a;
+  --admin-emerald: #1e6fd9;
+  --admin-emerald-soft: #2a7de8;
+  --admin-carmine: #e05555;
+  --admin-navy: #0a1628;
 
   /* Backgrounds */
-  --admin-bg: #0a0a0a;
-  --admin-bg-card: #141414;
-  --admin-bg-card-2: #1b1b1b;
+  --admin-bg: #0a1628;
+  --admin-bg-card: #0d1c35;
+  --admin-bg-card-2: #102040;
 
-  /* Text */
-  --admin-ivory: #f0ece4;
-  --admin-dim: #8a8a8a;
-  --admin-dim-2: #5e5e5e;
+  /* Night text — t1/t2/t3 */
+  --admin-ivory: rgba(255, 255, 255, 0.92);
+  --admin-dim: rgba(255, 255, 255, 0.50);
+  --admin-dim-2: rgba(255, 255, 255, 0.26);
 
   /* Borders */
-  --admin-line: #262626;
+  --admin-line: rgba(74, 154, 255, 0.12);
 
   /* Mapped semantic aliases (use inside .theme-admin) */
   --app-bg: var(--admin-bg);

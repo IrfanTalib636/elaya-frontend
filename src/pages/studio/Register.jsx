@@ -90,7 +90,7 @@ export default function StudioRegister() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4" translate="no">
           <Field label={studioAuth.studioName}>
             <Input name="firma" value={form.firma} onChange={handleChange} placeholder="Ink & Free Studio" />
           </Field>

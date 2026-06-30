@@ -11,7 +11,6 @@ export default function AdminLogin() {
   const navigate = useNavigate()
   const location = useLocation()
   const signIn = useAuthStore((state) => state.login)
-  const logout = useAuthStore((state) => state.logout)
 
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
@@ -34,19 +33,22 @@ export default function AdminLogin() {
     setError('')
 
     try {
-      const { user } = await signIn({ email: form.email, password: form.password })
-
-      if (!ADMIN_ROLES.includes(user.role)) {
-        await logout()
-        setError(toastMessages.wrongPortal)
-        toast.error(toastMessages.wrongPortal)
-        return
-      }
+      await signIn({
+        email: form.email,
+        password: form.password,
+        allowedRoles: ADMIN_ROLES,
+      })
 
       toast.success(toastMessages.loginSuccess)
       const redirectTo = location.state?.from?.pathname || '/admin'
       navigate(redirectTo, { replace: true })
     } catch (err) {
+      if (err.code === 'WRONG_PORTAL') {
+        setError(toastMessages.wrongPortal)
+        toast.error(toastMessages.wrongPortal)
+        return
+      }
+
       const message = getApiErrorMessage(err)
       setError(message)
       toast.error(message)
@@ -76,7 +78,7 @@ export default function AdminLogin() {
 
         <div className="h-px bg-admin-line" />
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4" translate="no">
           <Field label={common.email}>
             <Input
               name="email"
@@ -127,7 +129,7 @@ export default function AdminLogin() {
 function Field({ label, children }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-admin-ivory text-[11px] font-semibold tracking-widest uppercase">
+      <label className="text-admin-ivory text-[11px] font-semibold tracking-wide">
         {label}
       </label>
       {children}

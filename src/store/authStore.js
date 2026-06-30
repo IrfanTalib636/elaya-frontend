@@ -10,17 +10,33 @@ const useAuthStore = create(
       accessToken: null,
       isAuthenticated: false,
 
-      login: async ({ email, password }) => {
+      login: async ({ email, password, allowedRoles }) => {
         const { data: loginRes } = await authApi.login({ email, password })
         const { accessToken } = loginRes.data
 
         localStorage.setItem('elaya_token', accessToken)
 
-        const { data: meRes } = await authApi.getMe()
-        const { user, profile } = meRes.data
+        try {
+          const { data: meRes } = await authApi.getMe()
+          const { user, profile } = meRes.data
 
-        set({ user, profile, accessToken, isAuthenticated: true })
-        return { user, profile }
+          if (allowedRoles && !allowedRoles.includes(user.role)) {
+            const err = new Error('WRONG_PORTAL')
+            err.code = 'WRONG_PORTAL'
+            throw err
+          }
+
+          set({ user, profile, accessToken, isAuthenticated: true })
+          return { user, profile }
+        } catch (err) {
+          localStorage.removeItem('elaya_token')
+          try {
+            await authApi.logout()
+          } catch {
+            // ignore
+          }
+          throw err
+        }
       },
 
       logout: async () => {

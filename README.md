@@ -6,41 +6,56 @@ Customer experience is **mobile-only** (separate project); the landing page link
 **Stack:** React 19 · Vite 8 · React Router 7 · Tailwind CSS v4 · Zustand · Axios · React Hot Toast · Lucide React  
 **Design source:** `inkderm-prototype/` (colors, layout, nav structure)  
 **API:** Connects to [Elaya Backend API](../backend/README.md) at `/api/v1`  
-**Last updated:** 2026-06-28
+**Last updated:** 2026-07-01
 
 ---
 
 ## Current progress
 
+### Milestone 1 — Auth & shell (complete)
+
 | Area | Status | Notes |
 |---|---|---|
 | **Landing page** | ✅ Done | Portal picker — Customer App (placeholder), Studio, Admin |
-| **Routing** | ✅ Done | React Router — public, protected, guest, and 404 routes |
+| **Routing** | ✅ Done | React Router — public, protected, guest, nested, 404 |
 | **Studio auth — login** | ✅ Done | Wired to `POST /auth/login` + `GET /auth/me` |
 | **Studio auth — register** | ✅ Done | Wired to `POST /auth/register/studio` |
 | **Studio auth — forgot password** | ⏳ Placeholder | No backend route yet |
 | **Admin auth — login** | ✅ Done | Shared login endpoint; role check for admin roles |
 | **Auth state (Zustand)** | ✅ Done | Persisted session; login / logout |
-| **Route guards** | ✅ Done | `ProtectedRoute` + `GuestRoute` (logged-in users skip auth pages) |
-| **404 page** | ✅ Done | Catch-all route |
-| **i18n content** | ✅ Done | `content/de.js` + `content/en.js` via `VITE_APP_LOCALE` |
-| **Toast notifications** | ✅ Done | Success/error — bilingual `toast` strings |
-| **Studio dashboard shell** | ✅ Done | Sidebar + main content (headings only) |
-| **Admin dashboard shell** | ✅ Done | Sidebar + main content (headings only) |
-| **Theme / design tokens** | ✅ Done | Studio + admin palettes from prototype |
+| **Token auto-refresh** | ✅ Done | Axios interceptor — silent retry on 401 via HttpOnly cookie |
+| **Route guards** | ✅ Done | `ProtectedRoute` + `GuestRoute` |
+| **Theme / design tokens** | ✅ Done | Blue/white palette; dark/light/system switcher; CSS tokens |
+| **Reusable UI components** | ✅ Done | Button, Input, Select, Badge, Card, Spinner, Modal, PageHeader, EmptyState |
+| **StudioLayout** | ✅ Done | Collapsible sidebar — icon-only mode, hover tooltips, localStorage persist |
+
+### Milestone 2 — Studio Dashboard pages (~70% complete)
+
+| Area | Status | Notes |
+|---|---|---|
+| **Dashboard (Overview)** | ✅ Done | KPI cards + today's appointments table |
+| **Customers list** | ✅ Done | Search (debounced), pipeline filter, create modal |
+| **Customer Detail** | ✅ Done | Info card + edit modal, cases table, pipeline stage, notes |
+| **Case Detail** | ✅ Done | Anamnesis, sessions log, status sidebar, progress bar |
+| **New Session form** | ✅ Done | Laser params, sliders, payment, draft / finalize |
+| **Session Detail** | ✅ Done | Read-only view; finalize draft button |
+| **Appointments calendar** | ❌ Pending | |
+| **Analytics** | ❌ Pending | Revenue, coins, shop |
+| **Settings** | ❌ Pending | Pricing, hours, rooms, staff, profile |
 | **Customer web portal** | ❌ Out of scope | Mobile app only |
-| **Dashboard feature pages** | ❌ Pending | Cases, calendar, customers, finance, etc. |
-| **Token auto-refresh** | ❌ Pending | `POST /auth/refresh` exists in API layer, not wired in UI |
 
 ### Changelog
 
 ```
-[2026-06-28] — Initial frontend README
-[2026-06-28] — Landing page (prototype layout)
-[2026-06-28] — Studio + admin login/register wired to backend auth API
-[2026-06-28] — Zustand auth store, axios client, protected/guest routes
-[2026-06-28] — i18n content (de/en), toast messages, 404 page
-[2026-06-28] — Studio + admin dashboard layout shells (sidebar nav from prototype)
+[2026-06-28] — Initial frontend setup: auth, routing, Zustand store, i18n, layout shells
+[2026-06-29] — Theming (blue/white palette, dark/light/system switcher, CSS tokens, FOUC fix)
+[2026-06-29] — Landing page redesign; ElayaLogo SVG component
+[2026-06-30] — Token auto-refresh interceptor; reusable UI component library
+[2026-06-30] — M2: Dashboard overview, Customers list, Customer Detail, Case Detail
+[2026-07-01] — M2: New Session form, Session Detail, customer edit modal
+[2026-07-01] — Collapsible sidebar with icon-only mode and hover tooltips
+[2026-07-01] — Fix: SliderField uncontrolled input (Chrome translate interference)
+[2026-07-01] — Fix: Button DOM crash; appointments populate fix
 ```
 
 ---
@@ -53,7 +68,15 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | `/studio/login` | Guest only | Studio login |
 | `/studio/register` | Guest only | Studio registration |
 | `/studio/forgot-password` | Guest only | Placeholder (not implemented) |
-| `/studio` | Studio roles | Studio dashboard shell |
+| `/studio` | Studio roles | Studio dashboard (Overview) |
+| `/studio/customers` | Studio roles | Customer list |
+| `/studio/customers/:id` | Studio roles | Customer detail |
+| `/studio/cases/:id` | Studio roles | Case detail |
+| `/studio/sessions/new` | Studio roles | New session form |
+| `/studio/sessions/:id` | Studio roles | Session detail |
+| `/studio/appointments` | Studio roles | Appointments (pending) |
+| `/studio/analytics` | Studio roles | Analytics (pending) |
+| `/studio/settings` | Studio roles | Settings (pending) |
 | `/admin/login` | Guest only | Admin login |
 | `/admin` | Admin roles | Admin dashboard shell |
 | `*` | Public | 404 Not Found |
@@ -198,11 +221,12 @@ Static hosting (Vercel, Netlify, Cloudflare Pages, etc.):
 
 ## Planned next (not in this release)
 
-- Studio dashboard pages (customers, cases, calendar, …)
+- Studio: Appointments calendar
+- Studio: Analytics (revenue, coins, shop)
+- Studio: Settings (pricing, hours, rooms, staff, profile)
 - Admin dashboard pages (studio approval, finance, Elaycoins, …)
-- Wire `POST /auth/refresh` before access token expiry
-- Forgot / reset password (when backend routes exist)
-- Admin staff user management (`admin` role vs `super_admin`)
+- Forgot / reset password (when backend route exists)
+- 18+ age validation on customer creation (Swiss law)
 
 ---
 

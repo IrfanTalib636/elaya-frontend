@@ -1,7 +1,9 @@
 import axios from 'axios'
 
+const BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1'
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1',
+  baseURL: BASE,
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 })
@@ -13,15 +15,68 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Global response error handling
+// ── Token auto-refresh ────────────────────────────────────────────────────
+// When a 401 is received, try once to refresh using the HttpOnly cookie.
+// If refresh succeeds, retry the original request with the new token.
+// If refresh fails, clear the session and redirect to login.
+
+let isRefreshing = false
+let queue = []           // pending requests waiting for refresh
+
+const processQueue = (error, token = null) => {
+  queue.forEach(({ resolve, reject }) => {
+    if (error) reject(error)
+    else resolve(token)
+  })
+  queue = []
+}
+
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
-    const status = err.response?.status
-    if (status === 401) {
-      localStorage.removeItem('elaya_token')
-      // Let each store handle redirect — don't navigate here
+  async (err) => {
+    const original = err.config
+
+    // Only attempt refresh on 401 and not on the refresh endpoint itself
+    if (
+      err.response?.status === 401 &&
+      !original._retry &&
+      !original.url?.includes('/auth/refresh') &&
+      !original.url?.includes('/auth/login')
+    ) {
+      if (isRefreshing) {
+        // Queue this request until refresh completes
+        return new Promise((resolve, reject) => {
+          queue.push({ resolve, reject })
+        }).then((token) => {
+          original.headers.Authorization = `Bearer ${token}`
+          return api(original)
+        })
+      }
+
+      original._retry = true
+      isRefreshing = true
+
+      try {
+        const res = await axios.post(`${BASE}/auth/refresh`, {}, { withCredentials: true })
+        const newToken = res.data.data.accessToken
+        localStorage.setItem('elaya_token', newToken)
+        api.defaults.headers.common.Authorization = `Bearer ${newToken}`
+        original.headers.Authorization = `Bearer ${newToken}`
+        processQueue(null, newToken)
+        return api(original)
+      } catch (refreshErr) {
+        processQueue(refreshErr, null)
+        localStorage.removeItem('elaya_token')
+        // Redirect to studio login (or admin if on admin path)
+        const path = window.location.pathname
+        const loginPath = path.startsWith('/admin') ? '/admin/login' : '/studio/login'
+        window.location.href = loginPath
+        return Promise.reject(refreshErr)
+      } finally {
+        isRefreshing = false
+      }
     }
+
     return Promise.reject(err)
   }
 )

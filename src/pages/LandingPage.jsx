@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Smartphone, Monitor, ArrowRight, Settings } from 'lucide-react'
 import ElayaLogo from '../components/ElayaLogo'
+import ThemeSwitcher from '../components/ThemeSwitcher'
 import { landing } from '../content'
 
 const LandingPage = () => {
@@ -12,6 +13,7 @@ const LandingPage = () => {
       {/* Nav */}
       <nav className="flex items-center justify-between px-8 py-4 shrink-0">
         <ElayaLogo size="md" />
+        <ThemeSwitcher />
       </nav>
 
       {/* Hero — fills remaining height */}

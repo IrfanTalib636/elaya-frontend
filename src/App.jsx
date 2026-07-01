@@ -1,18 +1,36 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import ProtectedRoute from './components/ProtectedRoute'
 import GuestRoute from './components/GuestRoute'
-import ThemeSwitcher from './components/ThemeSwitcher'
+import StudioShell from './components/StudioShell'
 import useTheme from './hooks/useTheme'
 import { STUDIO_ROLES, ADMIN_ROLES } from './constants/roles'
+
 import LandingPage from './pages/LandingPage'
+import NotFoundPage from './pages/NotFoundPage'
+
+// Studio auth
 import StudioLogin from './pages/studio/Login'
 import StudioRegister from './pages/studio/Register'
 import StudioForgotPassword from './pages/studio/ForgotPassword'
-import StudioDashboard from './pages/studio/Dashboard'
+
+// Studio dashboard pages
+import StudioOverview from './pages/studio/Overview'
+import StudioCustomers from './pages/studio/Customers'
+import CustomerDetail from './pages/studio/CustomerDetail'
+import CaseDetail from './pages/studio/CaseDetail'
+import StudioAppointments from './pages/studio/Appointments'
+import NewSession from './pages/studio/NewSession'
+import SessionDetail from './pages/studio/SessionDetail'
+import StudioAnalytics from './pages/studio/Analytics'
+import StudioCrm from './pages/studio/Crm'
+import StudioShop from './pages/studio/Shop'
+import StudioElaycoins from './pages/studio/Elaycoins'
+import StudioSettings from './pages/studio/Settings'
+
+// Admin
 import AdminLogin from './pages/admin/Login'
 import AdminDashboard from './pages/admin/Dashboard'
-import NotFoundPage from './pages/NotFoundPage'
 
 const AppInner = () => {
   useTheme()
@@ -35,27 +53,39 @@ const AppInner = () => {
         }}
       />
 
-      <div className="fixed top-3 right-4 z-9999">
-        <ThemeSwitcher />
-      </div>
-
       <Routes>
         <Route path="/" element={<LandingPage />} />
 
         {/* Studio auth — guest only */}
-        <Route path="/studio/login" element={<GuestRoute><StudioLogin /></GuestRoute>} />
-        <Route path="/studio/register" element={<GuestRoute><StudioRegister /></GuestRoute>} />
+        <Route path="/studio/login"          element={<GuestRoute><StudioLogin /></GuestRoute>} />
+        <Route path="/studio/register"       element={<GuestRoute><StudioRegister /></GuestRoute>} />
         <Route path="/studio/forgot-password" element={<GuestRoute><StudioForgotPassword /></GuestRoute>} />
+
+        {/* Studio dashboard — protected layout wrapper */}
         <Route
           path="/studio"
           element={
             <ProtectedRoute allowedRoles={STUDIO_ROLES} loginPath="/studio/login">
-              <StudioDashboard />
+              <StudioShell />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard"        element={<StudioOverview />} />
+          <Route path="customers"        element={<StudioCustomers />} />
+          <Route path="customers/:id"    element={<CustomerDetail />} />
+          <Route path="cases/:id"        element={<CaseDetail />} />
+          <Route path="appointments"     element={<StudioAppointments />} />
+          <Route path="sessions/new"     element={<NewSession />} />
+          <Route path="sessions/:id"     element={<SessionDetail />} />
+          <Route path="analytics"        element={<StudioAnalytics />} />
+          <Route path="crm"              element={<StudioCrm />} />
+          <Route path="shop"             element={<StudioShop />} />
+          <Route path="elaycoins"        element={<StudioElaycoins />} />
+          <Route path="settings"         element={<StudioSettings />} />
+        </Route>
 
-        {/* Admin auth — guest only */}
+        {/* Admin */}
         <Route path="/admin/login" element={<GuestRoute><AdminLogin /></GuestRoute>} />
         <Route
           path="/admin"

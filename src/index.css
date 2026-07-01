@@ -25,6 +25,10 @@
   --color-studio-green: #2ecc8a;
   --color-studio-red: #e05555;
   --color-studio-amber: #f0a030;
+  /* Shared semantic tokens */
+  --color-elaya-success: #2ecc8a;
+  --color-elaya-error: #e05555;
+  --color-elaya-warning: #f0a030;
   --color-studio-blue: #4a9aff;
   /* Night text — t1/t2/t3 per client spec */
   --color-studio-white: rgba(255, 255, 255, 0.92);

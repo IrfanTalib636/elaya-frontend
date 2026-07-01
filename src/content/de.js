@@ -84,25 +84,14 @@ export const notFound = {
 }
 
 export const studioNav = {
-  sidebarTitle: 'Studio Dashboard',
-  contentPlaceholder: 'Inhalt folgt',
-  items: [
-    { id: 'dashboard', icon: '🏠', label: 'Dashboard' },
-    { id: 'kalender', icon: '🗓️', label: 'Kalender' },
-    { id: 'today', icon: '📅', label: 'Heute' },
-    { id: 'clients', icon: '👥', label: 'Kunden' },
-    { id: 'cases', icon: '🗂️', label: 'Alle Cases' },
-    { id: 'verlauf', icon: '📋', label: 'Verlauf' },
-    { id: 'nachsorge', icon: '🩺', label: 'Nachsorge' },
-    { id: 'leads', icon: '🎯', label: 'Leads' },
-    { id: 'alerts', icon: '🚨', label: 'Alerts' },
-    { id: 'crm', icon: '🎯', label: 'CRM' },
-    { id: 'avora', icon: '🛍️', label: 'Avora Shop' },
-    { id: 'analytics', icon: '📈', label: 'Analytics' },
-    { id: 'fees', icon: '💳', label: 'Plattform-Gebühren' },
-    { id: 'chat', icon: '💬', label: 'Chat' },
-    { id: 'settings', icon: '⚙️', label: 'Einstellungen' },
-  ],
+  dashboard:    'Dashboard',
+  customers:    'Kunden',
+  appointments: 'Termine',
+  analytics:    'Analytik',
+  crm:          'Nachsorge',
+  shop:         'Avora Shop',
+  elaycoins:    'Elaycoins',
+  settings:     'Einstellungen',
 }
 
 export const adminNav = {

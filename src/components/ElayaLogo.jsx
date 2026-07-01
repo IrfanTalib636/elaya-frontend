@@ -6,8 +6,12 @@ const SIZES = {
   lg: { img: 'h-10', text: 'text-[20px] tracking-[0.24em]', gap: 'gap-3'   },
 }
 
-const ElayaLogo = ({ size = 'md', className = '' }) => {
+const ElayaLogo = ({ size = 'md', className = '', markOnly = false }) => {
   const s = SIZES[size] ?? SIZES.md
+
+  if (markOnly) {
+    return <img src={logoMark} alt="Elaya" className={`${s.img} ${className}`} />
+  }
 
   return (
     <div className={`flex items-center ${s.gap} ${className}`}>

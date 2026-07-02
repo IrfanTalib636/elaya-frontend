@@ -61,9 +61,8 @@ const ThemeSwitcher = ({ fullWidth = false }) => {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`flex items-center gap-1.5 rounded-[10px] border border-elaya-border bg-studio-bg-3 text-studio-w2 text-[12px] font-semibold cursor-pointer transition-colors hover:border-elaya-border-strong hover:text-studio-white select-none
+        className={`flex items-center gap-1.5 rounded-[10px] border border-elaya-border bg-studio-bg-3 text-studio-w2 text-[12px] font-semibold cursor-pointer transition-colors hover:border-elaya-border-strong hover:text-studio-white select-none focus-visible:outline-2 focus-visible:outline-studio-gold focus-visible:outline-offset-2
           ${fullWidth ? 'w-full px-3 py-2 justify-between' : 'px-3 py-1.5'}`}
-        style={{ outline: 'none' }}
       >
         <span className="flex items-center gap-1.5">
           <Icon size={13} />

@@ -1,4 +1,6 @@
 import axios from 'axios'
+import { TOKEN_KEY } from './session'
+import { trySilentRefresh } from './refreshSession'
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1'
 
@@ -10,7 +12,7 @@ const api = axios.create({
 
 // Attach token from localStorage on every request
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('elaya_token')
+  const token = localStorage.getItem(TOKEN_KEY)
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
@@ -57,20 +59,18 @@ api.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const res = await axios.post(`${BASE}/auth/refresh`, {}, { withCredentials: true })
-        const newToken = res.data.data.accessToken
-        localStorage.setItem('elaya_token', newToken)
+        const newToken = await trySilentRefresh()
+        const { default: useAuthStore } = await import('../store/authStore')
+        useAuthStore.getState().setAccessToken(newToken)
         api.defaults.headers.common.Authorization = `Bearer ${newToken}`
         original.headers.Authorization = `Bearer ${newToken}`
         processQueue(null, newToken)
         return api(original)
       } catch (refreshErr) {
         processQueue(refreshErr, null)
-        localStorage.removeItem('elaya_token')
-        // Redirect to studio login (or admin if on admin path)
-        const path = window.location.pathname
-        const loginPath = path.startsWith('/admin') ? '/admin/login' : '/studio/login'
-        window.location.href = loginPath
+        const { default: useAuthStore } = await import('../store/authStore')
+        useAuthStore.getState().clearLocalSession()
+        // Let ProtectedRoute redirect — avoid full-page reload loop with GuestRoute
         return Promise.reject(refreshErr)
       } finally {
         isRefreshing = false

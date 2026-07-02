@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import * as authApi from '../api/auth'
+import { TOKEN_KEY, clearLocalSession as wipeLocalSession } from '../lib/session'
 
 const useAuthStore = create(
   persist(
@@ -14,7 +15,7 @@ const useAuthStore = create(
         const { data: loginRes } = await authApi.login({ email, password })
         const { accessToken } = loginRes.data
 
-        localStorage.setItem('elaya_token', accessToken)
+        localStorage.setItem(TOKEN_KEY, accessToken)
 
         try {
           const { data: meRes } = await authApi.getMe()
@@ -29,7 +30,7 @@ const useAuthStore = create(
           set({ user, profile, accessToken, isAuthenticated: true })
           return { user, profile }
         } catch (err) {
-          localStorage.removeItem('elaya_token')
+          wipeLocalSession()
           try {
             await authApi.logout()
           } catch {
@@ -39,14 +40,24 @@ const useAuthStore = create(
         }
       },
 
+      /** Clear client session without a server round-trip (used by axios on refresh failure). */
+      clearLocalSession: () => {
+        wipeLocalSession()
+        set({ user: null, profile: null, accessToken: null, isAuthenticated: false })
+      },
+
+      setAccessToken: (accessToken) => {
+        localStorage.setItem(TOKEN_KEY, accessToken)
+        set({ accessToken })
+      },
+
       logout: async () => {
         try {
           await authApi.logout()
         } catch {
           // Always clear local session even if the server call fails
         }
-        localStorage.removeItem('elaya_token')
-        set({ user: null, profile: null, accessToken: null, isAuthenticated: false })
+        useAuthStore.getState().clearLocalSession()
       },
 
       refreshProfile: async () => {
@@ -66,7 +77,7 @@ const useAuthStore = create(
       }),
       onRehydrateStorage: () => (state) => {
         if (state?.accessToken) {
-          localStorage.setItem('elaya_token', state.accessToken)
+          localStorage.setItem(TOKEN_KEY, state.accessToken)
         }
       },
     }

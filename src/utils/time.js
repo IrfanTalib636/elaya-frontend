@@ -1,5 +1,5 @@
 /** Convert HH:MM (24h) to h:mm AM/PM for display. */
-export const formatTime12 = (time24) => {
+const formatTime12 = (time24) => {
   if (!time24 || typeof time24 !== 'string') return '—'
 
   const match = time24.trim().match(/^(\d{1,2}):(\d{2})$/)

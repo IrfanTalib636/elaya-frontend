@@ -85,8 +85,11 @@ export const notFound = {
 
 export const studioNav = {
   dashboard:    'Dashboard',
+  appointments: 'Kalender',
+  today:        'Heute',
   customers:    'Kunden',
-  appointments: 'Termine',
+  cases:        'Alle Fälle',
+  sessions:     'Sitzungen',
   analytics:    'Analytik',
   crm:          'Nachsorge',
   shop:         'Avora Shop',

@@ -48,6 +48,13 @@ const useAuthStore = create(
         localStorage.removeItem('elaya_token')
         set({ user: null, profile: null, accessToken: null, isAuthenticated: false })
       },
+
+      refreshProfile: async () => {
+        const { data: meRes } = await authApi.getMe()
+        const { user, profile } = meRes.data
+        set({ user, profile })
+        return profile
+      },
     }),
     {
       name: 'elaya_auth',

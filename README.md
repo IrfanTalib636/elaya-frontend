@@ -6,7 +6,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 **Stack:** React 19 · Vite 8 · React Router 7 · Tailwind CSS v4 · Zustand · Axios · React Hot Toast · Lucide React  
 **Design source:** `inkderm-prototype/` (colors, layout, nav structure)  
 **API:** Connects to [Elaya Backend API](../backend/README.md) at `/api/v1`  
-**Last updated:** 2026-07-01
+**Last updated:** 2026-07-03
 
 ---
 
@@ -29,20 +29,30 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | **Reusable UI components** | ✅ Done | Button, Input, Select, Badge, Card, Spinner, Modal, PageHeader, EmptyState |
 | **StudioLayout** | ✅ Done | Collapsible sidebar — icon-only mode, hover tooltips, localStorage persist |
 
-### Milestone 2 — Studio Dashboard pages (~70% complete)
+### Milestone 2 — Studio Dashboard (~75% complete per client doc)
 
 | Area | Status | Notes |
 |---|---|---|
 | **Dashboard (Overview)** | ✅ Done | KPI cards + today's appointments table |
+| **Heute (`/studio/today`)** | ✅ Done | Today's appointments table, links to case detail |
 | **Customers list** | ✅ Done | Search (debounced), pipeline filter, create modal |
-| **Customer Detail** | ✅ Done | Info card + edit modal, cases table, pipeline stage, notes |
-| **Case Detail** | ✅ Done | Anamnesis, sessions log, status sidebar, progress bar |
+| **Customer Detail** | ✅ Done | Info card + edit modal, cases + appointments tables, pipeline stage, notes |
+| **Alle Fälle (`/studio/cases`)** | ✅ Done | Search + status filter, all cases list |
+| **Case Detail** | ✅ Done | Anamnesis view, sessions log, status sidebar, progress bar, zones view |
+| **Sitzungen (`/studio/sessions`)** | ✅ Done | Search + draft filter, all sessions list |
 | **New Session form** | ✅ Done | Laser params, sliders, payment, draft / finalize |
 | **Session Detail** | ✅ Done | Read-only view; finalize draft button |
-| **Appointments calendar** | ❌ Pending | |
-| **Analytics** | ❌ Pending | Revenue, coins, shop |
-| **Settings** | ❌ Pending | Pricing, hours, rooms, staff, profile |
-| **Customer web portal** | ❌ Out of scope | Mobile app only |
+| **Appointments calendar** | ✅ Done | Week grid, time slots, book modal, current-time line |
+| **Analytics** | ⚠️ Partial | Revenue KPIs, bar chart, pipeline donut, period tabs — **coin stats, shop, fees pending** |
+| **Settings** | ✅ Done | Theme; pricing (`/config/studio`); profile, hours, rooms, staff (`/studio/settings`); view/edit UX |
+| **CRM (`/studio/crm`)** | ❌ Pending | Placeholder — Phase 1 (pipeline kanban) next |
+| **Shop (`/studio/shop`)** | ❌ Pending | Placeholder — needs backend shop orders API |
+| **Elaycoins page** | ⏳ Placeholder | Nav stub only |
+| **Customer web portal** | ❌ Out of scope | Mobile app only (M3) |
+
+**Core workflow complete:** customers → cases → appointments → sessions → analytics → settings.
+
+**Remaining for M2 sign-off:** CRM pipeline page, Shop orders page, Analytics coin/shop/fee KPIs.
 
 ### Changelog
 
@@ -56,6 +66,12 @@ Customer experience is **mobile-only** (separate project); the landing page link
 [2026-07-01] — Collapsible sidebar with icon-only mode and hover tooltips
 [2026-07-01] — Fix: SliderField uncontrolled input (Chrome translate interference)
 [2026-07-01] — Fix: Button DOM crash; appointments populate fix
+[2026-07-02] — M2: Appointments week-grid calendar; customer appointments section
+[2026-07-02] — M2: Analytics page (recharts); Settings (theme, profile, basic pricing)
+[2026-07-02] — Route-level code splitting (React.lazy); sidebar collapse DOM stability fixes
+[2026-07-02] — Today, Cases, Sessions list pages; Overview link to Heute
+[2026-07-03] — Settings fully wired (profile, hours, rooms, staff); view/edit pattern; studio API client
+[2026-07-03] — authStore.refreshProfile(); opening hours AM/PM display in settings view mode
 ```
 
 ---
@@ -68,15 +84,21 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | `/studio/login` | Guest only | Studio login |
 | `/studio/register` | Guest only | Studio registration |
 | `/studio/forgot-password` | Guest only | Placeholder (not implemented) |
-| `/studio` | Studio roles | Studio dashboard (Overview) |
+| `/studio/dashboard` | Studio roles | Overview — KPIs + today's appointments |
+| `/studio/today` | Studio roles | Today's appointments |
 | `/studio/customers` | Studio roles | Customer list |
 | `/studio/customers/:id` | Studio roles | Customer detail |
+| `/studio/cases` | Studio roles | All cases list |
 | `/studio/cases/:id` | Studio roles | Case detail |
+| `/studio/sessions` | Studio roles | All sessions list |
 | `/studio/sessions/new` | Studio roles | New session form |
 | `/studio/sessions/:id` | Studio roles | Session detail |
-| `/studio/appointments` | Studio roles | Appointments (pending) |
-| `/studio/analytics` | Studio roles | Analytics (pending) |
-| `/studio/settings` | Studio roles | Settings (pending) |
+| `/studio/appointments` | Studio roles | Week-grid calendar + booking |
+| `/studio/analytics` | Studio roles | Revenue KPIs + charts |
+| `/studio/crm` | Studio roles | CRM / Nachsorge (placeholder) |
+| `/studio/shop` | Studio roles | Avora Shop (placeholder) |
+| `/studio/elaycoins` | Studio roles | Elaycoins (placeholder) |
+| `/studio/settings` | Studio roles | Settings — theme, pricing, profile, hours, rooms, staff |
 | `/admin/login` | Guest only | Admin login |
 | `/admin` | Admin roles | Admin dashboard shell |
 | `*` | Public | 404 Not Found |
@@ -93,7 +115,13 @@ frontend/
 ├── public/
 ├── src/
 │   ├── api/
-│   │   └── auth.js              # login, registerStudio, getMe, refresh, logout
+│   │   ├── auth.js              # login, registerStudio, getMe, refresh, logout
+│   │   ├── customers.js         # list, create, get, update
+│   │   ├── cases.js             # list, create, get, update, pricing
+│   │   ├── appointments.js      # list, create, get, update
+│   │   ├── sessions.js          # list, create, get, update
+│   │   ├── config.js            # studio pricing / platform config
+│   │   └── studio.js            # studio settings (profile, hours, rooms, staff)
 │   ├── components/
 │   │   ├── layout/
 │   │   │   ├── StudioLayout.jsx # Sidebar + main (studio theme)
@@ -101,7 +129,8 @@ frontend/
 │   │   ├── GuestRoute.jsx       # Blocks auth pages when logged in
 │   │   └── ProtectedRoute.jsx   # Requires auth + allowed role
 │   ├── constants/
-│   │   └── roles.js             # STUDIO_ROLES, ADMIN_ROLES
+│   │   ├── roles.js             # STUDIO_ROLES, ADMIN_ROLES
+│   │   └── studio.js            # WEEKDAYS, MITARBEITER_ROLLEN
 │   ├── content/
 │   │   ├── de.js                # German UI strings
 │   │   ├── en.js                # English UI strings
@@ -114,10 +143,11 @@ frontend/
 │   │   ├── LandingPage.jsx
 │   │   ├── NotFoundPage.jsx
 │   │   ├── studio/
-│   │   │   ├── Login.jsx
-│   │   │   ├── Register.jsx
-│   │   │   ├── ForgotPassword.jsx
-│   │   │   └── Dashboard.jsx
+│   │   │   ├── Overview.jsx, Today.jsx, Customers.jsx, CustomerDetail.jsx
+│   │   │   ├── Cases.jsx, CaseDetail.jsx, Sessions.jsx, NewSession.jsx, SessionDetail.jsx
+│   │   │   ├── Appointments.jsx, Analytics.jsx, Settings.jsx
+│   │   │   ├── Crm.jsx, Shop.jsx, Elaycoins.jsx  # CRM/Shop/Elaycoins placeholders
+│   │   │   └── Login.jsx, Register.jsx, ForgotPassword.jsx
 │   │   └── admin/
 │   │       ├── Login.jsx
 │   │       └── Dashboard.jsx
@@ -178,7 +208,7 @@ Ensure the backend `CORS_ORIGINS` includes your deployed frontend URL (e.g. `htt
 2. Access token stored in Zustand + `localStorage` (`elaya_token` for axios)
 3. Profile loaded via `GET /auth/me`
 4. Role checked on the client — wrong portal shows an error and logs out
-5. Refresh cookie set by backend (HttpOnly) — auto-refresh not wired yet
+5. Refresh cookie set by backend (HttpOnly) — axios interceptor retries on 401
 6. Logout → `POST /auth/logout` + clear local session
 
 **Studio register:** `POST /auth/register/studio` → account status `ausstehend` until admin approval (login blocked until active).
@@ -219,12 +249,19 @@ Static hosting (Vercel, Netlify, Cloudflare Pages, etc.):
 
 ---
 
-## Planned next (not in this release)
+## Planned next (M2 remaining)
 
-- Studio: Appointments calendar
-- Studio: Analytics (revenue, coins, shop)
-- Studio: Settings (pricing, hours, rooms, staff, profile)
-- Admin dashboard pages (studio approval, finance, Elaycoins, …)
+- **CRM Phase 1** — pipeline kanban + list, auto `pipeline_stufe` (backend + `/studio/crm`)
+- **Shop** — order list + shipping status (backend `shop_orders` API + `/studio/shop`)
+- **Analytics** — Elaycoin KPIs, shop provision/history, transaction fees
+- Settings: full pricing multipliers UI (post-M2 polish)
+- Elaycoins studio page (balance overview for studio customers)
+- Case detail: appointments tab, zone management UI (polish)
+
+## Planned later (M3+)
+
+- Customer web portal (M3 — mobile track)
+- Admin dashboard pages (M4 — studio approval, finance, feature flags, …)
 - Forgot / reset password (when backend route exists)
 - 18+ age validation on customer creation (Swiss law)
 

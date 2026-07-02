@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Sun, Moon, Monitor, Check, User, DollarSign, Clock, Grid, Users } from 'lucide-react'
+import { Sun, Moon, Monitor, Check, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { Card, PageHeader, Input, Button, Spinner } from '../../components/ui'
+import { Card, PageHeader, Input, Button, Spinner, Select, Badge } from '../../components/ui'
 import useTheme from '../../hooks/useTheme'
 import useAuthStore from '../../store/authStore'
 import { getStudioConfig, updateStudioConfig } from '../../api/config'
+import { getStudioSettings, updateStudioSettings } from '../../api/studio'
+import { ROLES } from '../../constants/roles'
+import { WEEKDAYS, MITARBEITER_ROLLEN } from '../../constants/studio'
+import { formatTimeRange12 } from '../../utils/time'
 
 // ── Theme ──────────────────────────────────────────────────────────────────
 const THEME_OPTIONS = [
@@ -39,28 +43,57 @@ const ThemeOption = ({ value, icon: Icon, label, desc, active, onSelect }) => (
 )
 
 // ── Shared layout ──────────────────────────────────────────────────────────
-const Section = ({ title, desc, children }) => (
+const InfoRow = ({ label, value, children }) => (
+  <div className="flex items-start justify-between gap-4 py-2.5 border-b border-elaya-border last:border-0">
+    <span className="text-studio-w2 text-[12px] shrink-0 w-36">{label}</span>
+    <span className="text-studio-white text-[12px] font-medium text-right break-all">
+      {children ?? (value || '—')}
+    </span>
+  </div>
+)
+
+const Section = ({
+  title,
+  desc,
+  children,
+  canEdit,
+  isEditing,
+  onEdit,
+  saving,
+  onCancel,
+  onSave,
+}) => (
   <Card className="flex flex-col gap-5">
-    <div className="border-b border-elaya-border pb-4">
-      <h2 className="text-[15px] font-bold text-studio-white m-0">{title}</h2>
-      {desc && <p className="text-studio-w3 text-[12px] m-0 mt-1">{desc}</p>}
+    <div className="border-b border-elaya-border pb-4 flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <h2 className="text-[15px] font-bold text-studio-white m-0">{title}</h2>
+        {desc && <p className="text-studio-w3 text-[12px] m-0 mt-1">{desc}</p>}
+      </div>
+      {canEdit && !isEditing && (
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label="Bearbeiten"
+          className="shrink-0 p-2 rounded-[10px] text-studio-w2 hover:text-studio-gold-2 hover:bg-studio-bg-4 border-0 bg-transparent cursor-pointer transition-colors"
+        >
+          <Pencil size={15} />
+        </button>
+      )}
     </div>
     {children}
+    {isEditing && (
+      <div className="flex justify-end gap-2 pt-2 border-t border-elaya-border">
+        <Button variant="ghost" onClick={onCancel} disabled={saving}>Abbrechen</Button>
+        <Button loading={saving} onClick={onSave}>Speichern</Button>
+      </div>
+    )}
   </Card>
 )
 
-const InfoRow = ({ label, value }) => (
-  <div className="flex items-start justify-between gap-4 py-2.5 border-b border-elaya-border last:border-0">
-    <span className="text-studio-w2 text-[12px] shrink-0 w-36">{label}</span>
-    <span className="text-studio-white text-[12px] font-medium text-right break-all">{value || '—'}</span>
-  </div>
-)
-
-const ComingSoon = ({ label }) => (
-  <div className="flex items-center justify-between py-2.5 border-b border-elaya-border last:border-0">
-    <span className="text-studio-w2 text-[13px]">{label}</span>
-    <span className="text-studio-w4 text-[10px] border border-elaya-border rounded-full px-2.5 py-0.5">Kommt bald</span>
-  </div>
+const ReadOnlyHint = () => (
+  <p className="text-studio-w3 text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4">
+    Nur Studio-Administratoren können Einstellungen ändern.
+  </p>
 )
 
 // ── Tabs ───────────────────────────────────────────────────────────────────
@@ -73,8 +106,15 @@ const TABS = [
   { id: 'staff',      icon: Users,       label: 'Mitarbeiter'    },
 ]
 
+const useCanEditSettings = () => {
+  const role = useAuthStore((s) => s.user?.role)
+  return role === ROLES.STUDIO_ADMIN
+}
+
 // ── Pricing tab ────────────────────────────────────────────────────────────
 const PricingTab = () => {
+  const canEdit = useCanEditSettings()
+  const [isEditing, setIsEditing] = useState(false)
   const [config,   setConfig]   = useState(null)
   const [loading,  setLoading]  = useState(true)
   const [saving,   setSaving]   = useState(false)
@@ -85,18 +125,21 @@ const PricingTab = () => {
     pmuPrice:         '',
   })
 
+  const applyConfig = (cfg) => {
+    setConfig(cfg)
+    setForm({
+      coin_wert:       cfg.coin_wert        ?? cfg.platform_limits?.coinWert ?? '',
+      basePricePerCm2: cfg.studio_pricing?.basePricePerCm2 ?? '',
+      minPrice:        cfg.studio_pricing?.minPrice        ?? '',
+      pmuPrice:        cfg.studio_pricing?.pmuPrice        ?? '',
+    })
+  }
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const res = await getStudioConfig()
-      const cfg = res.data.data.studio_config
-      setConfig(cfg)
-      setForm({
-        coin_wert:       cfg.coin_wert        ?? cfg.platform_limits.coinWert ?? '',
-        basePricePerCm2: cfg.studio_pricing?.basePricePerCm2 ?? '',
-        minPrice:        cfg.studio_pricing?.minPrice        ?? '',
-        pmuPrice:        cfg.studio_pricing?.pmuPrice        ?? '',
-      })
+      applyConfig(res.data.data.studio_config)
     } catch {
       toast.error('Konfiguration konnte nicht geladen werden.')
     } finally {
@@ -107,6 +150,11 @@ const PricingTab = () => {
   useEffect(() => { load() }, [load])
 
   const set = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))
+
+  const handleCancel = () => {
+    if (config) applyConfig(config)
+    setIsEditing(false)
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -126,8 +174,8 @@ const PricingTab = () => {
       if (Object.keys(pricing).length) payload.studio_pricing = pricing
 
       const res = await updateStudioConfig(payload)
-      const updated = res.data.data.studio_config
-      setConfig(updated)
+      applyConfig(res.data.data.studio_config)
+      setIsEditing(false)
       toast.success('Preise gespeichert.')
     } catch (err) {
       toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
@@ -139,105 +187,798 @@ const PricingTab = () => {
   if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
 
   const limits = config?.platform_limits
+  const fmtPrice = (v) => (v !== '' && v != null ? `CHF ${v}` : 'Plattform-Standard')
 
   return (
     <Section
       title="Preise & Elaycoin"
       desc="Studio-spezifische Preisanpassungen. Plattform-Standardwerte gelten, wenn kein Wert gesetzt ist."
+      canEdit={canEdit}
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      saving={saving}
+      onCancel={handleCancel}
+      onSave={handleSave}
     >
-      {/* Coin value */}
-      <div>
-        <p className="text-[12px] font-semibold text-studio-w2 m-0 mb-3">Elaycoin-Wert</p>
-        <Input
-          label="CHF pro Coin"
-          type="number"
-          min={limits?.minWert}
-          max={limits?.maxWert}
-          step="0.01"
-          value={form.coin_wert}
-          onChange={set('coin_wert')}
-        />
-        {limits && (
-          <p className="text-studio-w3 text-[11px] m-0 mt-1.5">
-            Erlaubter Bereich: CHF {limits.minWert} – CHF {limits.maxWert}
-            &nbsp;·&nbsp;Plattform-Standard: CHF {limits.coinWert}
+      {!canEdit && <ReadOnlyHint />}
+
+      {!isEditing ? (
+        <>
+          <InfoRow label="CHF pro Coin" value={fmtPrice(form.coin_wert)} />
+          {limits && (
+            <p className="text-studio-w3 text-[11px] m-0 -mt-2">
+              Erlaubter Bereich: CHF {limits.minWert} – CHF {limits.maxWert}
+              &nbsp;·&nbsp;Plattform-Standard: CHF {limits.coinWert}
+            </p>
+          )}
+          <div className="h-px bg-elaya-border" />
+          <InfoRow label="Basispreis / cm²" value={fmtPrice(form.basePricePerCm2)} />
+          <InfoRow label="Mindestpreis / Sitzung" value={fmtPrice(form.minPrice)} />
+          <InfoRow label="PMU-Preis" value={fmtPrice(form.pmuPrice)} />
+          <p className="text-studio-w3 text-[11px] m-0">
+            Multiplikatoren (Farbe, Tiefe, Alter…) werden in einer späteren Version konfigurierbar.
           </p>
-        )}
-      </div>
+        </>
+      ) : (
+        <>
+          <div>
+            <p className="text-[12px] font-semibold text-studio-w2 m-0 mb-3">Elaycoin-Wert</p>
+            <Input
+              label="CHF pro Coin"
+              type="number"
+              min={limits?.minWert}
+              max={limits?.maxWert}
+              step="0.01"
+              value={form.coin_wert}
+              onChange={set('coin_wert')}
+            />
+            {limits && (
+              <p className="text-studio-w3 text-[11px] m-0 mt-1.5">
+                Erlaubter Bereich: CHF {limits.minWert} – CHF {limits.maxWert}
+                &nbsp;·&nbsp;Plattform-Standard: CHF {limits.coinWert}
+              </p>
+            )}
+          </div>
 
-      <div className="h-px bg-elaya-border" />
+          <div className="h-px bg-elaya-border" />
 
-      {/* Pricing overrides */}
-      <div>
-        <p className="text-[12px] font-semibold text-studio-w2 m-0 mb-3">Preiskalkulation</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Input
-            label="Basispreis / cm² (CHF)"
-            type="number"
-            min={0}
-            step="0.01"
-            value={form.basePricePerCm2}
-            onChange={set('basePricePerCm2')}
-            placeholder="3.00"
-          />
-          <Input
-            label="Mindestpreis / Sitzung (CHF)"
-            type="number"
-            min={0}
-            step="1"
-            value={form.minPrice}
-            onChange={set('minPrice')}
-            placeholder="90"
-          />
-          <Input
-            label="PMU-Preis (CHF)"
-            type="number"
-            min={0}
-            step="1"
-            value={form.pmuPrice}
-            onChange={set('pmuPrice')}
-            placeholder="149"
-          />
-        </div>
-        <p className="text-studio-w3 text-[11px] m-0 mt-2">
-          Leere Felder verwenden den Plattform-Standard.
-          Multiplikatoren (Farbe, Tiefe, Alter…) werden in einer späteren Version konfigurierbar.
-        </p>
-      </div>
-
-      <div className="flex justify-end">
-        <Button loading={saving} onClick={handleSave}>
-          Speichern
-        </Button>
-      </div>
+          <div>
+            <p className="text-[12px] font-semibold text-studio-w2 m-0 mb-3">Preiskalkulation</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Input
+                label="Basispreis / cm² (CHF)"
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.basePricePerCm2}
+                onChange={set('basePricePerCm2')}
+                placeholder="3.00"
+              />
+              <Input
+                label="Mindestpreis / Sitzung (CHF)"
+                type="number"
+                min={0}
+                step="1"
+                value={form.minPrice}
+                onChange={set('minPrice')}
+                placeholder="90"
+              />
+              <Input
+                label="PMU-Preis (CHF)"
+                type="number"
+                min={0}
+                step="1"
+                value={form.pmuPrice}
+                onChange={set('pmuPrice')}
+                placeholder="149"
+              />
+            </div>
+            <p className="text-studio-w3 text-[11px] m-0 mt-2">
+              Leere Felder verwenden den Plattform-Standard.
+            </p>
+          </div>
+        </>
+      )}
     </Section>
   )
 }
 
 // ── Profile tab ────────────────────────────────────────────────────────────
 const ProfileTab = () => {
-  const profile = useAuthStore((s) => s.profile)
-  const user    = useAuthStore((s) => s.user)
+  const canEdit = useCanEditSettings()
+  const user = useAuthStore((s) => s.user)
+  const refreshProfile = useAuthStore((s) => s.refreshProfile)
+  const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({
+    firma: '', telefon: '', strasse: '', plz: '', ort: '', land: 'Schweiz', notizen: '',
+  })
+  const [readOnly, setReadOnly] = useState({
+    email: '', studio_code: '', status: '',
+  })
 
-  const address = [profile?.strasse, profile?.plz, profile?.ort, profile?.land]
-    .filter(Boolean)
-    .join(', ')
+  const applyProfile = (profile) => {
+    setForm({
+      firma: profile.firma ?? '',
+      telefon: profile.telefon ?? '',
+      strasse: profile.strasse ?? '',
+      plz: profile.plz ?? '',
+      ort: profile.ort ?? '',
+      land: profile.land ?? 'Schweiz',
+      notizen: profile.notizen ?? '',
+    })
+    setReadOnly({
+      email: profile.email ?? user?.email ?? '',
+      studio_code: profile.studio_code ?? '',
+      status: profile.status ?? '',
+    })
+  }
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await getStudioSettings()
+      applyProfile(res.data.data.settings.profile)
+    } catch {
+      toast.error('Profil konnte nicht geladen werden.')
+    } finally {
+      setLoading(false)
+    }
+  }, [user?.email])
+
+  useEffect(() => { load() }, [load])
+
+  const set = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))
+
+  const handleCancel = async () => {
+    try {
+      const res = await getStudioSettings()
+      applyProfile(res.data.data.settings.profile)
+    } catch {
+      // keep current form on error
+    }
+    setIsEditing(false)
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await updateStudioSettings({ profile: form })
+      await refreshProfile()
+      setIsEditing(false)
+      toast.success('Profil gespeichert.')
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
+
+  const address = [form.strasse, form.plz, form.ort, form.land].filter(Boolean).join(', ')
 
   return (
     <Section
       title="Studio-Profil"
-      desc="Kontakt- und Standortdaten des Studios. Änderungen über den Administrator."
+      desc="Kontakt- und Standortdaten des Studios."
+      canEdit={canEdit}
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      saving={saving}
+      onCancel={handleCancel}
+      onSave={handleSave}
     >
-      <InfoRow label="Firmenname"   value={profile?.firma}       />
-      <InfoRow label="E-Mail"       value={profile?.email ?? user?.email} />
-      <InfoRow label="Telefon"      value={profile?.telefon}     />
-      <InfoRow label="Adresse"      value={address}              />
-      <InfoRow label="Studio-Code"  value={profile?.studio_code} />
-      <InfoRow label="Status"       value={profile?.status}      />
+      {!canEdit && <ReadOnlyHint />}
 
-      <p className="text-studio-w3 text-[11px] m-0 -mt-2">
-        Profildaten können nur vom Elaya-Administrator bearbeitet werden.
-      </p>
+      {!isEditing ? (
+        <>
+          <InfoRow label="Firmenname" value={form.firma} />
+          <InfoRow label="Telefon" value={form.telefon} />
+          <InfoRow label="Adresse" value={address} />
+          <InfoRow label="Notizen" value={form.notizen} />
+          <div className="h-px bg-elaya-border" />
+          <InfoRow label="E-Mail" value={readOnly.email} />
+          <InfoRow label="Studio-Code" value={readOnly.studio_code} />
+          <InfoRow label="Status">
+            {readOnly.status
+              ? <Badge variant="status" value={readOnly.status}>{readOnly.status}</Badge>
+              : '—'}
+          </InfoRow>
+          <p className="text-studio-w3 text-[11px] m-0 -mt-2">
+            E-Mail, Studio-Code und Status können nur vom Elaya-Administrator geändert werden.
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input label="Firmenname" value={form.firma} onChange={set('firma')} />
+            <Input label="Telefon" value={form.telefon} onChange={set('telefon')} />
+            <Input label="Strasse" value={form.strasse} onChange={set('strasse')} />
+            <Input label="PLZ" value={form.plz} onChange={set('plz')} />
+            <Input label="Ort" value={form.ort} onChange={set('ort')} />
+            <Input label="Land" value={form.land} onChange={set('land')} />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="notizen" className="text-studio-white text-[12px] font-semibold">Notizen</label>
+            <textarea
+              id="notizen"
+              rows={3}
+              value={form.notizen}
+              onChange={set('notizen')}
+              className="w-full px-[14px] py-[10px] rounded-[10px] border-[1.5px] border-elaya-border-strong bg-studio-bg-3 text-studio-white text-[13px] outline-none focus:border-studio-gold resize-y"
+            />
+          </div>
+
+          <div className="h-px bg-elaya-border" />
+
+          <InfoRow label="E-Mail" value={readOnly.email} />
+          <InfoRow label="Studio-Code" value={readOnly.studio_code} />
+          <InfoRow label="Status">
+            {readOnly.status
+              ? <Badge variant="status" value={readOnly.status}>{readOnly.status}</Badge>
+              : '—'}
+          </InfoRow>
+        </>
+      )}
+    </Section>
+  )
+}
+
+// ── Hours tab ──────────────────────────────────────────────────────────────
+const HoursTab = () => {
+  const canEdit = useCanEditSettings()
+  const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [hours, setHours] = useState({})
+  const [pufferzeit, setPufferzeit] = useState('10')
+
+  const applySettings = (settings) => {
+    setHours(settings.oeffnungszeiten ?? {})
+    setPufferzeit(String(settings.pufferzeit_minuten ?? 10))
+  }
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await getStudioSettings()
+      applySettings(res.data.data.settings)
+    } catch {
+      toast.error('Öffnungszeiten konnten nicht geladen werden.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const setDay = (key, field, value) =>
+    setHours((prev) => ({
+      ...prev,
+      [key]: { ...prev[key], [field]: value },
+    }))
+
+  const handleCancel = async () => {
+    try {
+      const res = await getStudioSettings()
+      applySettings(res.data.data.settings)
+    } catch {
+      // keep current form on error
+    }
+    setIsEditing(false)
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const puffer = parseInt(pufferzeit, 10)
+      await updateStudioSettings({
+        oeffnungszeiten: hours,
+        pufferzeit_minuten: Number.isNaN(puffer) ? 10 : puffer,
+      })
+      setIsEditing(false)
+      toast.success('Öffnungszeiten gespeichert.')
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
+
+  return (
+    <Section
+      title="Öffnungszeiten"
+      desc="Verfügbare Tage und Zeiten für Termine."
+      canEdit={canEdit}
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      saving={saving}
+      onCancel={handleCancel}
+      onSave={handleSave}
+    >
+      {!canEdit && <ReadOnlyHint />}
+
+      {!isEditing ? (
+        <>
+          {WEEKDAYS.map(({ key, label }) => {
+            const day = hours[key] ?? { offen: true, von: '10:00', bis: '19:00' }
+            return (
+              <InfoRow
+                key={key}
+                label={label}
+                value={day.offen !== false
+                  ? formatTimeRange12(day.von ?? '10:00', day.bis ?? '19:00')
+                  : 'Geschlossen'}
+              />
+            )
+          })}
+          <div className="h-px bg-elaya-border" />
+          <InfoRow label="Pufferzeit" value={`${pufferzeit} Min.`} />
+        </>
+      ) : (
+        <>
+          <div className="flex flex-col gap-2">
+            {WEEKDAYS.map(({ key, label }) => {
+              const day = hours[key] ?? { offen: true, von: '10:00', bis: '19:00' }
+              return (
+                <div
+                  key={key}
+                  className="flex flex-wrap items-center gap-3 py-2.5 border-b border-elaya-border last:border-0"
+                >
+                  <label className="flex items-center gap-2 w-32 shrink-0 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={day.offen !== false}
+                      onChange={(e) => setDay(key, 'offen', e.target.checked)}
+                      className="accent-studio-gold"
+                    />
+                    <span className="text-studio-white text-[13px] font-medium">{label}</span>
+                  </label>
+                  <Input
+                    label="Von"
+                    type="time"
+                    value={day.von ?? '10:00'}
+                    onChange={(e) => setDay(key, 'von', e.target.value)}
+                    disabled={day.offen === false}
+                    className="max-w-[130px]"
+                  />
+                  <Input
+                    label="Bis"
+                    type="time"
+                    value={day.bis ?? '19:00'}
+                    onChange={(e) => setDay(key, 'bis', e.target.value)}
+                    disabled={day.offen === false}
+                    className="max-w-[130px]"
+                  />
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="h-px bg-elaya-border" />
+
+          <Input
+            label="Pufferzeit nach Terminen (Minuten)"
+            type="number"
+            min={0}
+            max={120}
+            step={1}
+            value={pufferzeit}
+            onChange={(e) => setPufferzeit(e.target.value)}
+            hint="Zeit zwischen aufeinanderfolgenden Terminen."
+            className="max-w-[200px]"
+          />
+        </>
+      )}
+    </Section>
+  )
+}
+
+// ── Rooms tab ──────────────────────────────────────────────────────────────
+const emptyRoom = () => ({
+  id: undefined,
+  name: '',
+  farbe: '#3B8BD4',
+  aktiv: true,
+  laser_brand: '',
+  laser_model: '',
+})
+
+const RoomsTab = () => {
+  const canEdit = useCanEditSettings()
+  const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [rooms, setRooms] = useState([])
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await getStudioSettings()
+      setRooms(res.data.data.settings.behandlungsraeume ?? [])
+    } catch {
+      toast.error('Räume konnten nicht geladen werden.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const updateRoom = (index, field, value) =>
+    setRooms((prev) => prev.map((r, i) => (i === index ? { ...r, [field]: value } : r)))
+
+  const addRoom = () => setRooms((prev) => [...prev, emptyRoom()])
+
+  const removeRoom = (index) =>
+    setRooms((prev) => prev.filter((_, i) => i !== index))
+
+  const handleCancel = async () => {
+    try {
+      const res = await getStudioSettings()
+      setRooms(res.data.data.settings.behandlungsraeume ?? [])
+    } catch {
+      // keep current form on error
+    }
+    setIsEditing(false)
+  }
+
+  const handleSave = async () => {
+    if (rooms.some((r) => !r.name?.trim())) {
+      toast.error('Jeder Raum braucht einen Namen.')
+      return
+    }
+    setSaving(true)
+    try {
+      const payload = rooms.map(({ id, name, farbe, aktiv, laser_brand, laser_model }) => ({
+        ...(id ? { id } : {}),
+        name: name.trim(),
+        farbe: farbe || '#3B8BD4',
+        aktiv: aktiv !== false,
+        laser_brand: laser_brand ?? '',
+        laser_model: laser_model ?? '',
+      }))
+      const res = await updateStudioSettings({ behandlungsraeume: payload })
+      setRooms(res.data.data.settings.behandlungsraeume ?? [])
+      setIsEditing(false)
+      toast.success('Räume gespeichert.')
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
+
+  return (
+    <Section
+      title="Räume & Geräte"
+      desc="Behandlungsräume und Laser-Geräte für Kalender und Sitzungen."
+      canEdit={canEdit}
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      saving={saving}
+      onCancel={handleCancel}
+      onSave={handleSave}
+    >
+      {!canEdit && <ReadOnlyHint />}
+
+      {rooms.length === 0 && (
+        <p className="text-studio-w3 text-[13px] m-0">Noch keine Räume angelegt.</p>
+      )}
+
+      {!isEditing ? (
+        <div className="flex flex-col gap-3">
+          {rooms.map((room) => (
+            <div
+              key={room.id}
+              className="p-4 rounded-[12px] border border-elaya-border bg-studio-bg-4 flex flex-col gap-2"
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ backgroundColor: room.farbe ?? '#3B8BD4' }}
+                />
+                <span className="text-studio-white text-[13px] font-semibold">{room.name}</span>
+                {room.aktiv === false && (
+                  <Badge variant="status" value="gesperrt">Inaktiv</Badge>
+                )}
+              </div>
+              {(room.laser_brand || room.laser_model) && (
+                <p className="text-studio-w2 text-[12px] m-0">
+                  {[room.laser_brand, room.laser_model].filter(Boolean).join(' · ')}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col gap-4">
+            {rooms.map((room, index) => (
+              <div
+                key={room.id ?? `new-${index}`}
+                className="p-4 rounded-[12px] border border-elaya-border bg-studio-bg-4 flex flex-col gap-3"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={room.farbe ?? '#3B8BD4'}
+                      onChange={(e) => updateRoom(index, 'farbe', e.target.value)}
+                      className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
+                      aria-label="Raumfarbe"
+                    />
+                    <span className="text-studio-white text-[13px] font-semibold">
+                      {room.name || `Raum ${index + 1}`}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeRoom(index)}
+                    className="p-1.5 rounded-[8px] text-studio-w2 hover:text-studio-red hover:bg-studio-red/10 border-0 bg-transparent cursor-pointer"
+                    aria-label="Raum entfernen"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input
+                    label="Name"
+                    value={room.name}
+                    onChange={(e) => updateRoom(index, 'name', e.target.value)}
+                  />
+                  <div className="flex items-end gap-2 pb-1">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={room.aktiv !== false}
+                        onChange={(e) => updateRoom(index, 'aktiv', e.target.checked)}
+                        className="accent-studio-gold"
+                      />
+                      <span className="text-studio-w2 text-[12px]">Aktiv</span>
+                    </label>
+                  </div>
+                  <Input
+                    label="Laser-Marke"
+                    value={room.laser_brand ?? ''}
+                    onChange={(e) => updateRoom(index, 'laser_brand', e.target.value)}
+                    placeholder="z. B. Candela"
+                  />
+                  <Input
+                    label="Laser-Modell"
+                    value={room.laser_model ?? ''}
+                    onChange={(e) => updateRoom(index, 'laser_model', e.target.value)}
+                    placeholder="z. B. GentleMax Pro"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Button variant="secondary" size="sm" onClick={addRoom}>
+            <Plus size={14} />
+            Raum hinzufügen
+          </Button>
+        </>
+      )}
+    </Section>
+  )
+}
+
+// ── Staff tab ──────────────────────────────────────────────────────────────
+const emptyStaff = () => ({
+  id: undefined,
+  vorname: '',
+  nachname: '',
+  rolle: 'Laser-Therapeutin',
+  raum_id: '',
+  aktiv: true,
+})
+
+const StaffTab = () => {
+  const canEdit = useCanEditSettings()
+  const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [staff, setStaff] = useState([])
+  const [rooms, setRooms] = useState([])
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await getStudioSettings()
+      const settings = res.data.data.settings
+      setStaff(settings.mitarbeiter ?? [])
+      setRooms(settings.behandlungsraeume ?? [])
+    } catch {
+      toast.error('Mitarbeiter konnten nicht geladen werden.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const roomName = (raumId) =>
+    rooms.find((r) => r.id === raumId)?.name ?? '—'
+
+  const updateMember = (index, field, value) =>
+    setStaff((prev) => prev.map((m, i) => (i === index ? { ...m, [field]: value } : m)))
+
+  const addMember = () => setStaff((prev) => [...prev, emptyStaff()])
+
+  const removeMember = (index) =>
+    setStaff((prev) => prev.filter((_, i) => i !== index))
+
+  const handleCancel = async () => {
+    try {
+      const res = await getStudioSettings()
+      const settings = res.data.data.settings
+      setStaff(settings.mitarbeiter ?? [])
+      setRooms(settings.behandlungsraeume ?? [])
+    } catch {
+      // keep current form on error
+    }
+    setIsEditing(false)
+  }
+
+  const handleSave = async () => {
+    if (staff.some((m) => !m.vorname?.trim() || !m.nachname?.trim())) {
+      toast.error('Vor- und Nachname sind Pflichtfelder.')
+      return
+    }
+    setSaving(true)
+    try {
+      const payload = staff.map(({ id, vorname, nachname, rolle, raum_id, aktiv }) => ({
+        ...(id ? { id } : {}),
+        vorname: vorname.trim(),
+        nachname: nachname.trim(),
+        rolle: rolle || 'Laser-Therapeutin',
+        raum_id: raum_id ?? '',
+        aktiv: aktiv !== false,
+      }))
+      const res = await updateStudioSettings({ mitarbeiter: payload })
+      setStaff(res.data.data.settings.mitarbeiter ?? [])
+      setIsEditing(false)
+      toast.success('Mitarbeiter gespeichert.')
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
+
+  return (
+    <Section
+      title="Mitarbeiter"
+      desc="Team-Roster für Kalender und Zuordnung. Login-Einladungen folgen in einer späteren Version."
+      canEdit={canEdit}
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      saving={saving}
+      onCancel={handleCancel}
+      onSave={handleSave}
+    >
+      {!canEdit && <ReadOnlyHint />}
+
+      {staff.length === 0 && (
+        <p className="text-studio-w3 text-[13px] m-0">Noch keine Mitarbeiter erfasst.</p>
+      )}
+
+      {!isEditing ? (
+        <div className="flex flex-col gap-3">
+          {staff.map((member) => (
+            <div
+              key={member.id}
+              className="p-4 rounded-[12px] border border-elaya-border bg-studio-bg-4 flex flex-col gap-1.5"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-studio-white text-[13px] font-semibold">
+                  {`${member.vorname} ${member.nachname}`.trim()}
+                </span>
+                {member.aktiv === false && (
+                  <Badge variant="status" value="gesperrt">Inaktiv</Badge>
+                )}
+              </div>
+              <p className="text-studio-w2 text-[12px] m-0">{member.rolle}</p>
+              {member.raum_id && (
+                <p className="text-studio-w3 text-[11px] m-0">Raum: {roomName(member.raum_id)}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          {rooms.length === 0 && (
+            <p className="text-studio-w3 text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2">
+              Tipp: Lege zuerst unter «Räume» mindestens einen Behandlungsraum an.
+            </p>
+          )}
+
+          <div className="flex flex-col gap-4">
+            {staff.map((member, index) => (
+              <div
+                key={member.id ?? `new-${index}`}
+                className="p-4 rounded-[12px] border border-elaya-border bg-studio-bg-4 flex flex-col gap-3"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-studio-white text-[13px] font-semibold">
+                    {member.vorname || member.nachname
+                      ? `${member.vorname} ${member.nachname}`.trim()
+                      : `Mitarbeiter ${index + 1}`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeMember(index)}
+                    className="p-1.5 rounded-[8px] text-studio-w2 hover:text-studio-red hover:bg-studio-red/10 border-0 bg-transparent cursor-pointer"
+                    aria-label="Mitarbeiter entfernen"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input
+                    label="Vorname"
+                    value={member.vorname}
+                    onChange={(e) => updateMember(index, 'vorname', e.target.value)}
+                  />
+                  <Input
+                    label="Nachname"
+                    value={member.nachname}
+                    onChange={(e) => updateMember(index, 'nachname', e.target.value)}
+                  />
+                  <Select
+                    label="Rolle"
+                    value={member.rolle ?? 'Laser-Therapeutin'}
+                    onChange={(e) => updateMember(index, 'rolle', e.target.value)}
+                  >
+                    {MITARBEITER_ROLLEN.map((rolle) => (
+                      <option key={rolle} value={rolle}>{rolle}</option>
+                    ))}
+                  </Select>
+                  <Select
+                    label="Raum"
+                    value={member.raum_id ?? ''}
+                    onChange={(e) => updateMember(index, 'raum_id', e.target.value)}
+                  >
+                    <option value="">— Kein Raum —</option>
+                    {rooms.filter((r) => r.aktiv !== false).map((r) => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </Select>
+                  <div className="flex items-end pb-1">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={member.aktiv !== false}
+                        onChange={(e) => updateMember(index, 'aktiv', e.target.checked)}
+                        className="accent-studio-gold"
+                      />
+                      <span className="text-studio-w2 text-[12px]">Aktiv</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Button variant="secondary" size="sm" onClick={addMember}>
+            <Plus size={14} />
+            Mitarbeiter hinzufügen
+          </Button>
+        </>
+      )}
     </Section>
   )
 }
@@ -252,7 +993,6 @@ const StudioSettings = () => {
       <PageHeader title="Einstellungen" subtitle="Studio-Konfiguration und Darstellung" />
 
       <div className="flex gap-6">
-        {/* Tab nav */}
         <nav className="flex flex-col gap-0.5 w-44 shrink-0" translate="no">
           {TABS.map(({ id, icon: Icon, label }) => (
             <button
@@ -271,9 +1011,7 @@ const StudioSettings = () => {
           ))}
         </nav>
 
-        {/* Content */}
         <div className="flex-1 flex flex-col gap-5">
-
           {activeTab === 'appearance' && (
             <Section title="Darstellung" desc="Wähle das Farbschema für das Studio-Dashboard.">
               <div className="grid grid-cols-3 gap-3">
@@ -293,31 +1031,10 @@ const StudioSettings = () => {
           )}
 
           {activeTab === 'profile' && <ProfileTab />}
-
           {activeTab === 'pricing' && <PricingTab />}
-
-          {activeTab === 'hours' && (
-            <Section title="Öffnungszeiten" desc="Verfügbare Tage und Zeiten für Termine.">
-              <ComingSoon label="Montag – Freitag" />
-              <ComingSoon label="Samstag / Sonntag" />
-              <ComingSoon label="Feiertage" />
-            </Section>
-          )}
-
-          {activeTab === 'rooms' && (
-            <Section title="Räume & Geräte" desc="Behandlungsräume und Laser-Geräte.">
-              <ComingSoon label="Räume verwalten" />
-              <ComingSoon label="Laser-Geräte" />
-            </Section>
-          )}
-
-          {activeTab === 'staff' && (
-            <Section title="Mitarbeiter" desc="Studio-Konten und Zugriffsrechte.">
-              <ComingSoon label="Mitarbeiter einladen" />
-              <ComingSoon label="Rollen verwalten" />
-            </Section>
-          )}
-
+          {activeTab === 'hours'   && <HoursTab />}
+          {activeTab === 'rooms'   && <RoomsTab />}
+          {activeTab === 'staff'   && <StaffTab />}
         </div>
       </div>
     </div>

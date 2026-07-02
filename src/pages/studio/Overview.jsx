@@ -138,7 +138,7 @@ const StudioOverview = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/studio/appointments')}
+            onClick={() => navigate('/studio/today')}
             className="text-studio-gold-2 hover:text-studio-gold-3 gap-1"
           >
             Alle ansehen <ArrowRight size={13} />

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard, Users, Calendar, BarChart2, Heart,
+  LayoutDashboard, Users, Calendar, CalendarDays, BarChart2, Heart,
   ShoppingBag, Coins, Settings, LogOut, ChevronLeft, ChevronRight,
+  FolderOpen, ClipboardList,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../ElayaLogo'
@@ -14,8 +15,11 @@ const NAV_SECTIONS = [
     label: 'STUDIO',
     items: [
       { to: '/studio/dashboard',    icon: LayoutDashboard, label: studioNav?.dashboard    ?? 'Dashboard'    },
+      { to: '/studio/appointments', icon: Calendar,        label: studioNav?.appointments ?? 'Kalender'     },
+      { to: '/studio/today',        icon: CalendarDays,    label: studioNav?.today        ?? 'Heute'        },
       { to: '/studio/customers',    icon: Users,           label: studioNav?.customers    ?? 'Kunden'       },
-      { to: '/studio/appointments', icon: Calendar,        label: studioNav?.appointments ?? 'Termine'      },
+      { to: '/studio/cases',        icon: FolderOpen,      label: studioNav?.cases        ?? 'Alle Fälle', end: true },
+      { to: '/studio/sessions',     icon: ClipboardList,   label: studioNav?.sessions     ?? 'Sitzungen', end: true },
       { to: '/studio/analytics',    icon: BarChart2,       label: studioNav?.analytics    ?? 'Analytik'     },
       { to: '/studio/crm',          icon: Heart,           label: studioNav?.crm          ?? 'Nachsorge'    },
     ],
@@ -31,9 +35,10 @@ const NAV_SECTIONS = [
 ]
 
 // ── NavItem ────────────────────────────────────────────────────────────────
-const NavItem = ({ to, icon: Icon, label, collapsed }) => (
+const NavItem = ({ to, icon: Icon, label, collapsed, end }) => (
   <NavLink
     to={to}
+    end={end}
     className={({ isActive }) =>
       `relative flex items-center py-2 rounded-[10px] text-[13px] font-medium transition-colors w-full group ${
         collapsed ? 'justify-center px-2' : 'px-3 gap-2.5'

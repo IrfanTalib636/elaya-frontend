@@ -1,13 +1,20 @@
-import { useState, useEffect, useCallback } from 'react'
-import { TrendingUp, Users, Calendar, BarChart2, AlertCircle } from 'lucide-react'
+import { AlertCircle, BarChart2, Calendar, TrendingUp, Users } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell, Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis, YAxis,
 } from 'recharts'
-import { listSessions } from '../../api/sessions'
-import { listCustomers } from '../../api/customers'
 import { listAppointments } from '../../api/appointments'
-import { Card, Spinner, PageHeader } from '../../components/ui'
+import { listCustomers } from '../../api/customers'
+import { listSessions } from '../../api/sessions'
+import { Card, PageHeader, Spinner } from '../../components/ui'
 
 // ── Formatters ─────────────────────────────────────────────────────────────
 const chfFmt = new Intl.NumberFormat('de-CH', { style: 'currency', currency: 'CHF', maximumFractionDigits: 0 })

@@ -16,10 +16,13 @@ const StudioRegister       = lazy(() => import('./pages/studio/Register'))
 const StudioForgotPassword = lazy(() => import('./pages/studio/ForgotPassword'))
 
 const StudioOverview       = lazy(() => import('./pages/studio/Overview'))
+const StudioToday          = lazy(() => import('./pages/studio/Today'))
 const StudioCustomers      = lazy(() => import('./pages/studio/Customers'))
+const StudioCases          = lazy(() => import('./pages/studio/Cases'))
 const CustomerDetail       = lazy(() => import('./pages/studio/CustomerDetail'))
 const CaseDetail           = lazy(() => import('./pages/studio/CaseDetail'))
 const StudioAppointments   = lazy(() => import('./pages/studio/Appointments'))
+const StudioSessions       = lazy(() => import('./pages/studio/Sessions'))
 const NewSession           = lazy(() => import('./pages/studio/NewSession'))
 const SessionDetail        = lazy(() => import('./pages/studio/SessionDetail'))
 const StudioAnalytics      = lazy(() => import('./pages/studio/Analytics'))
@@ -80,10 +83,13 @@ const AppInner = () => {
           >
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard"     element={<StudioOverview />} />
+            <Route path="today"         element={<StudioToday />} />
             <Route path="customers"     element={<StudioCustomers />} />
             <Route path="customers/:id" element={<CustomerDetail />} />
+            <Route path="cases"         element={<StudioCases />} />
             <Route path="cases/:id"     element={<CaseDetail />} />
             <Route path="appointments"  element={<StudioAppointments />} />
+            <Route path="sessions"      element={<StudioSessions />} />
             <Route path="sessions/new"  element={<NewSession />} />
             <Route path="sessions/:id"  element={<SessionDetail />} />
             <Route path="analytics"     element={<StudioAnalytics />} />

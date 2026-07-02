@@ -67,12 +67,10 @@ const LandingPage = () => {
             </div>
 
             {/* Studio Dashboard */}
-            <div
-              className="flex flex-col gap-3 p-5 rounded-[16px] border border-studio-gold/30 bg-studio-bg-3 text-left cursor-pointer transition-all hover:border-studio-gold/60 hover:bg-studio-bg-4"
+            <button
+              type="button"
+              className="flex flex-col gap-3 p-5 rounded-[16px] border border-studio-gold/30 bg-studio-bg-3 text-left cursor-pointer transition-all hover:border-studio-gold/60 hover:bg-studio-bg-4 w-full"
               onClick={() => navigate('/studio/login')}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => e.key === 'Enter' && navigate('/studio/login')}
             >
               <div className="w-9 h-9 rounded-[10px] bg-studio-gold/10 flex items-center justify-center shrink-0">
                 <Monitor size={16} className="text-studio-gold-2" />
@@ -84,7 +82,7 @@ const LandingPage = () => {
               <span className="flex items-center gap-1.5 text-studio-gold-2 text-[11px] font-semibold">
                 {landing.studioCta} <ArrowRight size={12} />
               </span>
-            </div>
+            </button>
 
           </div>
 

@@ -159,7 +159,7 @@ const NewSession = () => {
 
   const buildPayload = (isDraft) => {
     const wavelengths = form.wavelength_nm
-      ? form.wavelength_nm.split(',').map((n) => Number(n.trim())).filter(Boolean)
+      ? form.wavelength_nm.split(',').flatMap((n) => { const v = Number(n.trim()); return v ? [v] : [] })
       : []
 
     const hasPayment = form.zahlung_betragCHF || form.zahlung_zahlungsart

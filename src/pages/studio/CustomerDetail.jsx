@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, Plus, Pencil } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Plus, Pencil, Calendar } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCustomer, updateCustomer } from '../../api/customers'
 import { createCase } from '../../api/cases'
+import { listAppointments } from '../../api/appointments'
 import { Card, Badge, Button, Input, Spinner, PageHeader, Modal } from '../../components/ui'
 import CaseForm from '../../components/forms/CaseForm'
 
@@ -24,6 +25,21 @@ const SOURCE_LABELS = {
 const CASE_TYPE_LABELS = { tattoo: 'Tattoo', pmu: 'PMU' }
 
 const CASE_TABLE_HEADERS = ['Fall-ID', 'Bezeichnung', 'Status', 'Fortschritt', 'Letzte Sitzung', '']
+
+const APPT_TYPE_LABELS = {
+  beratung:  'Beratung',
+  treatment: 'Behandlung',
+  first:     'Erstbehandlung',
+}
+
+const APPT_STATUS_LABELS = {
+  gebucht:   'Gebucht',
+  storniert: 'Storniert',
+  cancelled: 'Abgesagt',
+  completed: 'Abgeschlossen',
+}
+
+const APPT_TABLE_HEADERS = ['Datum', 'Zeit', 'Fall', 'Art', 'Status']
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 const fmtDate = (d) =>
@@ -48,6 +64,27 @@ const SessionBar = ({ done = 0, total = 0 }) => {
       </div>
       <span className="text-studio-w3 text-[11px] shrink-0 tabular-nums">{done}/{total}</span>
     </div>
+  )
+}
+
+const ApptRow = ({ appt, onClick }) => {
+  const date = new Date(appt.date)
+  const fmtD = date.toLocaleDateString('de-CH', { day: 'numeric', month: 'short', year: 'numeric' })
+  const isPast = date < new Date()
+
+  return (
+    <tr
+      className="border-b border-elaya-border last:border-0 hover:bg-studio-bg-4 cursor-pointer transition-colors"
+      onClick={onClick}
+    >
+      <td className={`px-5 py-3 text-[12px] ${isPast ? 'text-studio-w2' : 'text-studio-white font-medium'}`}>{fmtD}</td>
+      <td className="px-5 py-3 text-studio-w1 text-[12px] font-mono">{appt.time ?? '—'}</td>
+      <td className="px-5 py-3 text-studio-gold-2 text-[12px] font-mono">{appt.case?.caseId ?? '—'}</td>
+      <td className="px-5 py-3 text-studio-w2 text-[12px]">{APPT_TYPE_LABELS[appt.type] ?? appt.type}</td>
+      <td className="px-5 py-3">
+        <Badge variant="status" value={appt.status}>{APPT_STATUS_LABELS[appt.status] ?? appt.status}</Badge>
+      </td>
+    </tr>
   )
 }
 
@@ -78,10 +115,11 @@ const CustomerDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
 
-  const [customer, setCustomer] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [pipeline, setPipeline] = useState('')
-  const [notes, setNotes] = useState('')
+  const [customer, setCustomer]     = useState(null)
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [pipeline, setPipeline]     = useState('')
+  const [notes, setNotes]           = useState('')
   const [savingPipeline, setSavingPipeline] = useState(false)
   const [savingNotes, setSavingNotes] = useState(false)
   const [showCaseModal,  setShowCaseModal]  = useState(false)
@@ -93,11 +131,16 @@ const CustomerDetail = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await getCustomer(id)
-        const c = res.data.data.customer
+        const [custRes, apptRes] = await Promise.all([
+          getCustomer(id),
+          listAppointments({ customer_id: id, limit: 100 }),
+        ])
+        const c = custRes.data.data.customer
         setCustomer(c)
         setPipeline(c.pipeline_stufe ?? '')
         setNotes(c.notizen ?? '')
+        const appts = apptRes.data.data.appointments ?? []
+        setAppointments(appts.sort((a, b) => new Date(b.date) - new Date(a.date)))
       } catch {
         toast.error('Kunde konnte nicht geladen werden.')
         navigate('/studio/customers')
@@ -291,6 +334,56 @@ const CustomerDetail = () => {
               </div>
             )}
           </Card>
+          {/* Appointments */}
+          <Card padding="none">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-elaya-border">
+              <h2 className="text-[14px] font-semibold text-studio-white m-0">
+                Termine
+                <span className="ml-2 text-studio-w3 text-[12px] font-normal">({appointments.length})</span>
+              </h2>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => navigate('/studio/appointments')}
+              >
+                <Calendar size={13} />
+                Kalender
+              </Button>
+            </div>
+
+            {appointments.length === 0 ? (
+              <div className="py-10 text-center">
+                <p className="text-studio-w2 text-[13px] m-0">Noch keine Termine vorhanden.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-elaya-border">
+                      {APPT_TABLE_HEADERS.map((h) => (
+                        <th key={h} className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {appointments.map((a) => (
+                      <ApptRow
+                        key={a.id ?? a._id}
+                        appt={a}
+                        onClick={() => {
+                          const caseId = a.case?._id ?? a.case
+                          if (caseId) navigate(`/studio/cases/${caseId}`)
+                        }}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
         </div>
 
         {/* ── Right sidebar ── */}

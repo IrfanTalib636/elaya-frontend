@@ -10,8 +10,10 @@ const Modal = ({ title, onClose, children, width = 'max-w-lg' }) => {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      role="presentation"
+      className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}
     >
       <div className={`w-full ${width} bg-studio-bg-3 border border-elaya-border rounded-[18px] shadow-2xl flex flex-col max-h-[90vh]`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-elaya-border shrink-0">

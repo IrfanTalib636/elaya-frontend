@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -6,32 +7,38 @@ import StudioShell from './components/StudioShell'
 import useTheme from './hooks/useTheme'
 import { STUDIO_ROLES, ADMIN_ROLES } from './constants/roles'
 
-import LandingPage from './pages/LandingPage'
-import NotFoundPage from './pages/NotFoundPage'
+// ── Page chunks (each becomes a separate build chunk) ──────────────────────
+const LandingPage          = lazy(() => import('./pages/LandingPage'))
+const NotFoundPage         = lazy(() => import('./pages/NotFoundPage'))
 
-// Studio auth
-import StudioLogin from './pages/studio/Login'
-import StudioRegister from './pages/studio/Register'
-import StudioForgotPassword from './pages/studio/ForgotPassword'
+const StudioLogin          = lazy(() => import('./pages/studio/Login'))
+const StudioRegister       = lazy(() => import('./pages/studio/Register'))
+const StudioForgotPassword = lazy(() => import('./pages/studio/ForgotPassword'))
 
-// Studio dashboard pages
-import StudioOverview from './pages/studio/Overview'
-import StudioCustomers from './pages/studio/Customers'
-import CustomerDetail from './pages/studio/CustomerDetail'
-import CaseDetail from './pages/studio/CaseDetail'
-import StudioAppointments from './pages/studio/Appointments'
-import NewSession from './pages/studio/NewSession'
-import SessionDetail from './pages/studio/SessionDetail'
-import StudioAnalytics from './pages/studio/Analytics'
-import StudioCrm from './pages/studio/Crm'
-import StudioShop from './pages/studio/Shop'
-import StudioElaycoins from './pages/studio/Elaycoins'
-import StudioSettings from './pages/studio/Settings'
+const StudioOverview       = lazy(() => import('./pages/studio/Overview'))
+const StudioCustomers      = lazy(() => import('./pages/studio/Customers'))
+const CustomerDetail       = lazy(() => import('./pages/studio/CustomerDetail'))
+const CaseDetail           = lazy(() => import('./pages/studio/CaseDetail'))
+const StudioAppointments   = lazy(() => import('./pages/studio/Appointments'))
+const NewSession           = lazy(() => import('./pages/studio/NewSession'))
+const SessionDetail        = lazy(() => import('./pages/studio/SessionDetail'))
+const StudioAnalytics      = lazy(() => import('./pages/studio/Analytics'))
+const StudioCrm            = lazy(() => import('./pages/studio/Crm'))
+const StudioShop           = lazy(() => import('./pages/studio/Shop'))
+const StudioElaycoins      = lazy(() => import('./pages/studio/Elaycoins'))
+const StudioSettings       = lazy(() => import('./pages/studio/Settings'))
 
-// Admin
-import AdminLogin from './pages/admin/Login'
-import AdminDashboard from './pages/admin/Dashboard'
+const AdminLogin           = lazy(() => import('./pages/admin/Login'))
+const AdminDashboard       = lazy(() => import('./pages/admin/Dashboard'))
 
+// ── Fallback shown while a chunk loads ────────────────────────────────────
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen bg-studio-bg">
+    <div className="w-8 h-8 rounded-full border-2 border-studio-gold/25 border-t-studio-gold animate-elaya-spin" />
+  </div>
+)
+
+// ── App ───────────────────────────────────────────────────────────────────
 const AppInner = () => {
   useTheme()
 
@@ -49,55 +56,57 @@ const AppInner = () => {
             fontSize: '13px',
           },
           success: { iconTheme: { primary: '#2ecc8a', secondary: 'var(--color-studio-bg-3)' } },
-          error: { iconTheme: { primary: '#e05555', secondary: 'var(--color-studio-bg-3)' } },
+          error:   { iconTheme: { primary: '#e05555', secondary: 'var(--color-studio-bg-3)' } },
         }}
       />
 
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
 
-        {/* Studio auth — guest only */}
-        <Route path="/studio/login"          element={<GuestRoute><StudioLogin /></GuestRoute>} />
-        <Route path="/studio/register"       element={<GuestRoute><StudioRegister /></GuestRoute>} />
-        <Route path="/studio/forgot-password" element={<GuestRoute><StudioForgotPassword /></GuestRoute>} />
+          {/* Studio auth — guest only */}
+          <Route path="/studio/login"           element={<GuestRoute><StudioLogin /></GuestRoute>} />
+          <Route path="/studio/register"        element={<GuestRoute><StudioRegister /></GuestRoute>} />
+          <Route path="/studio/forgot-password" element={<GuestRoute><StudioForgotPassword /></GuestRoute>} />
 
-        {/* Studio dashboard — protected layout wrapper */}
-        <Route
-          path="/studio"
-          element={
-            <ProtectedRoute allowedRoles={STUDIO_ROLES} loginPath="/studio/login">
-              <StudioShell />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard"        element={<StudioOverview />} />
-          <Route path="customers"        element={<StudioCustomers />} />
-          <Route path="customers/:id"    element={<CustomerDetail />} />
-          <Route path="cases/:id"        element={<CaseDetail />} />
-          <Route path="appointments"     element={<StudioAppointments />} />
-          <Route path="sessions/new"     element={<NewSession />} />
-          <Route path="sessions/:id"     element={<SessionDetail />} />
-          <Route path="analytics"        element={<StudioAnalytics />} />
-          <Route path="crm"              element={<StudioCrm />} />
-          <Route path="shop"             element={<StudioShop />} />
-          <Route path="elaycoins"        element={<StudioElaycoins />} />
-          <Route path="settings"         element={<StudioSettings />} />
-        </Route>
+          {/* Studio dashboard — protected */}
+          <Route
+            path="/studio"
+            element={
+              <ProtectedRoute allowedRoles={STUDIO_ROLES} loginPath="/studio/login">
+                <StudioShell />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard"     element={<StudioOverview />} />
+            <Route path="customers"     element={<StudioCustomers />} />
+            <Route path="customers/:id" element={<CustomerDetail />} />
+            <Route path="cases/:id"     element={<CaseDetail />} />
+            <Route path="appointments"  element={<StudioAppointments />} />
+            <Route path="sessions/new"  element={<NewSession />} />
+            <Route path="sessions/:id"  element={<SessionDetail />} />
+            <Route path="analytics"     element={<StudioAnalytics />} />
+            <Route path="crm"           element={<StudioCrm />} />
+            <Route path="shop"          element={<StudioShop />} />
+            <Route path="elaycoins"     element={<StudioElaycoins />} />
+            <Route path="settings"      element={<StudioSettings />} />
+          </Route>
 
-        {/* Admin */}
-        <Route path="/admin/login" element={<GuestRoute><AdminLogin /></GuestRoute>} />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={ADMIN_ROLES} loginPath="/admin/login">
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+          {/* Admin */}
+          <Route path="/admin/login" element={<GuestRoute><AdminLogin /></GuestRoute>} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={ADMIN_ROLES} loginPath="/admin/login">
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
     </>
   )
 }

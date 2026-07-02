@@ -46,14 +46,15 @@ const NavItem = ({ to, icon: Icon, label, collapsed }) => (
   >
     <Icon size={15} className="shrink-0" />
 
-    {!collapsed && <span className="truncate">{label}</span>}
+    {/* Always rendered — hidden via CSS when collapsed to avoid removeChild errors */}
+    <span className={`truncate transition-all duration-150 ${collapsed ? 'w-0 overflow-hidden opacity-0' : 'flex-1'}`}>
+      {label}
+    </span>
 
-    {/* Tooltip shown on hover when collapsed */}
-    {collapsed && (
-      <span className="pointer-events-none absolute left-full ml-2 px-2.5 py-1.5 rounded-[8px] border border-elaya-border bg-studio-bg-3 text-studio-white text-[12px] font-medium whitespace-nowrap shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-100">
-        {label}
-      </span>
-    )}
+    {/* Tooltip: always in DOM, only visible via opacity when collapsed */}
+    <span className={`pointer-events-none absolute left-full ml-2 px-2.5 py-1.5 rounded-[8px] border border-elaya-border bg-studio-bg-3 text-studio-white text-[12px] font-medium whitespace-nowrap shadow-lg transition-opacity z-100 ${collapsed ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
+      {label}
+    </span>
   </NavLink>
 )
 
@@ -90,33 +91,32 @@ const StudioLayout = ({ children }) => {
     <div className="theme-studio min-h-screen bg-studio-bg font-sans flex">
 
       {/* ── Sidebar ── */}
-      <aside className={`fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-elaya-border bg-studio-sidebar transition-[width] duration-200 ease-in-out ${collapsed ? 'w-14' : 'w-studio-sidebar'}`}>
-
+      <aside
+        translate="no"
+        className={`fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-elaya-border bg-studio-sidebar transition-[width] duration-200 ease-in-out ${collapsed ? 'w-14' : 'w-studio-sidebar'}`}
+      >
         {/* Logo + collapse toggle */}
-        <div className={`flex items-center h-[65px] border-b border-elaya-border shrink-0 ${collapsed ? 'justify-center' : 'px-5 justify-between'}`}>
-          {collapsed
-            ? <ElayaLogo size="sm" markOnly />
-            : <ElayaLogo size="sm" />
-          }
-          {!collapsed && (
-            <button
-              type="button"
-              onClick={toggleCollapse}
-              className="flex items-center justify-center w-6 h-6 rounded-[6px] text-studio-w3 hover:text-studio-white hover:bg-studio-bg-4 transition-colors cursor-pointer"
-            >
-              <ChevronLeft size={14} />
-            </button>
-          )}
+        <div className={`flex items-center h-[65px] border-b border-elaya-border shrink-0 overflow-hidden ${collapsed ? 'justify-center' : 'px-5 justify-between'}`}>
+          <ElayaLogo size="sm" markOnly={collapsed} />
+          <button
+            type="button"
+            onClick={toggleCollapse}
+            className={`flex items-center justify-center w-6 h-6 rounded-[6px] text-studio-w3 hover:text-studio-white hover:bg-studio-bg-4 transition-colors cursor-pointer shrink-0 ${collapsed ? 'hidden' : ''}`}
+          >
+            <ChevronLeft size={14} />
+          </button>
         </div>
 
         {/* Nav */}
-        <nav className={`flex-1 py-4 flex flex-col gap-4 ${collapsed ? 'px-1.5' : 'px-3 overflow-y-auto'}`}>
+        <nav className={`flex-1 py-4 flex flex-col gap-4 overflow-y-auto ${collapsed ? 'px-1.5' : 'px-3'}`}>
           {NAV_SECTIONS.map((section, i) => (
             <div key={section.label} className="flex flex-col gap-0.5">
-              {collapsed
-                ? i > 0 && <div className="h-px bg-elaya-border mx-1 mb-2" />
-                : <span className="px-3 mb-1 text-[10px] font-semibold tracking-widest text-studio-w3 uppercase">{section.label}</span>
-              }
+              {/* Section divider (collapsed) — always rendered, visibility toggled */}
+              <div className={`h-px bg-elaya-border mx-1 mb-2 ${!collapsed || i === 0 ? 'hidden' : ''}`} />
+              {/* Section label (expanded) — always rendered, visibility toggled */}
+              <span className={`px-3 mb-1 text-[10px] font-semibold tracking-widest text-studio-w3 uppercase ${collapsed ? 'hidden' : ''}`}>
+                {section.label}
+              </span>
               {section.items.map((item) => (
                 <NavItem key={item.to} {...item} collapsed={collapsed} />
               ))}
@@ -124,59 +124,42 @@ const StudioLayout = ({ children }) => {
           ))}
         </nav>
 
-        {/* User + logout */}
+        {/* User + logout — single stable DOM tree, CSS-toggled */}
         <div className={`border-t border-elaya-border py-4 flex flex-col gap-2 shrink-0 ${collapsed ? 'px-1.5 items-center' : 'px-3'}`}>
 
-          {collapsed ? (
-            <>
-              {/* Avatar only */}
-              <div className="w-8 h-8 rounded-full bg-studio-gold/20 flex items-center justify-center text-studio-gold-2 text-[11px] font-bold">
-                {initials}
-              </div>
-              {/* Logout icon */}
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="flex items-center justify-center w-8 h-8 rounded-[8px] text-studio-w2 hover:text-studio-white hover:bg-studio-bg-4 transition-colors cursor-pointer"
-              >
-                <LogOut size={14} />
-              </button>
-              {/* Expand button */}
-              <button
-                type="button"
-                onClick={toggleCollapse}
-                className="flex items-center justify-center w-8 h-8 rounded-[8px] text-studio-w3 hover:text-studio-white hover:bg-studio-bg-4 transition-colors cursor-pointer"
-              >
-                <ChevronRight size={14} />
-              </button>
-            </>
-          ) : (
-            <>
-              {/* Full user info */}
-              <div className="flex items-center gap-2.5 px-3 py-2">
-                <div className="w-7 h-7 rounded-full bg-studio-gold/20 flex items-center justify-center text-studio-gold-2 text-[11px] font-bold shrink-0">
-                  {initials}
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-studio-white text-[12px] font-semibold truncate">
-                    {studioName || user?.email || ''}
-                  </span>
-                  <span className="text-studio-w3 text-[10px] truncate">
-                    {profile?.studio_code ?? ''}
-                  </span>
-                </div>
-              </div>
-              {/* Logout */}
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="flex w-full items-center gap-2 px-3 py-2 rounded-[10px] text-studio-w2 text-[12px] font-medium cursor-pointer hover:text-studio-white hover:bg-studio-bg-4 transition-colors"
-              >
-                <LogOut size={14} className="shrink-0" />
-                {common.logout}
-              </button>
-            </>
-          )}
+          {/* Avatar — always visible */}
+          <div className={`rounded-full bg-studio-gold/20 flex items-center justify-center text-studio-gold-2 font-bold shrink-0 ${collapsed ? 'w-8 h-8 text-[11px]' : 'w-7 h-7 text-[11px]'}`}>
+            {initials}
+          </div>
+
+          {/* Studio name + code — hidden when collapsed */}
+          <div className={`flex flex-col min-w-0 px-3 ${collapsed ? 'hidden' : ''}`}>
+            <span className="text-studio-white text-[12px] font-semibold truncate">
+              {studioName || user?.email || ''}
+            </span>
+            <span className="text-studio-w3 text-[10px] truncate">
+              {profile?.studio_code ?? ''}
+            </span>
+          </div>
+
+          {/* Logout — icon-only when collapsed, full row when expanded */}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className={`flex items-center rounded-[10px] text-studio-w2 text-[12px] font-medium cursor-pointer hover:text-studio-white hover:bg-studio-bg-4 transition-colors ${collapsed ? 'justify-center w-8 h-8' : 'w-full gap-2 px-3 py-2'}`}
+          >
+            <LogOut size={14} className="shrink-0" />
+            <span className={collapsed ? 'hidden' : ''}>{common.logout}</span>
+          </button>
+
+          {/* Expand button — only visible when collapsed */}
+          <button
+            type="button"
+            onClick={toggleCollapse}
+            className={`flex items-center justify-center w-8 h-8 rounded-[8px] text-studio-w3 hover:text-studio-white hover:bg-studio-bg-4 transition-colors cursor-pointer ${collapsed ? '' : 'hidden'}`}
+          >
+            <ChevronRight size={14} />
+          </button>
         </div>
       </aside>
 

@@ -264,8 +264,8 @@ const CaseDetail = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-elaya-border">
-                      {SESSION_HEADERS.map((h, i) => (
-                        <th key={`sh-${i}`} className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap">
+                      {SESSION_HEADERS.map((h) => (
+                        <th key={h} className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap">
                           {h}
                         </th>
                       ))}
@@ -298,8 +298,8 @@ const CaseDetail = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-elaya-border">
-                      {ZONE_HEADERS.map((h, i) => (
-                        <th key={`zh-${i}`} className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap">
+                      {ZONE_HEADERS.map((h) => (
+                        <th key={h} className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap">
                           {h}
                         </th>
                       ))}

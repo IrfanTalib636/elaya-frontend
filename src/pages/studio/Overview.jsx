@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, Calendar, TrendingUp, Heart, ArrowRight } from 'lucide-react'
 import useAuthStore from '../../store/authStore'
@@ -69,6 +69,7 @@ const StudioOverview = () => {
   const [loading, setLoading] = useState(true)
   const [kpis, setKpis] = useState({ customers: 0, todayAppts: 0, weekRevenue: 0 })
   const [todayAppts, setTodayAppts] = useState([])
+  const todayLabel = useMemo(() => formatDate(new Date()), [])
 
   useEffect(() => {
     const load = async () => {
@@ -117,7 +118,7 @@ const StudioOverview = () => {
     <div className="p-6 max-w-[1100px]">
       <PageHeader
         title="Dashboard"
-        subtitle={`${studioName} · ${formatDate(new Date())}`}
+        subtitle={`${studioName} · ${todayLabel}`}
       >
         <Button size="sm" variant="secondary" onClick={() => navigate('/studio/customers')}>
           Kunden ansehen

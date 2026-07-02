@@ -1,0 +1,14 @@
+feat: Analytics, Settings pages + code quality improvements
+
+- Add Analytics page: KPI cards, recharts BarChart (6-month revenue),
+  pipeline donut chart, and period selector (month/quarter/year/all)
+- Add Settings page: Appearance tab (theme switcher), Studio-Profil tab
+  (read-only from auth store), Preise tab (editable via PATCH /config/studio)
+- Implement lazy loading for all pages via React.lazy + Suspense to reduce
+  initial bundle size and fix recharts eager-load warning
+- Fix sidebar removeChild crash: replace conditional mounts with CSS
+  hidden/visible toggling and add translate="no" to aside element
+- Fix react-doctor issues: lazy useState init, flatMap for chained
+  iterations, stable header keys, role=button to button element,
+  new Date in JSX moved to useMemo, Modal backdrop role + keyboard handler
+- Delete unused files: Dashboard.jsx, theme/admin.js, theme/studio.js, theme/index.js

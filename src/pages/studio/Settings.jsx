@@ -1018,7 +1018,10 @@ const StudioSettings = () => {
                 {THEME_OPTIONS.map((opt) => (
                   <ThemeOption
                     key={opt.value}
-                    {...opt}
+                    value={opt.value}
+                    icon={opt.icon}
+                    label={opt.label}
+                    desc={opt.desc}
                     active={preference === opt.value}
                     onSelect={setPreference}
                   />

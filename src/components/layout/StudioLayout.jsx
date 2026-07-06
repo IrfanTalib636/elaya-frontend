@@ -77,7 +77,7 @@ const StudioLayout = ({ children }) => {
   const toggleCollapse = () =>
     setCollapsed((prev) => {
       const next = !prev
-      try { localStorage.setItem('sidebar_collapsed', next ? '1' : '0') } catch {}
+      try { localStorage.setItem('sidebar_collapsed', next ? '1' : '0') } catch { /* storage unavailable */ }
       return next
     })
 
@@ -123,7 +123,14 @@ const StudioLayout = ({ children }) => {
                 {section.label}
               </span>
               {section.items.map((item) => (
-                <NavItem key={item.to} {...item} collapsed={collapsed} />
+                <NavItem
+                  key={item.to}
+                  to={item.to}
+                  icon={item.icon}
+                  label={item.label}
+                  collapsed={collapsed}
+                  end={item.end}
+                />
               ))}
             </div>
           ))}

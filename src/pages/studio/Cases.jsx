@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Search, ChevronRight, FolderOpen } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { listCases } from '../../api/cases'
-import { Card, Badge, Spinner, PageHeader, EmptyState } from '../../components/ui'
+import { Card, Badge, Spinner, PageHeader, EmptyState, Pagination } from '../../components/ui'
+import { PAGE_SIZE, SEARCH_FETCH_LIMIT } from '../../constants/pagination'
 
 const STATUS_FILTERS = [
   { value: '',                         label: 'Alle'              },
@@ -65,11 +66,17 @@ const StudioCases = () => {
   const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [page, setPage] = useState(1)
 
-  const load = useCallback(async (status) => {
+  const isSearching = search.trim().length > 0
+
+  const load = useCallback(async (status, pageNum, searching) => {
     setLoading(true)
     try {
-      const params = { limit: 100 }
+      const params = {
+        limit: searching ? SEARCH_FETCH_LIMIT : PAGE_SIZE,
+        page: searching ? 1 : pageNum,
+      }
       if (status) params.status = status
       const res = await listCases(params)
       setCases(res.data.data.cases ?? [])
@@ -81,7 +88,9 @@ const StudioCases = () => {
     }
   }, [])
 
-  useEffect(() => { load(statusFilter) }, [statusFilter, load])
+  useEffect(() => { load(statusFilter, page, isSearching) }, [statusFilter, page, isSearching, load])
+
+  useEffect(() => { setPage(1) }, [statusFilter, search])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -166,6 +175,9 @@ const StudioCases = () => {
               </tbody>
             </table>
           </div>
+          {!isSearching && (
+            <Pagination pagination={pagination} onPageChange={setPage} />
+          )}
         </Card>
       )}
     </div>

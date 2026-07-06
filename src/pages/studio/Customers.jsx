@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Search, UserPlus, Users, ChevronRight } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { listCustomers, createCustomer } from '../../api/customers'
-import { Card, Badge, Button, Spinner, PageHeader, EmptyState, Modal } from '../../components/ui'
+import { Card, Badge, Button, Spinner, PageHeader, EmptyState, Modal, Pagination } from '../../components/ui'
 import CustomerForm from '../../components/forms/CustomerForm'
+import CustomerAvatar from '../../components/CustomerAvatar'
+import { PAGE_SIZE } from '../../constants/pagination'
 
 const PIPELINE_STAGES = [
   { value: '',                  label: 'Alle'                 },
@@ -22,12 +24,6 @@ const SOURCE_LABELS = {
 
 const TABLE_HEADERS = ['Name', 'E-Mail', 'Telefon', 'Pipeline', 'Quelle', 'Fälle', '']
 
-const Avatar = ({ vorname, nachname }) => (
-  <div className="w-7 h-7 rounded-full bg-studio-gold/15 flex items-center justify-center text-studio-gold-2 text-[11px] font-bold shrink-0">
-    {vorname?.[0]}{nachname?.[0]}
-  </div>
-)
-
 const StudioCustomers = () => {
   const navigate = useNavigate()
 
@@ -36,13 +32,14 @@ const StudioCustomers = () => {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [pipelineFilter, setPipelineFilter] = useState('')
+  const [page, setPage] = useState(1)
   const [showModal, setShowModal] = useState(false)
   const [creating, setCreating] = useState(false)
 
-  const load = useCallback(async (q, stage) => {
+  const load = useCallback(async (q, stage, pageNum) => {
     setLoading(true)
     try {
-      const params = { limit: 50 }
+      const params = { limit: PAGE_SIZE, page: pageNum }
       if (q?.trim()) params.search = q.trim()
       if (stage)     params.pipeline_stufe = stage
       const res = await listCustomers(params)
@@ -56,9 +53,13 @@ const StudioCustomers = () => {
   }, [])
 
   useEffect(() => {
-    const t = setTimeout(() => load(search, pipelineFilter), search ? 350 : 0)
+    const t = setTimeout(() => load(search, pipelineFilter, page), search ? 350 : 0)
     return () => clearTimeout(t)
-  }, [search, pipelineFilter, load])
+  }, [search, pipelineFilter, page, load])
+
+  useEffect(() => {
+    setPage(1)
+  }, [search, pipelineFilter])
 
   const handleCreate = async (form) => {
     setCreating(true)
@@ -66,7 +67,7 @@ const StudioCustomers = () => {
       await createCustomer(form)
       toast.success('Kunden erfolgreich angelegt.')
       setShowModal(false)
-      load(search, pipelineFilter)
+      load(search, pipelineFilter, page)
     } catch (err) {
       toast.error(err.response?.data?.message ?? 'Fehler beim Anlegen.')
     } finally {
@@ -137,53 +138,56 @@ const StudioCustomers = () => {
             )}
           </EmptyState>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-elaya-border">
-                  {TABLE_HEADERS.map((h, i) => (
-                    <th key={`${h}-${i}`} className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {customers.map((c) => (
-                  <tr
-                    key={c._id}
-                    className="border-b border-elaya-border last:border-0 hover:bg-studio-bg-4 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/studio/customers/${c._id}`)}
-                  >
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar vorname={c.vorname} nachname={c.nachname} />
-                        <span className="text-studio-white text-[13px] font-medium">
-                          {c.vorname} {c.nachname}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-studio-w1 text-[12px]">{c.email}</td>
-                    <td className="px-5 py-3 text-studio-w1 text-[12px]">{c.telefon}</td>
-                    <td className="px-5 py-3">
-                      <Badge variant="pipeline" value={c.pipeline_stufe}>{c.pipeline_stufe}</Badge>
-                    </td>
-                    <td className="px-5 py-3">
-                      <Badge variant="source" value={c.akquise_quelle}>
-                        {SOURCE_LABELS[c.akquise_quelle] ?? c.akquise_quelle}
-                      </Badge>
-                    </td>
-                    <td className="px-5 py-3 text-studio-w2 text-[12px]">
-                      {c.offene_faelle ?? 0} offen
-                    </td>
-                    <td className="px-5 py-3 text-studio-w3">
-                      <ChevronRight size={14} />
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-elaya-border">
+                    {TABLE_HEADERS.map((h, i) => (
+                      <th key={`${h}-${i}`} className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {customers.map((c) => (
+                    <tr
+                      key={c._id}
+                      className="border-b border-elaya-border last:border-0 hover:bg-studio-bg-4 cursor-pointer transition-colors"
+                      onClick={() => navigate(`/studio/customers/${c._id}`)}
+                    >
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <CustomerAvatar vorname={c.vorname} nachname={c.nachname} />
+                          <span className="text-studio-white text-[13px] font-medium">
+                            {c.vorname} {c.nachname}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3 text-studio-w1 text-[12px]">{c.email}</td>
+                      <td className="px-5 py-3 text-studio-w1 text-[12px]">{c.telefon}</td>
+                      <td className="px-5 py-3">
+                        <Badge variant="pipeline" value={c.pipeline_stufe}>{c.pipeline_stufe}</Badge>
+                      </td>
+                      <td className="px-5 py-3">
+                        <Badge variant="source" value={c.akquise_quelle}>
+                          {SOURCE_LABELS[c.akquise_quelle] ?? c.akquise_quelle}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-3 text-studio-w2 text-[12px]">
+                        {c.offene_faelle ?? 0} offen
+                      </td>
+                      <td className="px-5 py-3 text-studio-w3">
+                        <ChevronRight size={14} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination pagination={pagination} onPageChange={setPage} />
+          </>
         )}
       </Card>
 

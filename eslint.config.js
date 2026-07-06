@@ -17,5 +17,9 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Data-fetch-on-mount via useEffect is intentional across list pages.
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Search, ChevronRight, ClipboardList } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { listSessions } from '../../api/sessions'
-import { Card, Spinner, PageHeader, EmptyState } from '../../components/ui'
+import { Card, Spinner, PageHeader, EmptyState, Pagination } from '../../components/ui'
+import { PAGE_SIZE, SEARCH_FETCH_LIMIT } from '../../constants/pagination'
 
 const DRAFT_FILTERS = [
   { value: '',      label: 'Alle'          },
@@ -64,11 +65,17 @@ const StudioSessions = () => {
   const [loading, setLoading]       = useState(true)
   const [search, setSearch]         = useState('')
   const [draftFilter, setDraftFilter] = useState('')
+  const [page, setPage] = useState(1)
 
-  const load = useCallback(async (draft) => {
+  const isSearching = search.trim().length > 0
+
+  const load = useCallback(async (draft, pageNum, searching) => {
     setLoading(true)
     try {
-      const params = { limit: 100 }
+      const params = {
+        limit: searching ? SEARCH_FETCH_LIMIT : PAGE_SIZE,
+        page: searching ? 1 : pageNum,
+      }
       if (draft) params.is_draft = draft
       const res = await listSessions(params)
       setSessions(res.data.data.sessions ?? [])
@@ -80,7 +87,9 @@ const StudioSessions = () => {
     }
   }, [])
 
-  useEffect(() => { load(draftFilter) }, [draftFilter, load])
+  useEffect(() => { load(draftFilter, page, isSearching) }, [draftFilter, page, isSearching, load])
+
+  useEffect(() => { setPage(1) }, [draftFilter, search])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -165,6 +174,9 @@ const StudioSessions = () => {
               </tbody>
             </table>
           </div>
+          {!isSearching && (
+            <Pagination pagination={pagination} onPageChange={setPage} />
+          )}
         </Card>
       )}
     </div>

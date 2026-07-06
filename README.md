@@ -6,7 +6,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 **Stack:** React 19 · Vite 8 · React Router 7 · Tailwind CSS v4 · Zustand · Axios · React Hot Toast · Lucide React  
 **Design source:** `inkderm-prototype/` (colors, layout, nav structure)  
 **API:** Connects to [Elaya Backend API](../backend/README.md) at `/api/v1`  
-**Last updated:** 2026-07-03
+**Last updated:** 2026-07-06
 
 ---
 
@@ -29,30 +29,30 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | **Reusable UI components** | ✅ Done | Button, Input, Select, Badge, Card, Spinner, Modal, PageHeader, EmptyState |
 | **StudioLayout** | ✅ Done | Collapsible sidebar — icon-only mode, hover tooltips, localStorage persist |
 
-### Milestone 2 — Studio Dashboard (~75% complete per client doc)
+### Milestone 2 — Studio Dashboard (**complete**)
 
 | Area | Status | Notes |
 |---|---|---|
 | **Dashboard (Overview)** | ✅ Done | KPI cards + today's appointments table |
 | **Heute (`/studio/today`)** | ✅ Done | Today's appointments table, links to case detail |
-| **Customers list** | ✅ Done | Search (debounced), pipeline filter, create modal |
+| **Customers list** | ✅ Done | Search (debounced), pipeline filter, create modal, pagination |
 | **Customer Detail** | ✅ Done | Info card + edit modal, cases + appointments tables, pipeline stage, notes |
-| **Alle Fälle (`/studio/cases`)** | ✅ Done | Search + status filter, all cases list |
+| **Alle Fälle (`/studio/cases`)** | ✅ Done | Search + status filter, pagination |
 | **Case Detail** | ✅ Done | Anamnesis view, sessions log, status sidebar, progress bar, zones view |
-| **Sitzungen (`/studio/sessions`)** | ✅ Done | Search + draft filter, all sessions list |
+| **Sitzungen (`/studio/sessions`)** | ✅ Done | Search + draft filter, pagination |
 | **New Session form** | ✅ Done | Laser params, sliders, payment, draft / finalize |
 | **Session Detail** | ✅ Done | Read-only view; finalize draft button |
 | **Appointments calendar** | ✅ Done | Week grid, time slots, book modal, current-time line |
-| **Analytics** | ⚠️ Partial | Revenue KPIs, bar chart, pipeline donut, period tabs — **coin stats, shop, fees pending** |
-| **Settings** | ✅ Done | Theme; pricing (`/config/studio`); profile, hours, rooms, staff (`/studio/settings`); view/edit UX |
-| **CRM (`/studio/crm`)** | ❌ Pending | Placeholder — Phase 1 (pipeline kanban) next |
-| **Shop (`/studio/shop`)** | ❌ Pending | Placeholder — needs backend shop orders API |
-| **Elaycoins page** | ⏳ Placeholder | Nav stub only |
+| **Analytics** | ✅ Done | Revenue KPIs, charts, pipeline donut, revenue by source, platform fee, shop provision, coins, netto |
+| **Settings** | ✅ Done | Theme; pricing; profile, hours, rooms, staff |
+| **CRM (`/studio/crm`)** | ✅ Done | Pipeline + list + Aufgaben, notes, tasks, templates |
+| **Shop (`/studio/shop`)** | ✅ Done | Order list, shipping status, pagination |
+| **Elaycoins page** | ✅ Done | Studio coin overview (read-only) |
 | **Customer web portal** | ❌ Out of scope | Mobile app only (M3) |
 
-**Core workflow complete:** customers → cases → appointments → sessions → analytics → settings.
+**Core workflow complete:** customers → cases → appointments → sessions → analytics → CRM → shop → settings.
 
-**Remaining for M2 sign-off:** CRM pipeline page, Shop orders page, Analytics coin/shop/fee KPIs.
+**M2 sign-off:** Studio dashboard feature-complete for M2 scope.
 
 ### Changelog
 
@@ -72,6 +72,9 @@ Customer experience is **mobile-only** (separate project); the landing page link
 [2026-07-02] — Today, Cases, Sessions list pages; Overview link to Heute
 [2026-07-03] — Settings fully wired (profile, hours, rooms, staff); view/edit pattern; studio API client
 [2026-07-03] — authStore.refreshProfile(); opening hours AM/PM display in settings view mode
+[2026-07-06] — M2 complete: CRM (pipeline, tasks, notes, templates), Shop, Elaycoins pages
+[2026-07-06] — Analytics: single summary API call; shop/elaycoins optimistic pagination UX
+[2026-07-06] — Shared Pagination component; list pagination on Customers, Cases, Sessions, CRM
 ```
 
 ---
@@ -95,9 +98,9 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | `/studio/sessions/:id` | Studio roles | Session detail |
 | `/studio/appointments` | Studio roles | Week-grid calendar + booking |
 | `/studio/analytics` | Studio roles | Revenue KPIs + charts |
-| `/studio/crm` | Studio roles | CRM / Nachsorge (placeholder) |
-| `/studio/shop` | Studio roles | Avora Shop (placeholder) |
-| `/studio/elaycoins` | Studio roles | Elaycoins (placeholder) |
+| `/studio/crm` | Studio roles | CRM lead pipeline (kanban + list) |
+| `/studio/shop` | Studio roles | ElayShop orders + shipping status |
+| `/studio/elaycoins` | Studio roles | Customer coin balances (read-only) |
 | `/studio/settings` | Studio roles | Settings — theme, pricing, profile, hours, rooms, staff |
 | `/admin/login` | Guest only | Admin login |
 | `/admin` | Admin roles | Admin dashboard shell |
@@ -121,7 +124,11 @@ frontend/
 │   │   ├── appointments.js      # list, create, get, update
 │   │   ├── sessions.js          # list, create, get, update
 │   │   ├── config.js            # studio pricing / platform config
-│   │   └── studio.js            # studio settings (profile, hours, rooms, staff)
+│   │   ├── studio.js            # studio settings (profile, hours, rooms, staff)
+│   │   ├── crm.js               # pipeline, tasks, notes, templates
+│   │   ├── shop.js              # shop orders + status
+│   │   ├── analytics.js         # studio analytics summary
+│   │   └── elaycoins.js         # studio coin overview
 │   ├── components/
 │   │   ├── layout/
 │   │   │   ├── StudioLayout.jsx # Sidebar + main (studio theme)
@@ -146,7 +153,7 @@ frontend/
 │   │   │   ├── Overview.jsx, Today.jsx, Customers.jsx, CustomerDetail.jsx
 │   │   │   ├── Cases.jsx, CaseDetail.jsx, Sessions.jsx, NewSession.jsx, SessionDetail.jsx
 │   │   │   ├── Appointments.jsx, Analytics.jsx, Settings.jsx
-│   │   │   ├── Crm.jsx, Shop.jsx, Elaycoins.jsx  # CRM/Shop/Elaycoins placeholders
+│   │   │   ├── Crm.jsx, Shop.jsx, Elaycoins.jsx
 │   │   │   └── Login.jsx, Register.jsx, ForgotPassword.jsx
 │   │   └── admin/
 │   │       ├── Login.jsx
@@ -249,21 +256,13 @@ Static hosting (Vercel, Netlify, Cloudflare Pages, etc.):
 
 ---
 
-## Planned next (M2 remaining)
+## Planned next (M3+)
 
-- **CRM Phase 1** — pipeline kanban + list, auto `pipeline_stufe` (backend + `/studio/crm`)
-- **Shop** — order list + shipping status (backend `shop_orders` API + `/studio/shop`)
-- **Analytics** — Elaycoin KPIs, shop provision/history, transaction fees
-- Settings: full pricing multipliers UI (post-M2 polish)
-- Elaycoins studio page (balance overview for studio customers)
-- Case detail: appointments tab, zone management UI (polish)
-
-## Planned later (M3+)
-
-- Customer web portal (M3 — mobile track)
-- Admin dashboard pages (M4 — studio approval, finance, feature flags, …)
+- Customer mobile app
+- Admin dashboard pages (M4 — studio approval, finance, ElayShop catalog, …)
 - Forgot / reset password (when backend route exists)
 - 18+ age validation on customer creation (Swiss law)
+- Image upload / file storage layer
 
 ---
 

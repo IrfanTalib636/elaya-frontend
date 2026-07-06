@@ -151,7 +151,7 @@ const ApptBlock = memo(({ appt, onClick }) => {
 })
 
 // ── DayCol ─────────────────────────────────────────────────────────────────
-const DayCol = memo(({ dateISO, date, isToday, appointments, onApptClick, onCellClick }) => {
+const DayCol = memo(({ dateISO, isToday, appointments, onApptClick, onCellClick }) => {
   const handleClick = useCallback((e) => {
     const rect = e.currentTarget.getBoundingClientRect()
     onCellClick(dateISO, snapTime(e.clientY - rect.top))
@@ -446,11 +446,10 @@ const StudioAppointments = () => {
             </div>
 
             {/* Day columns */}
-            {weekDays.map(({ date, iso }) => (
+            {weekDays.map(({ iso }) => (
               <DayCol
                 key={iso}
                 dateISO={iso}
-                date={date}
                 isToday={iso === todayISO}
                 appointments={apptsByDay[iso] ?? []}
                 onApptClick={handleApptClick}

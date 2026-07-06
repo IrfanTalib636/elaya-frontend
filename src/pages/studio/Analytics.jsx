@@ -11,9 +11,8 @@ import {
   Tooltip,
   XAxis, YAxis,
 } from 'recharts'
-import { listAppointments } from '../../api/appointments'
-import { listCustomers } from '../../api/customers'
-import { listSessions } from '../../api/sessions'
+import { getAnalyticsSummary } from '../../api/analytics'
+import { PIPELINE_STAGES } from '../../constants/pipeline'
 import { Card, PageHeader, Spinner } from '../../components/ui'
 
 // ── Formatters ─────────────────────────────────────────────────────────────
@@ -21,14 +20,10 @@ const chfFmt = new Intl.NumberFormat('de-CH', { style: 'currency', currency: 'CH
 const fmtCHF = (n) => chfFmt.format(n ?? 0)
 const fmtPct = (n, total) => (total > 0 ? `${Math.round((n / total) * 100)}%` : '—')
 
-const MONTHS_DE = ['Jan', 'Feb', 'März', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
-
-const PIPELINE_STAGES = [
-  { value: 'Neu',               label: 'Neu',               color: '#4a9aff' },
-  { value: 'Beratung geplant',  label: 'Beratung geplant',  color: '#f0a030' },
-  { value: 'Behandlung aktiv',  label: 'Behandlung aktiv',  color: '#2ecc8a' },
-  { value: 'Beratung erledigt', label: 'Beratung erledigt', color: '#80b8ff' },
-]
+const PIPELINE_CHART = PIPELINE_STAGES.map((s, i) => ({
+  ...s,
+  color: ['#4a9aff', '#f0a030', '#2ecc8a', '#80b8ff'][i],
+}))
 
 const PERIODS = [
   { id: 'month',   label: 'Dieser Monat' },
@@ -36,6 +31,12 @@ const PERIODS = [
   { id: 'year',    label: 'Dieses Jahr'   },
   { id: 'all',     label: 'Gesamt'        },
 ]
+
+const AKQUISE_META = {
+  studio_eigen:         { label: 'Studio-Eigen', icon: '🟢', fee: false },
+  plattform_vermittelt: { label: 'Plattform',    icon: '🔵', fee: true  },
+  studio_wechsel:       { label: 'Wechsel',      icon: '🟠', fee: true  },
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const toISO = (d) =>
@@ -48,15 +49,6 @@ const getRange = (period) => {
   if (period === 'quarter') return { from: toISO(new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())), to: today }
   if (period === 'year')    return { from: toISO(new Date(now.getFullYear(), 0, 1)), to: today }
   return { from: null, to: null }
-}
-
-const buildChartMonths = () => {
-  const now = new Date()
-  return Array.from({ length: 6 }, (_, i) => {
-    const d    = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
-    const last = new Date(d.getFullYear(), d.getMonth() + 1, 0)
-    return { label: MONTHS_DE[d.getMonth()], from: toISO(d), to: toISO(last), revenue: 0 }
-  })
 }
 
 // ── Custom tooltip for BarChart ────────────────────────────────────────────
@@ -99,91 +91,45 @@ const KpiCard = ({ icon: Icon, label, value, sub, color = 'text-studio-gold-2' }
 
 // ── Page ───────────────────────────────────────────────────────────────────
 const StudioAnalytics = () => {
-  const [period, setPeriod]           = useState('month')
-  const [loading, setLoading]         = useState(true)
-  const [chartLoading, setChartLoading] = useState(true)
+  const [period, setPeriod] = useState('month')
+  const [loading, setLoading] = useState(true)
+  const [summary, setSummary] = useState(null)
 
-  const [stats, setStats] = useState({
-    revenue:        0,
-    sessionsDone:   0,
-    noShows:        0,
-    totalCustomers: 0,
-    pipeline:       {},
-    apptTotal:      0,
-    apptCancelled:  0,
-  })
-
-  const [chartData, setChartData] = useState(() => buildChartMonths())
-
-  // ── Period data ────────────────────────────────────────────────────────
-  const loadPeriod = useCallback(async (p) => {
+  const load = useCallback(async (p) => {
     setLoading(true)
     try {
       const { from, to } = getRange(p)
-      const params        = { is_draft: 'false', limit: 100 }
-      if (from) { params.from = from; params.to = to }
-
-      const [sessRes, custRes, apptRes, apptCancelRes, ...pipelineRes] = await Promise.all([
-        listSessions(params),
-        listCustomers({ limit: 1 }),
-        listAppointments({ ...(from ? { from, to } : {}), limit: 1 }),
-        listAppointments({ ...(from ? { from, to } : {}), status: 'storniert', limit: 1 }),
-        ...PIPELINE_STAGES.map((s) => listCustomers({ pipeline_stufe: s.value, limit: 1 })),
-      ])
-
-      const sessions     = sessRes.data.data.sessions ?? []
-      const revenue      = sessions.filter((s) => !s.is_no_show).reduce((sum, s) => sum + (s.zahlung?.betragCHF ?? 0), 0)
-      const sessionsDone = sessions.filter((s) => !s.is_no_show).length
-      const noShows      = sessions.filter((s) => s.is_no_show).length
-
-      const pipeline = {}
-      PIPELINE_STAGES.forEach((s, i) => {
-        pipeline[s.value] = pipelineRes[i].data.data.pagination.total
-      })
-
-      setStats({
-        revenue,
-        sessionsDone,
-        noShows,
-        totalCustomers: custRes.data.data.pagination.total,
-        pipeline,
-        apptTotal:     apptRes.data.data.pagination.total,
-        apptCancelled: apptCancelRes.data.data.pagination.total,
-      })
+      const params = {}
+      if (from) {
+        params.from = from
+        params.to = to
+      }
+      const res = await getAnalyticsSummary(params)
+      setSummary(res.data.data)
     } catch {
-      // silent — stats keep previous values
+      setSummary(null)
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // ── Chart data (last 6 months, loaded once on mount) ──────────────────
-  const loadChart = useCallback(async () => {
-    setChartLoading(true)
-    try {
-      const months    = buildChartMonths()
-      const revenues  = await Promise.all(
-        months.map((m) =>
-          listSessions({ from: m.from, to: m.to, is_draft: 'false', limit: 100 })
-            .then((r) => {
-              const sessions = r.data.data.sessions ?? []
-              return sessions.filter((s) => !s.is_no_show).reduce((sum, s) => sum + (s.zahlung?.betragCHF ?? 0), 0)
-            })
-            .catch(() => 0)
-        )
-      )
-      setChartData(months.map((m, i) => ({ label: m.label, revenue: revenues[i] })))
-    } finally {
-      setChartLoading(false)
-    }
-  }, [])
+  useEffect(() => { load(period) }, [period, load])
 
-  useEffect(() => { loadPeriod(period) }, [period, loadPeriod])
-  useEffect(() => { loadChart() },        [loadChart])
+  const stats = {
+    revenue: summary?.treatment?.revenue ?? 0,
+    sessionsDone: summary?.treatment?.session_count ?? 0,
+    noShows: summary?.dashboard?.no_show_count ?? 0,
+    totalCustomers: summary?.dashboard?.total_customers ?? 0,
+    pipeline: summary?.dashboard?.pipeline_counts ?? {},
+    apptTotal: summary?.dashboard?.appointments?.total ?? 0,
+    apptCancelled: summary?.dashboard?.appointments?.cancelled ?? 0,
+  }
+
+  const chartData = summary?.chart_months ?? []
 
   const avgPerSession = stats.sessionsDone > 0 ? stats.revenue / stats.sessionsDone : 0
 
-  const pieData = PIPELINE_STAGES.flatMap((s) => {
+  const pieData = PIPELINE_CHART.flatMap((s) => {
     const count = stats.pipeline[s.value] ?? 0
     return count > 0 ? [{ name: s.label, value: count, count, color: s.color }] : []
   })
@@ -254,7 +200,7 @@ const StudioAnalytics = () => {
                   <h2 className="text-[14px] font-semibold text-studio-white m-0">Umsatz – letzte 6 Monate</h2>
                   <p className="text-studio-w3 text-[11px] m-0 mt-0.5">Abgeschlossene Sitzungen</p>
                 </div>
-                {chartLoading && <Spinner size="sm" />}
+                {chartData.length === 0 && loading && <Spinner size="sm" />}
               </div>
               <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={chartData} barSize={28} margin={{ top: 4, right: 4, bottom: 0, left: 8 }}>
@@ -332,7 +278,7 @@ const StudioAnalytics = () => {
           </div>
 
           {/* ── Summary row ── */}
-          <Card>
+          <Card className="mb-5">
             <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-4">Sitzungen – Übersicht</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
               {[
@@ -348,6 +294,107 @@ const StudioAnalytics = () => {
               ))}
             </div>
           </Card>
+
+          {/* ── M2: Revenue by source, fees, shop, coins ── */}
+          {summary && (
+            <>
+              <Card className="mb-5">
+                <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-1">Umsatz nach Herkunft</h2>
+                <p className="text-studio-w3 text-[11px] m-0 mb-4">Behandlungsumsatz ohne No-Shows</p>
+                <div className="bg-studio-gold/10 border border-studio-gold/20 rounded-[12px] p-4 mb-4">
+                  <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">Gesamt-Behandlungsumsatz</p>
+                  <p className="text-studio-gold-2 text-[24px] font-bold m-0 mt-1 tabular-nums">
+                    {fmtCHF(summary.treatment?.revenue)}
+                  </p>
+                  <p className="text-studio-w4 text-[10px] m-0 mt-1">{summary.treatment?.session_count ?? 0} Sitzung(en)</p>
+                </div>
+                {Object.entries(AKQUISE_META).map(([key, meta]) => {
+                  const row = summary.treatment?.by_akquise?.[key] ?? { umsatz: 0, count: 0 }
+                  const fee = meta.fee ? row.umsatz * ((summary.platform_fee?.percent ?? 3) / 100) : 0
+                  return (
+                    <div key={key} className="flex justify-between items-center py-2.5 border-b border-elaya-border last:border-0">
+                      <div className="flex items-center gap-2">
+                        <span>{meta.icon}</span>
+                        <div>
+                          <p className="text-studio-w1 text-[12px] font-semibold m-0">{meta.label}</p>
+                          <p className="text-studio-w4 text-[10px] m-0">
+                            {row.count} Sitzung(en)
+                            {meta.fee && row.umsatz > 0 && ` · ${summary.platform_fee?.percent}% Gebühr: ${fmtCHF(fee)}`}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-studio-gold-2 text-[13px] font-bold font-mono tabular-nums">{fmtCHF(row.umsatz)}</span>
+                    </div>
+                  )
+                })}
+              </Card>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+                <Card>
+                  <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-1">Shop-Provision</h2>
+                  <p className="text-studio-w3 text-[11px] m-0 mb-4">
+                    {summary.shop?.provision_percent ?? 25}% auf ElayShop-Käufe
+                  </p>
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="text-center p-3 rounded-[10px] bg-studio-bg-4">
+                      <p className="text-[18px] font-bold text-studio-white m-0">{summary.shop?.order_count ?? 0}</p>
+                      <p className="text-studio-w4 text-[10px] m-0 mt-1">Bestellungen</p>
+                    </div>
+                    <div className="text-center p-3 rounded-[10px] bg-studio-bg-4">
+                      <p className="text-[16px] font-bold text-studio-teal-2 m-0 tabular-nums">{fmtCHF(summary.shop?.revenue)}</p>
+                      <p className="text-studio-w4 text-[10px] m-0 mt-1">Shop-Umsatz</p>
+                    </div>
+                    <div className="text-center p-3 rounded-[10px] bg-studio-gold/10">
+                      <p className="text-[16px] font-bold text-studio-gold-2 m-0 tabular-nums">{fmtCHF(summary.shop?.provision_total)}</p>
+                      <p className="text-studio-gold-2 text-[10px] m-0 mt-1">Provision</p>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card>
+                  <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-1">Elaycoins</h2>
+                  <p className="text-studio-w3 text-[11px] m-0 mb-4">Übersicht im gewählten Zeitraum</p>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-studio-w2 text-[12px]">Coins gesamt (Studio)</span>
+                      <span className="text-studio-gold-2 font-bold tabular-nums">{summary.coins?.total_balance ?? 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-studio-w2 text-[12px]">Kunden mit Guthaben</span>
+                      <span className="text-studio-white font-semibold tabular-nums">{summary.coins?.customers_with_balance ?? 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-studio-w2 text-[12px]">Vergeben im Zeitraum</span>
+                      <span className="text-elaya-success font-semibold tabular-nums">+{summary.coins?.rewarded_in_period ?? 0}</span>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              <Card className="border border-studio-teal-2/20">
+                <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-1">Netto-Übersicht (ca.)</h2>
+                <p className="text-studio-w3 text-[11px] m-0 mb-4">Grobe Rechnung für den gewählten Zeitraum</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between py-1.5 border-b border-elaya-border">
+                    <span className="text-studio-w2 text-[12px]">Behandlungsumsatz</span>
+                    <span className="text-studio-white font-semibold font-mono tabular-nums">{fmtCHF(summary.treatment?.revenue)}</span>
+                  </div>
+                  <div className="flex justify-between py-1.5 border-b border-elaya-border">
+                    <span className="text-studio-w2 text-[12px]">− Plattform-Gebühr ({summary.platform_fee?.percent ?? 3}%)</span>
+                    <span className="text-studio-red font-semibold font-mono tabular-nums">− {fmtCHF(summary.platform_fee?.amount)}</span>
+                  </div>
+                  <div className="flex justify-between py-1.5 border-b border-elaya-border">
+                    <span className="text-studio-w2 text-[12px]">+ Shop-Provision</span>
+                    <span className="text-elaya-success font-semibold font-mono tabular-nums">+ {fmtCHF(summary.shop?.provision_total)}</span>
+                  </div>
+                  <div className="flex justify-between pt-3 mt-1 border-t-2 border-elaya-border">
+                    <span className="text-studio-white font-bold text-[13px]">Netto (ca.)</span>
+                    <span className="text-studio-teal-2 text-[18px] font-bold font-mono tabular-nums">{fmtCHF(summary.netto_approx)}</span>
+                  </div>
+                </div>
+              </Card>
+            </>
+          )}
         </>
       )}
     </div>

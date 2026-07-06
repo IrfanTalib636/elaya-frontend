@@ -11,8 +11,6 @@ const fmtDate = (d) =>
 
 const fmtCHF = (n) => (n != null && n > 0 ? `CHF ${Number(n).toFixed(2)}` : '—')
 
-const pct = (n) => (n != null ? `${n} %` : '—')
-
 const PAYMENT_LABELS = { bar: 'Bar', karte: 'Karte', twint: 'TWINT' }
 
 // ── Sub-components ────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import { createCase } from '../../api/cases'
 import { listAppointments } from '../../api/appointments'
 import { Card, Badge, Button, Input, Spinner, PageHeader, Modal } from '../../components/ui'
 import CaseForm from '../../components/forms/CaseForm'
+import CustomerAvatar from '../../components/CustomerAvatar'
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const PIPELINE_STAGES = [
@@ -231,7 +232,6 @@ const CustomerDetail = () => {
   if (!customer) return null
 
   const fullName   = `${customer.vorname} ${customer.nachname}`
-  const initials   = `${customer.vorname?.[0] ?? ''}${customer.nachname?.[0] ?? ''}`.toUpperCase()
   const address    = [customer.strasse, customer.plz, customer.ort, customer.land].filter(Boolean).join(', ')
   const caseCount  = customer.cases?.length ?? 0
 
@@ -262,10 +262,8 @@ const CustomerDetail = () => {
           {/* Personal info */}
           <Card>
             <div className="flex items-center justify-between mb-5 pb-5 border-b border-elaya-border">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-studio-gold/15 flex items-center justify-center text-studio-gold-2 text-[18px] font-bold shrink-0">
-                  {initials}
-                </div>
+              <div className="flex items-center gap-4" translate="no">
+                <CustomerAvatar vorname={customer.vorname} nachname={customer.nachname} size="lg" />
                 <div>
                   <p className="text-studio-white text-[16px] font-bold m-0">{fullName}</p>
                   <p className="text-studio-w3 text-[12px] m-0 mt-0.5">

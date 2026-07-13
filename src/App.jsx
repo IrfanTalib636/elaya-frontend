@@ -14,6 +14,7 @@ const NotFoundPage         = lazy(() => import('./pages/NotFoundPage'))
 const StudioLogin          = lazy(() => import('./pages/studio/Login'))
 const StudioRegister       = lazy(() => import('./pages/studio/Register'))
 const StudioForgotPassword = lazy(() => import('./pages/studio/ForgotPassword'))
+const StudioResetPassword  = lazy(() => import('./pages/studio/ResetPassword'))
 
 const StudioOverview       = lazy(() => import('./pages/studio/Overview'))
 const StudioToday          = lazy(() => import('./pages/studio/Today'))
@@ -32,6 +33,8 @@ const StudioElaycoins      = lazy(() => import('./pages/studio/Elaycoins'))
 const StudioSettings       = lazy(() => import('./pages/studio/Settings'))
 
 const AdminLogin           = lazy(() => import('./pages/admin/Login'))
+const AdminForgotPassword  = lazy(() => import('./pages/admin/ForgotPassword'))
+const AdminResetPassword   = lazy(() => import('./pages/admin/ResetPassword'))
 const AdminDashboard       = lazy(() => import('./pages/admin/Dashboard'))
 
 // ── Fallback shown while a chunk loads ────────────────────────────────────
@@ -71,6 +74,7 @@ const AppInner = () => {
           <Route path="/studio/login"           element={<GuestRoute><StudioLogin /></GuestRoute>} />
           <Route path="/studio/register"        element={<GuestRoute><StudioRegister /></GuestRoute>} />
           <Route path="/studio/forgot-password" element={<GuestRoute><StudioForgotPassword /></GuestRoute>} />
+          <Route path="/studio/reset-password"  element={<GuestRoute><StudioResetPassword /></GuestRoute>} />
 
           {/* Studio dashboard — protected */}
           <Route
@@ -99,8 +103,12 @@ const AppInner = () => {
             <Route path="settings"      element={<StudioSettings />} />
           </Route>
 
-          {/* Admin */}
-          <Route path="/admin/login" element={<GuestRoute><AdminLogin /></GuestRoute>} />
+          {/* Admin auth — guest only */}
+          <Route path="/admin/login"           element={<GuestRoute><AdminLogin /></GuestRoute>} />
+          <Route path="/admin/forgot-password" element={<GuestRoute><AdminForgotPassword /></GuestRoute>} />
+          <Route path="/admin/reset-password"  element={<GuestRoute><AdminResetPassword /></GuestRoute>} />
+
+          {/* Admin dashboard — protected */}
           <Route
             path="/admin"
             element={

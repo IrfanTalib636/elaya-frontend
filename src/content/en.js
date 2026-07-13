@@ -25,6 +25,10 @@ export const common = {
   passwordMismatch: 'Passwords do not match',
   passwordMinLength: 'Password must be at least 8 characters',
   serverError: 'Server error. Please try again later.',
+  sendResetLink: 'Send reset link',
+  newPassword: 'New password',
+  resetPassword: 'Reset password',
+  backToLogin: 'Back to login',
 }
 
 export const toast = {
@@ -33,6 +37,9 @@ export const toast = {
   logoutSuccess: 'Logged out successfully',
   wrongPortal: 'This account does not have access to this portal.',
   serverError: 'Server error. Please try again later.',
+  forgotPasswordSent: 'If an account exists, you will receive an email shortly.',
+  resetPasswordSuccess: 'Password reset successfully. You can now log in.',
+  invalidResetToken: 'This link is invalid or expired. Please request a new one.',
 }
 
 export const landing = {
@@ -69,11 +76,19 @@ export const studioAuth = {
   registerButton: 'Register Studio',
   registerPrompt: "Don't have a studio account?",
   loginPrompt: 'Already have an account?',
+  forgotTitle: 'Forgot Password',
+  forgotSubtitle: 'Enter your email — we will send you a reset link.',
+  resetTitle: 'New Password',
+  resetSubtitle: 'Choose a new password for your studio account.',
 }
 
 export const adminAuth = {
   loginTitle: 'Admin Login',
   loginSubtitle: 'Platform management',
+  forgotTitle: 'Forgot Password',
+  forgotSubtitle: 'Enter your admin email — we will send you a reset link.',
+  resetTitle: 'New Password',
+  resetSubtitle: 'Choose a new password for your admin account.',
 }
 
 export const notFound = {

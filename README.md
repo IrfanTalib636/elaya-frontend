@@ -6,7 +6,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 **Stack:** React 19 · Vite 8 · React Router 7 · Tailwind CSS v4 · Zustand · Axios · React Hot Toast · Lucide React  
 **Design source:** `inkderm-prototype/` (colors, layout, nav structure)  
 **API:** Connects to [Elaya Backend API](../backend/README.md) at `/api/v1`  
-**Last updated:** 2026-07-06
+**Last updated:** 2026-07-13
 
 ---
 
@@ -20,8 +20,11 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | **Routing** | ✅ Done | React Router — public, protected, guest, nested, 404 |
 | **Studio auth — login** | ✅ Done | Wired to `POST /auth/login` + `GET /auth/me` |
 | **Studio auth — register** | ✅ Done | Wired to `POST /auth/register/studio` |
-| **Studio auth — forgot password** | ⏳ Placeholder | No backend route yet |
+| **Studio auth — forgot password** | ✅ Done | Wired to `POST /auth/forgot-password` (portal: studio) |
+| **Studio auth — reset password** | ✅ Done | `/studio/reset-password?token=…` → `POST /auth/reset-password` |
 | **Admin auth — login** | ✅ Done | Shared login endpoint; role check for admin roles |
+| **Admin auth — forgot password** | ✅ Done | `/admin/forgot-password` (portal: admin) |
+| **Admin auth — reset password** | ✅ Done | `/admin/reset-password?token=…` |
 | **Auth state (Zustand)** | ✅ Done | Persisted session; login / logout |
 | **Token auto-refresh** | ✅ Done | Axios interceptor — silent retry on 401 via HttpOnly cookie |
 | **Route guards** | ✅ Done | `ProtectedRoute` + `GuestRoute` |
@@ -29,7 +32,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | **Reusable UI components** | ✅ Done | Button, Input, Select, Badge, Card, Spinner, Modal, PageHeader, EmptyState |
 | **StudioLayout** | ✅ Done | Collapsible sidebar — icon-only mode, hover tooltips, localStorage persist |
 
-### Milestone 2 — Studio Dashboard (**complete**)
+### Milestone 2 — Studio Dashboard (complete + close-out)
 
 | Area | Status | Notes |
 |---|---|---|
@@ -38,11 +41,11 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | **Customers list** | ✅ Done | Search (debounced), pipeline filter, create modal, pagination |
 | **Customer Detail** | ✅ Done | Info card + edit modal, cases + appointments tables, pipeline stage, notes |
 | **Alle Fälle (`/studio/cases`)** | ✅ Done | Search + status filter, pagination |
-| **Case Detail** | ✅ Done | Anamnesis view, sessions log, status sidebar, progress bar, zones view |
+| **Case Detail** | ✅ Done | Tattoo intake, medical anamnesis wizard, sessions log, pricing + lockout panels |
 | **Sitzungen (`/studio/sessions`)** | ✅ Done | Search + draft filter, pagination |
 | **New Session form** | ✅ Done | Laser params, sliders, payment, draft / finalize |
 | **Session Detail** | ✅ Done | Read-only view; finalize draft button |
-| **Appointments calendar** | ✅ Done | Week grid, time slots, book modal, current-time line |
+| **Appointments calendar** | ✅ Done | Week grid, lockout-aware booking, pre-session UV/meds check |
 | **Analytics** | ✅ Done | Revenue KPIs, charts, pipeline donut, revenue by source, platform fee, shop provision, coins, netto |
 | **Settings** | ✅ Done | Theme; pricing; profile, hours, rooms, staff |
 | **CRM (`/studio/crm`)** | ✅ Done | Pipeline + list + Aufgaben, notes, tasks, templates |
@@ -50,9 +53,20 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | **Elaycoins page** | ✅ Done | Studio coin overview (read-only) |
 | **Customer web portal** | ❌ Out of scope | Mobile app only (M3) |
 
-**Core workflow complete:** customers → cases → appointments → sessions → analytics → CRM → shop → settings.
+**Core workflow complete:** customers → cases → appointments (with lockout rules) → sessions → analytics → CRM → shop → settings.
 
-**M2 sign-off:** Studio dashboard feature-complete for M2 scope.
+**M2 close-out (2026-07-11 — 2026-07-13):**
+
+| Area | Status | Notes |
+|---|---|---|
+| **Medical anamnesis** | ✅ Done | 19-question wizard, ampel badge, `CaseAnamnesisPanel` on case detail |
+| **Lockout / availability UI** | ✅ Done | `CaseAvailabilityPanel` — Frühestens, sperren list, book link |
+| **Pricing on case detail** | ✅ Done | `CasePricingPanel` — CHF estimate from pricing engine |
+| **Smart booking UX** | ✅ Done | Appointments modal — earliest date, blocked dates, German errors |
+| **Pre-session check** | ✅ Done | UV + medications in booking modal; live availability refresh |
+| **Financier demo verified** | ✅ Done | 49-day, 28-day cross-case, Beratung bypass, meds (Retinoide), recalc after booking |
+
+**M2 sign-off:** Studio dashboard + financier demo lockout flow verified locally.
 
 ### Changelog
 
@@ -75,6 +89,11 @@ Customer experience is **mobile-only** (separate project); the landing page link
 [2026-07-06] — M2 complete: CRM (pipeline, tasks, notes, templates), Shop, Elaycoins pages
 [2026-07-06] — Analytics: single summary API call; shop/elaycoins optimistic pagination UX
 [2026-07-06] — Shared Pagination component; list pagination on Customers, Cases, Sessions, CRM
+[2026-07-11] — Studio + admin forgot/reset password pages; auth API wired (portal studio/admin)
+[2026-07-11] — Medical anamnesis wizard + panel on case detail (ampel traffic-light)
+[2026-07-11] — Case detail: availability + pricing panels; customer name in header
+[2026-07-11] — Appointments: lockout-aware booking, pre-session UV/meds, German lockout errors
+[2026-07-13] — Financier demo lockout flow re-verified end-to-end
 ```
 
 ---
@@ -86,7 +105,8 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | `/` | Public | Landing — portal selector |
 | `/studio/login` | Guest only | Studio login |
 | `/studio/register` | Guest only | Studio registration |
-| `/studio/forgot-password` | Guest only | Placeholder (not implemented) |
+| `/studio/forgot-password` | Guest only | Forgot password (studio) |
+| `/studio/reset-password` | Guest only | Reset password (studio) |
 | `/studio/dashboard` | Studio roles | Overview — KPIs + today's appointments |
 | `/studio/today` | Studio roles | Today's appointments |
 | `/studio/customers` | Studio roles | Customer list |
@@ -103,6 +123,8 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | `/studio/elaycoins` | Studio roles | Customer coin balances (read-only) |
 | `/studio/settings` | Studio roles | Settings — theme, pricing, profile, hours, rooms, staff |
 | `/admin/login` | Guest only | Admin login |
+| `/admin/forgot-password` | Guest only | Forgot password (admin) |
+| `/admin/reset-password` | Guest only | Reset password (admin) |
 | `/admin` | Admin roles | Admin dashboard shell |
 | `*` | Public | 404 Not Found |
 
@@ -118,9 +140,10 @@ frontend/
 ├── public/
 ├── src/
 │   ├── api/
-│   │   ├── auth.js              # login, registerStudio, getMe, refresh, logout
+│   │   ├── auth.js              # login, registerStudio, forgot/reset password, getMe, refresh, logout
+│   │   ├── anamnesis.js         # getCaseAnamnesis, upsertCaseAnamnesis
 │   │   ├── customers.js         # list, create, get, update
-│   │   ├── cases.js             # list, create, get, update, pricing
+│   │   ├── cases.js             # list, create, get, update, availability, pricing
 │   │   ├── appointments.js      # list, create, get, update
 │   │   ├── sessions.js          # list, create, get, update
 │   │   ├── config.js            # studio pricing / platform config
@@ -133,6 +156,13 @@ frontend/
 │   │   ├── layout/
 │   │   │   ├── StudioLayout.jsx # Sidebar + main (studio theme)
 │   │   │   └── AdminLayout.jsx  # Sidebar + main (admin theme)
+│   │   ├── anamnesis/
+│   │   │   ├── CaseAnamnesisPanel.jsx
+│   │   │   └── AnamnesisWizardModal.jsx
+│   │   ├── case/
+│   │   │   ├── CaseAvailabilityPanel.jsx
+│   │   │   ├── CasePricingPanel.jsx
+│   │   │   └── PreSessionCheck.jsx
 │   │   ├── GuestRoute.jsx       # Blocks auth pages when logged in
 │   │   └── ProtectedRoute.jsx   # Requires auth + allowed role
 │   ├── constants/
@@ -154,9 +184,9 @@ frontend/
 │   │   │   ├── Cases.jsx, CaseDetail.jsx, Sessions.jsx, NewSession.jsx, SessionDetail.jsx
 │   │   │   ├── Appointments.jsx, Analytics.jsx, Settings.jsx
 │   │   │   ├── Crm.jsx, Shop.jsx, Elaycoins.jsx
-│   │   │   └── Login.jsx, Register.jsx, ForgotPassword.jsx
+│   │   │   └── Login.jsx, Register.jsx, ForgotPassword.jsx, ResetPassword.jsx
 │   │   └── admin/
-│   │       ├── Login.jsx
+│   │       ├── Login.jsx, ForgotPassword.jsx, ResetPassword.jsx
 │   │       └── Dashboard.jsx
 │   ├── store/
 │   │   └── authStore.js         # Zustand — session persist (no Provider needed)
@@ -259,8 +289,7 @@ Static hosting (Vercel, Netlify, Cloudflare Pages, etc.):
 ## Planned next (M3+)
 
 - Customer mobile app
-- Admin dashboard pages (M4 — studio approval, finance, ElayShop catalog, …)
-- Forgot / reset password (when backend route exists)
+- Admin dashboard pages (M4 — studio approval UI, finance, ElayShop catalog, …)
 - 18+ age validation on customer creation (Swiss law)
 - Image upload / file storage layer
 

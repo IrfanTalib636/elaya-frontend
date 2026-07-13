@@ -19,3 +19,15 @@ const formatTime12 = (time24) => {
 
 export const formatTimeRange12 = (von, bis) =>
   `${formatTime12(von)} – ${formatTime12(bis)}`
+
+/** ISO date (YYYY-MM-DD) → e.g. "8. Oktober 2026" */
+export const fmtDateDeLong = (iso) => {
+  if (!iso) return '—'
+  const d = new Date(`${iso.split('T')[0]}T12:00:00`)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleDateString('de-CH', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}

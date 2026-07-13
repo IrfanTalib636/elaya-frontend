@@ -25,6 +25,10 @@ export const common = {
   passwordMismatch: 'Passwörter stimmen nicht überein',
   passwordMinLength: 'Passwort muss mindestens 8 Zeichen haben',
   serverError: 'Serverfehler. Bitte versuche es später erneut.',
+  sendResetLink: 'Link senden',
+  newPassword: 'Neues Passwort',
+  resetPassword: 'Passwort zurücksetzen',
+  backToLogin: 'Zurück zur Anmeldung',
 }
 
 export const toast = {
@@ -33,6 +37,9 @@ export const toast = {
   logoutSuccess: 'Erfolgreich abgemeldet',
   wrongPortal: 'Dieses Konto hat keinen Zugang zu diesem Portal.',
   serverError: 'Serverfehler. Bitte versuche es später erneut.',
+  forgotPasswordSent: 'Falls ein Konto existiert, erhalten Sie in Kürze eine E-Mail.',
+  resetPasswordSuccess: 'Passwort erfolgreich zurückgesetzt. Sie können sich jetzt anmelden.',
+  invalidResetToken: 'Der Link ist ungültig oder abgelaufen. Bitte fordern Sie einen neuen an.',
 }
 
 export const landing = {
@@ -69,11 +76,19 @@ export const studioAuth = {
   registerButton: 'Studio Registrieren',
   registerPrompt: 'Noch kein Studio-Konto?',
   loginPrompt: 'Bereits ein Konto?',
+  forgotTitle: 'Passwort Vergessen',
+  forgotSubtitle: 'Geben Sie Ihre E-Mail ein — wir senden Ihnen einen Link zum Zurücksetzen.',
+  resetTitle: 'Neues Passwort',
+  resetSubtitle: 'Wählen Sie ein neues Passwort für Ihr Studio-Konto.',
 }
 
 export const adminAuth = {
   loginTitle: 'Admin-Anmeldung',
   loginSubtitle: 'Plattform-Verwaltung',
+  forgotTitle: 'Passwort Vergessen',
+  forgotSubtitle: 'Geben Sie Ihre Admin-E-Mail ein — wir senden Ihnen einen Link zum Zurücksetzen.',
+  resetTitle: 'Neues Passwort',
+  resetSubtitle: 'Wählen Sie ein neues Passwort für Ihr Admin-Konto.',
 }
 
 export const notFound = {

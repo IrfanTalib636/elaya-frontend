@@ -7,3 +7,7 @@ export const listCases           = (params = {})    => api.get('/cases', { param
 export const getCase             = (id)             => api.get(`/cases/${id}`)
 
 export const updateCase          = (id, data)       => api.patch(`/cases/${id}`, data)
+
+export const getCaseAvailability = (id, params = {}) => api.get(`/cases/${id}/availability`, { params })
+
+export const getCasePricing      = (id)             => api.get(`/cases/${id}/pricing`)

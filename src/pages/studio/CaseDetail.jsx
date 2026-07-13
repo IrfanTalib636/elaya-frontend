@@ -4,12 +4,15 @@ import { ArrowLeft, Plus, ChevronRight, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCase, updateCase } from '../../api/cases'
 import { listSessions } from '../../api/sessions'
+import CaseAvailabilityPanel from '../../components/case/CaseAvailabilityPanel'
+import CasePricingPanel from '../../components/case/CasePricingPanel'
+import CaseAnamnesisPanel from '../../components/anamnesis/CaseAnamnesisPanel'
 import { Card, Badge, Button, Spinner, PageHeader } from '../../components/ui'
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const CASE_TYPE_LABELS  = { tattoo: 'Tattoo', pmu: 'PMU' }
 const TC_TYPE_LABELS    = { amateur: 'Amateur', cosmetic: 'Kosmetisch', professional: 'Professionell', coverup: 'Cover-up' }
-const GOAL_LABELS       = { complete_removal: 'Vollständige Entfernung', lightening: 'Aufhellen', coverup_prep: 'Cover-up Vorbereitung' }
+const GOAL_LABELS       = { complete_removal: 'Vollständige Entfernung', full: 'Vollständige Entfernung', lightening: 'Aufhellen', coverup_prep: 'Cover-up Vorbereitung' }
 const COVERUP_LABELS    = { none: 'Kein Cover-up', once: 'Einmal', multiple: 'Mehrfach' }
 
 const CASE_STATUSES = [
@@ -29,6 +32,15 @@ const fmtDate = (d) =>
 const fmtCHF = (n) => (n != null ? `CHF ${Number(n).toFixed(2)}` : '—')
 
 const pct = (n) => (n != null ? `${n} %` : '—')
+
+const customerId = (customer) =>
+  typeof customer === 'object' && customer?.id ? customer.id : customer
+
+const customerName = (customer) => {
+  if (!customer || typeof customer !== 'object') return null
+  const name = `${customer.vorname ?? ''} ${customer.nachname ?? ''}`.trim()
+  return name || customer.email || null
+}
 
 // ── Sub-components ────────────────────────────────────────────────────────
 const InfoRow = ({ label, value }) => (
@@ -162,21 +174,27 @@ const CaseDetail = () => {
   const caseTitle = caseData.tc_title || CASE_TYPE_LABELS[caseData.type] || caseData.type
   const hasSessions = sessions.length > 0
   const hasZones = caseData.zonen_aktiv && caseData.zonen?.length > 0
+  const custId = customerId(caseData.customer)
+  const custName = customerName(caseData.customer)
+  const headerSubtitle = [caseData.caseId, custName].filter(Boolean).join(' · ')
 
   return (
     <div className="p-6 max-w-[1100px]">
       {/* Back */}
       <button
         type="button"
-        onClick={() => navigate(`/studio/customers/${caseData.customer}`)}
+        onClick={() => navigate(custId ? `/studio/customers/${custId}` : -1)}
         className="flex items-center gap-1.5 text-studio-w2 text-[12px] mb-5 hover:text-studio-white transition-colors cursor-pointer bg-transparent border-0"
       >
         <ArrowLeft size={13} />
-        Zum Kunden
+        {custName ? `Zum Kunden · ${custName}` : 'Zurück'}
       </button>
 
-      <PageHeader title={caseTitle} subtitle={caseData.caseId}>
+      <PageHeader title={caseTitle} subtitle={headerSubtitle}>
         <Badge variant="status" value={caseData.status}>{caseData.status}</Badge>
+        <Button size="sm" variant="secondary" onClick={() => navigate(`/studio/appointments?case_id=${id}&customer_id=${custId}&book=1`)}>
+          Termin buchen
+        </Button>
         <Button size="sm" onClick={() => navigate(`/studio/sessions/new?case_id=${id}`)}>
           <Plus size={13} />
           Neue Sitzung
@@ -208,10 +226,10 @@ const CaseDetail = () => {
         {/* ── Left column ── */}
         <div className="flex flex-col gap-5 flex-1 min-w-0">
 
-          {/* Anamnesis */}
+          {/* Tattoo intake */}
           <Card>
             <h2 className="text-[13px] font-semibold text-studio-white m-0 mb-4 pb-3 border-b border-elaya-border">
-              Tätowierungs-Anamnese
+              Tattoo-Angaben
             </h2>
             <div className="grid grid-cols-2 gap-x-8 gap-y-4">
               <InfoRow label="Typ"            value={CASE_TYPE_LABELS[caseData.type] ?? caseData.type} />
@@ -226,7 +244,13 @@ const CaseDetail = () => {
                 }
               />
               <InfoRow label="Alter (Jahre)"  value={caseData.tc_age_years != null ? `${caseData.tc_age_years} J.` : null} />
-              <InfoRow label="Farben"         value={caseData.tc_colors_present ? 'Ja' : 'Nein'} />
+              <InfoRow label="Farben"
+                value={
+                  Array.isArray(caseData.tc_colors_present) && caseData.tc_colors_present.length
+                    ? caseData.tc_colors_present.join(', ')
+                    : caseData.tc_colors_present ? 'Ja' : 'Nein'
+                }
+              />
               <InfoRow label="Fitzpatrick"    value={caseData.skin_fitzpatrick ? `Typ ${caseData.skin_fitzpatrick}` : null} />
             </div>
 
@@ -241,6 +265,9 @@ const CaseDetail = () => {
               )}
             </div>
           </Card>
+
+          {/* Medical anamnesis */}
+          <CaseAnamnesisPanel caseId={id} />
 
           {/* Sessions log */}
           <Card padding="none">
@@ -351,12 +378,18 @@ const CaseDetail = () => {
             </Button>
           </Card>
 
-          {/* Lockout info */}
+          {/* Pricing from rules engine */}
+          <CasePricingPanel caseId={id} />
+
+          {/* Lockout / availability from rules engine */}
+          <CaseAvailabilityPanel caseId={id} customerId={custId} />
+
+          {/* Legacy UV / med dates on case record */}
           {(caseData.uvBlockDate || caseData.medicationBlockDate) && (
             <Card className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <AlertCircle size={13} className="text-elaya-warning shrink-0" />
-                <h3 className="text-[13px] font-semibold text-studio-white m-0">Sperren</h3>
+                <h3 className="text-[13px] font-semibold text-studio-white m-0">Fall-Sperren (Daten)</h3>
               </div>
               {caseData.uvBlockDate && (
                 <InfoRow label="UV-Sperre bis" value={fmtDate(caseData.uvBlockDate)} />

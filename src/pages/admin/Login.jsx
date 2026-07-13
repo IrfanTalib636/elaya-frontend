@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../../components/ElayaLogo'
 import { adminAuth, common, toast as toastMessages } from '../../content'
@@ -104,7 +104,18 @@ const AdminLogin = () => {
             />
           </Field>
 
-          <Field label={common.password}>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-admin-ivory text-[11px] font-semibold tracking-wide">
+                {common.password}
+              </label>
+              <Link
+                to="/admin/forgot-password"
+                className="text-admin-dim text-[11px] hover:text-admin-ivory transition-colors no-underline"
+              >
+                {common.forgotPassword}
+              </Link>
+            </div>
             <Input
               name="password"
               type="password"
@@ -113,7 +124,7 @@ const AdminLogin = () => {
               onChange={handleChange}
               placeholder="••••••••"
             />
-          </Field>
+          </div>
 
           {error && <p className="text-admin-carmine text-[12px] m-0">{error}</p>}
 

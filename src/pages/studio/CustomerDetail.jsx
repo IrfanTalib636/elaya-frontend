@@ -445,7 +445,7 @@ const CustomerDetail = () => {
       </div>
 
       {showCaseModal && (
-        <Modal title="Neuen Fall anlegen" onClose={() => setShowCaseModal(false)} width="max-w-2xl">
+        <Modal title="Neuen Fall anlegen" onClose={() => setShowCaseModal(false)} width="max-w-3xl">
           <CaseForm
             onSubmit={handleCreateCase}
             loading={creatingCase}

@@ -12,7 +12,7 @@ import { Card, Badge, Button, Spinner, PageHeader } from '../../components/ui'
 // ── Constants ─────────────────────────────────────────────────────────────
 const CASE_TYPE_LABELS  = { tattoo: 'Tattoo', pmu: 'PMU' }
 const TC_TYPE_LABELS    = { amateur: 'Amateur', cosmetic: 'Kosmetisch', professional: 'Professionell', coverup: 'Cover-up' }
-const GOAL_LABELS       = { complete_removal: 'Vollständige Entfernung', full: 'Vollständige Entfernung', lightening: 'Aufhellen', coverup_prep: 'Cover-up Vorbereitung' }
+const GOAL_LABELS       = { full_removal: 'Vollständige Entfernung', full: 'Vollständige Entfernung', partial_fade: 'Teilweises Aufhellen', lightening_for_coverup: 'Aufhellen für Cover-up' }
 const COVERUP_LABELS    = { none: 'Kein Cover-up', once: 'Einmal', multiple: 'Mehrfach' }
 
 const CASE_STATUSES = [

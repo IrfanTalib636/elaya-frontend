@@ -6,7 +6,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 **Stack:** React 19 · Vite 8 · React Router 7 · Tailwind CSS v4 · Zustand · Axios · React Hot Toast · Lucide React  
 **Design source:** `inkderm-prototype/` (colors, layout, nav structure)  
 **API:** Connects to [Elaya Backend API](../backend/README.md) at `/api/v1`  
-**Last updated:** 2026-07-13
+**Last updated:** 2026-07-14
 
 ---
 
@@ -39,7 +39,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | **Dashboard (Overview)** | ✅ Done | KPI cards + today's appointments table |
 | **Heute (`/studio/today`)** | ✅ Done | Today's appointments table, links to case detail |
 | **Customers list** | ✅ Done | Search (debounced), pipeline filter, create modal, pagination |
-| **Customer Detail** | ✅ Done | Info card + edit modal, cases + appointments tables, pipeline stage, notes |
+| **Customer Detail** | ✅ Done | Info card + edit modal, **8-step case wizard**, cases + appointments tables, pipeline stage, notes |
 | **Alle Fälle (`/studio/cases`)** | ✅ Done | Search + status filter, pagination |
 | **Case Detail** | ✅ Done | Tattoo intake, medical anamnesis wizard, sessions log, pricing + lockout panels |
 | **Sitzungen (`/studio/sessions`)** | ✅ Done | Search + draft filter, pagination |
@@ -68,6 +68,26 @@ Customer experience is **mobile-only** (separate project); the landing page link
 
 **M2 sign-off:** Studio dashboard + financier demo lockout flow verified locally.
 
+### Milestone 2.5 — Case intake wizard (2026-07-14)
+
+| Area | Status | Notes |
+|---|---|---|
+| **8-step case wizard** | ✅ Done | Customer Detail → Neuer Fall — aligned with mobile prototype TC_01–TC_06 + KI + review |
+| **TC_01 Basics** | ✅ Done | Type, title, body region, age, tattoo type, cover-up, prior treatment, zone mode |
+| **TC_02 Properties** | ✅ Done | Colors, density/saturation/shading/linework, size cm² — or 2–8 zones |
+| **TC_03 Skin** | ✅ Done | Fitzpatrick, hyperpig/keloid risk, sun exposure |
+| **TC_04 Lifestyle** | ✅ Done | Smoker, alcohol, activity, sleep, stress, BMI-related fields |
+| **TC_05 Goal** | ✅ Done | Full removal / partial fade / lightening + notes |
+| **TC_06 Photos** | ⚠️ Placeholder | Skip UI — upload API not built yet |
+| **Step 7 — KI / pricing** | ✅ Done | `POST /cases/pricing/preview` — sessions + CHF estimate before save |
+| **Step 8 — Review** | ✅ Done | Summary + Fall anlegen → case detail (anamnese there) |
+| **PMU shortcut** | ✅ Done | Single-step basics form (full PMU wizard later) |
+| **Selected-option UI** | ✅ Done | High-contrast chip / goal-card / color swatch states |
+
+**Wizard docs:** [`docs/CASE-WIZARD-TEST-DATA.md`](../docs/CASE-WIZARD-TEST-DATA.md) · [`docs/CUSTOMER-CASE-INTAKE-SPEC.md`](../docs/CUSTOMER-CASE-INTAKE-SPEC.md)
+
+**Still TBD (M3+):** intake photo upload (TC_06), real photo AI, Merkblatt PDF + signature in wizard
+
 ### Changelog
 
 ```
@@ -94,6 +114,8 @@ Customer experience is **mobile-only** (separate project); the landing page link
 [2026-07-11] — Case detail: availability + pricing panels; customer name in header
 [2026-07-11] — Appointments: lockout-aware booking, pre-session UV/meds, German lockout errors
 [2026-07-13] — Financier demo lockout flow re-verified end-to-end
+[2026-07-14] — Customer Detail: 8-step case intake wizard (TC_01–TC_06 + KI pricing preview + review)
+[2026-07-14] — CaseForm: brighter selected states; previewCasePricing API wired for wizard step 7
 ```
 
 ---
@@ -143,7 +165,7 @@ frontend/
 │   │   ├── auth.js              # login, registerStudio, forgot/reset password, getMe, refresh, logout
 │   │   ├── anamnesis.js         # getCaseAnamnesis, upsertCaseAnamnesis
 │   │   ├── customers.js         # list, create, get, update
-│   │   ├── cases.js             # list, create, get, update, availability, pricing
+│   │   ├── cases.js             # list, create, get, update, availability, pricing, previewCasePricing
 │   │   ├── appointments.js      # list, create, get, update
 │   │   ├── sessions.js          # list, create, get, update
 │   │   ├── config.js            # studio pricing / platform config
@@ -159,6 +181,9 @@ frontend/
 │   │   ├── anamnesis/
 │   │   │   ├── CaseAnamnesisPanel.jsx
 │   │   │   └── AnamnesisWizardModal.jsx
+│   │   ├── forms/
+│   │   │   ├── CaseForm.jsx           # 8-step intake wizard
+│   │   │   └── CaseWizardProgress.jsx
 │   │   ├── case/
 │   │   │   ├── CaseAvailabilityPanel.jsx
 │   │   │   ├── CasePricingPanel.jsx
@@ -167,6 +192,7 @@ frontend/
 │   │   └── ProtectedRoute.jsx   # Requires auth + allowed role
 │   ├── constants/
 │   │   ├── roles.js             # STUDIO_ROLES, ADMIN_ROLES
+│   │   ├── caseIntake.js        # Wizard steps, enums, initial form state
 │   │   └── studio.js            # WEEKDAYS, MITARBEITER_ROLLEN
 │   ├── content/
 │   │   ├── de.js                # German UI strings
@@ -288,14 +314,19 @@ Static hosting (Vercel, Netlify, Cloudflare Pages, etc.):
 
 ## Planned next (M3+)
 
-- Customer mobile app
+- Customer mobile app (same intake API — see `docs/MOBILE-APP-DEVELOPER.md`)
 - Admin dashboard pages (M4 — studio approval UI, finance, ElayShop catalog, …)
+- **TC_06 photo upload** — intake + zone photos (backend storage + wizard UI)
+- **Real KI** — optional photo analysis after legal consent (Phase B); today pricing is rule-based
+- Merkblatt PDF + signature flow (TC_08–09)
 - 18+ age validation on customer creation (Swiss law)
-- Image upload / file storage layer
 
 ---
 
 ## Related
 
-- Backend API docs: [backend/README.md](../backend/README.md)
+- Backend API docs: [backend/README.md](../backend/README.md) — Swagger UI at `/api/v1/docs` when enabled
+- Case intake spec: [docs/CUSTOMER-CASE-INTAKE-SPEC.md](../docs/CUSTOMER-CASE-INTAKE-SPEC.md)
+- Wizard test data: [docs/CASE-WIZARD-TEST-DATA.md](../docs/CASE-WIZARD-TEST-DATA.md)
+- Mobile developer guide: [docs/MOBILE-APP-DEVELOPER.md](../docs/MOBILE-APP-DEVELOPER.md)
 - Client spec & prototype notes: [inkderm-prototype/DEVELOPER-HANDOFF.md](../inkderm-prototype/DEVELOPER-HANDOFF.md)

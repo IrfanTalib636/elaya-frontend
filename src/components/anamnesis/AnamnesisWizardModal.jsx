@@ -6,6 +6,7 @@ import { Modal, Button } from '../ui'
 import {
   EMPTY_ANAMNESIS,
   computeAmpel,
+  computeInlineHints,
   isAnamnesisComplete,
   pickAnamnesisAnswers,
   AMPEL_LABELS,
@@ -43,10 +44,21 @@ const Opt = ({ active, onClick, children }) => (
   </button>
 )
 
-const Question = ({ num, label, children }) => (
+const Question = ({ num, label, children, hint }) => (
   <div className="rounded-[12px] border border-elaya-border bg-studio-bg-4 p-4 flex flex-col gap-3">
     <p className="text-studio-white text-[13px] font-semibold m-0">{num}. {label}</p>
     {children}
+    {hint && (
+      <div
+        className={`rounded-[10px] border px-3 py-2 text-[11px] leading-relaxed ${
+          hint.level === 'orange'
+            ? 'border-studio-gold/30 bg-studio-gold/8 text-studio-gold'
+            : 'border-studio-red/25 bg-studio-red/8 text-studio-red'
+        }`}
+      >
+        {hint.text}
+      </div>
+    )}
   </div>
 )
 
@@ -84,6 +96,7 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
   }
 
   const ampel = computeAmpel(form)
+  const { hintsByKey, has_ko_flags } = computeInlineHints(form)
   const ampelMeta = AMPEL_LABELS[ampel.ampel_status]
 
   const steps = ['Haut', 'Gesundheit I', 'Gesundheit II', 'Abschluss', 'Zusammenfassung']
@@ -141,7 +154,7 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
         {step === 0 && (
           <div className="flex flex-col gap-4">
             <SectionTitle>Abschnitt 1 — Hauterkrankungen</SectionTitle>
-            <Question num={1} label="Haben Sie Hauterkrankungen? (Mehrfachauswahl)">
+            <Question num={1} label="Haben Sie Hauterkrankungen? (Mehrfachauswahl)" hint={hintsByKey.hauterkrankungen}>
               <div className="flex flex-wrap gap-2">
                 {HAUT_OPTIONS.map(([v, l]) => (
                   <Opt key={v} active={(form.hauterkrankungen || []).includes(v)} onClick={() => toggleMulti('hauterkrankungen', v)}>
@@ -158,7 +171,7 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
                 />
               )}
             </Question>
-            <Question num={2} label="Pigmentstörungen oder helle/dunkle Flecken nach Verletzungen?">
+            <Question num={2} label="Pigmentstörungen oder helle/dunkle Flecken nach Verletzungen?" hint={hintsByKey.pigmentstoerungen}>
               <JaNein value={form.pigmentstoerungen} onChange={(v) => set('pigmentstoerungen', v)} />
             </Question>
           </div>
@@ -167,10 +180,10 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
         {step === 1 && (
           <div className="flex flex-col gap-4">
             <SectionTitle>Abschnitt 2 — Allgemeine Gesundheit</SectionTitle>
-            <Question num={3} label="Akute Erkrankung, Fieber oder Infektion?">
+            <Question num={3} label="Akute Erkrankung, Fieber oder Infektion?" hint={hintsByKey.akute_erkrankung}>
               <JaNein value={form.akute_erkrankung} onChange={(v) => set('akute_erkrankung', v)} />
             </Question>
-            <Question num={4} label="Chronische Erkrankungen?">
+            <Question num={4} label="Chronische Erkrankungen?" hint={hintsByKey.chronische_erkrankungen}>
               <JaNein value={form.chronische_erkrankungen} onChange={(v) => set('chronische_erkrankungen', v)} />
               {form.chronische_erkrankungen === 'ja' && (
                 <input
@@ -181,14 +194,14 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
                 />
               )}
             </Question>
-            <Question num={5} label="Diabetes?">
+            <Question num={5} label="Diabetes?" hint={hintsByKey.diabetes}>
               <div className="flex flex-wrap gap-2">
                 {[['nein', 'Nein'], ['typ1', 'Typ 1'], ['typ2', 'Typ 2'], ['unbekannt', 'Weiss nicht']].map(([v, l]) => (
                   <Opt key={v} active={form.diabetes === v} onClick={() => set('diabetes', v)}>{l}</Opt>
                 ))}
               </div>
             </Question>
-            <Question num={6} label="Autoimmunerkrankung?">
+            <Question num={6} label="Autoimmunerkrankung?" hint={hintsByKey.autoimmun}>
               <JaNein value={form.autoimmun} onChange={(v) => set('autoimmun', v)} />
               {form.autoimmun === 'ja' && (
                 <input
@@ -199,7 +212,7 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
                 />
               )}
             </Question>
-            <Question num={7} label="Immunschwäche oder immunsuppressive Medikamente?">
+            <Question num={7} label="Immunschwäche oder immunsuppressive Medikamente?" hint={hintsByKey.immunschwaeche}>
               <JaNein value={form.immunschwaeche} onChange={(v) => set('immunschwaeche', v)} />
             </Question>
           </div>
@@ -208,16 +221,16 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
         {step === 2 && (
           <div className="flex flex-col gap-4">
             <SectionTitle>Abschnitt 3 — Weitere Angaben</SectionTitle>
-            <Question num={8} label="Herz- oder Kreislauferkrankung?">
+            <Question num={8} label="Herz- oder Kreislauferkrankung?" hint={hintsByKey.herz_kreislauf}>
               <JaNein value={form.herz_kreislauf} onChange={(v) => set('herz_kreislauf', v)} />
             </Question>
-            <Question num={9} label="Epilepsie oder Krampfanfälle?">
+            <Question num={9} label="Epilepsie oder Krampfanfälle?" hint={hintsByKey.epilepsie}>
               <JaNein value={form.epilepsie} onChange={(v) => set('epilepsie', v)} />
             </Question>
-            <Question num={10} label="Blutgerinnungsstörung?">
+            <Question num={10} label="Blutgerinnungsstörung?" hint={hintsByKey.blutgerinnung}>
               <JaNein value={form.blutgerinnung} onChange={(v) => set('blutgerinnung', v)} />
             </Question>
-            <Question num={11} label="Blutverdünnende Medikamente?">
+            <Question num={11} label="Blutverdünnende Medikamente?" hint={hintsByKey.blutverduenner}>
               <JaNein value={form.blutverduenner} onChange={(v) => set('blutverduenner', v)} />
               {form.blutverduenner === 'ja' && (
                 <input
@@ -228,7 +241,7 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
                 />
               )}
             </Question>
-            <Question num={12} label="Infektionskrankheiten? (Mehrfachauswahl)">
+            <Question num={12} label="Infektionskrankheiten? (Mehrfachauswahl)" hint={hintsByKey.infektionskrankheiten}>
               <div className="flex flex-wrap gap-2">
                 {INFEKT_OPTIONS.map(([v, l]) => (
                   <Opt key={v} active={(form.infektionskrankheiten || []).includes(v)} onClick={() => toggleMulti('infektionskrankheiten', v)}>
@@ -243,7 +256,7 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
         {step === 3 && (
           <div className="flex flex-col gap-4">
             <SectionTitle>Abschnitt 4 — Abschlussfragen</SectionTitle>
-            <Question num={13} label="Allergien?">
+            <Question num={13} label="Allergien?" hint={hintsByKey.allergien}>
               <JaNein value={form.allergien} onChange={(v) => set('allergien', v)} />
               {form.allergien === 'ja' && (
                 <input
@@ -254,28 +267,34 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
                 />
               )}
             </Question>
-            <Question num={14} label="Schlechte Wundheilung oder frühere Laserbehandlungen?">
+            <Question num={14} label="Schlechte Wundheilung oder frühere Laserbehandlungen?" hint={hintsByKey.wundheilung}>
               <JaNein value={form.wundheilung} onChange={(v) => set('wundheilung', v)} />
             </Question>
-            <Question num={15} label="Herpes im Behandlungsbereich?">
+            <Question num={15} label="Herpes im Behandlungsbereich?" hint={hintsByKey.herpes_bereich}>
               <JaNein value={form.herpes_bereich} onChange={(v) => set('herpes_bereich', v)} />
             </Question>
-            <Question num={16} label="Schwanger, stillend oder unsicher?">
+            <Question num={16} label="Schwanger, stillend oder unsicher?" hint={hintsByKey.schwanger}>
               <div className="flex flex-wrap gap-2">
                 {[['nein', 'Nein'], ['ja', 'Ja'], ['unsicher', 'Unsicher']].map(([v, l]) => (
                   <Opt key={v} active={form.schwanger === v} onClick={() => set('schwanger', v)}>{l}</Opt>
                 ))}
               </div>
             </Question>
-            <Question num={17} label="Unter Alkohol- oder Drogeneinfluss?">
+            <Question num={17} label="Unter Alkohol- oder Drogeneinfluss?" hint={hintsByKey.alkohol_drogen}>
               <JaNein value={form.alkohol_drogen} onChange={(v) => set('alkohol_drogen', v)} />
             </Question>
-            <Question num={18} label="Sind Sie urteilsfähig?">
+            <Question num={18} label="Sind Sie urteilsfähig?" hint={hintsByKey.urteilsfaehig}>
               <JaNein value={form.urteilsfaehig} onChange={(v) => set('urteilsfaehig', v)} />
             </Question>
-            <Question num={19} label="Mindestens 18 Jahre alt?">
+            <Question num={19} label="Mindestens 18 Jahre alt?" hint={hintsByKey.mindestalter_18}>
               <JaNein value={form.mindestalter_18} onChange={(v) => set('mindestalter_18', v)} />
             </Question>
+            {has_ko_flags && step === 3 && (
+              <div className="rounded-[12px] border border-studio-red/30 bg-studio-red/8 px-4 py-3 text-[12px] text-studio-w2 leading-relaxed">
+                <p className="text-studio-red font-semibold m-0 mb-1">🔴 Aufgrund deiner Angaben ist eine Abklärung nötig.</p>
+                Du kannst die Anamnese trotzdem abschliessen. Beim Terminbuchen wirst du nochmals gefragt.
+              </div>
+            )}
           </div>
         )}
 

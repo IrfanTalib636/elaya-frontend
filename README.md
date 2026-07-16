@@ -351,6 +351,7 @@ Swagger: [`POST /cases/pricing/preview`](../backend/README.md) · full intake sc
 
 ## Planned next (M3+)
 
+- **Customer profile tab (mobile)** — edit profile, studio switch + approval, DSG data export, studio history — [`docs/M3-CUSTOMER-PROFILE-BACKLOG.md`](../docs/M3-CUSTOMER-PROFILE-BACKLOG.md)
 - **TC_06 photo upload** — camera/gallery UI + backend storage (VPS/MongoDB)
 - **Persist pricing on create** — write `sessionsMin` / `sessionsMax` / `pricePerSession` from preview to case
 - **Real AI (Phase B)** — photo analysis, nachsorge check, Elaya FAB chat (all via backend, not client keys)

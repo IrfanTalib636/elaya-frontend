@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, Plus, ChevronRight, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCase, updateCase } from '../../api/cases'
@@ -7,6 +7,7 @@ import { listSessions } from '../../api/sessions'
 import CaseAvailabilityPanel from '../../components/case/CaseAvailabilityPanel'
 import CasePricingPanel from '../../components/case/CasePricingPanel'
 import CaseAnamnesisPanel from '../../components/anamnesis/CaseAnamnesisPanel'
+import CaseSignaturePanel from '../../components/signature/CaseSignaturePanel'
 import { Card, Badge, Button, Spinner, PageHeader } from '../../components/ui'
 
 // ── Constants ─────────────────────────────────────────────────────────────
@@ -16,6 +17,7 @@ const GOAL_LABELS       = { full_removal: 'Vollständige Entfernung', full: 'Vol
 const COVERUP_LABELS    = { none: 'Kein Cover-up', once: 'Einmal', multiple: 'Mehrfach' }
 
 const CASE_STATUSES = [
+  { value: 'draft',                    label: 'Entwurf'             },
   { value: 'pending',                  label: 'Ausstehend'          },
   { value: 'active',                   label: 'Aktiv'               },
   { value: 'completed',                label: 'Abgeschlossen'       },
@@ -120,12 +122,20 @@ const ZoneRow = ({ z }) => (
 const CaseDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [caseData, setCaseData] = useState(null)
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState('')
   const [savingStatus, setSavingStatus] = useState(false)
+
+  useEffect(() => {
+    const msg = location.state?.createdToast
+    if (!msg) return
+    toast.success(msg)
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.pathname, location.state, navigate])
 
   useEffect(() => {
     const load = async () => {
@@ -268,6 +278,16 @@ const CaseDetail = () => {
 
           {/* Medical anamnesis */}
           <CaseAnamnesisPanel caseId={id} />
+
+          {/* TC_08–09 Merkblatt & signature */}
+          <CaseSignaturePanel
+            caseId={id}
+            caseData={caseData}
+            onUpdated={async () => {
+              const res = await getCase(id)
+              setCaseData(res.data.data.case)
+            }}
+          />
 
           {/* Sessions log */}
           <Card padding="none">

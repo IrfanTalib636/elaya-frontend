@@ -42,12 +42,12 @@ const Button = ({
     `}
     {...props}
   >
-    <span
-      aria-hidden="true"
-      className={`shrink-0 rounded-full border-2 border-current border-t-transparent ${
-        loading ? 'w-3.5 h-3.5 animate-spin' : 'hidden'
-      }`}
-    />
+    {loading && (
+      <span
+        aria-hidden="true"
+        className="shrink-0 w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin"
+      />
+    )}
     {children}
   </button>
 )

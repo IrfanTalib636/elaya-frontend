@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import { upsertCaseAnamnesis } from '../../api/anamnesis'
+import { previewCaseAnamnesis, upsertCaseAnamnesis } from '../../api/anamnesis'
 import { getApiErrorMessage } from '../../lib/apiError'
 import { Modal, Button } from '../ui'
 import {
@@ -48,7 +48,7 @@ const Question = ({ num, label, children, hint }) => (
   <div className="rounded-[12px] border border-elaya-border bg-studio-bg-4 p-4 flex flex-col gap-3">
     <p className="text-studio-white text-[13px] font-semibold m-0">{num}. {label}</p>
     {children}
-    {hint && (
+    {hint?.text && (
       <div
         className={`rounded-[10px] border px-3 py-2 text-[11px] leading-relaxed ${
           hint.level === 'orange'
@@ -80,6 +80,8 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
   }))
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [previewHints, setPreviewHints] = useState(null)
+  const previewSeqRef = useRef(0)
 
   const set = (field, value) => setForm((prev) => ({ ...prev, [field]: value }))
 
@@ -95,11 +97,51 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
     })
   }
 
-  const ampel = computeAmpel(form)
-  const { hintsByKey, has_ko_flags } = computeInlineHints(form)
+  const localEval = useMemo(() => computeInlineHints(form), [form])
+  const hintsByKey = {
+    ...localEval.hintsByKey,
+    ...(previewHints?.hintsByKey ?? {}),
+  }
+  const has_ko_flags = previewHints?.has_ko_flags ?? localEval.has_ko_flags
+
+  const ampel = useMemo(() => computeAmpel(form), [form])
   const ampelMeta = AMPEL_LABELS[ampel.ampel_status]
 
   const steps = ['Haut', 'Gesundheit I', 'Gesundheit II', 'Abschluss', 'Zusammenfassung']
+
+  useEffect(() => {
+    if (!caseId) return undefined
+
+    let cancelled = false
+    const seq = ++previewSeqRef.current
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await previewCaseAnamnesis(caseId, {
+          antworten: pickAnamnesisAnswers(form),
+        })
+        if (cancelled || seq !== previewSeqRef.current) return
+        const hints = res.data.data?.inline_hints ?? []
+        const byKey = Object.fromEntries(
+          hints.map((h) => [
+            h.frage_key,
+            { level: h.level, text: h.text_de || h.text_en || '' },
+          ])
+        )
+        setPreviewHints({
+          hintsByKey: byKey,
+          has_ko_flags: !!res.data.data?.has_ko_flags,
+        })
+      } catch {
+        if (!cancelled && seq === previewSeqRef.current) setPreviewHints(null)
+      }
+    }, 150)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [caseId, form])
 
   const handleSubmit = async () => {
     if (!isAnamnesisComplete(form)) {
@@ -126,13 +168,8 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
     }
   }
 
-  useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
-  }, [])
-
   return (
-    <Modal title="Medizinische Anamnese" onClose={onClose} width="max-w-2xl">
+    <Modal title="Medizinische Anamnese" onClose={onClose} width="max-w-2xl" scrollResetKey={step}>
       <div className="flex flex-col gap-5">
         <div className="flex gap-1.5 flex-wrap">
           {steps.map((label, i) => (

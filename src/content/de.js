@@ -128,3 +128,5 @@ export const adminNav = {
     { id: 'settings', icon: '⚙️', label: 'Einstellungen' },
   ],
 }
+
+export { caseForm } from './caseForm.de'

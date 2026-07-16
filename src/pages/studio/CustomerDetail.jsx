@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronRight, Plus, Pencil, Calendar } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCustomer, updateCustomer } from '../../api/customers'
 import { createCase } from '../../api/cases'
+import { getApiErrorMessage } from '../../lib/apiError'
 import { listAppointments } from '../../api/appointments'
 import { Card, Badge, Button, Input, Spinner, PageHeader, Modal } from '../../components/ui'
 import CaseForm from '../../components/forms/CaseForm'
@@ -124,6 +125,7 @@ const CustomerDetail = () => {
   const [savingPipeline, setSavingPipeline] = useState(false)
   const [savingNotes, setSavingNotes] = useState(false)
   const [showCaseModal,  setShowCaseModal]  = useState(false)
+  const [caseFormStep, setCaseFormStep]     = useState(0)
   const [creatingCase,   setCreatingCase]   = useState(false)
   const [showEditModal,  setShowEditModal]  = useState(false)
   const [editForm,       setEditForm]       = useState({})
@@ -182,13 +184,17 @@ const CustomerDetail = () => {
     setCreatingCase(true)
     try {
       const res = await createCase({ ...form, customer_id: id })
-      toast.success('Fall erfolgreich angelegt.')
-      setShowCaseModal(false)
-      navigate(`/studio/cases/${res.data.data.case.id}`)
+      const caseId = res.data?.data?.case?.id
+      if (!caseId) {
+        throw new Error('Fall wurde angelegt, aber die Antwort war unvollständig.')
+      }
+      // Navigate away in one step — avoids modal close + toast + navigate race (React 19 removeChild)
+      navigate(`/studio/cases/${caseId}`, {
+        state: { createdToast: 'Fall erfolgreich angelegt.' },
+      })
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Fehler beim Anlegen des Falls.')
-    } finally {
       setCreatingCase(false)
+      toast.error(getApiErrorMessage(err, 'Fehler beim Anlegen des Falls.'))
     }
   }
 
@@ -445,11 +451,24 @@ const CustomerDetail = () => {
       </div>
 
       {showCaseModal && (
-        <Modal title="Neuen Fall anlegen" onClose={() => setShowCaseModal(false)} width="max-w-3xl">
+        <Modal
+          title="Neuen Fall anlegen"
+          onClose={() => {
+            setShowCaseModal(false)
+            setCaseFormStep(0)
+          }}
+          width="max-w-3xl"
+          scrollResetKey={caseFormStep}
+        >
           <CaseForm
+            customerId={id}
             onSubmit={handleCreateCase}
             loading={creatingCase}
-            onCancel={() => setShowCaseModal(false)}
+            onStepChange={setCaseFormStep}
+            onCancel={() => {
+              setShowCaseModal(false)
+              setCaseFormStep(0)
+            }}
           />
         </Modal>
       )}

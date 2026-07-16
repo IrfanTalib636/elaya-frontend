@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Check, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Card, Button, EmptyState } from '../ui'
+import MedicalAmpelDot from '../medical/MedicalAmpelDot'
 import { updateCrmTask, deleteCrmTask } from '../../api/crm'
 import { PRIORITY_ICON, fmtCrmDate, startOfDay } from '../../constants/crm'
 
@@ -40,8 +41,23 @@ const TaskRow = ({ task, onChange }) => {
         <p className={`text-[12px] font-semibold m-0 truncate ${overdue ? 'text-studio-red' : 'text-studio-white'}`}>
           {task.titel}
         </p>
-        <p className="text-[10px] text-studio-w4 m-0 mt-0.5">
-          {task.kunden_name || 'Allgemein'} · {task.typ} · Fällig: {fmtCrmDate(task.faellig_am)}
+        <p className="text-[10px] text-studio-w4 m-0 mt-0.5 flex items-center gap-1 flex-wrap">
+          {task.kunden_name ? (
+            <span className="inline-flex items-center gap-1">
+              {task.kunden_name}
+              <MedicalAmpelDot
+                level={task.worst_medical_flag_level}
+                pending={!task.worst_medical_flag_level && (task.pending_anamnesis_count ?? 0) > 0}
+                count={task.open_medical_flags_count}
+                size="sm"
+                labelMode="inline"
+              />
+            </span>
+          ) : (
+            'Allgemein'
+          )}
+          {' · '}
+          {task.typ} · Fällig: {fmtCrmDate(task.faellig_am)}
           {overdue && ' ⚠'}
         </p>
       </div>

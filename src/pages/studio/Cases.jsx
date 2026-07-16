@@ -4,6 +4,7 @@ import { Search, ChevronRight, FolderOpen } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { listCases } from '../../api/cases'
 import { Card, Badge, Spinner, PageHeader, EmptyState, Pagination } from '../../components/ui'
+import MedicalAmpelDot from '../../components/medical/MedicalAmpelDot'
 import { PAGE_SIZE, SEARCH_FETCH_LIMIT } from '../../constants/pagination'
 
 const STATUS_FILTERS = [
@@ -14,9 +15,16 @@ const STATUS_FILTERS = [
   { value: 'loeschantrag_ausstehend',  label: 'Löschantrag pend.' },
 ]
 
+const MEDICAL_FILTERS = [
+  { value: '',       label: 'Alle Ampeln' },
+  { value: 'rot',    label: '🔴 Abklärung' },
+  { value: 'orange', label: '🟡 Hinweise' },
+  { value: 'gruen',  label: '🟢 Geklärt' },
+]
+
 const TYPE_LABELS = { tattoo: 'Tattoo', pmu: 'PMU' }
 
-const TABLE_HEADERS = ['Fall', 'Kunde', 'Körperstelle', 'Typ', 'Sitzungen', 'Status', '']
+const TABLE_HEADERS = ['Fall', 'Kunde', 'Körperstelle', 'Typ', 'Sitzungen', 'Ampel', 'Status', '']
 
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString('de-CH', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
@@ -49,6 +57,14 @@ const CaseRow = ({ c, onClick }) => {
       <td className="px-5 py-3 text-studio-w2 text-[12px]">{TYPE_LABELS[c.type] ?? c.type ?? '—'}</td>
       <td className="px-5 py-3 text-studio-w1 text-[12px] tabular-nums">{progress}</td>
       <td className="px-5 py-3">
+        <MedicalAmpelDot
+          level={c.medical_flag_level}
+          pending={!c.anamnesis_complete}
+          count={c.open_medical_flags_count}
+          size="sm"
+        />
+      </td>
+      <td className="px-5 py-3">
         <Badge variant="status" value={c.status}>{c.status}</Badge>
       </td>
       <td className="px-5 py-3 text-studio-w3">
@@ -66,11 +82,12 @@ const StudioCases = () => {
   const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [medicalFilter, setMedicalFilter] = useState('')
   const [page, setPage] = useState(1)
 
   const isSearching = search.trim().length > 0
 
-  const load = useCallback(async (status, pageNum, searching) => {
+  const load = useCallback(async (status, medical, pageNum, searching) => {
     setLoading(true)
     try {
       const params = {
@@ -78,6 +95,7 @@ const StudioCases = () => {
         page: searching ? 1 : pageNum,
       }
       if (status) params.status = status
+      if (medical) params.medical_flag = medical
       const res = await listCases(params)
       setCases(res.data.data.cases ?? [])
       setPagination(res.data.data.pagination)
@@ -88,9 +106,9 @@ const StudioCases = () => {
     }
   }, [])
 
-  useEffect(() => { load(statusFilter, page, isSearching) }, [statusFilter, page, isSearching, load])
+  useEffect(() => { load(statusFilter, medicalFilter, page, isSearching) }, [statusFilter, medicalFilter, page, isSearching, load])
 
-  useEffect(() => { setPage(1) }, [statusFilter, search])
+  useEffect(() => { setPage(1) }, [statusFilter, medicalFilter, search])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -138,6 +156,23 @@ const StudioCases = () => {
               }`}
             >
               {s.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-1.5 flex-wrap">
+          {MEDICAL_FILTERS.map((m) => (
+            <button
+              key={m.value || 'all-medical'}
+              type="button"
+              onClick={() => setMedicalFilter(m.value)}
+              className={`px-3 py-[7px] rounded-[8px] text-[11px] font-semibold transition-colors border cursor-pointer whitespace-nowrap ${
+                medicalFilter === m.value
+                  ? 'bg-studio-teal-2/15 text-studio-teal-2 border-studio-teal-2/30'
+                  : 'bg-transparent text-studio-w2 border-elaya-border hover:text-studio-white hover:border-elaya-border-strong'
+              }`}
+            >
+              {m.label}
             </button>
           ))}
         </div>

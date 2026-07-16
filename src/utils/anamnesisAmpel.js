@@ -224,7 +224,49 @@ export const isAnamnesisComplete = (a = {}) =>
   )
 
 export const AMPEL_LABELS = {
-  gruen: { emoji: '🟢', label: 'Alles geklärt', className: 'text-studio-teal-2 border-studio-teal-2/30 bg-studio-teal-2/10' },
-  orange: { emoji: '🟡', label: 'Hinweise offen', className: 'text-studio-gold border-studio-gold/30 bg-studio-gold/10' },
-  rot: { emoji: '🔴', label: 'Abklärung nötig', className: 'text-studio-red border-studio-red/30 bg-studio-red/10' },
+  gruen: {
+    emoji: '🟢',
+    label: 'Alles geklärt',
+    shortLabel: 'Geklärt',
+    className: 'text-studio-teal-2 border-studio-teal-2/30 bg-studio-teal-2/10',
+  },
+  orange: {
+    emoji: '🟡',
+    label: 'Hinweise offen',
+    shortLabel: 'Hinweise',
+    className: 'text-studio-gold border-studio-gold/30 bg-studio-gold/10',
+  },
+  rot: {
+    emoji: '🔴',
+    label: 'Abklärung nötig',
+    shortLabel: 'Abklärung',
+    className: 'text-studio-red border-studio-red/30 bg-studio-red/10',
+  },
+}
+
+export const PENDING_AMPEL = {
+  emoji: '⚪',
+  label: 'Anamnese ausstehend',
+  shortLabel: 'Ausstehend',
+  className: 'text-studio-w3 border-elaya-border bg-studio-bg-4',
+}
+
+const AMPEL_RANK = { rot: 3, orange: 2, gruen: 1 }
+
+/** Worst ampel across cases (rot > orange > gruen). */
+export const worstMedicalFlagLevel = (cases = []) => {
+  let worst = 0
+  let hasPending = false
+
+  for (const c of cases) {
+    if (!c?.anamnesis_complete) {
+      hasPending = true
+      continue
+    }
+    const rank = AMPEL_RANK[c.medical_flag_level] || 0
+    if (rank > worst) worst = rank
+  }
+
+  const level = { 3: 'rot', 2: 'orange', 1: 'gruen' }[worst] || null
+  return { level, pending: !level && hasPending }
 }

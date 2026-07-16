@@ -9,6 +9,7 @@ import CustomerAvatar from '../../components/CustomerAvatar'
 import CrmTasksTab from '../../components/crm/CrmTasksTab'
 import CrmTaskModal from '../../components/crm/CrmTaskModal'
 import CrmNoteModal from '../../components/crm/CrmNoteModal'
+import MedicalAmpelDot from '../../components/medical/MedicalAmpelDot'
 import { PIPELINE_STAGES } from '../../constants/pipeline'
 import { getStageAktion, fmtCrmDate, startOfDay } from '../../constants/crm'
 
@@ -66,6 +67,14 @@ const CrmCard = ({ customer, onClick, onNote, onTask, onCopyTemplate }) => {
           <div className="min-w-0 flex-1">
             <p className="text-studio-white text-[13px] font-semibold m-0 truncate" translate="no">
               {customer.vorname} {customer.nachname}
+              {' '}
+              <MedicalAmpelDot
+                level={customer.worst_medical_flag_level}
+                pending={!customer.worst_medical_flag_level && (customer.pending_anamnesis_count ?? 0) > 0}
+                count={customer.open_medical_flags_count}
+                size="sm"
+                labelMode="inline"
+              />
             </p>
             <p className="text-studio-w3 text-[11px] m-0 mt-0.5 truncate">{customer.email}</p>
             {aktion && (
@@ -107,6 +116,14 @@ const ListRow = ({ customer, onClick, onNote, onTask, onCopyTemplate }) => {
         </div>
       </td>
       <td className="px-5 py-3 text-studio-w1 text-[12px] cursor-pointer" onClick={onClick}>{customer.email}</td>
+      <td className="px-5 py-3 cursor-pointer" onClick={onClick}>
+        <MedicalAmpelDot
+          level={customer.worst_medical_flag_level}
+          pending={!customer.worst_medical_flag_level && (customer.pending_anamnesis_count ?? 0) > 0}
+          count={customer.open_medical_flags_count}
+          size="sm"
+        />
+      </td>
       <td className="px-5 py-3 cursor-pointer" onClick={onClick}>
         <Badge variant="pipeline" value={customer.pipeline_stufe}>{customer.pipeline_stufe}</Badge>
       </td>
@@ -397,7 +414,7 @@ const StudioCrm = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-elaya-border">
-                    {['Name', 'E-Mail', 'Stufe', 'In Stufe', 'Letzter Kontakt', 'Nächste Aufgabe', ''].map((h) => (
+                    {['Name', 'E-Mail', 'Ampel', 'Stufe', 'In Stufe', 'Letzter Kontakt', 'Nächste Aufgabe', ''].map((h) => (
                       <th
                         key={h || 'actions'}
                         className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap"

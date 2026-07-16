@@ -9,6 +9,7 @@ import { listAppointments } from '../../api/appointments'
 import { Card, Badge, Button, Input, Spinner, PageHeader, Modal } from '../../components/ui'
 import CaseForm from '../../components/forms/CaseForm'
 import CustomerAvatar from '../../components/CustomerAvatar'
+import MedicalAmpelDot from '../../components/medical/MedicalAmpelDot'
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const PIPELINE_STAGES = [
@@ -26,7 +27,7 @@ const SOURCE_LABELS = {
 
 const CASE_TYPE_LABELS = { tattoo: 'Tattoo', pmu: 'PMU' }
 
-const CASE_TABLE_HEADERS = ['Fall-ID', 'Bezeichnung', 'Status', 'Fortschritt', 'Letzte Sitzung', '']
+const CASE_TABLE_HEADERS = ['Ampel', 'Fall-ID', 'Bezeichnung', 'Status', 'Fortschritt', 'Letzte Sitzung', '']
 
 const APPT_TYPE_LABELS = {
   beratung:  'Beratung',
@@ -95,6 +96,14 @@ const CaseRow = ({ c, onClick }) => (
     className="border-b border-elaya-border last:border-0 hover:bg-studio-bg-4 cursor-pointer transition-colors"
     onClick={onClick}
   >
+    <td className="px-5 py-3">
+      <MedicalAmpelDot
+        level={c.medical_flag_level}
+        pending={!c.anamnesis_complete}
+        count={c.open_medical_flags_count}
+        size="sm"
+      />
+    </td>
     <td className="px-5 py-3 text-studio-gold-2 text-[12px] font-mono">{c.caseId}</td>
     <td className="px-5 py-3 text-studio-w1 text-[13px]">
       {c.tc_title || CASE_TYPE_LABELS[c.type] || c.type}
@@ -254,6 +263,12 @@ const CustomerDetail = () => {
       </button>
 
       <PageHeader title={fullName} subtitle={customer.email}>
+        <MedicalAmpelDot
+          level={customer.worst_medical_flag_level}
+          pending={!customer.worst_medical_flag_level && (customer.pending_anamnesis_count ?? 0) > 0}
+          count={customer.open_medical_flags_count}
+          labelMode="inline"
+        />
         <Badge variant="pipeline" value={customer.pipeline_stufe}>{customer.pipeline_stufe}</Badge>
         <Badge variant="source"   value={customer.akquise_quelle}>
           {SOURCE_LABELS[customer.akquise_quelle] ?? customer.akquise_quelle}

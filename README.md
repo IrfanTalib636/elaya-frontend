@@ -6,7 +6,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 **Stack:** React 19 · Vite 8 · React Router 7 · Tailwind CSS v4 · Zustand · Axios · React Hot Toast · Lucide React  
 **Design source:** `inkderm-prototype/` (colors, layout, nav structure)  
 **API:** Connects to [Elaya Backend API](../backend/README.md) at `/api/v1`  
-**Last updated:** 2026-07-14
+**Last updated:** 2026-07-16
 
 ---
 
@@ -39,9 +39,9 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | **Dashboard (Overview)** | ✅ Done | KPI cards + today's appointments table |
 | **Heute (`/studio/today`)** | ✅ Done | Today's appointments table, links to case detail |
 | **Customers list** | ✅ Done | Search (debounced), pipeline filter, create modal, pagination |
-| **Customer Detail** | ✅ Done | Info card + edit modal, cases + appointments tables, pipeline stage, notes, **8-step case wizard** |
-| **Alle Fälle (`/studio/cases`)** | ✅ Done | Search + status filter, pagination |
-| **Case Detail** | ✅ Done | Tattoo intake, medical anamnesis wizard, sessions log, pricing + lockout panels |
+| **Alle Fälle (`/studio/cases`)** | ✅ Done | Search + status + **ampel filter**, pagination |
+| **Case Detail** | ✅ Done | Tattoo intake, anamnesis + klaerung/freigabe, signature, sessions, pricing + lockout |
+| **Customer Detail** | ✅ Done | Info + cases table with ampel, appointments, pipeline, **8-step case wizard** |
 | **Sitzungen (`/studio/sessions`)** | ✅ Done | Search + draft filter, pagination |
 | **New Session form** | ✅ Done | Laser params, sliders, payment, draft / finalize |
 | **Session Detail** | ✅ Done | Read-only view; finalize draft button |
@@ -87,9 +87,19 @@ Customer experience is **mobile-only** (separate project); the landing page link
 
 **Wizard flow (tattoo):** Customer Detail → **Fall anlegen** → 8 steps → case detail (anamnese there).
 
-**Not in wizard (after save):** TC_07 anamnese (19 Q), TC_08 Merkblatt PDF, TC_09 signature — see case detail.
-
 **Docs:** [`docs/CASE-WIZARD-TEST-DATA.md`](../docs/CASE-WIZARD-TEST-DATA.md) · [`docs/CUSTOMER-CASE-INTAKE-SPEC.md`](../docs/CUSTOMER-CASE-INTAKE-SPEC.md)
+
+### Medical / booking parity with prototype (Phases A–E · 2026-07-16)
+
+| Phase | Status | Studio UI | Notes |
+|---|---|---|---|
+| **A — Inline ampel warnings** | ✅ Done | `AnamnesisWizardModal` live preview | Uses `POST …/anamnesis/preview` |
+| **B — Merkblatt + signature** | ✅ Done | `CaseSignaturePanel` + wizard | TC_08/09 on Case Detail |
+| **C — Ampel on lists / CRM** | ✅ Done | Cases, Customer Detail, CRM cards/list/tasks | `MedicalAmpelDot` + worst-flag aggregation |
+| **D — PS_01 booking pre-check** | ✅ API | — (customer/mobile) | Studio keeps UV/meds `PreSessionCheck` only |
+| **E — Klaerung + freigabe** | ✅ Done | `KlaerungPanel` + `FreigabePanel` on Case Detail | Original answers immutable; audit trail |
+
+**After case save (Case Detail):** TC_07 anamnese, TC_08 Merkblatt, TC_09 signature, klaerung/freigabe.
 
 ### Changelog
 
@@ -120,6 +130,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 [2026-07-14] — Case intake: 8-step tattoo wizard (CaseForm, CaseWizardProgress, caseIntake constants)
 [2026-07-14] — Wizard step 7: KI pricing preview via POST /cases/pricing/preview
 [2026-07-14] — TC_06 photos placeholder; selected-option UI contrast in wizard
+[2026-07-16] — Phase A–E: signature flow, CRM/list ampel, klaerung + freigabe panels, Freigabe UI fix
 ```
 
 ---
@@ -167,7 +178,8 @@ frontend/
 ├── src/
 │   ├── api/
 │   │   ├── auth.js              # login, registerStudio, forgot/reset password, getMe, refresh, logout
-│   │   ├── anamnesis.js         # getCaseAnamnesis, upsertCaseAnamnesis
+│   │   ├── anamnesis.js         # get/preview/upsert anamnesis, updateKlaerung, updateStudioFreigabe
+│   │   ├── signature.js         # merkblatt, submit signature, signature image
 │   │   ├── customers.js         # list, create, get, update
 │   │   ├── cases.js             # list, create, get, update, availability, pricing, pricingPreview
 │   │   ├── appointments.js      # list, create, get, update
@@ -187,7 +199,15 @@ frontend/
 │   │   │   └── CaseWizardProgress.jsx # Step indicator + progress bar
 │   │   ├── anamnesis/
 │   │   │   ├── CaseAnamnesisPanel.jsx
-│   │   │   └── AnamnesisWizardModal.jsx
+│   │   │   ├── AnamnesisWizardModal.jsx
+│   │   │   ├── KlaerungPanel.jsx
+│   │   │   └── FreigabePanel.jsx
+│   │   ├── signature/
+│   │   │   ├── CaseSignaturePanel.jsx
+│   │   │   ├── SignatureWizardModal.jsx
+│   │   │   └── SignatureCanvas.jsx
+│   │   ├── medical/
+│   │   │   └── MedicalAmpelDot.jsx
 │   │   ├── case/
 │   │   │   ├── CaseAvailabilityPanel.jsx
 │   │   │   ├── CasePricingPanel.jsx
@@ -355,10 +375,10 @@ Swagger: [`POST /cases/pricing/preview`](../backend/README.md) · full intake sc
 - **TC_06 photo upload** — camera/gallery UI + backend storage (VPS/MongoDB)
 - **Persist pricing on create** — write `sessionsMin` / `sessionsMax` / `pricePerSession` from preview to case
 - **Real AI (Phase B)** — photo analysis, nachsorge check, Elaya FAB chat (all via backend, not client keys)
-- Customer mobile app
+- Customer mobile app (consume Phases A–E APIs)
 - Admin dashboard pages (M4 — studio approval UI, finance, ElayShop catalog, …)
 - 18+ age validation on customer creation (Swiss law)
-- Merkblatt PDF + signature flow (TC_08–09)
+- Case chat UI (backend chat stub exists)
 
 ---
 

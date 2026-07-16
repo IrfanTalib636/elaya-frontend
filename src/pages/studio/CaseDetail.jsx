@@ -8,6 +8,7 @@ import CaseAvailabilityPanel from '../../components/case/CaseAvailabilityPanel'
 import CasePricingPanel from '../../components/case/CasePricingPanel'
 import CaseAnamnesisPanel from '../../components/anamnesis/CaseAnamnesisPanel'
 import CaseSignaturePanel from '../../components/signature/CaseSignaturePanel'
+import MedicalAmpelDot from '../../components/medical/MedicalAmpelDot'
 import { Card, Badge, Button, Spinner, PageHeader } from '../../components/ui'
 
 // ── Constants ─────────────────────────────────────────────────────────────
@@ -201,6 +202,12 @@ const CaseDetail = () => {
       </button>
 
       <PageHeader title={caseTitle} subtitle={headerSubtitle}>
+        <MedicalAmpelDot
+          level={caseData.medical_flag_level}
+          pending={!caseData.anamnesis_complete}
+          count={caseData.open_medical_flags_count}
+          labelMode="inline"
+        />
         <Badge variant="status" value={caseData.status}>{caseData.status}</Badge>
         <Button size="sm" variant="secondary" onClick={() => navigate(`/studio/appointments?case_id=${id}&customer_id=${custId}&book=1`)}>
           Termin buchen
@@ -277,7 +284,28 @@ const CaseDetail = () => {
           </Card>
 
           {/* Medical anamnesis */}
-          <CaseAnamnesisPanel caseId={id} />
+          <CaseAnamnesisPanel
+            caseId={id}
+            onCaseFlagsChange={(flags) => {
+              if (!flags) return
+              setCaseData((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      ...(flags.medical_flag_level !== undefined
+                        ? { medical_flag_level: flags.medical_flag_level }
+                        : {}),
+                      ...(flags.open_medical_flags_count !== undefined
+                        ? { open_medical_flags_count: flags.open_medical_flags_count }
+                        : {}),
+                      ...(flags.studio_freigabe
+                        ? { studio_freigabe: flags.studio_freigabe }
+                        : {}),
+                    }
+                  : prev
+              )
+            }}
+          />
 
           {/* TC_08–09 Merkblatt & signature */}
           <CaseSignaturePanel

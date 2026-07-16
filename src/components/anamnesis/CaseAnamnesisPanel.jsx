@@ -4,6 +4,8 @@ import { getCaseAnamnesis } from '../../api/anamnesis'
 import { Card, Button, Spinner } from '../ui'
 import { AMPEL_LABELS } from '../../utils/anamnesisAmpel'
 import AnamnesisWizardModal from './AnamnesisWizardModal'
+import KlaerungPanel from './KlaerungPanel'
+import FreigabePanel from './FreigabePanel'
 
 const fmtDateTime = (iso) =>
   iso
@@ -16,7 +18,7 @@ const fmtDateTime = (iso) =>
       })
     : '—'
 
-const CaseAnamnesisPanel = ({ caseId }) => {
+const CaseAnamnesisPanel = ({ caseId, onCaseFlagsChange }) => {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -57,6 +59,21 @@ const CaseAnamnesisPanel = ({ caseId }) => {
     setWizardOpen(false)
     if (saved) setData({ ...saved })
     await fetchAnamnesis({ silent: true })
+  }
+
+  const handleKlaerungUpdated = (anamnesis, caseFlags) => {
+    if (anamnesis) setData(anamnesis)
+    onCaseFlagsChange?.(caseFlags)
+  }
+
+  const handleFreigabeUpdated = (anamnesis, caseFlags) => {
+    if (anamnesis) setData(anamnesis)
+    else if (caseFlags?.studio_freigabe) {
+      setData((prev) =>
+        prev ? { ...prev, studio_freigabe: caseFlags.studio_freigabe } : prev
+      )
+    }
+    onCaseFlagsChange?.(caseFlags)
   }
 
   const ampelStatus = data?.ampel_status
@@ -100,8 +117,19 @@ const CaseAnamnesisPanel = ({ caseId }) => {
                 className={`rounded-[10px] border px-3 py-2.5 ${ampelMeta.className}`}
               >
                 <p className="text-[13px] font-bold m-0">{ampelMeta.emoji} {ampelMeta.label}</p>
+                {data.open_medical_flags_count > 0 && (
+                  <p className="text-[10px] m-0 mt-1 opacity-80">
+                    {data.open_medical_flags_count} Flag{data.open_medical_flags_count === 1 ? '' : 's'} offen
+                  </p>
+                )}
               </div>
             )}
+
+            <FreigabePanel
+              caseId={caseId}
+              freigabe={data.studio_freigabe}
+              onUpdated={handleFreigabeUpdated}
+            />
 
             <div className="grid grid-cols-1 gap-2 text-[11px] text-studio-w3">
               <p className="m-0">Ausgefüllt: <span className="text-studio-w1">{fmtDateTime(data.antworten?.zeitstempel)}</span></p>
@@ -110,26 +138,28 @@ const CaseAnamnesisPanel = ({ caseId }) => {
               )}
             </div>
 
-            {orangeFragen.length > 0 && (
-              <div key={`${badgeKey}-orange`}>
-                <p className="text-studio-gold text-[10px] font-semibold uppercase tracking-wider m-0 mb-2">Hinweise</p>
-                <ul className="m-0 p-0 list-none flex flex-col gap-1">
-                  {orangeFragen.map((f) => (
-                    <li key={f.frage_text} className="text-[11px] text-studio-w2">
-                      · {f.frage_text}: <span className="text-studio-white">{f.antwort}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <KlaerungPanel
+              caseId={caseId}
+              roteFragen={roteFragen}
+              orangeFragen={orangeFragen}
+              klaerung={data.klaerung || {}}
+              onUpdated={handleKlaerungUpdated}
+            />
 
-            {roteFragen.length > 0 && (
-              <div key={`${badgeKey}-rot`}>
-                <p className="text-studio-red text-[10px] font-semibold uppercase tracking-wider m-0 mb-2">Abklärung</p>
-                <ul className="m-0 p-0 list-none flex flex-col gap-1">
-                  {roteFragen.map((f) => (
-                    <li key={f.frage_text} className="text-[11px] text-studio-w2">
-                      · {f.frage_text}: <span className="text-studio-white">{f.antwort}</span>
+            {(data.audit_log || []).length > 0 && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-studio-w3 m-0 mb-2">
+                  Audit (unveränderlich)
+                </p>
+                <ul className="m-0 p-0 list-none flex flex-col gap-1.5 max-h-40 overflow-y-auto">
+                  {[...(data.audit_log || [])].reverse().slice(0, 12).map((entry, i) => (
+                    <li key={`${entry.zeitstempel}-${i}`} className="text-[10px] text-studio-w3 leading-relaxed">
+                      <span className="text-studio-w2">
+                        {fmtDateTime(entry.zeitstempel)}
+                      </span>
+                      {' · '}
+                      {entry.details || entry.typ}
+                      {entry.bearbeitet_von ? ` · ${entry.bearbeitet_von}` : ''}
                     </li>
                   ))}
                 </ul>

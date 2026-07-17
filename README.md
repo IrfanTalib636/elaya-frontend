@@ -400,5 +400,5 @@ Swagger: [`POST /cases/pricing/preview`](../backend/README.md) · full intake sc
 - Backend API docs: [backend/README.md](../backend/README.md) · Swagger UI `/api/v1/docs` when backend is running
 - Case intake spec: [docs/CUSTOMER-CASE-INTAKE-SPEC.md](../docs/CUSTOMER-CASE-INTAKE-SPEC.md)
 - Wizard test data: [docs/CASE-WIZARD-TEST-DATA.md](../docs/CASE-WIZARD-TEST-DATA.md)
-- Mobile app guide: [backend/docs/MOBILE-APP-DEVELOPER.md](../backend/docs/MOBILE-APP-DEVELOPER.md)
+- Mobile app guide: [docs/MOBILE-APP-DEVELOPER.md](../docs/MOBILE-APP-DEVELOPER.md) *(local monorepo — not in GitHub)*
 - Client spec & prototype notes: [inkderm-prototype/DEVELOPER-HANDOFF.md](../inkderm-prototype/DEVELOPER-HANDOFF.md)

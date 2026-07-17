@@ -2,6 +2,7 @@ import { caseForm } from '../content'
 
 export const CASE_TYPES = caseForm.caseTypes
 export const WIZARD_STEPS = caseForm.wizardSteps
+export const PMU_WIZARD_STEPS = caseForm.pmuWizardSteps
 export const BODY_LOCATIONS = caseForm.bodyLocations
 export const TC_SIDES = caseForm.tcSides
 export const TC_AGE_BUCKETS = caseForm.tcAgeBuckets
@@ -74,6 +75,22 @@ export const INITIAL_CASE_FORM = {
     photo_distance: false,
     photo_no_filter: false,
   },
+  // PMU_01–PMU_05
+  pmu_type: '',
+  pmu_side: '',
+  pmu_age_range: '',
+  pmu_technique: '',
+  pigment_type: '',
+  stitch_depth: '',
+  previously_lasered: null,
+  lasered_notes: '',
+  colors: [],
+  color_density: '',
+  color_saturation: '',
+  has_shading: null,
+  has_linework: null,
+  paradox_darkening_acknowledged: false,
+  life_aftercare_commitment: '',
 }
 
 export const labelFor = (options, value) => {

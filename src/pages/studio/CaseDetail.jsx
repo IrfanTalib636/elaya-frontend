@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { getCase, updateCase } from '../../api/cases'
 import { listSessions } from '../../api/sessions'
 import CaseAvailabilityPanel from '../../components/case/CaseAvailabilityPanel'
+import CaseIntakePhotos from '../../components/case/CaseIntakePhotos'
 import CasePricingPanel from '../../components/case/CasePricingPanel'
 import CaseAnamnesisPanel from '../../components/anamnesis/CaseAnamnesisPanel'
 import CaseSignaturePanel from '../../components/signature/CaseSignaturePanel'
@@ -134,7 +135,7 @@ const CaseDetail = () => {
   useEffect(() => {
     const msg = location.state?.createdToast
     if (!msg) return
-    toast.success(msg)
+    toast.success(msg, { id: 'case-created-flash' })
     navigate(location.pathname, { replace: true, state: null })
   }, [location.pathname, location.state, navigate])
 
@@ -282,6 +283,8 @@ const CaseDetail = () => {
               )}
             </div>
           </Card>
+
+          <CaseIntakePhotos caseData={caseData} />
 
           {/* Medical anamnesis */}
           <CaseAnamnesisPanel

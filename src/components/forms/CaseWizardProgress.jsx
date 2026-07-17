@@ -1,10 +1,10 @@
-import { WIZARD_STEPS } from '../../constants/caseIntake'
 import { Check } from 'lucide-react'
+import { WIZARD_STEPS } from '../../constants/caseIntake'
 
-const CaseWizardProgress = ({ step, total = WIZARD_STEPS.length }) => {
+const CaseWizardProgress = ({ step, steps = WIZARD_STEPS }) => {
+  const total = steps.length
   const pct = Math.round(((step + 1) / total) * 100)
-  const current = WIZARD_STEPS[step]
-  const visibleSteps = WIZARD_STEPS.slice(0, total)
+  const current = steps[step]
 
   return (
     <div className="mb-6 select-none">
@@ -28,10 +28,9 @@ const CaseWizardProgress = ({ step, total = WIZARD_STEPS.length }) => {
         </h3>
       </div>
 
-      {/* Step indicator — extra vertical padding so circles are never clipped */}
       <div className="overflow-x-auto pb-2 pt-2 -mx-1 px-1">
         <div className="flex items-start min-w-max">
-          {visibleSteps.map((s, i) => {
+          {steps.map((s, i) => {
             const done = i < step
             const active = i === step
             return (
@@ -55,11 +54,8 @@ const CaseWizardProgress = ({ step, total = WIZARD_STEPS.length }) => {
                     {s.title}
                   </span>
                 </div>
-                {i < visibleSteps.length - 1 && (
-                  <div
-                    className="w-6 sm:w-8 h-9 flex items-center shrink-0"
-                    aria-hidden
-                  >
+                {i < steps.length - 1 && (
+                  <div className="w-6 sm:w-8 h-9 flex items-center shrink-0" aria-hidden>
                     <div
                       className={`h-0.5 w-full rounded transition-colors duration-300
                         ${i < step ? 'bg-studio-teal/50' : 'bg-white/10'}`}

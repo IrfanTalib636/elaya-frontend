@@ -8,6 +8,7 @@ import { caseForm } from '../../content'
 import {
   CASE_TYPES,
   WIZARD_STEPS,
+  PMU_WIZARD_STEPS,
   BODY_LOCATIONS,
   TC_SIDES,
   TC_AGE_BUCKETS,
@@ -36,6 +37,23 @@ import {
   labelFor,
   bodyLocationLabel,
 } from '../../constants/caseIntake'
+import {
+  PMU_TYPES,
+  PMU_SIDES,
+  PMU_AGE_RANGES,
+  PMU_TECHNIQUES,
+  PMU_PIGMENTS,
+  PMU_STITCH_DEPTHS,
+  PMU_COLORS,
+  PMU_COLOR_DENSITY,
+  PMU_COLOR_SATURATION,
+  PMU_LIFE_SMOKER,
+  PMU_LIFE_ALCOHOL,
+  PMU_LIFE_ACTIVITY,
+  PMU_LIFE_HYDRATION,
+  PMU_LIFE_AFTERCARE,
+  buildPmuBodyLabel,
+} from '../../constants/pmuIntake'
 
 // ── Shared UI bits ────────────────────────────────────────────────────────
 const ui = caseForm.ui
@@ -105,6 +123,7 @@ const zoneValid = (z) =>
   !!(z.bezeichnung?.trim() && z.koerperstelle && z.farben?.length && z.dichte && zoneFlaeche(z) > 0)
 
 const PRICING_STEP = WIZARD_STEPS.findIndex((s) => s.id === 'pricing')
+const PMU_PROGNOSIS_STEP = 4
 
 const fmtCHF = (n) => (n != null && !Number.isNaN(Number(n))
   ? `CHF ${Number(n).toLocaleString('de-CH')}`
@@ -116,47 +135,36 @@ const confidenceColor = (pct) => {
   return 'text-studio-red'
 }
 
+const toggleListValue = (list, value) => (
+  list.includes(value) ? list.filter((x) => x !== value) : [...list, value]
+)
+
 // ── CaseForm wizard ───────────────────────────────────────────────────────
 const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => {
-  const [step, setStep] = useState(0)
   const [form, setForm] = useState(INITIAL_CASE_FORM)
+  const [step, setStep] = useState(0)
   const [error, setError] = useState('')
   const [pricingPreview, setPricingPreview] = useState(null)
   const [pricingLoading, setPricingLoading] = useState(false)
   const [pricingError, setPricingError] = useState('')
 
+  const isPmu = form.type === 'pmu'
+  const activeSteps = isPmu ? PMU_WIZARD_STEPS : WIZARD_STEPS
+
   useEffect(() => {
-    onStepChange?.(step)
-  }, [step, onStepChange])
+    onStepChange?.(step, activeSteps.length)
+  }, [step, activeSteps.length, onStepChange])
 
-  const set = (field, value) => setForm((p) => ({ ...p, [field]: value }))
-  const setZone = (id, patch) =>
-    setForm((p) => ({
-      ...p,
-      zonen: p.zonen.map((z) => (z._id === id ? { ...z, ...patch } : z)),
-    }))
+  const set = (key, value) => setForm((p) => ({ ...p, [key]: value }))
 
-  const toggleColor = (id) =>
-    setForm((p) => ({
-      ...p,
-      tc_colors_present: p.tc_colors_present.includes(id)
-        ? p.tc_colors_present.filter((c) => c !== id)
-        : [...p.tc_colors_present, id],
-    }))
+  const setType = (type) => {
+    setError('')
+    setStep(0)
+    setPricingPreview(null)
+    setForm((p) => ({ ...p, type }))
+  }
 
-  const toggleZoneColor = (zoneId, colorId) =>
-    setForm((p) => ({
-      ...p,
-      zonen: p.zonen.map((z) => {
-        if (z._id !== zoneId) return z
-        const arr = z.farben.includes(colorId)
-          ? z.farben.filter((c) => c !== colorId)
-          : [...z.farben, colorId]
-        return { ...z, farben: arr }
-      }),
-    }))
-
-  const setZonenModus = (active) => {
+  const setZonesActive = (active) => {
     setForm((p) => ({
       ...p,
       zonen_aktiv: active,
@@ -166,10 +174,33 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
 
   const validateStep = (s) => {
     const v = ui.validation
-    if (form.type === 'pmu') {
-      if (!form.tc_title?.trim()) return v.titleRequired
-      if (!form.tc_body_location_main) return v.bodyRequired
-      return ''
+    if (isPmu) {
+      switch (s) {
+        case 0:
+          if (!form.tc_title?.trim()) return v.titleRequired
+          if (!form.pmu_type) return v.pmuTypeRequired
+          if (!form.pmu_age_range) return v.pmuAgeRequired
+          if (!form.pmu_technique) return v.pmuTechniqueRequired
+          if (!form.stitch_depth) return v.pmuDepthRequired
+          return ''
+        case 1:
+          if (form.previously_lasered !== true && form.previously_lasered !== false) return v.pmuLaserRequired
+          return ''
+        case 2:
+          if (!form.colors?.length) return v.pmuColorsRequired
+          if (!form.color_density || !form.color_saturation) return v.pmuColorPropsRequired
+          if (form.has_shading == null || form.has_linework == null) return v.pmuColorPropsRequired
+          return ''
+        case 3:
+          if (!form.life_smoker || !form.life_alcohol || !form.life_activity) return v.pmuLifestyleRequired
+          if (!form.life_hydration || !form.life_aftercare_commitment) return v.pmuLifestyleRequired
+          return ''
+        case 4:
+          if (!form.paradox_darkening_acknowledged) return v.pmuParadoxRequired
+          return ''
+        default:
+          return ''
+      }
     }
 
     switch (s) {
@@ -214,7 +245,7 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
     const err = validateStep(step)
     if (err) { setError(err); return }
     setError('')
-    setStep((s) => Math.min(s + 1, WIZARD_STEPS.length - 1))
+    setStep((s) => Math.min(s + 1, activeSteps.length - 1))
   }
 
   const goBack = () => {
@@ -223,6 +254,40 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
   }
 
   const buildPayload = () => {
+    if (isPmu) {
+      return {
+        type: 'pmu',
+        tc_title: form.tc_title.trim(),
+        bodyLabel: buildPmuBodyLabel(form.pmu_type, form.tc_title),
+        pmu_type: form.pmu_type || undefined,
+        pmu_side: form.pmu_side || undefined,
+        pmu_age_range: form.pmu_age_range || undefined,
+        pmu_technique: form.pmu_technique || undefined,
+        pigment_type: form.pigment_type || undefined,
+        stitch_depth: form.stitch_depth || undefined,
+        previously_lasered: form.previously_lasered,
+        lasered_notes: form.previously_lasered ? (form.lasered_notes?.trim() || '') : '',
+        colors: form.colors || [],
+        color_density: form.color_density || undefined,
+        color_saturation: form.color_saturation || undefined,
+        has_shading: form.has_shading,
+        has_linework: form.has_linework,
+        paradox_darkening_acknowledged: !!form.paradox_darkening_acknowledged,
+        life_smoker: form.life_smoker || undefined,
+        life_alcohol: form.life_alcohol || undefined,
+        life_activity: form.life_activity || undefined,
+        life_hydration: form.life_hydration || undefined,
+        life_aftercare_commitment: form.life_aftercare_commitment || undefined,
+        photo_intake_main: form.photo_intake_main || undefined,
+        photo_intake_detail: form.photo_intake_detail || undefined,
+        photo_marker: form.photo_marker || undefined,
+        photo_std_intake: form.photo_std_intake,
+        zonen_aktiv: false,
+        zonen: [],
+        status: 'pending',
+      }
+    }
+
     const zonen = form.zonen_aktiv
       ? form.zonen.map(({ _id, ...z }) => ({
           bezeichnung: z.bezeichnung.trim(),
@@ -241,17 +306,6 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
       form.bodyLabel?.trim() ||
       bodyLocationLabel(form.tc_body_location_main) ||
       undefined
-
-    if (form.type === 'pmu') {
-      return {
-        type: 'pmu',
-        tc_title: form.tc_title.trim(),
-        tc_body_location_main: form.tc_body_location_main || undefined,
-        bodyLabel,
-        zonen_aktiv: false,
-        zonen: [],
-      }
-    }
 
     return {
       type: 'tattoo',
@@ -302,7 +356,8 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
   }
 
   useEffect(() => {
-    if (form.type === 'pmu' || step !== PRICING_STEP) return undefined
+    const shouldPreview = isPmu ? step === PMU_PROGNOSIS_STEP : step === PRICING_STEP
+    if (!shouldPreview) return undefined
 
     let cancelled = false
     setPricingLoading(true)
@@ -321,17 +376,46 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
       })
 
     return () => { cancelled = true }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch when entering pricing step only
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch when entering pricing/prognosis step only
   }, [step, form.type])
 
   const handleSubmit = () => {
-    for (let i = 0; i < WIZARD_STEPS.length - 1; i += 1) {
+    if (loading) return
+    for (let i = 0; i < activeSteps.length - 1; i += 1) {
       const err = validateStep(i)
       if (err) { setError(err); setStep(i); return }
     }
     setError('')
     onSubmit(buildPayload())
   }
+
+  const setZone = (id, patch) =>
+    setForm((p) => ({
+      ...p,
+      zonen: p.zonen.map((z) => (z._id === id ? { ...z, ...patch } : z)),
+    }))
+
+  const toggleColor = (id) =>
+    setForm((p) => ({
+      ...p,
+      tc_colors_present: p.tc_colors_present.includes(id)
+        ? p.tc_colors_present.filter((c) => c !== id)
+        : [...p.tc_colors_present, id],
+    }))
+
+  const toggleZoneColor = (zoneId, colorId) =>
+    setForm((p) => ({
+      ...p,
+      zonen: p.zonen.map((z) => {
+        if (z._id !== zoneId) return z
+        const arr = z.farben.includes(colorId)
+          ? z.farben.filter((c) => c !== colorId)
+          : [...z.farben, colorId]
+        return { ...z, farben: arr }
+      }),
+    }))
+
+  const setZonenModus = (active) => setZonesActive(active)
 
   const areaCm2 =
     form.tc_size_length && form.tc_size_width
@@ -344,18 +428,67 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
       <FieldLabel>{ui.basics.caseType}</FieldLabel>
       <OptGrid>
         {CASE_TYPES.map((t) => (
-          <Opt key={t.value} active={form.type === t.value} onClick={() => set('type', t.value)} className="flex-1 min-w-[120px]">
+          <Opt key={t.value} active={form.type === t.value} onClick={() => setType(t.value)} className="flex-1 min-w-[120px]">
             {t.label}
           </Opt>
         ))}
       </OptGrid>
 
-      {form.type === 'pmu' && (
-        <div className="rounded-[12px] border border-studio-gold/20 bg-studio-gold/5 p-4 text-[12px] text-studio-w2 leading-relaxed">
-          {ui.basics.pmuNotice}
-        </div>
-      )}
-
+      {isPmu ? (
+        <>
+          <div className="rounded-[12px] border border-studio-gold/20 bg-studio-gold/5 p-4 text-[12px] text-studio-w2 leading-relaxed">
+            {ui.basics.pmuNotice}
+          </div>
+          <Input
+            label={ui.basics.title}
+            placeholder={ui.basics.pmuTitlePlaceholder}
+            value={form.tc_title}
+            onChange={(e) => set('tc_title', e.target.value)}
+          />
+          <FieldLabel>{ui.basics.pmuType}</FieldLabel>
+          <OptGrid>
+            {PMU_TYPES.map(([v, l]) => (
+              <Opt key={v} active={form.pmu_type === v} onClick={() => set('pmu_type', v)}>{l}</Opt>
+            ))}
+          </OptGrid>
+          {(form.pmu_type === 'eyebrows' || form.pmu_type === 'eyeliner') && (
+            <div className="rounded-[12px] border border-studio-teal/20 bg-studio-teal/5 p-3 text-[12px] text-studio-w2 leading-relaxed">
+              {ui.basics.eyeAreaHint}
+            </div>
+          )}
+          <FieldLabel optional>{ui.basics.pmuSide}</FieldLabel>
+          <OptGrid>
+            {PMU_SIDES.map(([v, l]) => (
+              <Opt key={v} active={form.pmu_side === v} onClick={() => set('pmu_side', v)}>{l}</Opt>
+            ))}
+          </OptGrid>
+          <FieldLabel>{ui.basics.pmuAge}</FieldLabel>
+          <OptGrid>
+            {PMU_AGE_RANGES.map(([v, l]) => (
+              <Opt key={v} active={form.pmu_age_range === v} onClick={() => set('pmu_age_range', v)}>{l}</Opt>
+            ))}
+          </OptGrid>
+          <FieldLabel>{ui.basics.pmuTechnique}</FieldLabel>
+          <OptGrid>
+            {PMU_TECHNIQUES.map(([v, l]) => (
+              <Opt key={v} active={form.pmu_technique === v} onClick={() => set('pmu_technique', v)}>{l}</Opt>
+            ))}
+          </OptGrid>
+          <FieldLabel optional>{ui.basics.pmuPigment}</FieldLabel>
+          <OptGrid>
+            {PMU_PIGMENTS.map(([v, l]) => (
+              <Opt key={v} active={form.pigment_type === v} onClick={() => set('pigment_type', v)}>{l}</Opt>
+            ))}
+          </OptGrid>
+          <FieldLabel>{ui.basics.pmuDepth}</FieldLabel>
+          <OptGrid>
+            {PMU_STITCH_DEPTHS.map(([v, l]) => (
+              <Opt key={v} active={form.stitch_depth === v} onClick={() => set('stitch_depth', v)}>{l}</Opt>
+            ))}
+          </OptGrid>
+        </>
+      ) : (
+        <>
       <Input
         label={ui.basics.title}
         value={form.tc_title}
@@ -372,8 +505,6 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
         </OptGrid>
       </div>
 
-      {form.type === 'tattoo' && (
-        <>
           <div>
             <FieldLabel hint={ui.basics.zoneHint}>{ui.basics.zoneMode}</FieldLabel>
             <OptGrid>
@@ -905,8 +1036,25 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
         <p className="text-[11px] font-semibold text-studio-gold-2 uppercase tracking-wider m-0 mb-3">{ui.review.title}</p>
         <ReviewRow label={ui.review.type} value={form.type === 'tattoo' ? ui.review.tattoo : ui.review.pmu} />
         <ReviewRow label={ui.review.label} value={form.tc_title} />
-        <ReviewRow label={ui.review.bodyRegion} value={bodyLocationLabel(form.tc_body_location_main)} />
-        {form.type === 'tattoo' && (
+        {!isPmu && (
+          <ReviewRow label={ui.review.bodyRegion} value={bodyLocationLabel(form.tc_body_location_main)} />
+        )}
+        {isPmu && (
+          <>
+            <ReviewRow label={ui.basics.pmuType} value={labelFor(PMU_TYPES, form.pmu_type)} />
+            <ReviewRow label={ui.basics.pmuAge} value={labelFor(PMU_AGE_RANGES, form.pmu_age_range)} />
+            <ReviewRow label={ui.basics.pmuTechnique} value={labelFor(PMU_TECHNIQUES, form.pmu_technique)} />
+            <ReviewRow label={ui.basics.pmuDepth} value={labelFor(PMU_STITCH_DEPTHS, form.stitch_depth)} />
+            <ReviewRow label={ui.pmu.colorsMulti} value={(form.colors || []).join(', ')} />
+            {pricingPreview?.pricePerSession != null && (
+              <ReviewRow label={ui.review.pricePerSession} value={fmtCHF(pricingPreview.pricePerSession)} />
+            )}
+            {pricingPreview?.sessions && (
+              <ReviewRow label={ui.review.sessionsEstimated} value={`${pricingPreview.sessions.min} – ${pricingPreview.sessions.max}`} />
+            )}
+          </>
+        )}
+        {!isPmu && (
           <>
             <ReviewRow label={ui.review.zones} value={form.zonen_aktiv ? `${form.zonen.length} ${ui.review.zonesCount}` : ui.review.singleTattoo} />
             {!form.zonen_aktiv && areaCm2 && <ReviewRow label={ui.review.area} value={`${areaCm2} cm²`} />}
@@ -929,7 +1077,156 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
     </div>
   )
 
-  const stepContent = [
+  const renderPmuPretreatment = () => (
+    <div className="flex flex-col gap-4">
+      <FieldLabel>{ui.pmu.pretreatmentTitle}</FieldLabel>
+      <OptGrid>
+        <Opt active={form.previously_lasered === true} onClick={() => set('previously_lasered', true)}>{ui.yes}</Opt>
+        <Opt active={form.previously_lasered === false} onClick={() => set('previously_lasered', false)}>{ui.no}</Opt>
+      </OptGrid>
+      {form.previously_lasered === true && (
+        <Input
+          label={ui.pmu.pretreatmentNotes}
+          value={form.lasered_notes}
+          onChange={(e) => set('lasered_notes', e.target.value)}
+          placeholder={ui.pmu.pretreatmentNotesPlaceholder}
+        />
+      )}
+      {(form.pmu_type === 'eyebrows' || form.pmu_type === 'eyeliner') && (
+        <div className="rounded-[12px] border border-studio-teal/20 bg-studio-teal/5 p-3 text-[12px] text-studio-w2 leading-relaxed">
+          {ui.basics.eyeAreaHint}
+        </div>
+      )}
+    </div>
+  )
+
+  const renderPmuColors = () => (
+    <div className="flex flex-col gap-4">
+      <div>
+        <FieldLabel hint={ui.pmu.colorsHint}>{ui.pmu.colorsMulti}</FieldLabel>
+        <OptGrid>
+          {PMU_COLORS.map((c) => (
+            <Opt
+              key={c}
+              active={(form.colors || []).includes(c)}
+              onClick={() => set('colors', toggleListValue(form.colors || [], c))}
+            >
+              {c}
+            </Opt>
+          ))}
+        </OptGrid>
+      </div>
+      <FieldLabel>{ui.pmu.colorDensity}</FieldLabel>
+      <OptGrid>
+        {PMU_COLOR_DENSITY.map(([v, l]) => (
+          <Opt key={v} active={form.color_density === v} onClick={() => set('color_density', v)}>{l}</Opt>
+        ))}
+      </OptGrid>
+      <FieldLabel>{ui.pmu.colorSaturation}</FieldLabel>
+      <OptGrid>
+        {PMU_COLOR_SATURATION.map(([v, l]) => (
+          <Opt key={v} active={form.color_saturation === v} onClick={() => set('color_saturation', v)}>{l}</Opt>
+        ))}
+      </OptGrid>
+      <FieldLabel>{ui.pmu.hasShading}</FieldLabel>
+      <OptGrid>
+        <Opt active={form.has_shading === true} onClick={() => set('has_shading', true)}>{ui.yes}</Opt>
+        <Opt active={form.has_shading === false} onClick={() => set('has_shading', false)}>{ui.no}</Opt>
+      </OptGrid>
+      <FieldLabel>{ui.pmu.hasLinework}</FieldLabel>
+      <OptGrid>
+        <Opt active={form.has_linework === true} onClick={() => set('has_linework', true)}>{ui.yes}</Opt>
+        <Opt active={form.has_linework === false} onClick={() => set('has_linework', false)}>{ui.no}</Opt>
+      </OptGrid>
+    </div>
+  )
+
+  const renderPmuLifestyle = () => (
+    <div className="flex flex-col gap-4">
+      <div>
+        <FieldLabel hint={ui.pmu.smokingHint}>{ui.pmu.smoking}</FieldLabel>
+        <OptGrid>
+          {PMU_LIFE_SMOKER.map(([v, l]) => (
+            <Opt key={v} active={form.life_smoker === v} onClick={() => set('life_smoker', v)}>{l}</Opt>
+          ))}
+        </OptGrid>
+      </div>
+      <FieldLabel>{ui.pmu.alcohol}</FieldLabel>
+      <OptGrid>
+        {PMU_LIFE_ALCOHOL.map(([v, l]) => (
+          <Opt key={v} active={form.life_alcohol === v} onClick={() => set('life_alcohol', v)}>{l}</Opt>
+        ))}
+      </OptGrid>
+      <FieldLabel>{ui.pmu.activity}</FieldLabel>
+      <OptGrid>
+        {PMU_LIFE_ACTIVITY.map(([v, l]) => (
+          <Opt key={v} active={form.life_activity === v} onClick={() => set('life_activity', v)}>{l}</Opt>
+        ))}
+      </OptGrid>
+      <FieldLabel>{ui.pmu.hydration}</FieldLabel>
+      <OptGrid>
+        {PMU_LIFE_HYDRATION.map(([v, l]) => (
+          <Opt key={v} active={form.life_hydration === v} onClick={() => set('life_hydration', v)}>{l}</Opt>
+        ))}
+      </OptGrid>
+      <FieldLabel>{ui.pmu.aftercare}</FieldLabel>
+      <OptGrid>
+        {PMU_LIFE_AFTERCARE.map(([v, l]) => (
+          <Opt key={v} active={form.life_aftercare_commitment === v} onClick={() => set('life_aftercare_commitment', v)}>{l}</Opt>
+        ))}
+      </OptGrid>
+    </div>
+  )
+
+  const renderPmuPrognosis = () => (
+    <div className="flex flex-col gap-4">
+      <div className="rounded-[14px] border border-studio-amber/30 bg-studio-amber/5 p-4">
+        <p className="text-[13px] font-bold text-studio-amber m-0 mb-2">{ui.pmu.paradoxTitle}</p>
+        <p className="text-[12px] text-studio-w2 m-0 leading-relaxed">{ui.pmu.paradoxBody}</p>
+      </div>
+      <button
+        type="button"
+        onClick={() => set('paradox_darkening_acknowledged', !form.paradox_darkening_acknowledged)}
+        className={`flex items-start gap-3 rounded-[12px] border p-3.5 text-left cursor-pointer transition-all
+          ${form.paradox_darkening_acknowledged
+            ? 'border-studio-teal/30 bg-studio-teal/5'
+            : 'border-elaya-border bg-studio-bg-4'}`}
+      >
+        <span className={`mt-0.5 w-5 h-5 rounded-[5px] border-2 flex items-center justify-center text-[12px] shrink-0
+          ${form.paradox_darkening_acknowledged ? 'border-studio-teal-2 bg-studio-teal/20 text-studio-teal-2' : 'border-white/25'}`}>
+          {form.paradox_darkening_acknowledged ? '✓' : ''}
+        </span>
+        <span className="text-[12px] text-studio-w2 leading-relaxed">{ui.pmu.paradoxConfirm}</span>
+      </button>
+
+      <div className="rounded-[14px] border border-studio-gold/15 bg-studio-gold/5 p-4">
+        <p className="text-[13px] font-bold text-studio-gold-2 m-0 mb-3">{ui.pmu.prognosisTitle}</p>
+        {pricingLoading && <div className="flex justify-center py-4"><Spinner /></div>}
+        {pricingError && <p className="text-[12px] text-red-300 m-0">{pricingError}</p>}
+        {pricingPreview && !pricingLoading && (
+          <div className="flex flex-col gap-2 text-[12px] text-studio-w3">
+            <div className="flex justify-between">
+              <span>{ui.pmu.sessionsEstimated}</span>
+              <span className="text-studio-teal-2 font-bold">{pricingPreview.sessions?.min} – {pricingPreview.sessions?.max}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>{ui.pmu.pricePerSession}</span>
+              <span className="text-studio-gold-2 font-bold">{fmtCHF(pricingPreview.pricePerSession)}</span>
+            </div>
+            <div className="flex justify-between border-t border-white/6 pt-2 mt-1 font-bold text-studio-white">
+              <span>{ui.pmu.totalCost}</span>
+              <span className="text-studio-gold-2">{fmtCHF(pricingPreview.totalMin)} – {fmtCHF(pricingPreview.totalMax)}</span>
+            </div>
+          </div>
+        )}
+      </div>
+      {!form.paradox_darkening_acknowledged && (
+        <p className="text-[11px] text-studio-w4 text-center m-0">{ui.pmu.confirmToContinue}</p>
+      )}
+    </div>
+  )
+
+  const tattooSteps = [
     renderBasics,
     renderProperties,
     renderSkin,
@@ -940,20 +1237,30 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
     renderReview,
   ]
 
-  const isLast = step === WIZARD_STEPS.length - 1
-  const isPmuShort = form.type === 'pmu' && step === 0
+  const pmuSteps = [
+    renderBasics,
+    renderPmuPretreatment,
+    renderPmuColors,
+    renderPmuLifestyle,
+    renderPmuPrognosis,
+    renderPhotos,
+    renderReview,
+  ]
+
+  const stepContent = isPmu ? pmuSteps : tattooSteps
+  const isLast = step === activeSteps.length - 1
 
   return (
     <div className="flex flex-col gap-4">
-      <CaseWizardProgress step={form.type === 'pmu' ? 0 : step} total={form.type === 'pmu' ? 1 : WIZARD_STEPS.length} />
+      <CaseWizardProgress step={step} steps={activeSteps} />
 
       <StepError message={error} />
 
-      {form.type === 'pmu' ? renderBasics() : stepContent[step]()}
+      {stepContent[step]?.()}
 
       <div className="flex justify-between gap-3 pt-4 border-t border-elaya-border mt-2">
         <div className="flex gap-2">
-          {step > 0 && form.type !== 'pmu' ? (
+          {step > 0 ? (
             <Button type="button" variant="ghost" onClick={goBack} disabled={loading}>
               <ChevronLeft size={14} className="mr-0.5" /> {ui.back}
             </Button>
@@ -965,7 +1272,7 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
         </div>
 
         <div className="flex gap-2">
-          {isPmuShort || isLast ? (
+          {isLast ? (
             <Button type="button" loading={loading} onClick={handleSubmit}>
               {ui.createCase}
             </Button>

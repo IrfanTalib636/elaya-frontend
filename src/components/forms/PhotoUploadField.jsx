@@ -112,7 +112,7 @@ const PhotoUploadField = ({
           ${disabled ? 'opacity-60 pointer-events-none' : ''}`}
       >
         {previewUrl ? (
-          <div className="relative aspect-[4/3] max-h-48">
+          <div className="relative aspect-square max-h-48">
             <img src={previewUrl} alt={label} className="w-full h-full object-cover" />
             {!disabled && (
               <button

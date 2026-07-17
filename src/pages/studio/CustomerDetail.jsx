@@ -190,6 +190,7 @@ const CustomerDetail = () => {
   }
 
   const handleCreateCase = async (form) => {
+    if (creatingCase) return
     setCreatingCase(true)
     try {
       const res = await createCase({ ...form, customer_id: id })

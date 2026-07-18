@@ -406,9 +406,9 @@ Swagger: [`POST /cases/pricing/preview`](../backend/README.md) · full intake sc
 
 - **Customer profile tab (mobile)** — edit profile, studio switch + approval, DSG data export, studio history — [`docs/M3-CUSTOMER-PROFILE-BACKLOG.md`](../docs/M3-CUSTOMER-PROFILE-BACKLOG.md)
 - **PMU intake card on case detail** — show PMU-specific fields (currently tattoo labels)
-- **ElayShop customer checkout APIs** — catalog, cart, 3-step checkout (studio order list already exists)
 - **Studio transfer request** — customer request + studio/admin approval
 - **Nachsorge / AI chat** — `/nachsorge/check`, `POST /chat`
+- **ElayShop admin product CRUD** — catalog seed + customer APIs done; admin UI in M4
 - **Real AI (Phase B)** — photo analysis, nachsorge check, Elaya FAB chat (all via backend, not client keys)
 - Customer mobile app (consume Phases A–E APIs)
 - Admin dashboard pages (M4 — studio approval UI, finance, ElayShop catalog, …)

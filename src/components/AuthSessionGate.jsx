@@ -30,6 +30,12 @@ const AuthSessionGate = ({ children }) => {
       try {
         const newToken = await trySilentRefresh()
         useAuthStore.getState().setAccessToken(newToken)
+        // Refresh cookie is shared — sync role so a customer token cannot keep studio UI open
+        try {
+          await useAuthStore.getState().refreshProfile()
+        } catch {
+          // ignore — ProtectedRoute still validates role on next render
+        }
       } catch {
         useAuthStore.getState().clearLocalSession()
       }

@@ -71,6 +71,12 @@ api.interceptors.response.use(
         const newToken = await trySilentRefresh()
         const { default: useAuthStore } = await import('../store/authStore')
         useAuthStore.getState().setAccessToken(newToken)
+        // Keep persisted role in sync — a Swagger/customer login can overwrite the shared refresh cookie
+        try {
+          await useAuthStore.getState().refreshProfile()
+        } catch {
+          // Profile sync is best-effort; request retry still uses the new token
+        }
         api.defaults.headers.common.Authorization = `Bearer ${newToken}`
         original.headers.Authorization = `Bearer ${newToken}`
         processQueue(null, newToken)

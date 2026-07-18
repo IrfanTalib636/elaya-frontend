@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Plus, Lock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Lock, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { listAppointments, createAppointment } from '../../api/appointments'
 import { listCustomers } from '../../api/customers'
 import { listCases, getCaseAvailability } from '../../api/cases'
 import { fmtDateDeLong } from '../../utils/time'
 import PreSessionCheck, { EMPTY_PRE_SESSION, preSessionToParams, preSessionToBody } from '../../components/case/PreSessionCheck'
+import GroupBookingModal from '../../components/appointments/GroupBookingModal'
+import GroupDetailModal from '../../components/appointments/GroupDetailModal'
 import { Button, Spinner, Modal, Input, Select } from '../../components/ui'
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -130,6 +132,10 @@ const ApptBlock = memo(({ appt, onClick }) => {
   const height   = Math.max(dur / 60 * HOUR_H, 24)
   const faded    = appt.status === 'storniert' || appt.status === 'cancelled'
   const style    = TYPE_STYLE[appt.type] ?? TYPE_STYLE.treatment
+  const isGroup  = !!appt.gruppen_termin
+  const groupN   = appt.gruppen_cases?.length
+    ? appt.gruppen_cases.length
+    : (appt._groupCount ?? 0)
 
   const name = appt.customer
     ? `${appt.customer.vorname ?? ''} ${appt.customer.nachname ?? ''}`.trim()
@@ -144,22 +150,48 @@ const ApptBlock = memo(({ appt, onClick }) => {
         ${faded ? 'opacity-40' : 'hover:brightness-125 active:brightness-90'}
         transition-[filter]`}
       onClick={(e) => { e.stopPropagation(); onClick(appt) }}
-      title={`${name} · ${TYPE_LABELS[appt.type] ?? appt.type}`}
+      title={`${name} · ${TYPE_LABELS[appt.type] ?? appt.type}${isGroup ? ` · Gruppen (${groupN})` : ''}`}
     >
       <p className="text-[11px] font-bold truncate m-0 leading-snug">{name}</p>
       {height > 36 && (
         <p className="text-[10px] opacity-75 truncate m-0 leading-snug">
-          {appt.case?.caseId ?? '—'} · {TYPE_LABELS[appt.type] ?? appt.type}
+          {isGroup
+            ? `Gruppen (${groupN}) · ${TYPE_LABELS[appt.type] ?? appt.type}`
+            : `${appt.case?.caseId ?? '—'} · ${TYPE_LABELS[appt.type] ?? appt.type}`}
         </p>
       )}
       {height > 56 && (
         <p className="text-[10px] opacity-50 truncate m-0 leading-snug">
           {appt.time}{appt.dauer_minuten ? ` · ${appt.dauer_minuten} min` : ''}
+          {isGroup && appt.gruppen_preis_total != null ? ` · CHF ${appt.gruppen_preis_total}` : ''}
         </p>
       )}
     </button>
   )
 })
+
+/** Collapse sibling group appointments into one calendar block */
+const collapseGroupAppointments = (appointments) => {
+  const seen = new Set()
+  const result = []
+
+  for (const a of appointments) {
+    if (a.gruppen_termin && a.gruppen_id) {
+      if (seen.has(a.gruppen_id)) continue
+      seen.add(a.gruppen_id)
+      const siblings = appointments.filter((x) => x.gruppen_id === a.gruppen_id)
+      result.push({
+        ...a,
+        _groupCount: siblings.length || a.gruppen_cases?.length || 2,
+        _siblings: siblings,
+      })
+    } else {
+      result.push(a)
+    }
+  }
+
+  return result
+}
 
 // ── DayCol ─────────────────────────────────────────────────────────────────
 const DayCol = memo(({ dateISO, isToday, appointments, onApptClick, onCellClick }) => {
@@ -181,8 +213,8 @@ const DayCol = memo(({ dateISO, isToday, appointments, onApptClick, onCellClick 
       </div>
 
       <div className="absolute inset-0 pointer-events-none">
-        {appointments.map((a) => (
-          <ApptBlock key={a.id ?? a._id} appt={a} onClick={onApptClick} />
+        {collapseGroupAppointments(appointments).map((a) => (
+          <ApptBlock key={a.gruppen_id || a.id || a._id} appt={a} onClick={onApptClick} />
         ))}
       </div>
 
@@ -453,6 +485,8 @@ const StudioAppointments = () => {
   const [apptsByDay, setApptsByDay] = useState({})
   const [loading, setLoading]       = useState(true)
   const [showModal, setShowModal]   = useState(false)
+  const [showGroupModal, setShowGroupModal] = useState(false)
+  const [groupDetail, setGroupDetail] = useState(null)
   const [prefill, setPrefill]       = useState({ date: '', time: '' })
   const [modalDefaults, setModalDefaults] = useState({ customerId: '', caseId: '' })
 
@@ -513,8 +547,24 @@ const StudioAppointments = () => {
   const openModal = useCallback((date, time) => { setPrefill({ date, time }); setShowModal(true) }, [])
 
   const handleApptClick = useCallback((appt) => {
+    if (appt.gruppen_termin) {
+      setGroupDetail({
+        appt,
+        siblings: appt._siblings?.length
+          ? appt._siblings
+          : Object.values(apptsByDay)
+              .flat()
+              .filter((x) => x.gruppen_id && x.gruppen_id === appt.gruppen_id),
+      })
+      return
+    }
     const caseId = appt.case?._id ?? appt.case
     if (caseId) navigate(`/studio/cases/${caseId}`)
+  }, [navigate, apptsByDay])
+
+  const openCaseFromGroup = useCallback((caseId) => {
+    setGroupDetail(null)
+    navigate(`/studio/cases/${caseId}`)
   }, [navigate])
 
   const totalCount = Object.values(apptsByDay).reduce((s, arr) => s + arr.length, 0)
@@ -534,6 +584,17 @@ const StudioAppointments = () => {
           </div>
           <div className="flex items-center gap-2">
             <Button size="sm" variant="secondary" onClick={goToToday}>Heute</Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setPrefill({ date: todayISO, time: '09:00' })
+                setShowGroupModal(true)
+              }}
+            >
+              <Users size={14} />
+              Gruppen-Termin
+            </Button>
             <Button size="sm" onClick={() => openModal(todayISO, '09:00')}>
               <Plus size={14} />
               Neuer Termin
@@ -612,6 +673,24 @@ const StudioAppointments = () => {
           defaultCaseId={modalDefaults.caseId}
           onClose={() => setShowModal(false)}
           onCreated={() => { setShowModal(false); load(weekStart) }}
+        />
+      )}
+
+      {showGroupModal && (
+        <GroupBookingModal
+          defaultDate={prefill.date || todayISO}
+          defaultTime={prefill.time || '09:00'}
+          onClose={() => setShowGroupModal(false)}
+          onCreated={() => { setShowGroupModal(false); load(weekStart) }}
+        />
+      )}
+
+      {groupDetail && (
+        <GroupDetailModal
+          appt={groupDetail.appt}
+          siblings={groupDetail.siblings}
+          onClose={() => setGroupDetail(null)}
+          onOpenCase={openCaseFromGroup}
         />
       )}
     </div>

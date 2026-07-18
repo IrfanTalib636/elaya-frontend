@@ -6,7 +6,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 **Stack:** React 19 · Vite 8 · React Router 7 · Tailwind CSS v4 · Zustand · Axios · React Hot Toast · Lucide React  
 **Design source:** `inkderm-prototype/` (colors, layout, nav structure)  
 **API:** Connects to [Elaya Backend API](../backend/README.md) at `/api/v1`  
-**Last updated:** 2026-07-17
+**Last updated:** 2026-07-18
 
 ---
 
@@ -45,7 +45,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | **Sitzungen (`/studio/sessions`)** | ✅ Done | Search + draft filter, pagination |
 | **New Session form** | ✅ Done | Laser params, sliders, payment, draft / finalize |
 | **Session Detail** | ✅ Done | Read-only view; finalize draft button |
-| **Appointments calendar** | ✅ Done | Week grid, lockout-aware booking, pre-session UV/meds check |
+| **Appointments calendar** | ✅ Done | Week grid, lockout-aware booking, **Gruppen-Termin (15% + detail panel)**, pre-session UV/meds check |
 | **Analytics** | ✅ Done | Revenue KPIs, charts, pipeline donut, revenue by source, platform fee, shop provision, coins, netto |
 | **Settings** | ✅ Done | Theme; pricing; profile, hours, rooms, staff |
 | **CRM (`/studio/crm`)** | ✅ Done | Pipeline + list + Aufgaben, notes, tasks, templates |
@@ -103,6 +103,19 @@ Customer experience is **mobile-only** (separate project); the landing page link
 
 **After case save (Case Detail):** TC_07 anamnese, TC_08 Merkblatt, TC_09 signature, klaerung/freigabe.
 
+### Milestone 3 — Group booking (2026-07-18)
+
+| Area | Status | Notes |
+|---|---|---|
+| **Gruppen-Termin modal** | ✅ Done | `GroupBookingModal` — multi tattoo cases, size points (max 4), live 15% price |
+| **Live case pricing** | ✅ Done | Falls back to `GET /cases/:id/pricing` when `pricePerSession` unset |
+| **Sperrfrist for group** | ✅ Done | Strictest `fruehestes` across selected cases; date `min` + auto-bump |
+| **Calendar badge** | ✅ Done | Collapsed **Gruppen (N)** block; stores sibling appts |
+| **Group detail panel** | ✅ Done | `GroupDetailModal` — list cases, rabatt, Gesamt; open Akte per case |
+| **Config** | ✅ Done | `GET /config/public` → `gruppen_groessen` (`getPublicConfig`) |
+
+**Flow:** Termine → **Gruppen-Termin** → customer → ≥2 tattoo cases → price + lockout → book → calendar → click → detail panel.
+
 ### Changelog
 
 ```
@@ -134,6 +147,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 [2026-07-14] — TC_06 photos placeholder; selected-option UI contrast in wizard
 [2026-07-16] — Phase A–E: signature flow, CRM/list ampel, klaerung + freigabe panels, Freigabe UI fix
 [2026-07-17] — PMU 7-step wizard (prototype parity); TC_06/PMU_06 photo upload + case detail gallery; square photo previews; duplicate create toast fix
+[2026-07-18] — Studio Gruppen-Termin: multi-case booking, size points, 15% discount, lockout hint, calendar badge + group detail panel
 ```
 
 ---
@@ -156,7 +170,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | `/studio/sessions` | Studio roles | All sessions list |
 | `/studio/sessions/new` | Studio roles | New session form |
 | `/studio/sessions/:id` | Studio roles | Session detail |
-| `/studio/appointments` | Studio roles | Week-grid calendar + booking |
+| `/studio/appointments` | Studio roles | Week-grid calendar + single / Gruppen-Termin booking |
 | `/studio/analytics` | Studio roles | Revenue KPIs + charts |
 | `/studio/crm` | Studio roles | CRM lead pipeline (kanban + list) |
 | `/studio/shop` | Studio roles | ElayShop orders + shipping status |
@@ -187,7 +201,7 @@ frontend/
 │   │   ├── cases.js             # list, create, get, update, availability, pricing, pricingPreview
 │   │   ├── appointments.js      # list, create, get, update
 │   │   ├── sessions.js          # list, create, get, update
-│   │   ├── config.js            # studio pricing / platform config
+│   │   ├── config.js            # getPublicConfig, studio pricing / platform config
 │   │   ├── studio.js            # studio settings (profile, hours, rooms, staff)
 │   │   ├── crm.js               # pipeline, tasks, notes, templates
 │   │   ├── shop.js              # shop orders + status
@@ -218,6 +232,9 @@ frontend/
 │   │   │   ├── CaseIntakePhotos.jsx     # Read-only intake photo grid on case detail
 │   │   │   ├── CasePricingPanel.jsx
 │   │   │   └── PreSessionCheck.jsx
+│   │   ├── appointments/
+│   │   │   ├── GroupBookingModal.jsx    # Gruppen-Termin create (15% rabatt)
+│   │   │   └── GroupDetailModal.jsx     # Calendar click — sibling cases + total
 │   │   ├── GuestRoute.jsx       # Blocks auth pages when logged in
 │   │   └── ProtectedRoute.jsx   # Requires auth + allowed role
 │   ├── constants/
@@ -245,6 +262,9 @@ frontend/
 │   │   └── admin/
 │   │       ├── Login.jsx, ForgotPassword.jsx, ResetPassword.jsx
 │   │       └── Dashboard.jsx
+│   ├── utils/
+│   │   ├── groupBooking.js      # Size points + 15% group pricing helpers
+│   │   └── time.js
 │   ├── store/
 │   │   └── authStore.js         # Zustand — session persist (no Provider needed)
 │   ├── styles/                  # Tailwind tokens + component classes
@@ -386,7 +406,9 @@ Swagger: [`POST /cases/pricing/preview`](../backend/README.md) · full intake sc
 
 - **Customer profile tab (mobile)** — edit profile, studio switch + approval, DSG data export, studio history — [`docs/M3-CUSTOMER-PROFILE-BACKLOG.md`](../docs/M3-CUSTOMER-PROFILE-BACKLOG.md)
 - **PMU intake card on case detail** — show PMU-specific fields (currently tattoo labels)
-- **Persist pricing on create** — write `sessionsMin` / `sessionsMax` / `pricePerSession` from preview to case
+- **ElayShop customer checkout APIs** — catalog, cart, 3-step checkout (studio order list already exists)
+- **Studio transfer request** — customer request + studio/admin approval
+- **Nachsorge / AI chat** — `/nachsorge/check`, `POST /chat`
 - **Real AI (Phase B)** — photo analysis, nachsorge check, Elaya FAB chat (all via backend, not client keys)
 - Customer mobile app (consume Phases A–E APIs)
 - Admin dashboard pages (M4 — studio approval UI, finance, ElayShop catalog, …)

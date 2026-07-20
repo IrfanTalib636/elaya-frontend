@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, Plus, Pencil, Calendar } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Plus, Pencil, Calendar, ArrowLeftRight } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCustomer, updateCustomer } from '../../api/customers'
 import { createCase } from '../../api/cases'
@@ -23,6 +23,12 @@ const SOURCE_LABELS = {
   studio_eigen:         'Studio',
   plattform_vermittelt: 'Plattform',
   studio_wechsel:       'Wechsel',
+}
+
+const FIRMA_GRUND_LABELS = {
+  registrierung:  'Registrierung',
+  studio_anlage:  'Im Studio angelegt',
+  studio_wechsel: 'Studio-Wechsel',
 }
 
 const CASE_TYPE_LABELS = { tattoo: 'Tattoo', pmu: 'PMU' }
@@ -50,6 +56,11 @@ const fmtDate = (d) =>
     ? new Date(d).toLocaleDateString('de-CH', { day: 'numeric', month: 'long', year: 'numeric' })
     : '—'
 
+const fmtShortDate = (d) =>
+  d
+    ? new Date(d).toLocaleDateString('de-CH', { day: '2-digit', month: 'short', year: 'numeric' })
+    : '—'
+
 // ── Sub-components ────────────────────────────────────────────────────────
 const InfoRow = ({ label, value }) => (
   <div className="flex flex-col gap-0.5">
@@ -67,6 +78,60 @@ const SessionBar = ({ done = 0, total = 0 }) => {
       </div>
       <span className="text-studio-w3 text-[11px] shrink-0 tabular-nums">{done}/{total}</span>
     </div>
+  )
+}
+
+const StudioTimeline = ({ timeline = [] }) => {
+  if (!timeline.length) return null
+
+  return (
+    <Card className="flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <ArrowLeftRight size={14} className="text-studio-gold-2 shrink-0" />
+        <h3 className="text-[13px] font-semibold text-studio-white m-0">Studio-Verlauf</h3>
+      </div>
+
+      <ol className="m-0 p-0 list-none flex flex-col">
+        {timeline.map((entry, index) => {
+          const isLast = index === timeline.length - 1
+          const grundLabel = FIRMA_GRUND_LABELS[entry.grund] ?? entry.grund ?? '—'
+
+          return (
+            <li key={`${entry.firma_id}-${entry.von}`} className="relative flex gap-3 pb-4 last:pb-0">
+              {!isLast && (
+                <span
+                  className="absolute left-[5px] top-3 bottom-0 w-px bg-elaya-border"
+                  aria-hidden="true"
+                />
+              )}
+
+              <span
+                className={`relative z-1 mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ring-2 ring-studio-bg-3
+                  ${entry.is_current ? 'bg-studio-gold' : 'bg-studio-w4'}`}
+                aria-hidden="true"
+              />
+
+              <div className="min-w-0 flex-1">
+                <p className={`text-[12px] font-semibold m-0 leading-snug ${entry.is_current ? 'text-studio-white' : 'text-studio-w1'}`}>
+                  {entry.firma_name}
+                  {entry.is_current ? (
+                    <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-studio-gold-2">
+                      Aktuell
+                    </span>
+                  ) : null}
+                </p>
+                <p className="text-studio-w3 text-[11px] m-0 mt-0.5 tabular-nums">
+                  {fmtShortDate(entry.von)}
+                  {' – '}
+                  {entry.is_current ? 'heute' : fmtShortDate(entry.bis)}
+                </p>
+                <p className="text-studio-w2 text-[11px] m-0 mt-1">{grundLabel}</p>
+              </div>
+            </li>
+          )
+        })}
+      </ol>
+    </Card>
   )
 }
 
@@ -106,7 +171,14 @@ const CaseRow = ({ c, onClick }) => (
     </td>
     <td className="px-5 py-3 text-studio-gold-2 text-[12px] font-mono">{c.caseId}</td>
     <td className="px-5 py-3 text-studio-w1 text-[13px]">
-      {c.tc_title || CASE_TYPE_LABELS[c.type] || c.type}
+      <span className="inline-flex items-center gap-2 flex-wrap">
+        {c.tc_title || CASE_TYPE_LABELS[c.type] || c.type}
+        {c.transferiert ? (
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-studio-gold-2 bg-studio-gold/10 px-1.5 py-0.5 rounded">
+            Transferiert
+          </span>
+        ) : null}
+      </span>
     </td>
     <td className="px-5 py-3">
       <Badge variant="status" value={c.status}>{c.status}</Badge>
@@ -276,6 +348,38 @@ const CustomerDetail = () => {
         </Badge>
       </PageHeader>
 
+      {customer.wechsel_status === 'transferiert_ein' && (
+        <div className="mb-5 px-4 py-3 rounded-[12px] border border-studio-gold/30 bg-studio-gold/10">
+          <p className="text-studio-gold-2 text-[13px] font-semibold m-0 mb-1">
+            Kunde per Studio-Wechsel übernommen
+          </p>
+          <p className="text-studio-w2 text-[12px] m-0 leading-relaxed">
+            Medizinische Akte und Elaycoins gehören dem Kunden und sind hier sichtbar
+            {customer.vorheriges_studio_name
+              ? ` · vorher: ${customer.vorheriges_studio_name}`
+              : ''}
+            {customer.transferiert_am
+              ? ` · seit ${fmtDate(customer.transferiert_am)}`
+              : ''}
+            . Übertragene Fälle sind als „Transferiert“ markiert.
+          </p>
+          <p className="text-studio-teal-2 text-[12px] font-mono font-semibold m-0 mt-2">
+            Elaycoins: {customer.elaycoins_balance ?? customer.elaycoins?.balance ?? 0}
+          </p>
+        </div>
+      )}
+
+      {customer.wechsel_status === 'transferiert_aus' && (
+        <div className="mb-5 px-4 py-3 rounded-[12px] border border-[#ff9a3c]/35 bg-[#ff9a3c]/10">
+          <p className="text-[#ff9a3c] text-[13px] font-semibold m-0 mb-1">
+            Dieser Kunde hat zu {customer.aktuelle_firma_name || 'einem anderen Studio'} gewechselt
+          </p>
+          <p className="text-studio-w2 text-[12px] m-0 leading-relaxed">
+            Nur Behandlungen aus eurem Studio bleiben sichtbar · Akte ist schreibgeschützt.
+          </p>
+        </div>
+      )}
+
       <div className="flex gap-5 items-start">
 
         {/* ── Left column ── */}
@@ -293,7 +397,7 @@ const CustomerDetail = () => {
                   </p>
                 </div>
               </div>
-              <Button size="sm" variant="secondary" onClick={openEdit}>
+              <Button size="sm" variant="secondary" onClick={openEdit} disabled={customer.read_only}>
                 <Pencil size={12} />
                 Bearbeiten
               </Button>
@@ -316,7 +420,7 @@ const CustomerDetail = () => {
                 Fälle
                 <span className="ml-2 text-studio-w3 text-[12px] font-normal">({caseCount})</span>
               </h2>
-              <Button size="sm" variant="secondary" onClick={() => setShowCaseModal(true)}>
+              <Button size="sm" variant="secondary" onClick={() => setShowCaseModal(true)} disabled={customer.read_only}>
                 <Plus size={13} />
                 Neuer Fall
               </Button>
@@ -408,6 +512,8 @@ const CustomerDetail = () => {
 
         {/* ── Right sidebar ── */}
         <div className="flex flex-col gap-5 w-[260px] shrink-0">
+
+          <StudioTimeline timeline={customer.firma_timeline} />
 
           {/* Pipeline stage */}
           <Card className="flex flex-col gap-4">

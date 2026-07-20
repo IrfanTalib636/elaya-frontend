@@ -29,6 +29,7 @@ const SessionDetail        = lazy(() => import('./pages/studio/SessionDetail'))
 const StudioAnalytics      = lazy(() => import('./pages/studio/Analytics'))
 const StudioCrm            = lazy(() => import('./pages/studio/Crm'))
 const StudioShop           = lazy(() => import('./pages/studio/Shop'))
+const StudioTransfers      = lazy(() => import('./pages/studio/Transfers'))
 const StudioElaycoins      = lazy(() => import('./pages/studio/Elaycoins'))
 const StudioSettings       = lazy(() => import('./pages/studio/Settings'))
 
@@ -99,6 +100,7 @@ const AppInner = () => {
             <Route path="analytics"     element={<StudioAnalytics />} />
             <Route path="crm"           element={<StudioCrm />} />
             <Route path="shop"          element={<StudioShop />} />
+            <Route path="transfers"     element={<StudioTransfers />} />
             <Route path="elaycoins"     element={<StudioElaycoins />} />
             <Route path="settings"      element={<StudioSettings />} />
           </Route>

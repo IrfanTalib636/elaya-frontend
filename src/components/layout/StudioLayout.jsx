@@ -3,7 +3,7 @@ import { useNavigate, NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Calendar, CalendarDays, BarChart2, Heart,
   ShoppingBag, Coins, Settings, LogOut, ChevronLeft, ChevronRight,
-  FolderOpen, ClipboardList,
+  FolderOpen, ClipboardList, ArrowLeftRight,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../ElayaLogo'
@@ -27,9 +27,10 @@ const NAV_SECTIONS = [
   {
     label: 'VERWALTUNG',
     items: [
-      { to: '/studio/shop',      icon: ShoppingBag, label: studioNav?.shop      ?? 'Avora Shop'    },
-      { to: '/studio/elaycoins', icon: Coins,       label: studioNav?.elaycoins ?? 'Elaycoins'     },
-      { to: '/studio/settings',  icon: Settings,    label: studioNav?.settings  ?? 'Einstellungen' },
+      { to: '/studio/shop',      icon: ShoppingBag,   label: studioNav?.shop      ?? 'Avora Shop'    },
+      { to: '/studio/transfers', icon: ArrowLeftRight, label: studioNav?.transfers ?? 'Studio-Wechsel' },
+      { to: '/studio/elaycoins', icon: Coins,         label: studioNav?.elaycoins ?? 'Elaycoins'     },
+      { to: '/studio/settings',  icon: Settings,      label: studioNav?.settings  ?? 'Einstellungen' },
     ],
   },
 ]

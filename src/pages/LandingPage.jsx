@@ -3,9 +3,29 @@ import { Smartphone, Monitor, ArrowRight, Settings } from 'lucide-react'
 import ElayaLogo from '../components/ElayaLogo'
 import ThemeSwitcher from '../components/ThemeSwitcher'
 import { landing } from '../content'
+import useAuthStore from '../store/authStore'
+import useAuthHydrated from '../hooks/useAuthHydrated'
+import { STUDIO_ROLES, ADMIN_ROLES } from '../constants/roles'
 
 const LandingPage = () => {
   const navigate = useNavigate()
+  const hydrated = useAuthHydrated()
+  const { isAuthenticated, user, logout } = useAuthStore()
+
+  /** Same role → dashboard; other portal → logout then login page */
+  const goToPortal = async (loginPath, dashboardPath, allowedRoles) => {
+    if (!hydrated) return
+
+    if (isAuthenticated && user?.role && allowedRoles.includes(user.role)) {
+      navigate(dashboardPath)
+      return
+    }
+
+    if (isAuthenticated) {
+      await logout()
+    }
+    navigate(loginPath)
+  }
 
   return (
     <div className="h-screen bg-landing-bg flex flex-col font-sans overflow-hidden">
@@ -70,7 +90,7 @@ const LandingPage = () => {
             <button
               type="button"
               className="flex flex-col gap-3 p-5 rounded-[16px] border border-studio-gold/30 bg-studio-bg-3 text-left cursor-pointer transition-all hover:border-studio-gold/60 hover:bg-studio-bg-4 w-full"
-              onClick={() => navigate('/studio/login')}
+              onClick={() => goToPortal('/studio/login', '/studio', STUDIO_ROLES)}
             >
               <div className="w-9 h-9 rounded-[10px] bg-studio-gold/10 flex items-center justify-center shrink-0">
                 <Monitor size={16} className="text-studio-gold-2" />
@@ -89,7 +109,7 @@ const LandingPage = () => {
           {/* Admin */}
           <button
             type="button"
-            onClick={() => navigate('/admin/login')}
+            onClick={() => goToPortal('/admin/login', '/admin', ADMIN_ROLES)}
             className="flex items-center gap-1.5 text-studio-w3 text-[11px] bg-transparent border-0 cursor-pointer hover:text-studio-w2 transition-colors"
           >
             <Settings size={12} />

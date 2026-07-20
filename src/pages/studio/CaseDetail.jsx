@@ -210,14 +210,28 @@ const CaseDetail = () => {
           labelMode="inline"
         />
         <Badge variant="status" value={caseData.status}>{caseData.status}</Badge>
-        <Button size="sm" variant="secondary" onClick={() => navigate(`/studio/appointments?case_id=${id}&customer_id=${custId}&book=1`)}>
+        {caseData.transferiert ? (
+          <Badge variant="source" value="studio_wechsel">Transferiert</Badge>
+        ) : null}
+        <Button size="sm" variant="secondary" onClick={() => navigate(`/studio/appointments?case_id=${id}&customer_id=${custId}&book=1`)} disabled={caseData.read_only}>
           Termin buchen
         </Button>
-        <Button size="sm" onClick={() => navigate(`/studio/sessions/new?case_id=${id}`)}>
+        <Button size="sm" onClick={() => navigate(`/studio/sessions/new?case_id=${id}`)} disabled={caseData.read_only}>
           <Plus size={13} />
           Neue Sitzung
         </Button>
       </PageHeader>
+
+      {caseData.transferiert && (
+        <div className="mb-5 px-4 py-3 rounded-[12px] border border-studio-gold/30 bg-studio-gold/10">
+          <p className="text-studio-gold-2 text-[13px] font-semibold m-0">
+            Fall von anderem Studio übernommen
+          </p>
+          <p className="text-studio-w2 text-[12px] m-0 mt-1">
+            Medizinische Historie gehört zum Kunden und ist nach dem Studio-Wechsel hier sichtbar.
+          </p>
+        </div>
+      )}
 
       {/* Stats bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">

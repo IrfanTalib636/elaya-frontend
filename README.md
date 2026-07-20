@@ -6,7 +6,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 **Stack:** React 19 · Vite 8 · React Router 7 · Tailwind CSS v4 · Zustand · Axios · React Hot Toast · Lucide React  
 **Design source:** `inkderm-prototype/` (colors, layout, nav structure)  
 **API:** Connects to [Elaya Backend API](../backend/README.md) at `/api/v1`  
-**Last updated:** 2026-07-18
+**Last updated:** 2026-07-20
 
 ---
 
@@ -116,6 +116,20 @@ Customer experience is **mobile-only** (separate project); the landing page link
 
 **Flow:** Termine → **Gruppen-Termin** → customer → ≥2 tattoo cases → price + lockout → book → calendar → click → detail panel.
 
+### Milestone 3 — Studio transfer / Firmenwechsel (2026-07-20)
+
+| Area | Status | Notes |
+|---|---|---|
+| **Studio-Wechsel page** | ✅ Done | `/studio/transfers` — inbound + outbound queue, Anfrage / Beitritt / Wechsel dates |
+| **Customer detail — transfer banners** | ✅ Done | `transferiert_ein` / `transferiert_aus` alerts + read-only state |
+| **Customer detail — Studio-Verlauf** | ✅ Done | Sidebar timeline from `firma_timeline` (`firma_history` with studio names) |
+| **Case list / detail badges** | ✅ Done | “Transferiert” on transferred-in cases |
+| **Landing page portal switch** | ✅ Done | Logged-in user → dashboard or logout before other portal login |
+| **Admin approve/reject UI** | ⏳ M4 | API only until admin dashboard (Swagger for M3 testing) |
+| **Email on approve/reject** | ⏳ M4+ | Notify customer + both studios — reuse existing Nodemailer service |
+
+**Flow:** Customer requests via mobile API → admin approves (API) → target studio sees customer + full Akte; source studio sees outgoing row + read-only history.
+
 ### Changelog
 
 ```
@@ -148,6 +162,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 [2026-07-16] — Phase A–E: signature flow, CRM/list ampel, klaerung + freigabe panels, Freigabe UI fix
 [2026-07-17] — PMU 7-step wizard (prototype parity); TC_06/PMU_06 photo upload + case detail gallery; square photo previews; duplicate create toast fix
 [2026-07-18] — Studio Gruppen-Termin: multi-case booking, size points, 15% discount, lockout hint, calendar badge + group detail panel
+[2026-07-20] — Studio transfer (M3): /studio/transfers queue, customer transfer banners, Studio-Verlauf timeline, case badges, landing portal fix
 ```
 
 ---
@@ -174,6 +189,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | `/studio/analytics` | Studio roles | Revenue KPIs + charts |
 | `/studio/crm` | Studio roles | CRM lead pipeline (kanban + list) |
 | `/studio/shop` | Studio roles | ElayShop orders + shipping status |
+| `/studio/transfers` | Studio roles | Studio-Wechsel — inbound/outbound transfer queue (read-only) |
 | `/studio/elaycoins` | Studio roles | Customer coin balances (read-only) |
 | `/studio/settings` | Studio roles | Settings — theme, pricing, profile, hours, rooms, staff |
 | `/admin/login` | Guest only | Admin login |
@@ -205,6 +221,7 @@ frontend/
 │   │   ├── studio.js            # studio settings (profile, hours, rooms, staff)
 │   │   ├── crm.js               # pipeline, tasks, notes, templates
 │   │   ├── shop.js              # shop orders + status
+│   │   ├── studioTransfers.js   # list studio transfer requests
 │   │   ├── analytics.js         # studio analytics summary
 │   │   ├── elaycoins.js         # studio coin overview
 │   │   └── files.js             # staging upload, fetch photo blob, delete staging
@@ -257,7 +274,7 @@ frontend/
 │   │   │   ├── Overview.jsx, Today.jsx, Customers.jsx, CustomerDetail.jsx
 │   │   │   ├── Cases.jsx, CaseDetail.jsx, Sessions.jsx, NewSession.jsx, SessionDetail.jsx
 │   │   │   ├── Appointments.jsx, Analytics.jsx, Settings.jsx
-│   │   │   ├── Crm.jsx, Shop.jsx, Elaycoins.jsx
+│   │   │   ├── Crm.jsx, Shop.jsx, Elaycoins.jsx, Transfers.jsx
 │   │   │   └── Login.jsx, Register.jsx, ForgotPassword.jsx, ResetPassword.jsx
 │   │   └── admin/
 │   │       ├── Login.jsx, ForgotPassword.jsx, ResetPassword.jsx
@@ -404,14 +421,13 @@ Swagger: [`POST /cases/pricing/preview`](../backend/README.md) · full intake sc
 
 ## Planned next (M3+)
 
-- **Customer profile tab (mobile)** — edit profile, studio switch + approval, DSG data export, studio history — [`docs/M3-CUSTOMER-PROFILE-BACKLOG.md`](../docs/M3-CUSTOMER-PROFILE-BACKLOG.md)
+- **Customer profile tab (mobile)** — edit profile, DSG data export, studio history — [`docs/M3-CUSTOMER-PROFILE-BACKLOG.md`](../docs/M3-CUSTOMER-PROFILE-BACKLOG.md)
 - **PMU intake card on case detail** — show PMU-specific fields (currently tattoo labels)
-- **Studio transfer request** — customer request + studio/admin approval
 - **Nachsorge / AI chat** — `/nachsorge/check`, `POST /chat`
 - **ElayShop admin product CRUD** — catalog seed + customer APIs done; admin UI in M4
 - **Real AI (Phase B)** — photo analysis, nachsorge check, Elaya FAB chat (all via backend, not client keys)
 - Customer mobile app (consume Phases A–E APIs)
-- Admin dashboard pages (M4 — studio approval UI, finance, ElayShop catalog, …)
+- Admin dashboard pages (M4 — studio approval UI, finance, ElayShop catalog, Studio-Wechsel, …)
 - 18+ age validation on customer creation (Swiss law)
 - Case chat UI (backend chat stub exists)
 
@@ -422,5 +438,5 @@ Swagger: [`POST /cases/pricing/preview`](../backend/README.md) · full intake sc
 - Backend API docs: [backend/README.md](../backend/README.md) · Swagger UI `/api/v1/docs` when backend is running
 - Case intake spec: [docs/CUSTOMER-CASE-INTAKE-SPEC.md](../docs/CUSTOMER-CASE-INTAKE-SPEC.md)
 - Wizard test data: [docs/CASE-WIZARD-TEST-DATA.md](../docs/CASE-WIZARD-TEST-DATA.md)
-- Mobile app guide: [docs/MOBILE-APP-DEVELOPER.md](../docs/MOBILE-APP-DEVELOPER.md) *(local monorepo — not in GitHub)*
+- Mobile app guide: [MOBILE-APP-DEVELOPER.md](../MOBILE-APP-DEVELOPER.md) — update with `backend/README.md` and `frontend/README.md` when customer/mobile features change *(local monorepo — not in GitHub)*
 - Client spec & prototype notes: [inkderm-prototype/DEVELOPER-HANDOFF.md](../inkderm-prototype/DEVELOPER-HANDOFF.md)

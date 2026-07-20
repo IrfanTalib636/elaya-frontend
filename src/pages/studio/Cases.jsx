@@ -48,6 +48,11 @@ const CaseRow = ({ c, onClick }) => {
     >
       <td className="px-5 py-3">
         <span className="text-studio-gold-2 text-[12px] font-mono font-semibold">{c.caseId ?? '—'}</span>
+        {c.transferiert ? (
+          <p className="text-studio-gold-2 text-[10px] font-semibold uppercase tracking-wide m-0 mt-0.5">
+            Transferiert
+          </p>
+        ) : null}
         {c.lastSessionDate && (
           <p className="text-studio-w3 text-[10px] m-0 mt-0.5">Letzte: {fmtDate(c.lastSessionDate)}</p>
         )}

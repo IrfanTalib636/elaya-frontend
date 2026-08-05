@@ -107,6 +107,7 @@ export const studioNav = {
   sessions:     'Sessions',
   analytics:    'Analytics',
   crm:          'Aftercare',
+  chat:         'Chat',
   shop:         'Avora Shop',
   transfers:    'Studio transfer',
   elaycoins:    'Elaycoins',

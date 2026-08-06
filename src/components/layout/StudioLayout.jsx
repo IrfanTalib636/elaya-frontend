@@ -3,7 +3,7 @@ import { useNavigate, NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Calendar, CalendarDays, BarChart2, Heart,
   ShoppingBag, Coins, Settings, LogOut, ChevronLeft, ChevronRight,
-  FolderOpen, ClipboardList, ArrowLeftRight,
+  FolderOpen, ClipboardList, ArrowLeftRight, MessageCircle,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../ElayaLogo'
@@ -22,6 +22,7 @@ const NAV_SECTIONS = [
       { to: '/studio/sessions',     icon: ClipboardList,   label: studioNav?.sessions     ?? 'Sitzungen', end: true },
       { to: '/studio/analytics',    icon: BarChart2,       label: studioNav?.analytics    ?? 'Analytik'     },
       { to: '/studio/crm',          icon: Heart,           label: studioNav?.crm          ?? 'Nachsorge'    },
+      { to: '/studio/chat',         icon: MessageCircle,   label: studioNav?.chat         ?? 'Chat'        },
     ],
   },
   {

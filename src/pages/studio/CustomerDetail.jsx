@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, Plus, Pencil, Calendar, ArrowLeftRight } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Plus, Pencil, Calendar, ArrowLeftRight, MessageCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCustomer, updateCustomer } from '../../api/customers'
 import { createCase } from '../../api/cases'
@@ -346,6 +346,14 @@ const CustomerDetail = () => {
         <Badge variant="source"   value={customer.akquise_quelle}>
           {SOURCE_LABELS[customer.akquise_quelle] ?? customer.akquise_quelle}
         </Badge>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => navigate(`/studio/chat?customerId=${id}`)}
+        >
+          <MessageCircle size={14} />
+          Chat
+        </Button>
       </PageHeader>
 
       {customer.wechsel_status === 'transferiert_ein' && (

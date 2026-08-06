@@ -1,11 +1,18 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Sun, Moon, Monitor, Check, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
+import { Sun, Moon, Monitor, Check, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Card, PageHeader, Input, Button, Spinner, Select, Badge } from '../../components/ui'
 import useTheme from '../../hooks/useTheme'
 import useAuthStore from '../../store/authStore'
 import { getStudioConfig, updateStudioConfig } from '../../api/config'
-import { getStudioSettings, updateStudioSettings } from '../../api/studio'
+import {
+  getStudioSettings,
+  updateStudioSettings,
+  getStudioStripeStatus,
+  startStudioStripeConnect,
+  refreshStudioStripeConnect,
+} from '../../api/studio'
 import { ROLES } from '../../constants/roles'
 import { WEEKDAYS, MITARBEITER_ROLLEN } from '../../constants/studio'
 import { formatTimeRange12 } from '../../utils/time'
@@ -104,6 +111,7 @@ const TABS = [
   { id: 'hours',      icon: Clock,       label: 'Öffnungszeiten' },
   { id: 'rooms',      icon: Grid,        label: 'Räume'          },
   { id: 'staff',      icon: Users,       label: 'Mitarbeiter'    },
+  { id: 'stripe',     icon: CreditCard,  label: 'Stripe'         },
 ]
 
 const useCanEditSettings = () => {
@@ -983,10 +991,139 @@ const StaffTab = () => {
   )
 }
 
+// ── Stripe Connect tab ─────────────────────────────────────────────────────
+const StripeTab = () => {
+  const canEdit = useCanEditSettings()
+  const [searchParams] = useSearchParams()
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [status, setStatus] = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await getStudioStripeStatus()
+      setStatus(res.data.data)
+    } catch {
+      toast.error('Stripe-Status konnte nicht geladen werden')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  useEffect(() => {
+    const flag = searchParams.get('stripe')
+    if (flag === 'return' || flag === 'refresh') {
+      ;(async () => {
+        try {
+          await refreshStudioStripeConnect()
+          toast.success('Stripe-Status aktualisiert')
+          load()
+        } catch {
+          /* ignore */
+        }
+      })()
+    }
+  }, [searchParams, load])
+
+  const connect = async () => {
+    if (!canEdit) return
+    setBusy(true)
+    try {
+      const res = await startStudioStripeConnect()
+      const url = res.data.data?.url
+      if (!url) throw new Error('No onboarding URL')
+      window.location.href = url
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Stripe Connect fehlgeschlagen')
+      setBusy(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Spinner size="lg" />
+      </div>
+    )
+  }
+
+  return (
+    <Section
+      title="Stripe Connect"
+      desc="Verbinde dein Studio-Konto, um Shop-Provisionen ausgezahlt zu bekommen (Testmodus möglich)."
+    >
+      {!status?.stripe_enabled ? (
+        <p className="text-studio-w2 text-[13px] m-0">
+          Stripe ist auf dem Server noch nicht konfiguriert (STRIPE_SECRET_KEY fehlt).
+        </p>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap gap-3">
+            <Badge variant="status" value={status.onboarding_complete ? 'aktiv' : 'ausstehend'}>
+              {status.onboarding_complete ? 'Onboarding fertig' : 'Onboarding offen'}
+            </Badge>
+            {status.stripe_test_mode ? (
+              <Badge>Testmodus</Badge>
+            ) : null}
+          </div>
+          <div className="text-[13px] text-studio-w2 space-y-1">
+            <p className="m-0">
+              Account:{' '}
+              <span className="font-mono text-studio-w1">
+                {status.account_id || '— noch nicht verbunden'}
+              </span>
+            </p>
+            <p className="m-0">
+              Charges: {status.charges_enabled ? 'ja' : 'nein'} · Payouts:{' '}
+              {status.payouts_enabled ? 'ja' : 'nein'}
+            </p>
+          </div>
+          {canEdit ? (
+            <div className="flex gap-2">
+              <Button disabled={busy} onClick={connect}>
+                {status.account_id ? 'Onboarding fortsetzen' : 'Mit Stripe verbinden'}
+              </Button>
+              <Button variant="secondary" disabled={busy} onClick={load}>
+                Status aktualisieren
+              </Button>
+            </div>
+          ) : (
+            <p className="text-studio-w3 text-[12px] m-0">Nur Studio-Admin kann Stripe verbinden.</p>
+          )}
+          <p className="text-studio-w4 text-[11px] m-0">
+            Im Stripe-Testmodus kannst du die Onboarding-Formulare mit Testdaten ausfüllen.
+            Später werden die Live-Keys des Clients eingetragen.
+          </p>
+        </div>
+      )}
+    </Section>
+  )
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 const StudioSettings = () => {
-  const [activeTab, setActiveTab] = useState('appearance')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabFromUrl = searchParams.get('tab')
+  const [activeTab, setActiveTab] = useState(
+    TABS.some((t) => t.id === tabFromUrl) ? tabFromUrl : 'appearance'
+  )
   const { preference, setPreference } = useTheme()
+
+  useEffect(() => {
+    if (tabFromUrl && TABS.some((t) => t.id === tabFromUrl)) {
+      setActiveTab(tabFromUrl)
+    }
+  }, [tabFromUrl])
+
+  const selectTab = (id) => {
+    setActiveTab(id)
+    setSearchParams(id === 'appearance' ? {} : { tab: id })
+  }
 
   return (
     <div className="p-6 max-w-[860px]">
@@ -998,7 +1135,7 @@ const StudioSettings = () => {
             <button
               key={id}
               type="button"
-              onClick={() => setActiveTab(id)}
+              onClick={() => selectTab(id)}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-colors w-full text-left cursor-pointer border-0 ${
                 activeTab === id
                   ? 'bg-(--nav-active-bg) text-studio-gold-2'
@@ -1038,6 +1175,7 @@ const StudioSettings = () => {
           {activeTab === 'hours'   && <HoursTab />}
           {activeTab === 'rooms'   && <RoomsTab />}
           {activeTab === 'staff'   && <StaffTab />}
+          {activeTab === 'stripe'  && <StripeTab />}
         </div>
       </div>
     </div>

@@ -98,6 +98,16 @@ const OrderDetailModal = ({ order, onClose }) => {
             <span className="text-studio-w2">Provision ({order.provision_prozent}%)</span>
             <span className="text-studio-gold-2 font-mono">{fmtCHF(order.provision_betrag)}</span>
           </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-studio-w2">Auszahlung</span>
+            <span className="font-mono">
+              {order.commission_status === 'paid'
+                ? 'Ausgezahlt'
+                : order.commission_status === 'cancelled'
+                  ? 'Storniert'
+                  : 'Offen'}
+            </span>
+          </div>
         </div>
 
         {addr && (addr.strasse || addr.ort) ? (
@@ -125,6 +135,7 @@ const OrderDetailModal = ({ order, onClose }) => {
 
 const StudioShop = () => {
   const [orders, setOrders] = useState([])
+  const [summary, setSummary] = useState(null)
   const [pagination, setPagination] = useState(null)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -136,6 +147,7 @@ const StudioShop = () => {
     try {
       const res = await listShopOrders({ page: pageNum, limit: PAGE_SIZE })
       setOrders(res.data.data.orders ?? [])
+      setSummary(res.data.data.summary ?? null)
       setPagination(res.data.data.pagination)
     } catch (err) {
       const status = err?.response?.status
@@ -181,13 +193,17 @@ const StudioShop = () => {
     }
   }
 
-  const totalProvision = orders.reduce((s, o) => s + (o.provision_betrag ?? 0), 0)
+  const commissionLabel = (status) => {
+    if (status === 'paid') return { text: 'Ausgezahlt', cls: 'text-studio-teal-2' }
+    if (status === 'cancelled') return { text: 'Storniert', cls: 'text-studio-w3' }
+    return { text: 'Offen', cls: 'text-studio-gold-2' }
+  }
 
   return (
     <div className="p-6 max-w-[1200px]">
       <PageHeader
         title="ElayShop"
-        subtitle="Bestellungen deiner Kunden · Versandstatus pflegen"
+        subtitle="Bestellungen deiner Kunden · Versandstatus & Provisionsauszahlung"
       />
 
       {loading && orders.length === 0 && !pagination?.total ? (
@@ -200,23 +216,37 @@ const StudioShop = () => {
       ) : (
         <Card padding="none" className={loading && orders.length > 0 ? 'opacity-60 pointer-events-none' : ''}>
           {pagination?.total > 0 && (
-            <div className="px-5 py-4 border-b border-elaya-border flex flex-wrap gap-4">
+            <div className="px-5 py-4 border-b border-elaya-border flex flex-wrap gap-6">
               <div>
                 <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">Bestellungen</p>
                 <p className="text-studio-white text-[18px] font-bold m-0 tabular-nums">{pagination.total}</p>
               </div>
               <div>
-                <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">Provision (Seite)</p>
-                <p className="text-studio-gold-2 text-[18px] font-bold m-0 tabular-nums">{fmtCHF(totalProvision)}</p>
+                <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">Umsatz</p>
+                <p className="text-studio-white text-[18px] font-bold m-0 tabular-nums">
+                  {fmtCHF(summary?.revenue ?? 0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">Provision offen</p>
+                <p className="text-studio-gold-2 text-[18px] font-bold m-0 tabular-nums">
+                  {fmtCHF(summary?.pending_provision ?? 0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">Provision ausgezahlt</p>
+                <p className="text-studio-teal-2 text-[18px] font-bold m-0 tabular-nums">
+                  {fmtCHF(summary?.paid_provision ?? 0)}
+                </p>
               </div>
             </div>
           )}
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px]">
+            <table className="w-full min-w-[860px]">
               <thead>
                 <tr className="border-b border-elaya-border">
-                  {['Datum', 'Kunde', 'Produkte', 'Betrag', 'Prov.', 'Status'].map((h) => (
+                  {['Datum', 'Kunde', 'Produkte', 'Betrag', 'Prov.', 'Auszahlung', 'Status'].map((h) => (
                     <th
                       key={h}
                       className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap"
@@ -256,6 +286,12 @@ const StudioShop = () => {
                       <td className="px-5 py-3 text-studio-gold-2 text-[12px] font-mono whitespace-nowrap">
                         {fmtCHF(o.provision_betrag)}
                         <span className="text-studio-w4 text-[10px] ml-1">({o.provision_prozent}%)</span>
+                      </td>
+                      <td className="px-5 py-3 text-[11px] font-semibold whitespace-nowrap">
+                        {(() => {
+                          const c = commissionLabel(o.commission_status)
+                          return <span className={c.cls}>{c.text}</span>
+                        })()}
                       </td>
                       <td className="px-5 py-3 min-w-[130px]">
                         <select

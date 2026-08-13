@@ -5,6 +5,7 @@ import useAuthStore from '../../store/authStore'
 import { listCustomers } from '../../api/customers'
 import { listAppointments } from '../../api/appointments'
 import { listSessions } from '../../api/sessions'
+import { listNachsorge } from '../../api/nachsorge'
 import { Card, Badge, Button, Spinner, PageHeader } from '../../components/ui'
 
 // Cached formatter — created once, not on every render
@@ -67,7 +68,7 @@ const StudioOverview = () => {
   const user = useAuthStore((s) => s.user)
 
   const [loading, setLoading] = useState(true)
-  const [kpis, setKpis] = useState({ customers: 0, todayAppts: 0, weekRevenue: 0 })
+  const [kpis, setKpis] = useState({ customers: 0, todayAppts: 0, weekRevenue: 0, openAftercare: 0 })
   const [todayAppts, setTodayAppts] = useState([])
   const todayLabel = useMemo(() => formatDate(new Date()), [])
 
@@ -77,10 +78,11 @@ const StudioOverview = () => {
         const today = todayISO()
         const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10)
 
-        const [custRes, apptRes, sessRes] = await Promise.all([
+        const [custRes, apptRes, sessRes, nachsorgeRes] = await Promise.all([
           listCustomers({ limit: 1 }),
           listAppointments({ from: today, to: today, limit: 100 }),
           listSessions({ date_from: weekAgo, date_to: today, limit: 100 }),
+          listNachsorge({ page: 1, limit: 50 }).catch(() => null),
         ])
 
         const appointments = apptRes.data.data.appointments ?? []
@@ -89,10 +91,19 @@ const StudioOverview = () => {
           .filter((s) => !s.is_no_show && !s.is_draft)
           .reduce((sum, s) => sum + (s.zahlung?.betragCHF ?? 0), 0)
 
+        // Open aftercare: red/orange checks from the last 14 days (first page only)
+        const twoWeeksAgo = Date.now() - 14 * 864e5
+        const openAftercare = (nachsorgeRes?.data.data.checks ?? []).filter(
+          (c) =>
+            (c.ampel === 'rot' || c.ampel === 'orange') &&
+            new Date(c.erstellt_am).getTime() >= twoWeeksAgo
+        ).length
+
         setKpis({
           customers: custRes.data.data.pagination.total,
           todayAppts: appointments.length,
           weekRevenue,
+          openAftercare,
         })
         setTodayAppts(appointments.slice(0, 8))
       } catch {
@@ -129,7 +140,7 @@ const StudioOverview = () => {
         <KpiCard icon={Users}      label="Aktive Kunden"       value={kpis.customers}           color="text-studio-gold-2" />
         <KpiCard icon={Calendar}   label="Heute Termine"       value={kpis.todayAppts}          color="text-studio-teal"   />
         <KpiCard icon={TrendingUp} label="Umsatz diese Woche"  value={fmtCHF(kpis.weekRevenue)} color="text-studio-gold-2" />
-        <KpiCard icon={Heart}      label="Offene Nachsorgen"   value={0}                        color="text-studio-amber"  />
+        <KpiCard icon={Heart}      label="Offene Nachsorgen"   value={kpis.openAftercare}       color="text-studio-amber"  />
       </div>
 
       <Card padding="none">

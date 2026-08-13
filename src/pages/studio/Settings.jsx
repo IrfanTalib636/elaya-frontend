@@ -13,6 +13,13 @@ import {
   startStudioStripeConnect,
   refreshStudioStripeConnect,
 } from '../../api/studio'
+import PricingConfigForm from '../../components/pricing/PricingConfigForm'
+import {
+  PRICING_GROUPS,
+  PRICING_LABELS,
+  pricingValuesFromConfig,
+  buildStudioPricing,
+} from '../../components/pricing/pricingFields'
 import { ROLES } from '../../constants/roles'
 import { WEEKDAYS, MITARBEITER_ROLLEN } from '../../constants/studio'
 import { formatTimeRange12 } from '../../utils/time'
@@ -120,27 +127,21 @@ const useCanEditSettings = () => {
 }
 
 // ── Pricing tab ────────────────────────────────────────────────────────────
+const BASE_PRICE_KEYS = ['basePricePerCm2', 'minPrice', 'pmuPrice']
+
 const PricingTab = () => {
   const canEdit = useCanEditSettings()
   const [isEditing, setIsEditing] = useState(false)
   const [config,   setConfig]   = useState(null)
   const [loading,  setLoading]  = useState(true)
   const [saving,   setSaving]   = useState(false)
-  const [form,     setForm]     = useState({
-    coin_wert:        '',
-    basePricePerCm2:  '',
-    minPrice:         '',
-    pmuPrice:         '',
-  })
+  const [coinWert, setCoinWert] = useState('')
+  const [pricing,  setPricing]  = useState(() => pricingValuesFromConfig())
 
   const applyConfig = (cfg) => {
     setConfig(cfg)
-    setForm({
-      coin_wert:       cfg.coin_wert        ?? cfg.platform_limits?.coinWert ?? '',
-      basePricePerCm2: cfg.studio_pricing?.basePricePerCm2 ?? '',
-      minPrice:        cfg.studio_pricing?.minPrice        ?? '',
-      pmuPrice:        cfg.studio_pricing?.pmuPrice        ?? '',
-    })
+    setCoinWert(cfg.coin_wert ?? cfg.platform_limits?.coinWert ?? '')
+    setPricing(pricingValuesFromConfig(cfg.studio_pricing))
   }
 
   const load = useCallback(async () => {
@@ -157,8 +158,6 @@ const PricingTab = () => {
 
   useEffect(() => { load() }, [load])
 
-  const set = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))
-
   const handleCancel = () => {
     if (config) applyConfig(config)
     setIsEditing(false)
@@ -167,19 +166,13 @@ const PricingTab = () => {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const payload = {}
+      const payload = {
+        // studio_pricing replaces the whole override set — always send every filled key.
+        studio_pricing: buildStudioPricing(pricing),
+      }
 
-      const coinVal = parseFloat(form.coin_wert)
+      const coinVal = parseFloat(coinWert)
       if (!Number.isNaN(coinVal)) payload.coin_wert = coinVal
-
-      const pricing = {}
-      const baseVal = parseFloat(form.basePricePerCm2)
-      const minVal  = parseFloat(form.minPrice)
-      const pmuVal  = parseFloat(form.pmuPrice)
-      if (!Number.isNaN(baseVal)) pricing.basePricePerCm2 = baseVal
-      if (!Number.isNaN(minVal))  pricing.minPrice        = minVal
-      if (!Number.isNaN(pmuVal))  pricing.pmuPrice        = pmuVal
-      if (Object.keys(pricing).length) payload.studio_pricing = pricing
 
       const res = await updateStudioConfig(payload)
       applyConfig(res.data.data.studio_config)
@@ -197,6 +190,10 @@ const PricingTab = () => {
   const limits = config?.platform_limits
   const fmtPrice = (v) => (v !== '' && v != null ? `CHF ${v}` : 'Plattform-Standard')
 
+  const overriddenMultipliers = PRICING_GROUPS
+    .flatMap((group) => group.fields)
+    .filter(({ key }) => !BASE_PRICE_KEYS.includes(key) && pricing[key] !== '')
+
   return (
     <Section
       title="Preise & Elaycoin"
@@ -212,7 +209,7 @@ const PricingTab = () => {
 
       {!isEditing ? (
         <>
-          <InfoRow label="CHF pro Coin" value={fmtPrice(form.coin_wert)} />
+          <InfoRow label="CHF pro Coin" value={fmtPrice(coinWert)} />
           {limits && (
             <p className="text-studio-w3 text-[11px] m-0 -mt-2">
               Erlaubter Bereich: CHF {limits.minWert} – CHF {limits.maxWert}
@@ -220,11 +217,27 @@ const PricingTab = () => {
             </p>
           )}
           <div className="h-px bg-elaya-border" />
-          <InfoRow label="Basispreis / cm²" value={fmtPrice(form.basePricePerCm2)} />
-          <InfoRow label="Mindestpreis / Sitzung" value={fmtPrice(form.minPrice)} />
-          <InfoRow label="PMU-Preis" value={fmtPrice(form.pmuPrice)} />
+          <InfoRow label="Basispreis / cm²" value={fmtPrice(pricing.basePricePerCm2)} />
+          <InfoRow label="Mindestpreis / Sitzung" value={fmtPrice(pricing.minPrice)} />
+          <InfoRow label="PMU-Preis" value={fmtPrice(pricing.pmuPrice)} />
+          <div className="h-px bg-elaya-border" />
+          {overriddenMultipliers.length === 0 ? (
+            <p className="text-studio-w2 text-[12px] m-0">
+              Alle Multiplikatoren (Farbe, Tiefe, Alter…) verwenden den Plattform-Standard.
+            </p>
+          ) : (
+            <div>
+              <p className="text-[12px] font-semibold text-studio-w2 m-0 mb-1">
+                Angepasste Multiplikatoren ({overriddenMultipliers.length})
+              </p>
+              {overriddenMultipliers.map(({ key }) => (
+                <InfoRow key={key} label={PRICING_LABELS[key]} value={`× ${pricing[key]}`} />
+              ))}
+            </div>
+          )}
           <p className="text-studio-w3 text-[11px] m-0">
-            Multiplikatoren (Farbe, Tiefe, Alter…) werden in einer späteren Version konfigurierbar.
+            Diese Werte steuern die KI-Preisberechnung und die Sitzungsschätzung für die Kunden
+            dieses Studios.
           </p>
         </>
       ) : (
@@ -237,8 +250,8 @@ const PricingTab = () => {
               min={limits?.minWert}
               max={limits?.maxWert}
               step="0.01"
-              value={form.coin_wert}
-              onChange={set('coin_wert')}
+              value={coinWert}
+              onChange={(e) => setCoinWert(e.target.value)}
             />
             {limits && (
               <p className="text-studio-w3 text-[11px] m-0 mt-1.5">
@@ -250,41 +263,11 @@ const PricingTab = () => {
 
           <div className="h-px bg-elaya-border" />
 
-          <div>
-            <p className="text-[12px] font-semibold text-studio-w2 m-0 mb-3">Preiskalkulation</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Input
-                label="Basispreis / cm² (CHF)"
-                type="number"
-                min={0}
-                step="0.01"
-                value={form.basePricePerCm2}
-                onChange={set('basePricePerCm2')}
-                placeholder="3.00"
-              />
-              <Input
-                label="Mindestpreis / Sitzung (CHF)"
-                type="number"
-                min={0}
-                step="1"
-                value={form.minPrice}
-                onChange={set('minPrice')}
-                placeholder="90"
-              />
-              <Input
-                label="PMU-Preis (CHF)"
-                type="number"
-                min={0}
-                step="1"
-                value={form.pmuPrice}
-                onChange={set('pmuPrice')}
-                placeholder="149"
-              />
-            </div>
-            <p className="text-studio-w3 text-[11px] m-0 mt-2">
-              Leere Felder verwenden den Plattform-Standard.
-            </p>
-          </div>
+          <PricingConfigForm
+            values={pricing}
+            defaults={config?.pricing_defaults}
+            onChange={(key, value) => setPricing((prev) => ({ ...prev, [key]: value }))}
+          />
         </>
       )}
     </Section>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, Plus, ChevronRight, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { getCase, updateCase } from '../../api/cases'
+import { getCase, updateCase, updateEstimateConfirmation } from '../../api/cases'
 import { listSessions } from '../../api/sessions'
 import CaseAvailabilityPanel from '../../components/case/CaseAvailabilityPanel'
 import CaseIntakePhotos from '../../components/case/CaseIntakePhotos'
@@ -10,7 +10,7 @@ import CasePricingPanel from '../../components/case/CasePricingPanel'
 import CaseAnamnesisPanel from '../../components/anamnesis/CaseAnamnesisPanel'
 import CaseSignaturePanel from '../../components/signature/CaseSignaturePanel'
 import MedicalAmpelDot from '../../components/medical/MedicalAmpelDot'
-import { Card, Badge, Button, Spinner, PageHeader } from '../../components/ui'
+import { Card, Badge, Button, Spinner, PageHeader, Modal, Input } from '../../components/ui'
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const CASE_TYPE_LABELS  = { tattoo: 'Tattoo', pmu: 'PMU' }
@@ -119,6 +119,214 @@ const ZoneRow = ({ z }) => (
     </td>
   </tr>
 )
+
+// ── Estimate confirmation ─────────────────────────────────────────────────
+const ESTIMATE_STATUS_META = {
+  offen: {
+    label: 'KI-Schätzung — noch nicht bestätigt',
+    classes: 'bg-elaya-warning/15 text-elaya-warning',
+  },
+  bestaetigt: {
+    label: 'Vom Studio bestätigt',
+    classes: 'bg-elaya-success/15 text-elaya-success',
+  },
+  angepasst: {
+    label: 'Vom Studio angepasst',
+    classes: 'bg-studio-blue/15 text-studio-blue',
+  },
+}
+
+const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
+  const confirmation = caseData.estimate_confirmation ?? { status: 'offen' }
+  const status = confirmation.status ?? 'offen'
+  const meta = ESTIMATE_STATUS_META[status] ?? ESTIMATE_STATUS_META.offen
+
+  const [saving, setSaving] = useState(false)
+  const [notiz, setNotiz] = useState('')
+  const [adjustOpen, setAdjustOpen] = useState(false)
+  const [adjustForm, setAdjustForm] = useState({
+    pricePerSession: '',
+    sessionsMin: '',
+    sessionsMax: '',
+    notiz: '',
+  })
+
+  const submit = async (payload, successMessage) => {
+    setSaving(true)
+    try {
+      const res = await updateEstimateConfirmation(caseId, payload)
+      const d = res.data.data
+      onUpdated(d)
+      toast.success(
+        d.chat_notified
+          ? `${successMessage} — Kunde wurde im Chat benachrichtigt`
+          : successMessage
+      )
+      setNotiz('')
+      setAdjustOpen(false)
+      return true
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const confirmEstimate = () =>
+    submit(
+      { status: 'bestaetigt', ...(notiz.trim() ? { notiz: notiz.trim() } : {}) },
+      'Bestätigung gespeichert'
+    )
+
+  const reopenEstimate = () => submit({ status: 'offen' }, 'Schätzung neu geöffnet')
+
+  const openAdjust = () => {
+    setAdjustForm({
+      pricePerSession: caseData.pricePerSession != null ? String(caseData.pricePerSession) : '',
+      sessionsMin: caseData.sessionsMin != null ? String(caseData.sessionsMin) : '',
+      sessionsMax: caseData.sessionsMax != null ? String(caseData.sessionsMax) : '',
+      notiz: '',
+    })
+    setAdjustOpen(true)
+  }
+
+  const submitAdjust = () => {
+    const price = parseFloat(adjustForm.pricePerSession)
+    const min = parseInt(adjustForm.sessionsMin, 10)
+    const max = parseInt(adjustForm.sessionsMax, 10)
+    if (Number.isNaN(price) || Number.isNaN(min) || Number.isNaN(max)) {
+      toast.error('Preis und Sitzungsbereich sind erforderlich.')
+      return
+    }
+    submit(
+      {
+        status: 'angepasst',
+        pricePerSession: price,
+        sessionsMin: min,
+        sessionsMax: max,
+        ...(adjustForm.notiz.trim() ? { notiz: adjustForm.notiz.trim() } : {}),
+      },
+      'Anpassung gespeichert'
+    )
+  }
+
+  const setAdjust = (field) => (e) =>
+    setAdjustForm((prev) => ({ ...prev, [field]: e.target.value }))
+
+  return (
+    <>
+      <Card className="flex flex-col gap-3">
+        <h3 className="text-[13px] font-semibold text-studio-white m-0">
+          KI-Kalkulation &amp; Bestätigung
+        </h3>
+
+        <span className={`inline-flex self-start items-center px-2 py-1 rounded-full text-[10px] font-semibold ${meta.classes}`}>
+          {meta.label}
+        </span>
+
+        {status !== 'offen' && (confirmation.datum || confirmation.bestaetigt_von) && (
+          <p className="text-studio-w3 text-[11px] m-0 -mt-1">
+            {[fmtDate(confirmation.datum), confirmation.bestaetigt_von].filter(Boolean).join(' · ')}
+          </p>
+        )}
+
+        <InfoRow label="Preis / Sitzung" value={fmtCHF(caseData.pricePerSession)} />
+        <InfoRow
+          label="Sitzungsbereich"
+          value={
+            caseData.sessionsMin != null
+              ? `${caseData.sessionsMin}–${caseData.sessionsMax} Sitzungen`
+              : null
+          }
+        />
+        {confirmation.notiz && <InfoRow label="Notiz" value={confirmation.notiz} />}
+
+        <p className="text-studio-w3 text-[11px] m-0">
+          KI-basierte Schätzung. Der endgültige Preis und die finale Sitzungszahl werden vom
+          Studio bestätigt.
+        </p>
+
+        {!caseData.read_only && (
+          status === 'offen' ? (
+            <div className="flex flex-col gap-2 pt-1 border-t border-elaya-border">
+              <textarea
+                value={notiz}
+                onChange={(e) => setNotiz(e.target.value)}
+                rows={2}
+                placeholder="Notiz an den Kunden (optional)…"
+                className="w-full px-3 py-2 rounded-[10px] border-[1.5px] border-elaya-border-strong bg-studio-bg-3 text-studio-w1 text-[12px] outline-none focus:border-studio-gold transition-colors placeholder:text-studio-w3 resize-none"
+              />
+              <Button size="sm" loading={saving} onClick={confirmEstimate} className="w-full">
+                Schätzung bestätigen
+              </Button>
+              <Button size="sm" variant="secondary" disabled={saving} onClick={openAdjust} className="w-full">
+                Anpassen…
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" variant="secondary" loading={saving} onClick={reopenEstimate} className="w-full">
+              Neu öffnen
+            </Button>
+          )
+        )}
+      </Card>
+
+      {adjustOpen && (
+        <Modal title="Schätzung anpassen" onClose={() => setAdjustOpen(false)}>
+          <div className="flex flex-col gap-3">
+            <Input
+              label="Preis pro Sitzung (CHF)"
+              type="number"
+              min={0}
+              step="0.01"
+              value={adjustForm.pricePerSession}
+              onChange={setAdjust('pricePerSession')}
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Sitzungen min."
+                type="number"
+                min={1}
+                step="1"
+                value={adjustForm.sessionsMin}
+                onChange={setAdjust('sessionsMin')}
+              />
+              <Input
+                label="Sitzungen max."
+                type="number"
+                min={1}
+                step="1"
+                value={adjustForm.sessionsMax}
+                onChange={setAdjust('sessionsMax')}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="estimate-notiz" className="text-studio-white text-[12px] font-semibold">
+                Notiz an den Kunden (optional)
+              </label>
+              <textarea
+                id="estimate-notiz"
+                rows={3}
+                value={adjustForm.notiz}
+                onChange={setAdjust('notiz')}
+                className="w-full px-3 py-2 rounded-[10px] border-[1.5px] border-elaya-border-strong bg-studio-bg-3 text-studio-w1 text-[12px] outline-none focus:border-studio-gold transition-colors placeholder:text-studio-w3 resize-y"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="ghost" onClick={() => setAdjustOpen(false)} disabled={saving}>
+                Abbrechen
+              </Button>
+              <Button loading={saving} onClick={submitAdjust}>
+                Anpassung speichern
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </>
+  )
+}
 
 // ── Page ──────────────────────────────────────────────────────────────────
 const CaseDetail = () => {
@@ -465,19 +673,24 @@ const CaseDetail = () => {
             </Card>
           )}
 
-          {/* Pricing */}
-          {caseData.pricePerSession != null && (
-            <Card className="flex flex-col gap-3">
-              <h3 className="text-[13px] font-semibold text-studio-white m-0">Kalkulation</h3>
-              <InfoRow label="Preis / Sitzung" value={fmtCHF(caseData.pricePerSession)} />
-              {caseData.sessions > 0 && (
-                <InfoRow
-                  label="Gesamtschätzung"
-                  value={fmtCHF(caseData.pricePerSession * caseData.sessions)}
-                />
-              )}
-            </Card>
-          )}
+          {/* AI estimate + studio confirmation */}
+          <EstimateConfirmationPanel
+            caseId={id}
+            caseData={caseData}
+            onUpdated={(d) =>
+              setCaseData((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      pricePerSession: d.pricePerSession,
+                      sessionsMin: d.sessionsMin,
+                      sessionsMax: d.sessionsMax,
+                      estimate_confirmation: d.estimate_confirmation,
+                    }
+                  : prev
+              )
+            }
+          />
 
         </div>
       </div>

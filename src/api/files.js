@@ -15,6 +15,12 @@ export const uploadCaseIntakePhoto = (caseId, file, slot) => {
   return api.post(`/files/cases/${caseId}/intake`, form)
 }
 
+export const uploadSessionProgressPhoto = (sessionId, file) => {
+  const form = new FormData()
+  form.append('file', file)
+  return api.post(`/files/sessions/${sessionId}/progress`, form)
+}
+
 export const deleteStagingPhoto = (fileId) => api.delete(`/files/${fileId}`)
 
 export const fetchPhotoBlobUrl = async (fileId) => {

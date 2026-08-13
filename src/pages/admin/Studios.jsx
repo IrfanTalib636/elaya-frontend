@@ -6,13 +6,26 @@ import {
   Spinner,
   Button,
   Badge,
+  Modal,
   EmptyState,
 } from '../../components/ui'
 import { listAdminStudios, patchStudioStatus } from '../../api/adminStudios'
+import { getStudioConfigAdmin, updateStudioConfigAdmin } from '../../api/adminConfig'
+import PricingConfigForm from '../../components/pricing/PricingConfigForm'
+import {
+  pricingValuesFromConfig,
+  buildStudioPricing,
+} from '../../components/pricing/pricingFields'
 
 const AdminStudios = () => {
   const [loading, setLoading] = useState(true)
   const [studios, setStudios] = useState([])
+
+  const [pricingStudio, setPricingStudio] = useState(null)
+  const [pricingLoading, setPricingLoading] = useState(false)
+  const [pricingSaving, setPricingSaving] = useState(false)
+  const [pricingDefaults, setPricingDefaults] = useState(null)
+  const [pricingValues, setPricingValues] = useState(() => pricingValuesFromConfig())
 
   const load = async () => {
     setLoading(true)
@@ -38,6 +51,40 @@ const AdminStudios = () => {
       load()
     } catch {
       toast.error('Status-Update fehlgeschlagen')
+    }
+  }
+
+  const openPricing = async (studio) => {
+    const id = studio.id || studio._id
+    setPricingStudio(studio)
+    setPricingLoading(true)
+    try {
+      const res = await getStudioConfigAdmin(id)
+      const cfg = res.data.data.studio_config
+      setPricingValues(pricingValuesFromConfig(cfg.studio_pricing))
+      setPricingDefaults(cfg.pricing_defaults ?? null)
+    } catch {
+      toast.error('Preiskonfiguration konnte nicht geladen werden')
+      setPricingStudio(null)
+    } finally {
+      setPricingLoading(false)
+    }
+  }
+
+  const savePricing = async () => {
+    if (!pricingStudio) return
+    setPricingSaving(true)
+    try {
+      // studio_pricing replaces the whole override set — always send every filled key.
+      await updateStudioConfigAdmin(pricingStudio.id || pricingStudio._id, {
+        studio_pricing: buildStudioPricing(pricingValues),
+      })
+      toast.success('Preise gespeichert')
+      setPricingStudio(null)
+    } catch (e) {
+      toast.error(e?.response?.data?.message || 'Speichern fehlgeschlagen')
+    } finally {
+      setPricingSaving(false)
     }
   }
 
@@ -70,6 +117,9 @@ const AdminStudios = () => {
                   </Badge>
                 </div>
                 <div className="flex gap-2">
+                  <Button variant="ghost" onClick={() => openPricing(s)}>
+                    Preise
+                  </Button>
                   {s.status !== 'aktiv' ? (
                     <Button onClick={() => setStatus(s, 'aktiv')}>Aktivieren</Button>
                   ) : (
@@ -83,6 +133,34 @@ const AdminStudios = () => {
           })}
         </div>
       )}
+
+      {pricingStudio ? (
+        <Modal
+          onClose={() => setPricingStudio(null)}
+          title={`Preise · ${pricingStudio.firma ?? pricingStudio.studio_code ?? ''}`}
+          width="max-w-2xl"
+        >
+          {pricingLoading ? (
+            <div className="flex justify-center py-12">
+              <Spinner size="lg" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <PricingConfigForm
+                values={pricingValues}
+                defaults={pricingDefaults}
+                onChange={(key, value) =>
+                  setPricingValues((prev) => ({ ...prev, [key]: value }))
+                }
+                disabled={pricingSaving}
+              />
+              <Button onClick={savePricing} loading={pricingSaving} className="w-full">
+                Speichern
+              </Button>
+            </div>
+          )}
+        </Modal>
+      ) : null}
     </div>
   )
 }

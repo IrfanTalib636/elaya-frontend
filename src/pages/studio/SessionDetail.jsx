@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Pencil } from 'lucide-react'
+import { ArrowLeft, Pencil, Camera, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getSession, updateSession } from '../../api/sessions'
+import { fetchPhotoBlobUrl, uploadSessionProgressPhoto } from '../../api/files'
+import { analyzeVerblassung } from '../../api/verblassung'
 import { Card, Badge, Button, Spinner, PageHeader } from '../../components/ui'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -48,6 +50,158 @@ const ResultBar = ({ label, value = 0, max = 100, unit = '%' }) => {
   )
 }
 
+// ── Progress photo ────────────────────────────────────────────────────────
+const ProgressPhotoSection = ({ session, onUploaded }) => {
+  const inputRef = useRef(null)
+  const [previewUrl, setPreviewUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
+
+  const fileId = session.fortschritt_foto_file_id
+
+  useEffect(() => {
+    if (!fileId) {
+      setPreviewUrl('')
+      return undefined
+    }
+
+    let cancelled = false
+    let objectUrl = ''
+
+    ;(async () => {
+      try {
+        objectUrl = await fetchPhotoBlobUrl(fileId)
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl)
+          return
+        }
+        setPreviewUrl(objectUrl)
+      } catch {
+        if (!cancelled) setPreviewUrl('')
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [fileId])
+
+  const handleSelect = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploading(true)
+    try {
+      await uploadSessionProgressPhoto(session.id, file)
+      toast.success('Fortschritts-Foto gespeichert.')
+      onUploaded()
+    } catch (err) {
+      toast.error(err.response?.data?.message ?? 'Foto konnte nicht hochgeladen werden.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <Section title="Fortschritts-Foto">
+      {previewUrl ? (
+        <div className="rounded-[12px] border border-elaya-border bg-studio-bg-4 overflow-hidden max-w-[320px]">
+          <img src={previewUrl} alt="Fortschritts-Foto" className="w-full object-cover" />
+        </div>
+      ) : (
+        <p className="text-studio-w2 text-[13px] m-0">
+          {fileId ? '…' : 'Noch kein Fortschritts-Foto vorhanden.'}
+        </p>
+      )}
+      <div>
+        <Button
+          size="sm"
+          variant="secondary"
+          loading={uploading}
+          onClick={() => inputRef.current?.click()}
+        >
+          <Camera size={13} />
+          {fileId ? 'Foto ersetzen' : 'Foto hochladen'}
+        </Button>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={handleSelect}
+      />
+    </Section>
+  )
+}
+
+// ── AI fading analysis ────────────────────────────────────────────────────
+const VerblassungKiSection = ({ session, onAnalyzed }) => {
+  const [analyzing, setAnalyzing] = useState(false)
+  const ki = session.verblassung_ki
+  const hasPhoto = !!session.fortschritt_foto_file_id
+
+  const runAnalysis = async () => {
+    setAnalyzing(true)
+    try {
+      await analyzeVerblassung({ session_id: session.id, persist: true })
+      toast.success('KI-Verblassungsanalyse gespeichert.')
+      onAnalyzed()
+    } catch (err) {
+      toast.error(err.response?.data?.message ?? 'KI-Analyse fehlgeschlagen.')
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  return (
+    <Section title="KI-Verblassungsanalyse">
+      {!ki ? (
+        <p className="text-studio-w2 text-[13px] m-0">
+          Noch keine Analyse durchgeführt.
+          {!hasPhoto && ' Lade zuerst ein Fortschritts-Foto hoch.'}
+        </p>
+      ) : (
+        <>
+          {session.verblassung_prozent != null && (
+            <ResultBar label="Verblassung (KI)" value={session.verblassung_prozent} />
+          )}
+          <div className="grid grid-cols-1 gap-4">
+            <InfoRow label="Beurteilung"        value={ki.beurteilung} />
+            <InfoRow label="Fortschritt"        value={ki.fortschritt} />
+            <InfoRow label="Empfehlung Kunde"   value={ki.empfehlung_kunde} />
+            <InfoRow label="Empfehlung Studio"  value={ki.empfehlung_studio} />
+            <InfoRow label="Lifestyle-Tipps"    value={ki.lifestyle_tipps} />
+          </div>
+          {ki.wichtiger_hinweis && (
+            <div className="flex flex-col gap-1 px-3 py-2 rounded-[8px] bg-elaya-warning/10 border border-elaya-warning/20">
+              <span className="text-elaya-warning text-[11px] font-semibold uppercase tracking-wider">Wichtiger Hinweis</span>
+              <span className="text-studio-w1 text-[13px]">{ki.wichtiger_hinweis}</span>
+            </div>
+          )}
+          {ki.analysed_at && (
+            <p className="text-studio-w3 text-[11px] m-0">
+              Analysiert am {fmtDate(ki.analysed_at)}
+            </p>
+          )}
+        </>
+      )}
+      <div>
+        <Button
+          size="sm"
+          variant={ki ? 'secondary' : 'primary'}
+          loading={analyzing}
+          disabled={!hasPhoto}
+          onClick={runAnalysis}
+        >
+          <Sparkles size={13} />
+          {ki ? 'Erneut analysieren' : 'KI-Analyse starten'}
+        </Button>
+      </div>
+    </Section>
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────
 const SessionDetail = () => {
   const { id } = useParams()
@@ -56,6 +210,15 @@ const SessionDetail = () => {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
   const [finalizing, setFinalizing] = useState(false)
+
+  const reload = useCallback(async () => {
+    try {
+      const res = await getSession(id)
+      setSession(res.data.data.session)
+    } catch {
+      toast.error('Sitzung konnte nicht geladen werden.')
+    }
+  }, [id])
 
   useEffect(() => {
     const load = async () => {
@@ -198,6 +361,14 @@ const SessionDetail = () => {
                 </div>
               )}
             </Section>
+          )}
+
+          {/* Progress photo + AI fading analysis */}
+          {!session.is_no_show && (
+            <>
+              <ProgressPhotoSection session={session} onUploaded={reload} />
+              <VerblassungKiSection session={session} onAnalyzed={reload} />
+            </>
           )}
 
         </div>

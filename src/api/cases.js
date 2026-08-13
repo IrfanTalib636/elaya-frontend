@@ -13,3 +13,6 @@ export const getCaseAvailability = (id, params = {}) => api.get(`/cases/${id}/av
 export const getCasePricing      = (id)             => api.get(`/cases/${id}/pricing`)
 
 export const previewCasePricing  = (data)          => api.post('/cases/pricing/preview', data)
+
+export const updateEstimateConfirmation = (id, data) =>
+  api.patch(`/cases/${id}/estimate-confirmation`, data)

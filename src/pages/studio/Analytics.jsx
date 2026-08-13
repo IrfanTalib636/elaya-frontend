@@ -333,7 +333,7 @@ const StudioAnalytics = () => {
                 <Card>
                   <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-1">Shop-Provision</h2>
                   <p className="text-studio-w3 text-[11px] m-0 mb-4">
-                    {summary.shop?.provision_percent ?? 25}% auf ElayShop-Käufe
+                    {summary.shop?.provision_percent ?? 20}% auf ElayShop-Käufe
                   </p>
                   <div className="grid grid-cols-3 gap-3 mb-4">
                     <div className="text-center p-3 rounded-[10px] bg-studio-bg-4">

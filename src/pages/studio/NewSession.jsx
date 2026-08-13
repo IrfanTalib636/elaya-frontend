@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Camera, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCase } from '../../api/cases'
 import { createSession } from '../../api/sessions'
+import { uploadSessionProgressPhoto } from '../../api/files'
+import { analyzeVerblassung } from '../../api/verblassung'
 import { Card, Button, Input, Select, Spinner, PageHeader } from '../../components/ui'
 
 // ── Constants ─────────────────────────────────────────────────────────────
@@ -122,6 +124,15 @@ const NewSession = () => {
   const [savingDraft, setSavingDraft] = useState(false)
   const [savingFinal, setSavingFinal] = useState(false)
 
+  const photoInputRef = useRef(null)
+  const [photoFile, setPhotoFile] = useState(null)
+  const [photoPreview, setPhotoPreview] = useState('')
+  const [autoAnalyze, setAutoAnalyze] = useState(true)
+
+  useEffect(() => () => {
+    if (photoPreview) URL.revokeObjectURL(photoPreview)
+  }, [photoPreview])
+
   const saving = savingDraft || savingFinal
 
   useEffect(() => {
@@ -205,6 +216,25 @@ const NewSession = () => {
     }
   }
 
+  const selectPhoto = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setPhotoFile(file)
+    setPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return URL.createObjectURL(file)
+    })
+  }
+
+  const removePhoto = () => {
+    setPhotoFile(null)
+    setPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return ''
+    })
+  }
+
   const handleSave = async (isDraft) => {
     if (!form.treatment_date) {
       toast.error('Behandlungsdatum ist erforderlich.')
@@ -212,9 +242,37 @@ const NewSession = () => {
     }
     isDraft ? setSavingDraft(true) : setSavingFinal(true)
     try {
-      await createSession(buildPayload(isDraft))
-      toast.success(isDraft ? 'Entwurf gespeichert.' : 'Sitzung erfolgreich abgeschlossen.')
-      navigate(`/studio/cases/${caseId}`)
+      const res = await createSession(buildPayload(isDraft))
+      const sessionId = res.data.data.session?.id
+
+      const wantsPhoto = !form.is_no_show && photoFile && sessionId
+
+      if (wantsPhoto) {
+        const flowToast = toast.loading('Foto wird hochgeladen…')
+        let uploaded = false
+        try {
+          await uploadSessionProgressPhoto(sessionId, photoFile)
+          uploaded = true
+        } catch {
+          toast.error('Sitzung gespeichert, aber das Foto konnte nicht hochgeladen werden.', { id: flowToast })
+        }
+
+        if (uploaded && autoAnalyze && !isDraft) {
+          toast.loading('KI analysiert…', { id: flowToast })
+          try {
+            await analyzeVerblassung({ session_id: sessionId, persist: true })
+            toast.success('Sitzung abgeschlossen — KI-Verblassungsanalyse gespeichert.', { id: flowToast })
+          } catch {
+            toast.error('Sitzung gespeichert, aber die KI-Analyse ist fehlgeschlagen.', { id: flowToast })
+          }
+        } else if (uploaded) {
+          toast.success(isDraft ? 'Entwurf mit Foto gespeichert.' : 'Sitzung erfolgreich abgeschlossen.', { id: flowToast })
+        }
+      } else {
+        toast.success(isDraft ? 'Entwurf gespeichert.' : 'Sitzung erfolgreich abgeschlossen.')
+      }
+
+      navigate(sessionId ? `/studio/sessions/${sessionId}` : `/studio/cases/${caseId}`)
     } catch (err) {
       toast.error(err.response?.data?.message ?? 'Fehler beim Speichern.')
     } finally {
@@ -359,6 +417,52 @@ const NewSession = () => {
                 value={form.adverse_event_type}
                 onChange={set('adverse_event_type')}
                 placeholder="Blasenbildung, Hyperpigmentierung…"
+              />
+            )}
+          </Section>
+        )}
+
+        {/* ── Section 3b: Progress photo (hidden on no-show) ── */}
+        {!form.is_no_show && (
+          <Section title="Fortschritts-Foto">
+            {photoPreview ? (
+              <div className="relative rounded-[12px] border border-elaya-border bg-studio-bg-4 overflow-hidden max-w-[280px]">
+                <img src={photoPreview} alt="Fortschritts-Foto" className="w-full aspect-square object-cover" />
+                <button
+                  type="button"
+                  onClick={removePhoto}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center cursor-pointer border-0 hover:bg-black/80"
+                  aria-label="Foto entfernen"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                className="w-full max-w-[280px] flex flex-col items-center justify-center gap-2 py-8 cursor-pointer bg-studio-bg-4/50 border border-dashed border-elaya-border rounded-[12px] text-studio-w3 hover:text-studio-w2 transition-colors"
+              >
+                <Camera size={24} strokeWidth={1.5} />
+                <span className="text-[11px]">Foto auswählen</span>
+              </button>
+            )}
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={selectPhoto}
+            />
+            <p className="text-studio-w3 text-[11px] m-0">
+              Aktuelles Foto der behandelten Stelle — Grundlage für die KI-Verblassungsanalyse.
+            </p>
+            {photoFile && (
+              <Toggle
+                label="KI-Verblassungsanalyse automatisch starten"
+                hint="Analysiert das Foto nach dem Abschliessen der Sitzung (nicht bei Entwürfen)"
+                checked={autoAnalyze}
+                onChange={setAutoAnalyze}
               />
             )}
           </Section>

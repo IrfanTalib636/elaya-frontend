@@ -79,10 +79,11 @@ const InfoRow = ({ label, value }) => (
   </div>
 )
 
-const StatChip = ({ label, value }) => (
+const StatChip = ({ label, value, hint }) => (
   <div className="flex flex-col gap-0.5 px-4 py-3 rounded-[10px] bg-studio-bg-4 border border-elaya-border">
     <span className="text-studio-w3 text-[10px] font-semibold uppercase tracking-wider">{label}</span>
     <span className="text-studio-white text-[16px] font-bold">{value}</span>
+    {hint ? <span className="text-studio-w3 text-[10px] m-0">{hint}</span> : null}
   </div>
 )
 
@@ -280,20 +281,39 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
           </p>
         )}
 
-        <InfoRow label="Preis / Sitzung" value={fmtCHF(caseData.pricePerSession)} />
+        <InfoRow
+          label="Kalkulierter Preis (System)"
+          value={fmtCHF(caseData.calculated_pricePerSession ?? (!['bestaetigt', 'angepasst'].includes(status) ? caseData.pricePerSession : null))}
+        />
+        <InfoRow
+          label="Bestätigter Studio-Preis"
+          value={
+            ['bestaetigt', 'angepasst'].includes(status)
+              ? fmtCHF(caseData.confirmed_pricePerSession ?? confirmation.pricePerSession ?? caseData.pricePerSession)
+              : 'Noch nicht bestätigt'
+          }
+        />
         <InfoRow
           label="Sitzungsbereich"
           value={
-            caseData.sessionsMin != null
-              ? `${caseData.sessionsMin}–${caseData.sessionsMax} Sitzungen`
-              : null
+            ['bestaetigt', 'angepasst'].includes(status) && caseData.confirmed_sessionsMin != null
+              ? `${caseData.confirmed_sessionsMin}–${caseData.confirmed_sessionsMax} Sitzungen`
+              : caseData.sessionsMin != null
+                ? `${caseData.sessionsMin}–${caseData.sessionsMax} Sitzungen`
+                : null
           }
         />
+        {status !== 'offen' && caseData.calculated_sessionsMin != null && (
+          <InfoRow
+            label="Kalkulierte Sitzungen"
+            value={`${caseData.calculated_sessionsMin}–${caseData.calculated_sessionsMax} Sitzungen`}
+          />
+        )}
         {confirmation.notiz && <InfoRow label="Notiz" value={confirmation.notiz} />}
 
         <p className="text-studio-w3 text-[11px] m-0">
-          KI-basierte Schätzung. Der endgültige Preis und die finale Sitzungszahl werden vom
-          Studio bestätigt.
+          Der kalkulierte Preis bleibt sichtbar. Nach Bestätigung oder Anpassung gilt der Studio-Preis
+          für den Kunden — beide Werte bleiben transparent.
         </p>
 
         {!caseData.read_only && (
@@ -502,7 +522,7 @@ const CaseDetail = () => {
       )}
 
       {/* Stats bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         <StatChip
           label="Sitzungen"
           value={`${caseData.sessionsDone ?? 0} / ${caseData.sessions ?? 0}`}
@@ -512,8 +532,22 @@ const CaseDetail = () => {
           value={fmtDate(caseData.lastSessionDate)}
         />
         <StatChip
-          label="Preis / Sitzung"
-          value={fmtCHF(caseData.pricePerSession)}
+          label="Kalkulierter Preis"
+          value={fmtCHF(caseData.calculated_pricePerSession ?? caseData.pricePerSession)}
+          hint="System / KI"
+        />
+        <StatChip
+          label="Bestätigter Preis"
+          value={
+            ['bestaetigt', 'angepasst'].includes(caseData.estimate_confirmation?.status)
+              ? fmtCHF(caseData.confirmed_pricePerSession ?? caseData.pricePerSession)
+              : '—'
+          }
+          hint={
+            ['bestaetigt', 'angepasst'].includes(caseData.estimate_confirmation?.status)
+              ? 'Studio'
+              : 'Noch offen'
+          }
         />
         <StatChip
           label="Ziel"
@@ -774,6 +808,12 @@ const CaseDetail = () => {
                       pricePerSession: d.pricePerSession,
                       sessionsMin: d.sessionsMin,
                       sessionsMax: d.sessionsMax,
+                      calculated_pricePerSession: d.calculated_pricePerSession,
+                      calculated_sessionsMin: d.calculated_sessionsMin,
+                      calculated_sessionsMax: d.calculated_sessionsMax,
+                      confirmed_pricePerSession: d.confirmed_pricePerSession,
+                      confirmed_sessionsMin: d.confirmed_sessionsMin,
+                      confirmed_sessionsMax: d.confirmed_sessionsMax,
                       estimate_confirmation: d.estimate_confirmation,
                     }
                   : prev

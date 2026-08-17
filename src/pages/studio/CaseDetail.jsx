@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeft, Plus, ChevronRight, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Plus, ChevronRight, AlertCircle, ClipboardList } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCase, updateCase, updateEstimateConfirmation } from '../../api/cases'
 import { listSessions } from '../../api/sessions'
+import { listAppointments } from '../../api/appointments'
 import CaseAvailabilityPanel from '../../components/case/CaseAvailabilityPanel'
 import CaseIntakePhotos from '../../components/case/CaseIntakePhotos'
 import CasePricingPanel from '../../components/case/CasePricingPanel'
@@ -29,6 +30,14 @@ const CASE_STATUSES = [
 const SESSION_HEADERS = ['Nr.', 'Datum', 'Verbl. %', 'Entf. %', 'Zahlung', 'Status', '']
 const ZONE_HEADERS    = ['Zonen-ID', 'Körperstelle', 'Fläche cm²', 'Fortschritt', 'Sitzungen (est.)', '']
 
+const APPT_TYPE_LABELS = {
+  beratung:  'Beratung',
+  treatment: 'Behandlung',
+  first:     'Erstbehandlung',
+}
+
+const CANCELLED_APPT = new Set(['storniert', 'cancelled'])
+
 // ── Helpers ───────────────────────────────────────────────────────────────
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString('de-CH', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
@@ -36,6 +45,22 @@ const fmtDate = (d) =>
 const fmtCHF = (n) => (n != null ? `CHF ${Number(n).toFixed(2)}` : '—')
 
 const pct = (n) => (n != null ? `${n} %` : '—')
+
+const fmtTime = (t) => (t ? String(t).slice(0, 5) : '—')
+
+const apptId = (value) => {
+  if (!value) return ''
+  if (typeof value === 'object') return String(value.id || value._id || '')
+  return String(value)
+}
+
+const isRecordableAppointment = (appt, recordedIds) => {
+  if (!appt) return false
+  if (CANCELLED_APPT.has(appt.status)) return false
+  if (appt.consultationOnly || appt.type === 'beratung') return false
+  if (recordedIds.has(apptId(appt.id || appt._id))) return false
+  return true
+}
 
 const customerId = (customer) =>
   typeof customer === 'object' && customer?.id ? customer.id : customer
@@ -72,6 +97,30 @@ const SessionProgressBar = ({ done = 0, total = 0 }) => {
     </div>
   )
 }
+
+const PendingAppointmentRow = ({ appt, disabled, onRecord }) => (
+  <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-elaya-border last:border-0">
+    <div className="min-w-0">
+      <p className="text-studio-white text-[13px] font-medium m-0">
+        {fmtDate(appt.date)}
+        {appt.time ? ` · ${fmtTime(appt.time)}` : ''}
+      </p>
+      <p className="text-studio-w3 text-[11px] m-0 mt-0.5">
+        {APPT_TYPE_LABELS[appt.type] ?? appt.type}
+        {appt.dauer_minuten != null ? ` · ${appt.dauer_minuten} Min.` : ''}
+        {appt.status === 'gebucht' ? ' · Gebucht' : ''}
+      </p>
+    </div>
+    <Button
+      size="sm"
+      onClick={onRecord}
+      disabled={disabled}
+    >
+      <ClipboardList size={13} />
+      Sitzung dokumentieren
+    </Button>
+  </div>
+)
 
 const SessionRow = ({ s, onClick }) => {
   const statusLabel = s.is_no_show ? 'No-show' : s.is_draft ? 'Entwurf' : 'Abgeschlossen'
@@ -336,6 +385,7 @@ const CaseDetail = () => {
 
   const [caseData, setCaseData] = useState(null)
   const [sessions, setSessions] = useState([])
+  const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState('')
   const [savingStatus, setSavingStatus] = useState(false)
@@ -350,14 +400,18 @@ const CaseDetail = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [caseRes, sessRes] = await Promise.all([
+        const [caseRes, sessRes, apptRes] = await Promise.all([
           getCase(id),
           listSessions({ case_id: id, limit: 50 }),
+          listAppointments({ case_id: id, limit: 50 }).catch(() => ({
+            data: { data: { appointments: [] } },
+          })),
         ])
         const c = caseRes.data.data.case
         setCaseData(c)
         setStatus(c.status)
         setSessions(sessRes.data.data.sessions)
+        setAppointments(apptRes.data.data.appointments ?? [])
       } catch {
         toast.error('Fall konnte nicht geladen werden.')
         navigate(-1)
@@ -393,6 +447,12 @@ const CaseDetail = () => {
 
   const caseTitle = caseData.tc_title || CASE_TYPE_LABELS[caseData.type] || caseData.type
   const hasSessions = sessions.length > 0
+  const recordedApptIds = new Set(
+    sessions.map((s) => apptId(s.appointment)).filter(Boolean)
+  )
+  const pendingAppointments = appointments.filter((appt) =>
+    isRecordableAppointment(appt, recordedApptIds)
+  )
   const hasZones = caseData.zonen_aktiv && caseData.zonen?.length > 0
   const custId = customerId(caseData.customer)
   const custName = customerName(caseData.customer)
@@ -549,15 +609,44 @@ const CaseDetail = () => {
                 Sitzungsprotokoll
                 <span className="ml-2 text-studio-w3 text-[12px] font-normal">({sessions.length})</span>
               </h2>
-              <Button size="sm" variant="secondary" onClick={() => navigate(`/studio/sessions/new?case_id=${id}`)}>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => navigate(`/studio/sessions/new?case_id=${id}`)}
+                disabled={caseData.read_only}
+              >
                 <Plus size={13} />
                 Neue Sitzung
               </Button>
             </div>
 
+            {pendingAppointments.length > 0 && (
+              <div className="border-b border-elaya-border bg-studio-gold/5">
+                <p className="px-5 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-studio-gold-2 m-0">
+                  Gebuchte Termine — Sitzung dokumentieren
+                </p>
+                {pendingAppointments.map((appt) => (
+                  <PendingAppointmentRow
+                    key={appt.id || appt._id}
+                    appt={appt}
+                    disabled={caseData.read_only}
+                    onRecord={() =>
+                      navigate(
+                        `/studio/sessions/new?case_id=${id}&appointment_id=${appt.id || appt._id}`
+                      )
+                    }
+                  />
+                ))}
+              </div>
+            )}
+
             {!hasSessions ? (
               <div className="py-10 text-center">
-                <p className="text-studio-w2 text-[13px] m-0">Noch keine Sitzungen aufgezeichnet.</p>
+                <p className="text-studio-w2 text-[13px] m-0">
+                  {pendingAppointments.length
+                    ? 'Noch keine Sitzung dokumentiert. Wähle oben «Sitzung dokumentieren», damit Datum, Uhrzeit und Fall übernommen werden.'
+                    : 'Noch keine Sitzungen aufgezeichnet.'}
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">

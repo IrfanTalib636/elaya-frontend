@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeft, Plus, ChevronRight, AlertCircle, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Plus, ChevronRight, AlertCircle, ClipboardList, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCase, updateCase, updateEstimateConfirmation } from '../../api/cases'
 import { listSessions } from '../../api/sessions'
@@ -501,6 +501,14 @@ const CaseDetail = () => {
         {caseData.transferiert ? (
           <Badge variant="source" value="studio_wechsel">Transferiert</Badge>
         ) : null}
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => navigate(`/studio/elaya?customerId=${custId}&caseId=${id}`)}
+        >
+          <Sparkles size={13} />
+          Elaya
+        </Button>
         <Button size="sm" variant="secondary" onClick={() => navigate(`/studio/appointments?case_id=${id}&customer_id=${custId}&book=1`)} disabled={caseData.read_only}>
           Termin buchen
         </Button>

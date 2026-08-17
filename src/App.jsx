@@ -34,6 +34,8 @@ const StudioTransfers      = lazy(() => import('./pages/studio/Transfers'))
 const StudioElaycoins      = lazy(() => import('./pages/studio/Elaycoins'))
 const StudioSettings       = lazy(() => import('./pages/studio/Settings'))
 const StudioChat           = lazy(() => import('./pages/studio/Chat'))
+const StudioElayaChat      = lazy(() => import('./pages/studio/ElayaChat'))
+const StudioActivity       = lazy(() => import('./pages/studio/Activity'))
 
 const AdminLogin           = lazy(() => import('./pages/admin/Login'))
 const AdminForgotPassword  = lazy(() => import('./pages/admin/ForgotPassword'))
@@ -109,6 +111,8 @@ const AppInner = () => {
             <Route path="analytics"     element={<StudioAnalytics />} />
             <Route path="aftercare"     element={<StudioAftercare />} />
             <Route path="crm"           element={<StudioCrm />} />
+            <Route path="activity"      element={<StudioActivity />} />
+            <Route path="elaya"         element={<StudioElayaChat />} />
             <Route path="chat"          element={<StudioChat />} />
             <Route path="shop"          element={<StudioShop />} />
             <Route path="transfers"     element={<StudioTransfers />} />

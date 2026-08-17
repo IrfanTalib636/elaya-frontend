@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Users, Calendar, CalendarDays, BarChart2, Heart,
   ShoppingBag, Coins, Settings, LogOut, ChevronLeft, ChevronRight,
   FolderOpen, ClipboardList, ArrowLeftRight, MessageCircle, ListChecks,
+  History, Sparkles,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../ElayaLogo'
@@ -23,7 +24,9 @@ const NAV_SECTIONS = [
       { to: '/studio/analytics',    icon: BarChart2,       label: studioNav?.analytics    ?? 'Analytik'     },
       { to: '/studio/aftercare',    icon: Heart,           label: studioNav?.aftercare    ?? 'Nachsorge'    },
       { to: '/studio/crm',          icon: ListChecks,      label: studioNav?.crm          ?? 'CRM'          },
-      { to: '/studio/chat',         icon: MessageCircle,   label: studioNav?.chat         ?? 'Chat'        },
+      { to: '/studio/activity',     icon: History,         label: studioNav?.activity     ?? 'Verlauf'      },
+      { to: '/studio/elaya',        icon: Sparkles,        label: studioNav?.elayaChat    ?? 'Elaya Chat'   },
+      { to: '/studio/chat',         icon: MessageCircle,   label: studioNav?.chat         ?? 'Kunden-Chat'  },
     ],
   },
   {

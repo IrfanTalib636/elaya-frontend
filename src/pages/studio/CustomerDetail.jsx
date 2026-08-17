@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, Plus, Pencil, Calendar, ArrowLeftRight, MessageCircle } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Plus, Pencil, Calendar, ArrowLeftRight, MessageCircle, ScrollText, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCustomer, updateCustomer } from '../../api/customers'
 import { createCase } from '../../api/cases'
@@ -10,6 +10,8 @@ import { Card, Badge, Button, Input, Spinner, PageHeader, Modal } from '../../co
 import CaseForm from '../../components/forms/CaseForm'
 import CustomerAvatar from '../../components/CustomerAvatar'
 import MedicalAmpelDot from '../../components/medical/MedicalAmpelDot'
+import ActivityFeed from '../../components/activity/ActivityFeed'
+import { studioActivity as activityCopy } from '../../content'
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const PIPELINE_STAGES = [
@@ -349,6 +351,14 @@ const CustomerDetail = () => {
         <Button
           variant="secondary"
           size="sm"
+          onClick={() => navigate(`/studio/elaya?customerId=${id}`)}
+        >
+          <Sparkles size={14} />
+          Elaya
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={() => navigate(`/studio/chat?customerId=${id}`)}
         >
           <MessageCircle size={14} />
@@ -578,6 +588,16 @@ const CustomerDetail = () => {
           </Card>
 
         </div>
+      </div>
+
+      <div className="mt-6">
+        <div className="flex items-center gap-2 mb-4">
+          <ScrollText size={16} className="text-studio-gold-2" />
+          <h2 className="text-[16px] font-bold text-studio-white m-0 tracking-wide uppercase">
+            {activityCopy.customerTitle}
+          </h2>
+        </div>
+        <ActivityFeed customerId={id} showCustomer={false} defaultRange="all" />
       </div>
 
       {showCaseModal && (

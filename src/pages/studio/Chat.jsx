@@ -197,8 +197,8 @@ export default function StudioChatPage() {
   return (
     <div className="p-6 max-w-[1400px] mx-auto h-[calc(100vh-2rem)] flex flex-col">
       <PageHeader
-        title="Live-Chat"
-        subtitle="Direktnachrichten mit Kundinnen und Kunden · JWT + TLS"
+        title="Kunden-Chat"
+        subtitle="Direktnachrichten mit Kundinnen und Kunden"
       >
         <div className="flex items-center gap-2 text-[12px] text-studio-w2">
           {secureTransport ? <Lock size={13} className="text-studio-teal-2" /> : null}

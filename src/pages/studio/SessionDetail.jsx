@@ -140,6 +140,18 @@ const VerblassungKiSection = ({ session, onAnalyzed }) => {
   const [analyzing, setAnalyzing] = useState(false)
   const ki = session.verblassung_ki
   const hasPhoto = !!session.fortschritt_foto_file_id
+  const kiAvailable = session.ki_analysis_available !== false && Number(session.session_number) >= 2
+
+  if (!kiAvailable) {
+    return (
+      <Section title="KI-Verblassungsanalyse">
+        <p className="text-studio-w2 text-[13px] m-0 leading-relaxed">
+          Bei der ersten Sitzung gibt es noch kein Behandlungsfoto zum Vergleich.
+          Das Vorher-Foto wird gespeichert und ab Sitzung 2 für die KI-Analyse verwendet.
+        </p>
+      </Section>
+    )
+  }
 
   const runAnalysis = async () => {
     setAnalyzing(true)

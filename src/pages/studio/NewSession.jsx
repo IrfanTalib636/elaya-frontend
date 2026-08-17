@@ -159,6 +159,8 @@ const NewSession = () => {
   }, [photoPreview])
 
   const saving = savingDraft || savingFinal
+  const nextSession = (caseData?.sessionsDone ?? 0) + 1
+  const kiAvailable = nextSession >= 2
 
   useEffect(() => {
     if (!caseId) {
@@ -306,7 +308,7 @@ const NewSession = () => {
           toast.error('Sitzung gespeichert, aber das Foto konnte nicht hochgeladen werden.', { id: flowToast })
         }
 
-        if (uploaded && autoAnalyze && !isDraft) {
+        if (uploaded && autoAnalyze && kiAvailable && !isDraft) {
           toast.loading('KI analysiert…', { id: flowToast })
           try {
             await analyzeVerblassung({ session_id: sessionId, persist: true })
@@ -338,7 +340,6 @@ const NewSession = () => {
   }
 
   const caseTitle   = caseData?.tc_title || caseData?.bodyLabel || 'Fall'
-  const nextSession = (caseData?.sessionsDone ?? 0) + 1
 
   return (
     <div className="p-6 max-w-[860px]">
@@ -511,12 +512,14 @@ const NewSession = () => {
               onChange={selectPhoto}
             />
             <p className="text-studio-w3 text-[11px] m-0">
-              Aktuelles Foto der behandelten Stelle — Grundlage für die KI-Verblassungsanalyse.
+              {kiAvailable
+                ? 'Aktuelles Foto der behandelten Stelle — Grundlage für die KI-Verblassungsanalyse im Vergleich zur vorherigen Sitzung.'
+                : 'Vorher-Foto der behandelten Stelle. Bitte immer vor der ersten Behandlung speichern — ab der zweiten Sitzung wird es für den Fortschrittsvergleich benötigt. Eine KI-Analyse gibt es bei der ersten Sitzung nicht.'}
             </p>
-            {photoFile && (
+            {photoFile && kiAvailable && (
               <Toggle
                 label="KI-Verblassungsanalyse automatisch starten"
-                hint="Analysiert das Foto nach dem Abschliessen der Sitzung (nicht bei Entwürfen)"
+                hint="Vergleicht dieses Foto mit dem Foto der vorherigen Sitzung (nicht bei Entwürfen)"
                 checked={autoAnalyze}
                 onChange={setAutoAnalyze}
               />

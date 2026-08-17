@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ClipboardList, Pencil } from 'lucide-react'
+import { CheckCircle2, ClipboardList, Pencil } from 'lucide-react'
 import { getCaseAnamnesis } from '../../api/anamnesis'
 import { Card, Button, Spinner } from '../ui'
 import { AMPEL_LABELS } from '../../utils/anamnesisAmpel'
@@ -17,6 +17,66 @@ const fmtDateTime = (iso) =>
         minute: '2-digit',
       })
     : '—'
+
+const fmtDate = (iso) =>
+  iso
+    ? new Date(iso).toLocaleDateString('de-CH', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : '—'
+
+const HISTORY_LABEL = {
+  submitted: 'Anamnese eingereicht',
+  confirmed_unchanged: 'Gesundheitszustand unverändert bestätigt',
+  updated: 'Medizinische Angaben aktualisiert',
+  anamnesis_submitted: 'Anamnese eingereicht',
+}
+
+const MedicalTimeline = ({ timeline }) => (
+  <div>
+    <p className="text-[10px] font-semibold uppercase tracking-wider text-studio-w3 m-0 mb-2">
+      Medizinischer Verlauf
+    </p>
+    <ul className="m-0 p-0 list-none flex flex-col gap-2">
+      {timeline.map((entry, i) => (
+        <li
+          key={`${entry.zeitstempel}-${entry.typ}-${i}`}
+          className="rounded-[10px] border border-elaya-border bg-studio-bg-4 px-3 py-2.5"
+        >
+          <p className="text-[11px] text-studio-white font-semibold m-0">
+            {HISTORY_LABEL[entry.typ] || entry.details || entry.typ}
+          </p>
+          <p className="text-[10px] text-studio-w3 m-0 mt-0.5">
+            {fmtDateTime(entry.zeitstempel)}
+            {entry.case_label ? ` · ${entry.case_label}` : ''}
+            {entry.bestaetigung?.hat_unterschrift || entry.hat_unterschrift
+              ? ' · Unterschrift vorhanden'
+              : ''}
+          </p>
+          {(entry.aenderungen || []).length > 0 ? (
+            <ul className="m-0 mt-1.5 p-0 list-none">
+              {entry.aenderungen.map((change) => (
+                <li key={`${change.frage_key}-${change.von}`} className="text-[11px] text-studio-w2">
+                  {change.frage_text}: {change.von} → {change.nach}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {entry.bestaetigung?.unterschrift_data &&
+          entry.bestaetigung.unterschrift_data !== '[stored]' ? (
+            <img
+              src={entry.bestaetigung.unterschrift_data}
+              alt="Unterschrift"
+              className="mt-2 max-h-16 rounded-[6px] bg-white"
+            />
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  </div>
+)
 
 const CaseAnamnesisPanel = ({ caseId, onCaseFlagsChange }) => {
   const [data, setData] = useState(null)
@@ -57,17 +117,17 @@ const CaseAnamnesisPanel = ({ caseId, onCaseFlagsChange }) => {
 
   const handleSaved = async (saved) => {
     setWizardOpen(false)
-    if (saved) setData({ ...saved })
+    if (saved) setData((prev) => ({ ...prev, ...saved }))
     await fetchAnamnesis({ silent: true })
   }
 
   const handleKlaerungUpdated = (anamnesis, caseFlags) => {
-    if (anamnesis) setData(anamnesis)
+    if (anamnesis) setData((prev) => ({ ...prev, ...anamnesis }))
     onCaseFlagsChange?.(caseFlags)
   }
 
   const handleFreigabeUpdated = (anamnesis, caseFlags) => {
-    if (anamnesis) setData(anamnesis)
+    if (anamnesis) setData((prev) => ({ ...prev, ...anamnesis }))
     else if (caseFlags?.studio_freigabe) {
       setData((prev) =>
         prev ? { ...prev, studio_freigabe: caseFlags.studio_freigabe } : prev
@@ -80,7 +140,12 @@ const CaseAnamnesisPanel = ({ caseId, onCaseFlagsChange }) => {
   const ampelMeta = ampelStatus ? AMPEL_LABELS[ampelStatus] : null
   const orangeFragen = data?.orange_fragen ?? []
   const roteFragen = data?.rote_fragen ?? []
-  const badgeKey = `${ampelStatus}-${data?.antworten?.zeitstempel ?? ''}-${orangeFragen.length}-${roteFragen.length}`
+  const answerRows = data?.answer_rows ?? []
+  const timeline = data?.customer_medical_timeline?.length
+    ? data.customer_medical_timeline
+    : data?.medical_history ?? []
+  const filledAt = data?.antworten?.zeitstempel
+  const badgeKey = `${ampelStatus}-${filledAt ?? ''}-${orangeFragen.length}-${roteFragen.length}`
 
   return (
     <>
@@ -88,14 +153,24 @@ const CaseAnamnesisPanel = ({ caseId, onCaseFlagsChange }) => {
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <ClipboardList size={14} className="text-studio-gold shrink-0" />
-            <h2 className="text-[13px] font-semibold text-studio-white m-0">Medizinische Anamnese</h2>
+            <h2 className="text-[13px] font-semibold text-studio-white m-0 uppercase tracking-wide">
+              Medizinische Anamnese
+            </h2>
           </div>
-          {!loading && (
-            <Button size="sm" variant="secondary" onClick={() => setWizardOpen(true)}>
-              <Pencil size={12} />
-              {data?.filled ? 'Bearbeiten' : 'Ausfüllen'}
-            </Button>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {data?.filled && filledAt ? (
+              <span className="inline-flex items-center gap-1 text-[11px] text-elaya-success">
+                <CheckCircle2 size={13} />
+                Ausgefüllt am {fmtDate(filledAt)}
+              </span>
+            ) : null}
+            {!loading && (
+              <Button size="sm" variant="secondary" onClick={() => setWizardOpen(true)}>
+                <Pencil size={12} />
+                {data?.filled ? 'Bearbeiten' : 'Ausfüllen'}
+              </Button>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -103,12 +178,20 @@ const CaseAnamnesisPanel = ({ caseId, onCaseFlagsChange }) => {
         ) : error ? (
           <p className="text-studio-w3 text-[12px] m-0">Anamnese konnte nicht geladen werden.</p>
         ) : !data?.filled ? (
-          <div className="rounded-[10px] border border-elaya-warning/30 bg-elaya-warning/5 px-4 py-3">
-            <p className="text-elaya-warning text-[12px] font-semibold m-0">⚠ Ausstehend</p>
-            <p className="text-studio-w3 text-[11px] mt-1 mb-0 leading-relaxed">
-              Die medizinische Anamnese wurde noch nicht ausgefüllt.
-            </p>
-          </div>
+          <>
+            <div className="rounded-[10px] border border-elaya-warning/30 bg-elaya-warning/5 px-4 py-3">
+              <p className="text-elaya-warning text-[12px] font-semibold m-0">⚠ Ausstehend</p>
+              <p className="text-studio-w3 text-[11px] mt-1 mb-0 leading-relaxed">
+                Die medizinische Anamnese wurde für diesen Case noch nicht ausgefüllt.
+                {data?.previous_anamnesis
+                  ? ' Der Kunde kann die letzte Anamnese bestätigen oder Änderungen angeben.'
+                  : ''}
+              </p>
+            </div>
+            {timeline.length > 0 ? (
+              <MedicalTimeline timeline={timeline} />
+            ) : null}
+          </>
         ) : (
           <>
             {ampelMeta && (
@@ -131,12 +214,28 @@ const CaseAnamnesisPanel = ({ caseId, onCaseFlagsChange }) => {
               onUpdated={handleFreigabeUpdated}
             />
 
-            <div className="grid grid-cols-1 gap-2 text-[11px] text-studio-w3">
-              <p className="m-0">Ausgefüllt: <span className="text-studio-w1">{fmtDateTime(data.antworten?.zeitstempel)}</span></p>
-              {data.antworten?.mitarbeiter && (
-                <p className="m-0">Mitarbeiter: <span className="text-studio-w1">{data.antworten.mitarbeiter}</span></p>
-              )}
-            </div>
+            {answerRows.length > 0 ? (
+              <ol className="m-0 p-0 list-none flex flex-col">
+                {answerRows.map((row) => (
+                  <li
+                    key={row.key}
+                    className="flex items-baseline justify-between gap-4 py-2 border-b border-elaya-border last:border-0"
+                  >
+                    <span className="text-studio-w2 text-[12px]">
+                      <span className="text-studio-w3 tabular-nums mr-2">{row.nr}.</span>
+                      {row.label}
+                    </span>
+                    <span className={`text-[12px] font-semibold text-right ${
+                      String(row.value).startsWith('Ja') || row.value === 'Unsicher'
+                        ? 'text-studio-white'
+                        : 'text-studio-w1'
+                    }`}>
+                      {row.value}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
 
             <KlaerungPanel
               caseId={caseId}
@@ -146,25 +245,7 @@ const CaseAnamnesisPanel = ({ caseId, onCaseFlagsChange }) => {
               onUpdated={handleKlaerungUpdated}
             />
 
-            {(data.audit_log || []).length > 0 && (
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-studio-w3 m-0 mb-2">
-                  Audit (unveränderlich)
-                </p>
-                <ul className="m-0 p-0 list-none flex flex-col gap-1.5 max-h-40 overflow-y-auto">
-                  {[...(data.audit_log || [])].reverse().slice(0, 12).map((entry, i) => (
-                    <li key={`${entry.zeitstempel}-${i}`} className="text-[10px] text-studio-w3 leading-relaxed">
-                      <span className="text-studio-w2">
-                        {fmtDateTime(entry.zeitstempel)}
-                      </span>
-                      {' · '}
-                      {entry.details || entry.typ}
-                      {entry.bearbeitet_von ? ` · ${entry.bearbeitet_von}` : ''}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {timeline.length > 0 ? <MedicalTimeline timeline={timeline} /> : null}
           </>
         )}
       </Card>
@@ -172,7 +253,7 @@ const CaseAnamnesisPanel = ({ caseId, onCaseFlagsChange }) => {
       {wizardOpen && (
         <AnamnesisWizardModal
           caseId={caseId}
-          initialAnswers={data?.antworten}
+          initialAnswers={data?.antworten || data?.previous_anamnesis?.antworten}
           onClose={() => setWizardOpen(false)}
           onSaved={handleSaved}
         />

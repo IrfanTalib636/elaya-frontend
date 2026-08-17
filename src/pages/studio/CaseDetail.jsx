@@ -36,7 +36,7 @@ const APPT_TYPE_LABELS = {
   first:     'Erstbehandlung',
 }
 
-const CANCELLED_APPT = new Set(['storniert', 'cancelled'])
+const CANCELLED_APPT = new Set(['storniert', 'cancelled', 'completed'])
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 const fmtDate = (d) =>

@@ -1,15 +1,19 @@
 import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Plus, Lock, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Lock, Users, Pencil } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { listAppointments, createAppointment } from '../../api/appointments'
 import { listCustomers } from '../../api/customers'
 import { listCases, getCaseAvailability } from '../../api/cases'
+import { getStudioSettings, updateStudioSettings } from '../../api/studio'
 import { fmtDateDeLong } from '../../utils/time'
+import { resolveHoursForDate } from '../../utils/studioHours'
 import PreSessionCheck, { EMPTY_PRE_SESSION, preSessionToParams, preSessionToBody } from '../../components/case/PreSessionCheck'
 import GroupBookingModal from '../../components/appointments/GroupBookingModal'
 import GroupDetailModal from '../../components/appointments/GroupDetailModal'
 import { Button, Spinner, Modal, Input, Select } from '../../components/ui'
+import useAuthStore from '../../store/authStore'
+import { ROLES } from '../../constants/roles'
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const HOUR_H    = 64
@@ -194,15 +198,16 @@ const collapseGroupAppointments = (appointments) => {
 }
 
 // ── DayCol ─────────────────────────────────────────────────────────────────
-const DayCol = memo(({ dateISO, isToday, appointments, onApptClick, onCellClick }) => {
+const DayCol = memo(({ dateISO, isToday, appointments, closed, onApptClick, onCellClick }) => {
   const handleClick = useCallback((e) => {
+    if (closed) return
     const rect = e.currentTarget.getBoundingClientRect()
     onCellClick(dateISO, snapTime(e.clientY - rect.top))
-  }, [dateISO, onCellClick])
+  }, [closed, dateISO, onCellClick])
 
   return (
-    <div className={`flex-1 relative border-l border-elaya-border ${isToday ? 'bg-studio-gold/1.5' : ''}`}>
-      <div className="absolute inset-0 cursor-pointer" onClick={handleClick}>
+    <div className={`flex-1 relative border-l border-elaya-border ${isToday ? 'bg-studio-gold/1.5' : ''} ${closed ? 'bg-elaya-error/5' : ''}`}>
+      <div className={`absolute inset-0 ${closed ? 'cursor-not-allowed' : 'cursor-pointer'}`} onClick={handleClick}>
         {HOURS.map((h) => (
           <div
             key={h}
@@ -211,6 +216,14 @@ const DayCol = memo(({ dateISO, isToday, appointments, onApptClick, onCellClick 
           />
         ))}
       </div>
+
+      {closed && (
+        <div className="absolute inset-0 z-[4] flex items-center justify-center pointer-events-none">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-elaya-error/80 rotate-[-90deg] sm:rotate-0">
+            Geschlossen
+          </span>
+        </div>
+      )}
 
       <div className="absolute inset-0 pointer-events-none">
         {collapseGroupAppointments(appointments).map((a) => (
@@ -224,14 +237,21 @@ const DayCol = memo(({ dateISO, isToday, appointments, onApptClick, onCellClick 
 })
 
 // ── DayHeaders ─────────────────────────────────────────────────────────────
-const DayHeaders = memo(({ weekDays, todayISO }) => (
+const DayHeaders = memo(({ weekDays, todayISO, hoursByIso = {}, onDayClick }) => (
   <div className="flex shrink-0 border-b border-elaya-border bg-studio-bg">
     <div className="w-14 shrink-0" />
     {weekDays.map(({ date, iso }) => {
       const isToday = iso === todayISO
       const dayIdx  = date.getDay() === 0 ? 6 : date.getDay() - 1
+      const hours = hoursByIso[iso]
       return (
-        <div key={iso} className="flex-1 flex flex-col items-center py-2.5 border-l border-elaya-border">
+        <button
+          key={iso}
+          type="button"
+          onClick={() => onDayClick?.(iso)}
+          className="flex-1 flex flex-col items-center py-2.5 border-l border-elaya-border bg-transparent cursor-pointer hover:bg-studio-bg-4 transition-colors"
+          title="Verfügbarkeit dieses Tages bearbeiten"
+        >
           <span
             translate="no"
             className={`text-[10px] font-semibold uppercase tracking-wider mb-1.5 ${isToday ? 'text-studio-gold-2' : 'text-studio-w3'}`}
@@ -241,7 +261,16 @@ const DayHeaders = memo(({ weekDays, todayISO }) => (
           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[13px] font-bold ${isToday ? 'bg-studio-gold text-studio-bg' : 'text-studio-w1'}`}>
             {date.getDate()}
           </div>
-        </div>
+          {hours && hours.offen === false ? (
+            <span className="text-[9px] text-elaya-error mt-1">Zu</span>
+          ) : hours?.source === 'exception' ? (
+            <span className="text-[9px] text-elaya-success mt-1">Extra</span>
+          ) : (
+            <span className="inline-flex items-center gap-0.5 text-[9px] text-studio-w3 mt-1 h-[13px]">
+              <Pencil size={8} />
+            </span>
+          )}
+        </button>
       )
     })}
   </div>
@@ -475,6 +504,99 @@ const NewApptModal = ({
   )
 }
 
+const AvailabilityDayModal = ({
+  dateISO,
+  weekly,
+  exceptions,
+  canEdit,
+  onClose,
+  onSaved,
+}) => {
+  const current = resolveHoursForDate(weekly, exceptions, dateISO)
+  const [mode, setMode] = useState(current.source === 'exception' ? (current.offen ? 'open' : 'closed') : 'weekly')
+  const [von, setVon] = useState(current.von || '10:00')
+  const [bis, setBis] = useState(current.bis || '19:00')
+  const [notiz, setNotiz] = useState(current.notiz || '')
+  const [saving, setSaving] = useState(false)
+
+  const weeklyHours = resolveHoursForDate(weekly, [], dateISO)
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const next = exceptions.filter((item) => item.datum !== dateISO)
+      if (mode !== 'weekly') {
+        next.push({
+          datum: dateISO,
+          offen: mode === 'open',
+          von,
+          bis,
+          notiz,
+        })
+      }
+      const res = await updateStudioSettings({ oeffnungs_ausnahmen: next })
+      toast.success('Verfügbarkeit gespeichert.')
+      onSaved(res.data.data.settings.oeffnungs_ausnahmen ?? next)
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal title="Tages-Verfügbarkeit" onClose={onClose} width="max-w-md">
+      <div className="flex flex-col gap-4">
+        <p className="text-studio-white text-[14px] font-semibold m-0">{fmtDateDeLong(dateISO)}</p>
+        <p className="text-studio-w3 text-[12px] m-0">
+          Wochenschema: {weeklyHours.offen !== false
+            ? `geöffnet ${weeklyHours.von}–${weeklyHours.bis}`
+            : 'geschlossen'}
+        </p>
+
+        <div className="flex flex-col gap-2">
+          {[
+            { id: 'weekly', label: 'Wochenschema verwenden' },
+            { id: 'open', label: 'Extra öffnen / abweichende Zeiten' },
+            { id: 'closed', label: 'Diesen Tag schliessen' },
+          ].map((opt) => (
+            <label key={opt.id} className="flex items-center gap-2 text-[13px] text-studio-white cursor-pointer">
+              <input
+                type="radio"
+                name="avail-mode"
+                checked={mode === opt.id}
+                onChange={() => setMode(opt.id)}
+                disabled={!canEdit}
+                className="accent-studio-gold"
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
+
+        {mode === 'open' && (
+          <div className="flex flex-wrap gap-3">
+            <Input label="Von" type="time" value={von} onChange={(e) => setVon(e.target.value)} disabled={!canEdit} className="max-w-[140px]" />
+            <Input label="Bis" type="time" value={bis} onChange={(e) => setBis(e.target.value)} disabled={!canEdit} className="max-w-[140px]" />
+            <Input label="Notiz" value={notiz} onChange={(e) => setNotiz(e.target.value)} disabled={!canEdit} placeholder="optional" />
+          </div>
+        )}
+
+        {mode === 'closed' && (
+          <Input label="Notiz" value={notiz} onChange={(e) => setNotiz(e.target.value)} disabled={!canEdit} placeholder="z. B. Feiertag" />
+        )}
+
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="ghost" onClick={onClose} disabled={saving}>Abbrechen</Button>
+          {canEdit && (
+            <Button loading={saving} onClick={handleSave}>Speichern</Button>
+          )}
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 // ── Page ───────────────────────────────────────────────────────────────────
 const StudioAppointments = () => {
   const navigate  = useNavigate()
@@ -489,6 +611,11 @@ const StudioAppointments = () => {
   const [groupDetail, setGroupDetail] = useState(null)
   const [prefill, setPrefill]       = useState({ date: '', time: '' })
   const [modalDefaults, setModalDefaults] = useState({ customerId: '', caseId: '' })
+  const [weeklyHours, setWeeklyHours] = useState({})
+  const [exceptions, setExceptions] = useState([])
+  const [editDay, setEditDay] = useState(null)
+
+  const canEditHours = useAuthStore((s) => s.user?.role === ROLES.STUDIO_ADMIN)
 
   const urlCaseId = searchParams.get('case_id') ?? ''
   const urlCustomerId = searchParams.get('customer_id') ?? ''
@@ -529,6 +656,16 @@ const StudioAppointments = () => {
   useEffect(() => { load(weekStart) }, [weekStart, load])
 
   useEffect(() => {
+    getStudioSettings()
+      .then((res) => {
+        const settings = res.data.data.settings
+        setWeeklyHours(settings.oeffnungszeiten ?? {})
+        setExceptions(settings.oeffnungs_ausnahmen ?? [])
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
     if (!urlBook) return
     setModalDefaults({ customerId: urlCustomerId, caseId: urlCaseId })
     setPrefill({ date: todayISO, time: '09:00' })
@@ -567,6 +704,13 @@ const StudioAppointments = () => {
     navigate(`/studio/cases/${caseId}`)
   }, [navigate])
 
+  const hoursByIso = useMemo(
+    () => Object.fromEntries(
+      weekDays.map(({ iso }) => [iso, resolveHoursForDate(weeklyHours, exceptions, iso)])
+    ),
+    [weekDays, weeklyHours, exceptions]
+  )
+
   const totalCount = Object.values(apptsByDay).reduce((s, arr) => s + arr.length, 0)
   const weekNum    = getWeekNum(weekStart)
 
@@ -580,6 +724,7 @@ const StudioAppointments = () => {
             <h1 className="text-[20px] font-bold text-studio-white m-0 leading-none">Termine</h1>
             <p className="text-studio-w2 text-[12px] m-0 mt-1">
               KW {weekNum} · {totalCount} Termin{totalCount !== 1 ? 'e' : ''} diese Woche
+              {' · '}Klick auf einen Tag, um Verfügbarkeit zu ändern
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -624,7 +769,12 @@ const StudioAppointments = () => {
       </div>
 
       {/* Day-name header */}
-      <DayHeaders weekDays={weekDays} todayISO={todayISO} />
+      <DayHeaders
+        weekDays={weekDays}
+        todayISO={todayISO}
+        hoursByIso={hoursByIso}
+        onDayClick={setEditDay}
+      />
 
       {/* Scrollable time grid */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0 bg-studio-bg">
@@ -657,6 +807,7 @@ const StudioAppointments = () => {
                 dateISO={iso}
                 isToday={iso === todayISO}
                 appointments={apptsByDay[iso] ?? []}
+                closed={hoursByIso[iso]?.offen === false}
                 onApptClick={handleApptClick}
                 onCellClick={openModal}
               />
@@ -691,6 +842,20 @@ const StudioAppointments = () => {
           siblings={groupDetail.siblings}
           onClose={() => setGroupDetail(null)}
           onOpenCase={openCaseFromGroup}
+        />
+      )}
+
+      {editDay && (
+        <AvailabilityDayModal
+          dateISO={editDay}
+          weekly={weeklyHours}
+          exceptions={exceptions}
+          canEdit={canEditHours}
+          onClose={() => setEditDay(null)}
+          onSaved={(next) => {
+            setExceptions(next)
+            setEditDay(null)
+          }}
         />
       )}
     </div>

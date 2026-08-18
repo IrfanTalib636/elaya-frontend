@@ -6,10 +6,13 @@ const UV_OPTIONS = [
 ]
 
 const MED_OPTIONS = [
+  { value: 'keine', label: 'Keine' },
   { value: 'retinoide', label: 'Retinoide (+180 Tage)' },
   { value: 'antibiotika', label: 'Antibiotika (+14 Tage)' },
   { value: 'antidepressiva', label: 'Antidepressiva (+14 Tage)' },
 ]
+
+const REAL_MED_KEYS = new Set(['retinoide', 'antibiotika', 'antidepressiva'])
 
 export const EMPTY_PRE_SESSION = {
   uv_exposition: 'keine',
@@ -56,11 +59,25 @@ const Chip = ({ active, onClick, children }) => (
 )
 
 const PreSessionCheck = ({ value, onChange, compact = false }) => {
+  const meds = value.medikamente ?? []
+  const realMeds = meds.filter((m) => REAL_MED_KEYS.has(m))
+
   const setUv = (uv_exposition) => onChange({ ...value, uv_exposition })
   const toggleMed = (med) => {
-    const meds = value.medikamente ?? []
-    const next = meds.includes(med) ? meds.filter((m) => m !== med) : [...meds, med]
-    onChange({ ...value, medikamente: next })
+    if (med === 'keine') {
+      const next = meds.includes('keine') ? [] : ['keine']
+      onChange({ ...value, medikamente: next, medikament_datum: '' })
+      return
+    }
+    const withoutKeine = meds.filter((m) => m !== 'keine')
+    const next = withoutKeine.includes(med)
+      ? withoutKeine.filter((m) => m !== med)
+      : [...withoutKeine, med]
+    onChange({
+      ...value,
+      medikamente: next,
+      ...(next.length ? {} : { medikament_datum: '' }),
+    })
   }
 
   return (
@@ -98,7 +115,7 @@ const PreSessionCheck = ({ value, onChange, compact = false }) => {
             </Chip>
           ))}
         </div>
-        {(value.medikamente ?? []).length > 0 && (
+        {realMeds.length > 0 && (
           <input
             type="date"
             value={value.medikament_datum || ''}

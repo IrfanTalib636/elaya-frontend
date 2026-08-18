@@ -4,11 +4,34 @@ import { ArrowLeft, Camera, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCase } from '../../api/cases'
 import { createSession } from '../../api/sessions'
+import { getAppointment } from '../../api/appointments'
 import { uploadSessionProgressPhoto } from '../../api/files'
 import { analyzeVerblassung } from '../../api/verblassung'
 import { Card, Button, Input, Select, Spinner, PageHeader } from '../../components/ui'
 
 // ── Constants ─────────────────────────────────────────────────────────────
+const toDateInput = (iso) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return String(iso).slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const toTimeInput = (appt) => {
+  if (appt?.time) return String(appt.time).slice(0, 5)
+  if (!appt?.date) return ''
+  const d = new Date(appt.date)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+const appointmentCaseId = (appt) => {
+  const value = appt?.case
+  if (!value) return ''
+  if (typeof value === 'object') return String(value.id || value._id || '')
+  return String(value)
+}
+
 const INITIAL = {
   treatment_date:      '',
   treatment_time:      '',
@@ -117,8 +140,10 @@ const NewSession = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const caseId = searchParams.get('case_id')
+  const appointmentId = searchParams.get('appointment_id')
 
   const [caseData, setCaseData] = useState(null)
+  const [linkedAppointment, setLinkedAppointment] = useState(null)
   const [loadingCase, setLoadingCase] = useState(true)
   const [form, setForm] = useState(INITIAL)
   const [savingDraft, setSavingDraft] = useState(false)
@@ -134,6 +159,8 @@ const NewSession = () => {
   }, [photoPreview])
 
   const saving = savingDraft || savingFinal
+  const nextSession = (caseData?.sessionsDone ?? 0) + 1
+  const kiAvailable = nextSession >= 2
 
   useEffect(() => {
     if (!caseId) {
@@ -148,12 +175,35 @@ const NewSession = () => {
       } catch {
         toast.error('Fall konnte nicht geladen werden.')
         navigate(-1)
+        return
       } finally {
         setLoadingCase(false)
       }
+
+      if (!appointmentId) return
+      try {
+        const apptRes = await getAppointment(appointmentId)
+        const appt = apptRes.data.data.appointment
+        const linkedCase = appointmentCaseId(appt)
+        if (linkedCase && linkedCase !== String(caseId)) {
+          toast.error('Dieser Termin gehört nicht zu diesem Fall.')
+          return
+        }
+        setLinkedAppointment(appt)
+        setForm((prev) => ({
+          ...prev,
+          treatment_date: toDateInput(appt.date),
+          treatment_time: toTimeInput(appt),
+          dauer_minuten: appt.dauer_minuten != null ? String(appt.dauer_minuten) : prev.dauer_minuten,
+          mitarbeiter_name: appt.mitarbeiter_name || prev.mitarbeiter_name,
+          raum_name: appt.raum_name || prev.raum_name,
+        }))
+      } catch {
+        toast.error('Termin konnte nicht geladen werden. Bitte Datum und Uhrzeit prüfen.')
+      }
     }
     load()
-  }, [caseId, navigate])
+  }, [caseId, appointmentId, navigate])
 
   const set = useCallback(
     (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value })),
@@ -177,6 +227,7 @@ const NewSession = () => {
 
     return {
       case_id:             caseId,
+      appointment_id:      appointmentId || undefined,
       treatment_date:      form.treatment_date,
       treatment_time:      form.treatment_time   || undefined,
       dauer_minuten:       form.dauer_minuten     ? Number(form.dauer_minuten)    : undefined,
@@ -257,7 +308,7 @@ const NewSession = () => {
           toast.error('Sitzung gespeichert, aber das Foto konnte nicht hochgeladen werden.', { id: flowToast })
         }
 
-        if (uploaded && autoAnalyze && !isDraft) {
+        if (uploaded && autoAnalyze && kiAvailable && !isDraft) {
           toast.loading('KI analysiert…', { id: flowToast })
           try {
             await analyzeVerblassung({ session_id: sessionId, persist: true })
@@ -289,7 +340,6 @@ const NewSession = () => {
   }
 
   const caseTitle   = caseData?.tc_title || caseData?.bodyLabel || 'Fall'
-  const nextSession = (caseData?.sessionsDone ?? 0) + 1
 
   return (
     <div className="p-6 max-w-[860px]">
@@ -305,7 +355,7 @@ const NewSession = () => {
 
       <PageHeader
         title={`Sitzung #${nextSession}`}
-        subtitle={`${caseTitle} · ${caseData?.caseId ?? ''}`}
+        subtitle={`${caseTitle} · ${caseData?.caseId ?? ''}${linkedAppointment ? ' · vom Termin übernommen' : ''}`}
       >
         <Button variant="ghost" onClick={() => navigate(`/studio/cases/${caseId}`)} disabled={saving}>
           Abbrechen
@@ -322,6 +372,13 @@ const NewSession = () => {
 
         {/* ── Section 1: General ── */}
         <Section title="Allgemein">
+          {linkedAppointment ? (
+            <p className="text-studio-gold-2 text-[12px] m-0 -mt-1">
+              Datum, Uhrzeit und Fall stammen vom gebuchten Termin
+              {linkedAppointment.time ? ` (${toDateInput(linkedAppointment.date)} · ${toTimeInput(linkedAppointment)})` : ''}.
+              Laserparameter bitte ergänzen.
+            </p>
+          ) : null}
           <div className="grid grid-cols-3 gap-4">
             <Input
               label="Datum *"
@@ -455,12 +512,14 @@ const NewSession = () => {
               onChange={selectPhoto}
             />
             <p className="text-studio-w3 text-[11px] m-0">
-              Aktuelles Foto der behandelten Stelle — Grundlage für die KI-Verblassungsanalyse.
+              {kiAvailable
+                ? 'Aktuelles Foto der behandelten Stelle — Grundlage für die KI-Verblassungsanalyse im Vergleich zur vorherigen Sitzung.'
+                : 'Vorher-Foto der behandelten Stelle. Bitte immer vor der ersten Behandlung speichern — ab der zweiten Sitzung wird es für den Fortschrittsvergleich benötigt. Eine KI-Analyse gibt es bei der ersten Sitzung nicht.'}
             </p>
-            {photoFile && (
+            {photoFile && kiAvailable && (
               <Toggle
                 label="KI-Verblassungsanalyse automatisch starten"
-                hint="Analysiert das Foto nach dem Abschliessen der Sitzung (nicht bei Entwürfen)"
+                hint="Vergleicht dieses Foto mit dem Foto der vorherigen Sitzung (nicht bei Entwürfen)"
                 checked={autoAnalyze}
                 onChange={setAutoAnalyze}
               />

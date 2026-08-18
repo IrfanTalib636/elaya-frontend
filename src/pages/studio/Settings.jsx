@@ -22,7 +22,7 @@ import {
 } from '../../components/pricing/pricingFields'
 import { ROLES } from '../../constants/roles'
 import { WEEKDAYS, MITARBEITER_ROLLEN } from '../../constants/studio'
-import { formatTimeRange12 } from '../../utils/time'
+import { formatTimeRange12, fmtDateDeLong } from '../../utils/time'
 
 // ── Theme ──────────────────────────────────────────────────────────────────
 const THEME_OPTIONS = [
@@ -482,9 +482,10 @@ const HoursTab = () => {
   if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
 
   return (
+    <div className="flex flex-col gap-5">
     <Section
       title="Öffnungszeiten"
-      desc="Verfügbare Tage und Zeiten für Termine."
+      desc="Wöchentliches Schema. Einzelne Tage (extra öffnen oder schliessen) stehen darunter."
       canEdit={canEdit}
       isEditing={isEditing}
       onEdit={() => setIsEditing(true)}
@@ -565,6 +566,169 @@ const HoursTab = () => {
             className="max-w-[200px]"
           />
         </>
+      )}
+    </Section>
+    <HoursExceptions canEdit={canEdit} />
+    </div>
+  )
+}
+
+const EMPTY_AUSNAHME = { datum: '', offen: true, von: '10:00', bis: '19:00', notiz: '' }
+
+const HoursExceptions = ({ canEdit }) => {
+  const [items, setItems] = useState([])
+  const [draft, setDraft] = useState(EMPTY_AUSNAHME)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await getStudioSettings()
+      setItems(res.data.data.settings.oeffnungs_ausnahmen ?? [])
+    } catch {
+      toast.error('Einzelne Tage konnten nicht geladen werden.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const persist = async (next) => {
+    setSaving(true)
+    try {
+      const res = await updateStudioSettings({ oeffnungs_ausnahmen: next })
+      setItems(res.data.data.settings.oeffnungs_ausnahmen ?? next)
+      toast.success('Verfügbare Tage gespeichert.')
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const addItem = async () => {
+    if (!draft.datum) {
+      toast.error('Bitte ein Datum wählen.')
+      return
+    }
+    const next = [
+      ...items.filter((item) => item.datum !== draft.datum),
+      { ...draft, offen: draft.offen !== false },
+    ].sort((a, b) => a.datum.localeCompare(b.datum))
+    await persist(next)
+    setDraft(EMPTY_AUSNAHME)
+  }
+
+  const removeItem = async (datum) => {
+    await persist(items.filter((item) => item.datum !== datum))
+  }
+
+  if (loading) return null
+
+  return (
+    <Section
+      title="Einzelne Tage"
+      desc="Zusätzliche Öffnungstage oder geschlossene Tage (z. B. Feiertage) — unabhängig vom Wochenschema."
+    >
+      {!canEdit && <ReadOnlyHint />}
+
+      {items.length === 0 ? (
+        <p className="text-studio-w3 text-[12px] m-0">Noch keine einzelnen Tage hinterlegt.</p>
+      ) : (
+        <div className="flex flex-col">
+          {items.map((item) => (
+            <div
+              key={item.datum}
+              className="flex items-center justify-between gap-3 py-2.5 border-b border-elaya-border last:border-0"
+            >
+              <button
+                type="button"
+                onClick={() => canEdit && setDraft({
+                  datum: item.datum,
+                  offen: item.offen !== false,
+                  von: item.von || '10:00',
+                  bis: item.bis || '19:00',
+                  notiz: item.notiz || '',
+                })}
+                className={`text-left bg-transparent border-0 p-0 ${canEdit ? 'cursor-pointer' : ''}`}
+              >
+                <p className="text-studio-white text-[13px] font-medium m-0">
+                  {fmtDateDeLong(item.datum)}
+                </p>
+                <p className="text-studio-w3 text-[11px] m-0 mt-0.5">
+                  {item.offen !== false
+                    ? `Geöffnet ${formatTimeRange12(item.von, item.bis)}`
+                    : 'Geschlossen'}
+                  {item.notiz ? ` · ${item.notiz}` : ''}
+                </p>
+              </button>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => removeItem(item.datum)}
+                  disabled={saving}
+                  className="p-1.5 rounded-[8px] text-studio-w3 hover:text-elaya-error border-0 bg-transparent cursor-pointer"
+                  aria-label="Tag entfernen"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {canEdit && (
+        <div className="flex flex-col gap-3 pt-2 border-t border-elaya-border">
+          <p className="text-studio-w2 text-[12px] m-0">Tag hinzufügen oder überschreiben</p>
+          <div className="flex flex-wrap items-end gap-3">
+            <Input
+              label="Datum"
+              type="date"
+              value={draft.datum}
+              onChange={(e) => setDraft((prev) => ({ ...prev, datum: e.target.value }))}
+              className="max-w-[180px]"
+            />
+            <label className="flex items-center gap-2 pb-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={draft.offen !== false}
+                onChange={(e) => setDraft((prev) => ({ ...prev, offen: e.target.checked }))}
+                className="accent-studio-gold"
+              />
+              <span className="text-studio-white text-[13px]">Geöffnet</span>
+            </label>
+            <Input
+              label="Von"
+              type="time"
+              value={draft.von}
+              onChange={(e) => setDraft((prev) => ({ ...prev, von: e.target.value }))}
+              disabled={draft.offen === false}
+              className="max-w-[130px]"
+            />
+            <Input
+              label="Bis"
+              type="time"
+              value={draft.bis}
+              onChange={(e) => setDraft((prev) => ({ ...prev, bis: e.target.value }))}
+              disabled={draft.offen === false}
+              className="max-w-[130px]"
+            />
+            <Input
+              label="Notiz"
+              value={draft.notiz}
+              onChange={(e) => setDraft((prev) => ({ ...prev, notiz: e.target.value }))}
+              placeholder="z. B. Feiertag"
+              className="max-w-[180px]"
+            />
+            <Button size="sm" onClick={addItem} loading={saving} disabled={!draft.datum}>
+              <Plus size={14} />
+              Speichern
+            </Button>
+          </div>
+        </div>
       )}
     </Section>
   )

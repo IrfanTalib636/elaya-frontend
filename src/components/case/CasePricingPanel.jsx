@@ -43,10 +43,18 @@ const CasePricingPanel = ({ caseId }) => {
         <p className="text-studio-w3 text-[12px] m-0">Preis konnte nicht berechnet werden.</p>
       ) : data ? (
         <>
-          <div className="rounded-[10px] border border-studio-gold/25 bg-studio-gold/10 px-3 py-2.5">
-            <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-1">Preis pro Sitzung</p>
+          <div className="rounded-[10px] border border-elaya-border bg-studio-bg-4 px-3 py-2.5">
+            <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-1">Kalkulierter Preis</p>
             <p className="text-studio-white text-[15px] font-bold m-0 tabular-nums">
-              {fmtCHF(data.pricePerSession)}
+              {fmtCHF(data.persisted?.calculated_pricePerSession ?? data.pricePerSession)}
+            </p>
+          </div>
+          <div className="rounded-[10px] border border-studio-gold/25 bg-studio-gold/10 px-3 py-2.5">
+            <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-1">Bestätigter Studio-Preis</p>
+            <p className="text-studio-white text-[15px] font-bold m-0 tabular-nums">
+              {data.persisted?.confirmed_pricePerSession != null
+                ? fmtCHF(data.persisted.confirmed_pricePerSession)
+                : 'Noch nicht bestätigt'}
             </p>
           </div>
 

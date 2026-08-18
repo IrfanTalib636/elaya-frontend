@@ -48,6 +48,7 @@ const AdminFinance         = lazy(() => import('./pages/admin/Finance'))
 const AdminElaycoins       = lazy(() => import('./pages/admin/Elaycoins'))
 const AdminFeatures        = lazy(() => import('./pages/admin/Features'))
 const AdminTransfers       = lazy(() => import('./pages/admin/Transfers'))
+const AdminSettings        = lazy(() => import('./pages/admin/Settings'))
 
 // ── Fallback shown while a chunk loads ────────────────────────────────────
 const PageLoader = () => (
@@ -142,6 +143,7 @@ const AppInner = () => {
             <Route path="elaycoins" element={<AdminElaycoins />} />
             <Route path="features" element={<AdminFeatures />} />
             <Route path="transfers" element={<AdminTransfers />} />
+            <Route path="settings" element={<AdminSettings />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />

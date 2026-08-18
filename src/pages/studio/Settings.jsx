@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Sun, Moon, Monitor, Check, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard } from 'lucide-react'
+import { Sun, Moon, Monitor, Check, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Activity } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Card, PageHeader, Input, Button, Spinner, Select, Badge } from '../../components/ui'
 import useTheme from '../../hooks/useTheme'
@@ -14,6 +14,8 @@ import {
   refreshStudioStripeConnect,
 } from '../../api/studio'
 import PricingConfigForm from '../../components/pricing/PricingConfigForm'
+import SessionPredictionForm from '../../components/sessionPrediction/SessionPredictionForm'
+import { cloneSessionPrediction } from '../../components/sessionPrediction/sessionPredictionFields'
 import {
   PRICING_GROUPS,
   PRICING_LABELS,
@@ -112,13 +114,14 @@ const ReadOnlyHint = () => (
 
 // ── Tabs ───────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'appearance', icon: Monitor,     label: 'Darstellung'    },
-  { id: 'profile',    icon: User,        label: 'Studio-Profil'  },
-  { id: 'pricing',    icon: DollarSign,  label: 'Preise'         },
-  { id: 'hours',      icon: Clock,       label: 'Öffnungszeiten' },
-  { id: 'rooms',      icon: Grid,        label: 'Räume'          },
-  { id: 'staff',      icon: Users,       label: 'Mitarbeiter'    },
-  { id: 'stripe',     icon: CreditCard,  label: 'Stripe'         },
+  { id: 'appearance', icon: Monitor,     label: 'Darstellung'     },
+  { id: 'profile',    icon: User,        label: 'Studio-Profil'   },
+  { id: 'pricing',    icon: DollarSign,  label: 'Preise'          },
+  { id: 'sessions',   icon: Activity,    label: 'Sitzungsprognose' },
+  { id: 'hours',      icon: Clock,       label: 'Öffnungszeiten'  },
+  { id: 'rooms',      icon: Grid,        label: 'Räume'           },
+  { id: 'staff',      icon: Users,       label: 'Mitarbeiter'     },
+  { id: 'stripe',     icon: CreditCard,  label: 'Stripe'          },
 ]
 
 const useCanEditSettings = () => {
@@ -269,6 +272,49 @@ const PricingTab = () => {
             onChange={(key, value) => setPricing((prev) => ({ ...prev, [key]: value }))}
           />
         </>
+      )}
+    </Section>
+  )
+}
+
+const SessionPredictionTab = () => {
+  const [config, setConfig] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await getStudioConfig()
+        if (!cancelled) setConfig(res.data.data.studio_config)
+      } catch {
+        toast.error('Sitzungsprognose konnte nicht geladen werden.')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
+
+  const prediction = cloneSessionPrediction(config?.session_prediction)
+
+  return (
+    <Section
+      title="Sitzungsprognose"
+      desc="Plattform-Parameter für die geschätzte Sitzungszahl. Nur die Elaya-Administration kann diese Werte ändern."
+    >
+      <p className="text-studio-w3 text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4">
+        Sichtbar für das Studio, nicht editierbar. Bei jeder neuen Case-Erstellung fliessen Lifestyle,
+        Hauttyp, Farben, Cover-up und die übrigen Faktoren automatisch in Min/Max-Sitzungen und den Preisrange ein.
+      </p>
+      {prediction && Object.keys(prediction).length > 0 ? (
+        <SessionPredictionForm values={prediction} onChange={() => {}} disabled />
+      ) : (
+        <p className="text-studio-w2 text-[12px] m-0">Keine Parameter hinterlegt.</p>
       )}
     </Section>
   )
@@ -1319,6 +1365,7 @@ const StudioSettings = () => {
 
           {activeTab === 'profile' && <ProfileTab />}
           {activeTab === 'pricing' && <PricingTab />}
+          {activeTab === 'sessions' && <SessionPredictionTab />}
           {activeTab === 'hours'   && <HoursTab />}
           {activeTab === 'rooms'   && <RoomsTab />}
           {activeTab === 'staff'   && <StaffTab />}

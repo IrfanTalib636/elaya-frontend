@@ -8,6 +8,7 @@ import {
   ShoppingBag,
   LogOut,
   ArrowLeftRight,
+  Settings,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import useAuthStore from '../store/authStore'
@@ -22,6 +23,7 @@ const ICONS = {
   features: ToggleLeft,
   shop: ShoppingBag,
   transfer: ArrowLeftRight,
+  settings: Settings,
 }
 
 const NAV = [
@@ -32,6 +34,7 @@ const NAV = [
   { to: '/admin/elaycoins', id: 'elaycoins' },
   { to: '/admin/features', id: 'features' },
   { to: '/admin/transfers', id: 'transfer' },
+  { to: '/admin/settings', id: 'settings' },
 ]
 
 const AdminShell = () => {

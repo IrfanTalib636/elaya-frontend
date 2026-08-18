@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, ChevronRight, FolderOpen } from 'lucide-react'
+import { Search, ChevronRight, FolderOpen, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { listCases } from '../../api/cases'
+import { listCases, deleteCase } from '../../api/cases'
 import { Card, Badge, Spinner, PageHeader, EmptyState, Pagination } from '../../components/ui'
 import MedicalAmpelDot from '../../components/medical/MedicalAmpelDot'
 import { PAGE_SIZE, SEARCH_FETCH_LIMIT } from '../../constants/pagination'
@@ -24,7 +24,7 @@ const MEDICAL_FILTERS = [
 
 const TYPE_LABELS = { tattoo: 'Tattoo', pmu: 'PMU' }
 
-const TABLE_HEADERS = ['Fall', 'Kunde', 'Körperstelle', 'Typ', 'Sitzungen', 'Ampel', 'Status', '']
+const TABLE_HEADERS = ['Fall', 'Kunde', 'Körperstelle', 'Typ', 'Sitzungen', 'Ampel', 'Status', '', '']
 
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString('de-CH', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
@@ -35,7 +35,7 @@ const customerName = (c) => {
   return n || c.email || '—'
 }
 
-const CaseRow = ({ c, onClick }) => {
+const CaseRow = ({ c, onClick, onDelete, deleting }) => {
   const label = c.bodyLabel || c.tc_title || TYPE_LABELS[c.type] || '—'
   const progress = c.sessions > 0
     ? `${c.sessionsDone ?? 0}/${c.sessions}`
@@ -75,6 +75,25 @@ const CaseRow = ({ c, onClick }) => {
       <td className="px-5 py-3 text-studio-w3">
         <ChevronRight size={14} />
       </td>
+      <td className="px-5 py-3">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete?.(c)
+          }}
+          disabled={deleting || c.transferiert}
+          title={c.transferiert ? 'Transferierte Fälle können hier nicht gelöscht werden.' : 'Test-Fall löschen'}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] border text-[11px] font-semibold cursor-pointer transition-colors ${
+            deleting || c.transferiert
+              ? 'border-elaya-border text-studio-w4 cursor-not-allowed'
+              : 'border-studio-red/35 text-studio-red hover:bg-studio-red/10'
+          }`}
+        >
+          <Trash2 size={12} />
+          {deleting ? 'Löscht…' : 'Test löschen'}
+        </button>
+      </td>
     </tr>
   )
 }
@@ -89,6 +108,7 @@ const StudioCases = () => {
   const [statusFilter, setStatusFilter] = useState('')
   const [medicalFilter, setMedicalFilter] = useState('')
   const [page, setPage] = useState(1)
+  const [deletingId, setDeletingId] = useState(null)
 
   const isSearching = search.trim().length > 0
 
@@ -128,6 +148,25 @@ const StudioCases = () => {
       )
     })
   }, [cases, search])
+
+  const handleDelete = async (caseItem) => {
+    const label = caseItem?.caseId || caseItem?.tc_title || caseItem?.bodyLabel || 'diesen Fall'
+    const ok = window.confirm(
+      `Test-Löschung aktiv:\nSoll ${label} wirklich gelöscht werden?\n\nDiese Aktion entfernt den Fall auch aus der Customer App.`
+    )
+    if (!ok) return
+
+    setDeletingId(caseItem.id)
+    try {
+      await deleteCase(caseItem.id)
+      setCases((prev) => prev.filter((row) => row.id !== caseItem.id))
+      toast.success('Test-Fall gelöscht (Studio & Customer App synchronisiert).')
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Fall konnte nicht gelöscht werden.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   return (
     <div className="p-6 max-w-[1100px]">
@@ -210,6 +249,8 @@ const StudioCases = () => {
                     key={c.id}
                     c={c}
                     onClick={() => navigate(`/studio/cases/${c.id}`)}
+                    onDelete={handleDelete}
+                    deleting={deletingId === c.id}
                   />
                 ))}
               </tbody>

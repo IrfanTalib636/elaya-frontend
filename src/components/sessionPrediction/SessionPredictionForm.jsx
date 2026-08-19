@@ -23,11 +23,39 @@ const FieldGrid = ({ children }) => (
   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{children}</div>
 )
 
+const fmtCHF = (n) =>
+  n == null ? '—' : `CHF ${Number(n).toLocaleString('de-CH')}`
+
+const PlausibilityPanel = ({ report }) => {
+  if (!report?.results?.length) return null
+  return (
+    <div className="border border-elaya-border rounded-[10px] px-3 py-3 bg-studio-bg-4">
+      <p className="text-[12px] font-semibold m-0 mb-1">Excel-Plausibilität (Beispiele 1–3)</p>
+      <p className="text-[11px] text-studio-w3 m-0 mb-3">
+        Master Excel §7: Preis/Sitzung × Sitzungsrange muss diese Referenzfälle treffen.
+      </p>
+      <div className="flex flex-col gap-2">
+        {report.results.map((row) => (
+          <div key={row.id} className="flex flex-wrap items-baseline justify-between gap-2">
+            <span className="text-[12px] text-studio-w1">
+              {row.pass ? '✓' : '✗'} {row.title}
+            </span>
+            <span className="text-[11px] text-studio-w3">
+              {fmtCHF(row.got.price_per_session)} · {row.got.sessions_min}–{row.got.sessions_max} Sitzungen ·{' '}
+              {fmtCHF(row.got.total_min)}–{fmtCHF(row.got.total_max)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /**
  * Shared editor for platform Sitzungsprognose parameters.
  * Admin: editable. Studio: pass disabled.
  */
-const SessionPredictionForm = ({ values, onChange, disabled = false }) => {
+const SessionPredictionForm = ({ values, onChange, disabled = false, plausibility = null }) => {
   const setBase = (key, value) => onChange({ ...values, [key]: value })
 
   const setMap = (bucket, group, key, value) => {
@@ -57,6 +85,7 @@ const SessionPredictionForm = ({ values, onChange, disabled = false }) => {
         Lifestyle-Score 1 = ×0.85 (optimal), Score 5 = ×1.50 (stark beeinträchtigt). Kunden sehen diese
         Parameter nicht.
       </p>
+      <PlausibilityPanel report={plausibility} />
 
       <div>
         <p className="text-[12px] font-semibold m-0 mb-3">Basis &amp; Range</p>
@@ -100,7 +129,9 @@ const SessionPredictionForm = ({ values, onChange, disabled = false }) => {
         <div className="h-px bg-elaya-border mb-5" />
         <p className="text-[12px] font-semibold m-0 mb-1">Lifestyle-Composite</p>
         <p className="text-[11px] text-studio-w3 m-0 mb-3">
-          Einzelfelder (1–5) werden gemittelt. Schlaf = Durchschnitt aus Qualität und Stunden.
+          Sieben Hauptfaktoren gemittelt: Rauchen, Alkohol, Schlaf (Qualität+Stunden als ein Score),
+          Stress, Aktivität (inkl. Sport), Hydration, Ernährung. Nachsorge fliesst nicht in den Score
+          ein. BMI ≥30 hebt den Score auf mind. 4, ≥35 auf 5.
         </p>
       </div>
 

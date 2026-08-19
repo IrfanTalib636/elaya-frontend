@@ -24,6 +24,7 @@ import {
   LIFE_SMOKER,
   LIFE_ALCOHOL,
   LIFE_ACTIVITY,
+  LIFE_SPORT_FREQ,
   LIFE_SLEEP_HOURS,
   LIFE_SLEEP_QUALITY,
   LIFE_STRESS,
@@ -338,6 +339,7 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
         : undefined,
       life_alcohol: form.life_alcohol || undefined,
       life_activity: form.life_activity || undefined,
+      life_sport_freq: form.life_sport_freq || undefined,
       life_sleep_hours: form.life_sleep_hours || undefined,
       life_sleep_quality: form.life_sleep_quality || undefined,
       life_stress: form.life_stress || undefined,
@@ -786,6 +788,7 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
       {[
         ['life_alcohol', ui.lifestyle.alcohol, LIFE_ALCOHOL],
         ['life_activity', ui.lifestyle.activity, LIFE_ACTIVITY],
+        ['life_sport_freq', ui.lifestyle.sportFreq, LIFE_SPORT_FREQ],
         ['life_sleep_hours', ui.lifestyle.sleepHours, LIFE_SLEEP_HOURS],
         ['life_sleep_quality', ui.lifestyle.sleepQuality, LIFE_SLEEP_QUALITY],
         ['life_stress', ui.lifestyle.stress, LIFE_STRESS],

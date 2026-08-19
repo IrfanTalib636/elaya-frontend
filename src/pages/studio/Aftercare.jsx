@@ -2,17 +2,46 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Heart, Phone } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { listNachsorge } from '../../api/nachsorge'
+import { listNachsorge, reviewNachsorge } from '../../api/nachsorge'
 import { fetchPhotoBlobUrl } from '../../api/files'
-import { Card, Button, Spinner, PageHeader, Modal, Pagination } from '../../components/ui'
+import { Card, Button, Spinner, PageHeader, Modal, Pagination, Select } from '../../components/ui'
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const TABLE_HEADERS = ['Datum', 'Kunde', 'Fall', 'Ampel', 'Titel', 'Tage n. Sitzung', 'Kontakt']
 
-const AMPEL_META = {
-  gruen:  { label: 'Grün',   classes: 'bg-elaya-success/15 text-elaya-success' },
-  orange: { label: 'Orange', classes: 'bg-elaya-warning/15 text-elaya-warning' },
-  rot:    { label: 'Rot',    classes: 'bg-elaya-error/15 text-elaya-error'     },
+const HEALING_STATUS_META = {
+  normal:      { label: 'Normal',     classes: 'bg-elaya-success/15 text-elaya-success' },
+  monitor:     { label: 'Beobachten', classes: 'bg-elaya-warning/15 text-elaya-warning' },
+  delayed:     { label: 'Verzögert',  classes: 'bg-elaya-warning/15 text-elaya-warning' },
+  conspicuous: { label: 'Auffällig',  classes: 'bg-elaya-error/15 text-elaya-error' },
+}
+
+const HEALING_PHASE_LABEL = {
+  early: 'Tag 1–7 · Frühphase',
+  healing: 'Tag 8–21 · Heilungsphase',
+  consolidation: 'Tag >21 · Konsolidierung',
+  unknown: 'Zeitfenster unbekannt',
+}
+
+const HEALING_ACTION_LABEL = {
+  continue_aftercare: 'Nachsorge fortsetzen',
+  continue_monitoring: 'Weiter beobachten',
+  photo_again: 'Neues Foto empfehlen',
+  check_studio: 'Studio prüfen / Kontakt',
+}
+
+const SYMPTOM_FIELD_LABEL = {
+  erythema_level: 'Rötung',
+  swelling_level: 'Schwellung',
+  blistering_flag: 'Blasen',
+  crusting_level: 'Krusten',
+  pain_score: 'Schmerz',
+  itching_level: 'Juckreiz',
+  hyperpigmentation_level: 'Hyperpigmentierung',
+  hypopigmentation_level: 'Hypopigmentierung',
+  infection_suspected: 'Infektionsverdacht',
+  oozing: 'Nässen / offene Stelle',
+  warmth: 'Wärme',
 }
 
 const FILTERS = [
@@ -21,6 +50,12 @@ const FILTERS = [
   { value: 'orange', label: 'Orange' },
   { value: 'gruen',  label: 'Grün'   },
 ]
+
+const AMPEL_META = {
+  gruen:  { label: 'Grün',   classes: 'bg-elaya-success/15 text-elaya-success' },
+  orange: { label: 'Orange', classes: 'bg-elaya-warning/15 text-elaya-warning' },
+  rot:    { label: 'Rot',    classes: 'bg-elaya-error/15 text-elaya-error' },
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 const fmtDate = (d) =>
@@ -87,6 +122,87 @@ const DetailBlock = ({ label, children }) => (
     {children}
   </div>
 )
+
+const HealingReviewForm = ({ check, onSaved }) => {
+  const [notes, setNotes] = useState(check.studio_review_notes || '')
+  const [status, setStatus] = useState(check.healing_status || 'normal')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setNotes(check.studio_review_notes || '')
+    setStatus(check.healing_status || 'normal')
+  }, [check.id, check.studio_review_notes, check.healing_status])
+
+  const save = async (overrideStatus) => {
+    setSaving(true)
+    try {
+      const res = await reviewNachsorge(check.id, {
+        studio_review_notes: notes.trim(),
+        ...(overrideStatus ? { healing_status: overrideStatus } : status && status !== check.healing_status
+          ? { healing_status: status }
+          : {}),
+      })
+      const updated = res.data.data.check
+      onSaved(updated)
+      toast.success('Studio-Review gespeichert')
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? 'Review konnte nicht gespeichert werden.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3 pt-2 border-t border-elaya-border">
+      <DetailBlock label="Studio-Review (bestätigen oder korrigieren)">
+        {check.healing_needs_review && !check.healing_studio_reviewed_at && (
+          <p className="text-elaya-warning text-[11px] m-0 mb-1">
+            Automatische Einschätzung — bitte prüfen.
+          </p>
+        )}
+        {check.healing_studio_reviewed_at && (
+          <p className="text-studio-w3 text-[11px] m-0 mb-1">
+            Zuletzt geprüft {fmtDate(check.healing_studio_reviewed_at)}
+            {check.healing_studio_reviewed_by ? ` · ${check.healing_studio_reviewed_by}` : ''}
+            {check.healing_status_calculated && check.healing_status_calculated !== check.healing_status
+              ? ` · System: ${HEALING_STATUS_META[check.healing_status_calculated]?.label || check.healing_status_calculated}`
+              : ''}
+          </p>
+        )}
+        <Select
+          label="Heilungsstatus"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        >
+          <option value="normal">Normal</option>
+          <option value="monitor">Beobachten</option>
+          <option value="delayed">Verzögert</option>
+          <option value="conspicuous">Auffällig</option>
+        </Select>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+          placeholder="Interne Studio-Notiz…"
+          className="w-full mt-2 px-3 py-2 rounded-[10px] border-[1.5px] border-elaya-border-strong bg-studio-bg-3 text-studio-w1 text-[12px] outline-none focus:border-studio-gold transition-colors placeholder:text-studio-w3 resize-none"
+        />
+        <div className="flex flex-wrap gap-2 mt-2">
+          <Button size="sm" loading={saving} onClick={() => save(check.healing_status)}>
+            Einschätzung bestätigen
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={saving || !status || status === check.healing_status}
+            onClick={() => save(status)}
+          >
+            Korrigieren
+          </Button>
+        </div>
+      </DetailBlock>
+    </div>
+  )
+}
 
 // ── Page ──────────────────────────────────────────────────────────────────
 const Aftercare = () => {
@@ -212,6 +328,16 @@ const Aftercare = () => {
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-3">
               <AmpelBadge ampel={detail.ampel} />
+              {detail.healing_status && HEALING_STATUS_META[detail.healing_status] && (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${HEALING_STATUS_META[detail.healing_status].classes}`}>
+                  {HEALING_STATUS_META[detail.healing_status].label}
+                </span>
+              )}
+              {detail.healing_phase && (
+                <span className="text-studio-w3 text-[12px]">
+                  {HEALING_PHASE_LABEL[detail.healing_phase] || detail.healing_phase}
+                </span>
+              )}
               {detail.customer_name && (
                 <span className="text-studio-white text-[12px] font-medium">{detail.customer_name}</span>
               )}
@@ -230,13 +356,59 @@ const Aftercare = () => {
               )}
             </div>
 
+            {detail.healing_customer_summary && (
+              <DetailBlock label="Kundentext (keine Diagnose)">
+                <p className="text-studio-w1 text-[13px] m-0 leading-relaxed">{detail.healing_customer_summary}</p>
+              </DetailBlock>
+            )}
+            {detail.healing_recommended_action && (
+              <DetailBlock label="Empfohlene Aktion">
+                <p className="text-studio-w1 text-[13px] m-0">
+                  {HEALING_ACTION_LABEL[detail.healing_recommended_action] || detail.healing_recommended_action}
+                  {detail.healing_progress_score != null ? ` · Progress-Score ${detail.healing_progress_score}` : ''}
+                </p>
+              </DetailBlock>
+            )}
+            {detail.progress_direction_self && (
+              <DetailBlock label="Verlauf (Kunde)">
+                <p className="text-studio-w1 text-[13px] m-0">{detail.progress_direction_self}</p>
+              </DetailBlock>
+            )}
             {detail.zusammenfassung && (
               <DetailBlock label="Zusammenfassung">
                 <p className="text-studio-w1 text-[13px] m-0 leading-relaxed">{detail.zusammenfassung}</p>
               </DetailBlock>
             )}
+            {detail.healing_red_flag && (
+              <DetailBlock label="Red flags">
+                <p className="text-elaya-error text-[13px] m-0">
+                  {(detail.healing_red_flags || []).join(', ') || 'Ja'}
+                  {detail.healing_needs_review ? ' · Studio-Review empfohlen' : ''}
+                </p>
+              </DetailBlock>
+            )}
 
-            {detail.symptome?.length > 0 && (
+            {detail.healing_symptoms && (
+              <DetailBlock label="Strukturierte Symptome">
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(detail.healing_symptoms)
+                    .filter(([key, value]) =>
+                      SYMPTOM_FIELD_LABEL[key]
+                      && value
+                      && value !== 'none'
+                      && value !== false
+                      && value !== 0
+                      && value !== 'no'
+                    )
+                    .map(([key, value]) => (
+                      <span key={key} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] bg-studio-bg-4 border border-elaya-border text-studio-w1">
+                        {SYMPTOM_FIELD_LABEL[key]}: {String(value)}
+                      </span>
+                    ))}
+                </div>
+              </DetailBlock>
+            )}
+            {detail.symptome?.length > 0 && !detail.healing_symptoms && (
               <DetailBlock label="Gemeldete Symptome">
                 <div className="flex flex-wrap gap-1.5">
                   {detail.symptome.map((s) => (
@@ -275,6 +447,14 @@ const Aftercare = () => {
                 {detail.hinweis}
               </p>
             )}
+
+            <HealingReviewForm
+              check={detail}
+              onSaved={(updated) => {
+                setDetail(updated)
+                setChecks((prev) => prev.map((row) => (row.id === updated.id ? { ...row, ...updated } : row)))
+              }}
+            />
 
             <div className="flex justify-end gap-2 pt-1">
               {detail.case_id && (

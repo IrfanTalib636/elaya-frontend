@@ -149,6 +149,10 @@ export const caseForm = {
 
   lifeNutrition: [['poor', 'Poor'], ['fair', 'Fair'], ['good', 'Good']],
 
+  lifeSportFreq: [
+    ['0', 'None'], ['1-2', '1–2×/week'], ['3-4', '3–4×/week'], ['5+', '5+×/week'],
+  ],
+
   goalTargets: [
     ['full_removal', 'Full removal', 'The tattoo should disappear completely.'],
     ['lightening_for_coverup', 'Lighten for cover-up', 'Lighten for a new tattoo on top.'],
@@ -315,6 +319,7 @@ export const caseForm = {
       weight: 'Weight (kg)',
       alcohol: 'Alcohol *',
       activity: 'Activity level *',
+      sportFreq: 'Exercise per week (optional)',
       sleepHours: 'Sleep hours *',
       sleepQuality: 'Sleep quality *',
       stress: 'Stress level *',

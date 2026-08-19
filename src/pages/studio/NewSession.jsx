@@ -247,8 +247,8 @@ const NewSession = () => {
         pass_count:         form.pass_count     ? Number(form.pass_count)     : undefined,
         cooling_used:       form.cooling_used,
         // Results
-        verblassung_prozent: form.verblassung_prozent,
-        removal_pct:         form.removal_pct,
+        verblassung_prozent: Number(form.verblassung_prozent) > 0 ? Number(form.verblassung_prozent) : undefined,
+        removal_pct:         Number(form.removal_pct) > 0 ? Number(form.removal_pct) : undefined,
         pain_score_0_10:     form.pain_score_0_10,
         endpoint_reaction:   form.endpoint_reaction || undefined,
         adverse_event_flag:  form.adverse_event_flag,
@@ -453,7 +453,7 @@ const NewSession = () => {
         {/* ── Section 3: Results (hidden on no-show) ── */}
         {!form.is_no_show && (
           <Section title="Behandlungsergebnis">
-            <SliderField label="Verblassung"  value={form.verblassung_prozent} onChange={setVerblassung} />
+            <SliderField label="Verblassung (Studio-Schätzung)"  value={form.verblassung_prozent} onChange={setVerblassung} />
             <SliderField label="Entfernung"   value={form.removal_pct}         onChange={setRemoval} />
             <SliderField label="Schmerzskala" value={form.pain_score_0_10}     onChange={setPain} min={0} max={10} unit="/10" />
             <Input

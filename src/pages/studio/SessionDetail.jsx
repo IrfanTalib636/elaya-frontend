@@ -135,7 +135,141 @@ const ProgressPhotoSection = ({ session, onUploaded }) => {
   )
 }
 
-// ── AI fading analysis ────────────────────────────────────────────────────
+const FlagToggle = ({ label, value, onChange }) => (
+  <label className="flex items-center gap-2 text-[12px] text-studio-w1 cursor-pointer">
+    <input
+      type="checkbox"
+      checked={value === true}
+      onChange={(e) => onChange(e.target.checked)}
+    />
+    {label}
+  </label>
+)
+
+const DIRECTION_LABELS = {
+  improving: 'besser',
+  stable: 'stabil',
+  worsening: 'schlechter',
+  unclear: 'unklar',
+}
+
+const LighteningLogicSection = ({ session, onSaved }) => {
+  const [saving, setSaving] = useState(false)
+  const [quality, setQuality] = useState(session.image_quality_ok === true)
+  const [angle, setAngle] = useState(session.photo_same_angle === true)
+  const [distance, setDistance] = useState(session.photo_same_distance === true)
+  const [light, setLight] = useState(session.photo_comparable_light === true)
+  const [reviewPct, setReviewPct] = useState(session.lightening_studio_pct ?? '')
+  const [notes, setNotes] = useState(session.lightening_studio_notes || '')
+
+  useEffect(() => {
+    setQuality(session.image_quality_ok === true)
+    setAngle(session.photo_same_angle === true)
+    setDistance(session.photo_same_distance === true)
+    setLight(session.photo_comparable_light === true)
+    setReviewPct(session.lightening_studio_pct ?? '')
+    setNotes(session.lightening_studio_notes || '')
+  }, [
+    session.image_quality_ok,
+    session.photo_same_angle,
+    session.photo_same_distance,
+    session.photo_comparable_light,
+    session.lightening_studio_pct,
+    session.lightening_studio_notes,
+  ])
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      const res = await updateSession(session.id, {
+        image_quality_ok: quality,
+        photo_same_angle: angle,
+        photo_same_distance: distance,
+        photo_comparable_light: light,
+        lightening_studio_pct: reviewPct === '' ? null : Number(reviewPct),
+        lightening_studio_notes: notes,
+      })
+      toast.success('Lightening-Review gespeichert.')
+      onSaved?.(res.data.data.session)
+    } catch (err) {
+      toast.error(err.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const eligible = session.comparison_eligible === true
+  const direction = DIRECTION_LABELS[session.progress_direction] || session.progress_direction || '—'
+
+  return (
+    <Section title="Verblassungslogik (Studio)">
+      <p className="text-studio-w3 text-[12px] m-0 leading-relaxed">
+        Kunden sehen einen Prozentwert nur bei einem vergleichbaren Bildpaar
+        (Vergleich möglich = ja). Interne Schätzung und Unsicherheit bleiben studio-intern.
+      </p>
+      <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+        <InfoRow label="Vergleich möglich" value={session.comparison_eligible == null ? '—' : eligible ? 'ja' : 'nein'} />
+        <InfoRow label="Unsicherheit" value={session.uncertainty_level || '—'} />
+        <InfoRow label="Richtung" value={direction} />
+        <InfoRow label="Konfidenz" value={session.lightening_confidence || '—'} />
+        <InfoRow
+          label="Kundenwert"
+          value={eligible && session.percent_estimate != null ? `${session.percent_estimate}%` : 'nicht angezeigt'}
+        />
+        <InfoRow
+          label="Interne Schätzung"
+          value={session.lightening_internal_pct != null ? `${session.lightening_internal_pct}%` : '—'}
+        />
+        <InfoRow
+          label="Lightening-Score"
+          value={session.lightening_score != null ? String(session.lightening_score) : '—'}
+        />
+        <InfoRow label="Human Review" value={session.needs_human_review ? 'ja' : 'nein'} />
+      </div>
+      {(session.comparison_reasons || []).length > 0 && (
+        <p className="text-studio-w3 text-[11px] m-0">
+          Gründe: {session.comparison_reasons.join(', ')}
+        </p>
+      )}
+      <div className="flex flex-col gap-2 pt-1">
+        <span className="text-studio-w3 text-[10px] font-semibold uppercase tracking-wider">Foto-Vergleichbarkeit</span>
+        <FlagToggle label="Bildqualität ausreichend" value={quality} onChange={setQuality} />
+        <FlagToggle label="Ähnlicher Winkel" value={angle} onChange={setAngle} />
+        <FlagToggle label="Ähnliche Distanz / Ausschnitt" value={distance} onChange={setDistance} />
+        <FlagToggle label="Vergleichbares Licht" value={light} onChange={setLight} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="flex flex-col gap-1">
+          <span className="text-studio-w3 text-[10px] font-semibold uppercase tracking-wider">Studio-Korrektur %</span>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            className="bg-studio-bg-4 border border-elaya-border rounded-[8px] px-3 py-2 text-[13px] text-studio-w1"
+            value={reviewPct}
+            onChange={(e) => setReviewPct(e.target.value)}
+            placeholder="optional"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-studio-w3 text-[10px] font-semibold uppercase tracking-wider">Review-Notiz</span>
+          <input
+            type="text"
+            className="bg-studio-bg-4 border border-elaya-border rounded-[8px] px-3 py-2 text-[13px] text-studio-w1"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="optional"
+          />
+        </label>
+      </div>
+      <div>
+        <Button size="sm" variant="secondary" loading={saving} onClick={save}>
+          Vergleich & Review speichern
+        </Button>
+      </div>
+    </Section>
+  )
+}
 const VerblassungKiSection = ({ session, onAnalyzed }) => {
   const [analyzing, setAnalyzing] = useState(false)
   const ki = session.verblassung_ki
@@ -175,8 +309,29 @@ const VerblassungKiSection = ({ session, onAnalyzed }) => {
         </p>
       ) : (
         <>
-          {session.verblassung_prozent != null && (
-            <ResultBar label="Verblassung (KI)" value={session.verblassung_prozent} />
+          {session.comparison_eligible === false && (
+            <div className="flex flex-col gap-1 px-3 py-2 rounded-[8px] bg-elaya-warning/10 border border-elaya-warning/20">
+              <span className="text-elaya-warning text-[11px] font-semibold uppercase tracking-wider">Kein zuverlässiger Vergleich</span>
+              <span className="text-studio-w1 text-[13px]">
+                Kunden sehen keinen sicheren Verblassungs-Prozentwert.
+                {session.lightening_internal_pct != null
+                  ? ` Interne Schätzung: ${session.lightening_internal_pct}%.`
+                  : ''}
+                {session.uncertainty_level ? ` Unsicherheit: ${session.uncertainty_level}.` : ''}
+                {(session.comparison_reasons || []).length
+                  ? ` Gründe: ${session.comparison_reasons.join(', ')}.`
+                  : ''}
+              </span>
+            </div>
+          )}
+          {session.verblassung_prozent != null && session.comparison_eligible !== false && (
+            <ResultBar label="Verblassung (kundenvisible)" value={session.verblassung_prozent} />
+          )}
+          {session.lightening_internal_pct != null && session.comparison_eligible === false && (
+            <ResultBar label="Verblassung intern (Studio)" value={session.lightening_internal_pct} />
+          )}
+          {session.progress_direction && (
+            <InfoRow label="Fortschrittsrichtung" value={DIRECTION_LABELS[session.progress_direction] || session.progress_direction} />
           )}
           <div className="grid grid-cols-1 gap-4">
             <InfoRow label="Beurteilung"        value={ki.beurteilung} />
@@ -274,7 +429,12 @@ const SessionDetail = () => {
   const statusValue = session.is_no_show ? 'storniert' : session.is_draft ? 'ausstehend' : 'aktiv'
 
   const hasLaser = session.studio_laser_brand || session.studio_laser_model || session.laser_typ
-  const hasResults = !session.is_no_show && (session.verblassung_prozent || session.removal_pct || session.endpoint_reaction)
+  const hasResults = !session.is_no_show && (
+    session.verblassung_prozent != null
+    || session.removal_pct != null
+    || session.lightening_internal_pct != null
+    || session.endpoint_reaction
+  )
   const hasPayment = session.zahlung?.betragCHF > 0 || session.zahlung?.zahlungsart
 
   const wavelengths = session.wavelength_nm?.length
@@ -358,8 +518,14 @@ const SessionDetail = () => {
           {/* Treatment results */}
           {hasResults && (
             <Section title="Behandlungsergebnis">
-              <ResultBar label="Verblassung"  value={session.verblassung_prozent ?? 0} />
-              <ResultBar label="Entfernung"   value={session.removal_pct ?? 0} />
+              {session.comparison_eligible !== false && session.verblassung_prozent != null ? (
+                <ResultBar label="Verblassung (kundenvisible)" value={session.verblassung_prozent} />
+              ) : session.lightening_internal_pct != null ? (
+                <ResultBar label="Verblassung intern (Studio)" value={session.lightening_internal_pct} />
+              ) : null}
+              {session.comparison_eligible !== false && session.removal_pct != null && (
+                <ResultBar label="Entfernung" value={session.removal_pct} />
+              )}
               {session.pain_score_0_10 != null && (
                 <ResultBar label="Schmerzskala" value={session.pain_score_0_10} max={10} unit="/10" />
               )}
@@ -379,6 +545,7 @@ const SessionDetail = () => {
           {!session.is_no_show && (
             <>
               <ProgressPhotoSection session={session} onUploaded={reload} />
+              <LighteningLogicSection session={session} onSaved={setSession} />
               <VerblassungKiSection session={session} onAnalyzed={reload} />
             </>
           )}

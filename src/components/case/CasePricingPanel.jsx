@@ -70,6 +70,15 @@ const CasePricingPanel = ({ caseId }) => {
             </p>
           )}
 
+          {data.needs_human_review && (
+            <p className="text-elaya-warning text-[11px] m-0">
+              Studio-Review empfohlen
+              {(data.review_triggers || []).length > 0
+                ? ` · ${data.review_triggers.join(', ')}`
+                : ''}
+            </p>
+          )}
+
           {data.multipliers && (
             <p className="text-studio-w3 text-[10px] m-0 leading-relaxed">
               Faktoren: Farbe ×{data.multipliers.color?.toFixed(2) ?? '—'},

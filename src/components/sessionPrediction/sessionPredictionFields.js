@@ -55,6 +55,25 @@ export const TATTOO_DELTA_GROUPS = [
     ],
   },
   {
+    key: 'color_count',
+    title: 'Farbanzahl (Delta, falls höher als schwierigste Farbe)',
+    fields: [
+      { key: 'none', label: 'Nur Schwarz/Grau' },
+      { key: 'one_two', label: 'Schwarz + 1–2 Farben' },
+      { key: 'three_plus', label: 'Bunt 3+ Farben' },
+    ],
+  },
+  {
+    key: 'scarring',
+    title: 'Narben / Keloid-Risiko (Delta)',
+    fields: [
+      { key: 'low', label: 'Niedrig' },
+      { key: 'medium', label: 'Mittel' },
+      { key: 'high', label: 'Hoch' },
+      { key: 'unsure', label: 'Unsicher' },
+    ],
+  },
+  {
     key: 'density',
     title: 'Dichte (Delta)',
     fields: [
@@ -125,6 +144,36 @@ export const TATTOO_DELTA_GROUPS = [
       { key: 'lightening_for_coverup', label: 'Aufhellen für Cover-up' },
     ],
   },
+  {
+    key: 'laser_profile',
+    title: 'Laser-/Studioqualität (Delta)',
+    fields: [
+      { key: 'basic', label: 'Basic' },
+      { key: 'unknown', label: 'Unbekannt' },
+      { key: 'advanced', label: 'Advanced' },
+      { key: 'premium', label: 'Premium' },
+      { key: 'elite', label: 'Elite' },
+    ],
+  },
+  {
+    key: 'healing_history',
+    title: 'Heilungsverlauf (Delta, sobald Verlauf da ist)',
+    fields: [
+      { key: 'normal', label: 'Normal' },
+      { key: 'mixed', label: 'Gemischt' },
+      { key: 'problematic', label: 'Problematisch' },
+    ],
+  },
+  {
+    key: 'lightening_rate',
+    title: 'Hellungsrate (Delta, ab 2 Vergleichsfotos)',
+    fields: [
+      { key: 'fast', label: 'Schnell' },
+      { key: 'expected', label: 'Erwartet' },
+      { key: 'slow', label: 'Langsam' },
+      { key: 'stagnant', label: 'Stagnierend' },
+    ],
+  },
 ]
 
 export const LIFESTYLE_SCORE_GROUPS = [
@@ -191,6 +240,16 @@ export const LIFESTYLE_SCORE_GROUPS = [
     ],
   },
   {
+    key: 'sport_frequency',
+    title: 'Sport pro Woche (Score 1–5, wird mit Aktivität gemittelt)',
+    fields: [
+      { key: '5+', label: '5+' },
+      { key: '3-4', label: '3–4×' },
+      { key: '1-2', label: '1–2×' },
+      { key: '0', label: 'Kein Sport' },
+    ],
+  },
+  {
     key: 'hydration',
     title: 'Hydration (Score 1–5)',
     fields: [
@@ -203,9 +262,11 @@ export const LIFESTYLE_SCORE_GROUPS = [
     key: 'nutrition',
     title: 'Ernährung (Score 1–5)',
     fields: [
+      { key: 'very_good', label: 'Sehr gut' },
       { key: 'good', label: 'Gut' },
       { key: 'fair', label: 'Mittel' },
       { key: 'poor', label: 'Schlecht' },
+      { key: 'very_poor', label: 'Sehr schlecht' },
     ],
   },
 ]

@@ -17,7 +17,7 @@ import { Card, Badge, Button, Spinner, PageHeader, Modal, Input } from '../../co
 const CASE_TYPE_LABELS  = { tattoo: 'Tattoo', pmu: 'PMU' }
 const TC_TYPE_LABELS    = { amateur: 'Amateur', cosmetic: 'Kosmetisch', professional: 'Professionell', coverup: 'Cover-up' }
 const GOAL_LABELS       = { full_removal: 'Vollständige Entfernung', full: 'Vollständige Entfernung', partial_fade: 'Teilweises Aufhellen', lightening_for_coverup: 'Aufhellen für Cover-up' }
-const COVERUP_LABELS    = { none: 'Kein Cover-up', once: 'Einmal', multiple: 'Mehrfach' }
+const COVERUP_LABELS    = { none: 'Kein Cover-up', once: '1× überdeckt', multiple: 'Mehrfach überdeckt', unknown: 'Unbekannt' }
 
 const CASE_STATUSES = [
   { value: 'draft',                    label: 'Entwurf'             },
@@ -34,6 +34,20 @@ const APPT_TYPE_LABELS = {
   beratung:  'Beratung',
   treatment: 'Behandlung',
   first:     'Erstbehandlung',
+}
+
+const ESTIMATE_REVIEW_LABELS = {
+  missing_size: 'Grösse unvollständig',
+  missing_colors: 'Farben fehlen',
+  missing_fitzpatrick: 'Hauttyp unklar',
+  missing_location: 'Körperstelle unklar',
+  missing_age: 'Tattoalter fehlt',
+  missing_intake_photo: 'Kein Initialfoto',
+  photo_full_visible: 'Tattoo nicht vollständig sichtbar',
+  photo_good_light: 'Beleuchtung unzureichend',
+  photo_focus: 'Foto unscharf',
+  photo_distance: 'Abstand ungeeignet',
+  photo_no_filter: 'Filter verdächtig',
 }
 
 const CANCELLED_APPT = new Set(['storniert', 'cancelled', 'completed'])
@@ -138,8 +152,14 @@ const SessionRow = ({ s, onClick }) => {
     >
       <td className="px-5 py-3 text-studio-w1 text-[12px] font-mono">#{s.session_number}</td>
       <td className="px-5 py-3 text-studio-w1 text-[12px]">{fmtDate(s.treatment_date)}</td>
-      <td className="px-5 py-3 text-studio-w1 text-[12px]">{pct(s.verblassung_prozent)}</td>
-      <td className="px-5 py-3 text-studio-w1 text-[12px]">{pct(s.removal_pct)}</td>
+      <td className="px-5 py-3 text-studio-w1 text-[12px]">
+        {s.comparison_eligible === false
+          ? `${pct(s.lightening_internal_pct ?? s.verblassung_prozent)} intern`
+          : pct(s.verblassung_prozent)}
+      </td>
+      <td className="px-5 py-3 text-studio-w1 text-[12px]">
+        {s.comparison_eligible === false ? '—' : pct(s.removal_pct)}
+      </td>
       <td className="px-5 py-3 text-studio-w1 text-[12px]">{fmtCHF(s.zahlung?.betragCHF)}</td>
       <td className="px-5 py-3">
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusColor}`}>
@@ -264,6 +284,19 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
   const setAdjust = (field) => (e) =>
     setAdjustForm((prev) => ({ ...prev, [field]: e.target.value }))
 
+  const confirmed = ['bestaetigt', 'angepasst'].includes(status)
+  const displayPrice = confirmed
+    ? (caseData.confirmed_pricePerSession ?? confirmation.pricePerSession ?? caseData.pricePerSession)
+    : (caseData.calculated_pricePerSession ?? caseData.pricePerSession)
+  const displayMin = confirmed
+    ? (caseData.confirmed_sessionsMin ?? caseData.sessionsMin)
+    : caseData.sessionsMin
+  const displayMax = confirmed
+    ? (caseData.confirmed_sessionsMax ?? caseData.sessionsMax)
+    : caseData.sessionsMax
+  const totalMin = displayPrice > 0 && displayMin != null ? displayPrice * displayMin : null
+  const totalMax = displayPrice > 0 && displayMax != null ? displayPrice * displayMax : null
+
   return (
     <>
       <Card className="flex flex-col gap-3">
@@ -309,7 +342,30 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
             value={`${caseData.calculated_sessionsMin}–${caseData.calculated_sessionsMax} Sitzungen`}
           />
         )}
+        {totalMin != null && totalMax != null && (
+          <InfoRow
+            label="Gesamtkosten (min–max)"
+            value={`${fmtCHF(totalMin)} – ${fmtCHF(totalMax)}`}
+          />
+        )}
         {confirmation.notiz && <InfoRow label="Notiz" value={confirmation.notiz} />}
+
+        {status === 'offen' && caseData.estimate_needs_review && (
+          <div className="rounded-[10px] border border-elaya-warning/40 bg-elaya-warning/10 px-3 py-2">
+            <p className="text-elaya-warning text-[11px] font-semibold m-0 mb-1">
+              Studio-Review empfohlen
+            </p>
+            <p className="text-studio-w2 text-[11px] m-0 leading-relaxed">
+              Die Kalkulation lief mit unvollständigen oder unsicheren Angaben. Bitte bestätigen
+              oder anpassen.
+              {(caseData.estimate_review_triggers || []).length > 0
+                ? ` · ${(caseData.estimate_review_triggers || [])
+                    .map((id) => ESTIMATE_REVIEW_LABELS[id] || id)
+                    .join(', ')}`
+                : ''}
+            </p>
+          </div>
+        )}
 
         <p className="text-studio-w3 text-[11px] m-0">
           Der kalkulierte Preis bleibt sichtbar. Nach Bestätigung oder Anpassung gilt der Studio-Preis

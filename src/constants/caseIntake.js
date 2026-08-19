@@ -18,6 +18,7 @@ export const SUN_EXPOSURE = caseForm.sunExposure
 export const LIFE_SMOKER = caseForm.lifeSmoker
 export const LIFE_ALCOHOL = caseForm.lifeAlcohol
 export const LIFE_ACTIVITY = caseForm.lifeActivity
+export const LIFE_SPORT_FREQ = caseForm.lifeSportFreq
 export const LIFE_SLEEP_HOURS = caseForm.lifeSleepHours
 export const LIFE_SLEEP_QUALITY = caseForm.lifeSleepQuality
 export const LIFE_STRESS = caseForm.lifeStress
@@ -56,6 +57,7 @@ export const INITIAL_CASE_FORM = {
   life_cig_per_day: '',
   life_alcohol: '',
   life_activity: '',
+  life_sport_freq: '',
   life_sleep_hours: '',
   life_sleep_quality: '',
   life_stress: '',

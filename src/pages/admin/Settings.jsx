@@ -12,12 +12,14 @@ const AdminSettings = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [values, setValues] = useState(null)
+  const [plausibility, setPlausibility] = useState(null)
 
   const load = async () => {
     setLoading(true)
     try {
       const res = await getPlatformConfig()
       setValues(cloneSessionPrediction(res.data.data.platform_config?.session_prediction))
+      setPlausibility(res.data.data.excel_plausibility || null)
     } catch {
       toast.error('Sitzungsprognose konnte nicht geladen werden')
     } finally {
@@ -36,6 +38,7 @@ const AdminSettings = () => {
         session_prediction: buildSessionPredictionPayload(values),
       })
       setValues(cloneSessionPrediction(res.data.data.platform_config?.session_prediction))
+      setPlausibility(res.data.data.excel_plausibility || null)
       toast.success('Sitzungsprognose gespeichert')
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Speichern fehlgeschlagen')
@@ -61,7 +64,7 @@ const AdminSettings = () => {
 
       <Card className="flex flex-col gap-5">
         {values ? (
-          <SessionPredictionForm values={values} onChange={setValues} />
+          <SessionPredictionForm values={values} onChange={setValues} plausibility={plausibility} />
         ) : (
           <p className="text-admin-muted text-[13px] m-0">Keine Parameter geladen.</p>
         )}

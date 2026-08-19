@@ -5,8 +5,8 @@ Customer experience is **mobile-only** (separate project); the landing page link
 
 **Stack:** React 19 · Vite 8 · React Router 7 · Tailwind CSS v4 · Zustand · Axios · React Hot Toast · Lucide React  
 **Design source:** `inkderm-prototype/` (colors, layout, nav structure)  
-**API:** Connects to [Elaya Backend API](../backend/README.md) at `/api/v1`  
-**Last updated:** 2026-07-20
+**API:** Connects to [Elaya Backend API](../elaya-backend/README.md) at `/api/v1`  
+**Last updated:** 2026-08-19
 
 ---
 
@@ -40,11 +40,11 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | **Heute (`/studio/today`)** | ✅ Done | Today's appointments table, links to case detail |
 | **Customers list** | ✅ Done | Search (debounced), pipeline filter, create modal, pagination |
 | **Alle Fälle (`/studio/cases`)** | ✅ Done | Search + status + **ampel filter**, pagination |
-| **Case Detail** | ✅ Done | Tattoo intake, intake photos, anamnesis + klaerung/freigabe, signature, sessions, pricing + lockout |
+| **Case Detail** | ✅ Done | Tattoo intake, intake photos, anamnesis + klaerung/freigabe, signature, sessions, **estimate confirm/adjust**, pricing + lockout |
 | **Customer Detail** | ✅ Done | Info + cases table with ampel, appointments, pipeline, **8-step tattoo / 7-step PMU wizard** |
 | **Sitzungen (`/studio/sessions`)** | ✅ Done | Search + draft filter, pagination |
 | **New Session form** | ✅ Done | Laser params, sliders, payment, draft / finalize |
-| **Session Detail** | ✅ Done | Read-only view; finalize draft button |
+| **Session Detail** | ✅ Done | Protocol + **KI-Verblassung** (studio % override, photo flags); skip KI on session 1 |
 | **Appointments calendar** | ✅ Done | Week grid, lockout-aware booking, **Gruppen-Termin (15% + detail panel)**, pre-session UV/meds check |
 | **Analytics** | ✅ Done | Revenue KPIs, charts, pipeline donut, revenue by source, platform fee, shop provision, coins, netto |
 | **Settings** | ✅ Done | Theme; pricing; profile, hours, rooms, staff |
@@ -61,7 +61,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 |---|---|---|
 | **Medical anamnesis** | ✅ Done | 19-question wizard, ampel badge, `CaseAnamnesisPanel` on case detail |
 | **Lockout / availability UI** | ✅ Done | `CaseAvailabilityPanel` — Frühestens, sperren list, book link |
-| **Pricing on case detail** | ✅ Done | `CasePricingPanel` — CHF estimate from pricing engine |
+| **Pricing on case detail** | ✅ Done | `CasePricingPanel` + `EstimateConfirmationPanel` — confirm / adjust engine estimate |
 | **Smart booking UX** | ✅ Done | Appointments modal — earliest date, blocked dates, German errors |
 | **Pre-session check** | ✅ Done | UV + medications in booking modal; live availability refresh |
 | **Financier demo verified** | ✅ Done | 49-day, 28-day cross-case, Beratung bypass, meds (Retinoide), recalc after booking |
@@ -130,6 +130,17 @@ Customer experience is **mobile-only** (separate project); the landing page link
 
 **Flow:** Customer requests via mobile API → admin approves (API) → target studio sees customer + full Akte; source studio sees outgoing row + read-only history.
 
+### Master Excel studio review (IT_Clarifications §8–§10 · 2026-08-19)
+
+Price, sessions, lightening, and healing calculate automatically, but the studio must be able to confirm or correct each result (human-in-the-loop). Customers never see multipliers, weights, or internal scores.
+
+| Area | Status | Notes |
+|---|---|---|
+| **Estimate confirmation** | ✅ Done | Case Detail — `offen` / `bestaetigt` / `angepasst`; review banner when `estimate_needs_review` |
+| **Nachsorge (`/studio/aftercare`)** | ✅ Done | Healing status, red flags, structured symptoms; confirm or correct via `PATCH /nachsorge/:id/review` |
+| **Verblassung on Session Detail** | ✅ Done | Internal estimate + studio % / notes; customer % only when comparison is eligible |
+| **Kunden-Chat / Elaya FAB** | ✅ Done | `/studio/chat`, `/studio/elaya` |
+
 ### Changelog
 
 ```
@@ -163,6 +174,9 @@ Customer experience is **mobile-only** (separate project); the landing page link
 [2026-07-17] — PMU 7-step wizard (prototype parity); TC_06/PMU_06 photo upload + case detail gallery; square photo previews; duplicate create toast fix
 [2026-07-18] — Studio Gruppen-Termin: multi-case booking, size points, 15% discount, lockout hint, calendar badge + group detail panel
 [2026-07-20] — Studio transfer (M3): /studio/transfers queue, customer transfer banners, Studio-Verlauf timeline, case badges, landing portal fix
+[2026-08-19] — Estimate confirmation on Case Detail (confirm/adjust AI price + session range)
+[2026-08-19] — Nachsorge review UI (`/studio/aftercare`) — confirm/correct healing status
+[2026-08-19] — Session Detail: lightening studio override; customers never see internal multipliers
 ```
 
 ---
@@ -184,10 +198,14 @@ Customer experience is **mobile-only** (separate project); the landing page link
 | `/studio/cases/:id` | Studio roles | Case detail |
 | `/studio/sessions` | Studio roles | All sessions list |
 | `/studio/sessions/new` | Studio roles | New session form |
-| `/studio/sessions/:id` | Studio roles | Session detail |
+| `/studio/sessions/:id` | Studio roles | Session detail + Verblassung review |
 | `/studio/appointments` | Studio roles | Week-grid calendar + single / Gruppen-Termin booking |
 | `/studio/analytics` | Studio roles | Revenue KPIs + charts |
+| `/studio/aftercare` | Studio roles | Nachsorge checks — healing review / correction |
 | `/studio/crm` | Studio roles | CRM lead pipeline (kanban + list) |
+| `/studio/activity` | Studio roles | Activity log |
+| `/studio/elaya` | Studio roles | Elaya FAB chat |
+| `/studio/chat` | Studio roles | Live customer chat |
 | `/studio/shop` | Studio roles | ElayShop orders + shipping status |
 | `/studio/transfers` | Studio roles | Studio-Wechsel — inbound/outbound transfer queue (read-only) |
 | `/studio/elaycoins` | Studio roles | Customer coin balances (read-only) |
@@ -214,9 +232,11 @@ frontend/
 │   │   ├── anamnesis.js         # get/preview/upsert anamnesis, updateKlaerung, updateStudioFreigabe
 │   │   ├── signature.js         # merkblatt, submit signature, signature image
 │   │   ├── customers.js         # list, create, get, update
-│   │   ├── cases.js             # list, create, get, update, availability, pricing, pricingPreview
+│   │   ├── cases.js             # list, create, get, update, availability, pricing, estimate confirmation
 │   │   ├── appointments.js      # list, create, get, update
-│   │   ├── sessions.js          # list, create, get, update
+│   │   ├── sessions.js          # list, create, get, update (incl. lightening_studio_pct)
+│   │   ├── nachsorge.js         # list, get, review aftercare checks
+│   │   ├── verblassung.js       # POST /verblassung
 │   │   ├── config.js            # getPublicConfig, studio pricing / platform config
 │   │   ├── studio.js            # studio settings (profile, hours, rooms, staff)
 │   │   ├── crm.js               # pipeline, tasks, notes, templates
@@ -273,8 +293,8 @@ frontend/
 │   │   ├── studio/
 │   │   │   ├── Overview.jsx, Today.jsx, Customers.jsx, CustomerDetail.jsx
 │   │   │   ├── Cases.jsx, CaseDetail.jsx, Sessions.jsx, NewSession.jsx, SessionDetail.jsx
-│   │   │   ├── Appointments.jsx, Analytics.jsx, Settings.jsx
-│   │   │   ├── Crm.jsx, Shop.jsx, Elaycoins.jsx, Transfers.jsx
+│   │   │   ├── Appointments.jsx, Analytics.jsx, Aftercare.jsx, Settings.jsx
+│   │   │   ├── Crm.jsx, Shop.jsx, Elaycoins.jsx, Transfers.jsx, Chat.jsx, ElayaChat.jsx, Activity.jsx
 │   │   │   └── Login.jsx, Register.jsx, ForgotPassword.jsx, ResetPassword.jsx
 │   │   └── admin/
 │   │       ├── Login.jsx, ForgotPassword.jsx, ResetPassword.jsx
@@ -300,18 +320,20 @@ frontend/
 ### Prerequisites
 
 - Node.js 18+
-- [Backend API](../backend/README.md) running (default `http://localhost:4000`)
+- [Backend API](../elaya-backend/README.md) running (default `http://localhost:4000`)
 
 ### Install & run
 
 ```bash
-cd frontend
+cd elaya-frontend
 npm install
 cp .env.example .env    # then edit if needed
 npm run dev
 ```
 
 App: `http://localhost:5173`
+
+`.env` already uses `VITE_API_URL=http://localhost:4000/api/v1` for local backend. Keep the API running in `elaya-backend` (`npm run dev`). The customer app is `elaya-mobile` — point `EXPO_PUBLIC_BASE_URL` at the same API (LAN IP for a physical device).
 
 ### Environment variables
 
@@ -419,24 +441,21 @@ Swagger: [`POST /cases/pricing/preview`](../backend/README.md) · full intake sc
 
 ---
 
-## Planned next (M3+)
+## Planned next (M4+)
 
-- **Customer profile tab (mobile)** — edit profile, DSG data export, studio history — [`docs/M3-CUSTOMER-PROFILE-BACKLOG.md`](../docs/M3-CUSTOMER-PROFILE-BACKLOG.md)
 - **PMU intake card on case detail** — show PMU-specific fields (currently tattoo labels)
-- **Nachsorge / AI chat** — `/nachsorge/check`, `POST /chat`
 - **ElayShop admin product CRUD** — catalog seed + customer APIs done; admin UI in M4
-- **Real AI (Phase B)** — photo analysis, nachsorge check, Elaya FAB chat (all via backend, not client keys)
-- Customer mobile app (consume Phases A–E APIs)
 - Admin dashboard pages (M4 — studio approval UI, finance, ElayShop catalog, Studio-Wechsel, …)
 - 18+ age validation on customer creation (Swiss law)
-- Case chat UI (backend chat stub exists)
 
 ---
 
 ## Related
 
-- Backend API docs: [backend/README.md](../backend/README.md) · Swagger UI `/api/v1/docs` when backend is running
+- Backend API docs: [elaya-backend/README.md](../elaya-backend/README.md) · Swagger UI `/api/v1/docs` when backend is running
+- Customer mobile app: [elaya-mobile/README.md](../elaya-mobile/README.md)
+- Master Excel (domain): [masterExcelFile_EN.xlsx](../masterExcelFile_EN.xlsx)
 - Case intake spec: [docs/CUSTOMER-CASE-INTAKE-SPEC.md](../docs/CUSTOMER-CASE-INTAKE-SPEC.md)
 - Wizard test data: [docs/CASE-WIZARD-TEST-DATA.md](../docs/CASE-WIZARD-TEST-DATA.md)
-- Mobile app guide: [MOBILE-APP-DEVELOPER.md](../MOBILE-APP-DEVELOPER.md) — update with `backend/README.md` and `frontend/README.md` when customer/mobile features change *(local monorepo — not in GitHub)*
+- Mobile app guide: [MOBILE-APP-DEVELOPER.md](../MOBILE-APP-DEVELOPER.md) — update with backend/frontend READMEs when customer/mobile features change *(local monorepo — not in GitHub)*
 - Client spec & prototype notes: [inkderm-prototype/DEVELOPER-HANDOFF.md](../inkderm-prototype/DEVELOPER-HANDOFF.md)

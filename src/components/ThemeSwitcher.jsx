@@ -1,12 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Sun, Moon, Monitor, ChevronDown, Check } from 'lucide-react'
 import useTheme from '../hooks/useTheme'
-
-const OPTIONS = [
-  { value: 'light',  icon: Sun,     label: 'Light'  },
-  { value: 'system', icon: Monitor, label: 'System' },
-  { value: 'dark',   icon: Moon,    label: 'Dark'   },
-]
+import useContent from '../i18n/useContent'
 
 /**
  * fullWidth — sidebar variant: full-width row, dropdown opens upward
@@ -14,8 +9,15 @@ const OPTIONS = [
  */
 const ThemeSwitcher = ({ fullWidth = false }) => {
   const { preference, setPreference } = useTheme()
+  const { t } = useContent()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+
+  const OPTIONS = [
+    { value: 'light',  icon: Sun,     label: t('theme.light') },
+    { value: 'system', icon: Monitor, label: t('theme.system') },
+    { value: 'dark',   icon: Moon,    label: t('theme.dark') },
+  ]
 
   const current = OPTIONS.find((o) => o.value === preference) ?? OPTIONS[1]
   const Icon = current.icon

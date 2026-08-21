@@ -3,31 +3,21 @@ import toast from 'react-hot-toast'
 import { listStudioTransfers } from '../../api/studioTransfers'
 import { Card, PageHeader, Spinner, Pagination, EmptyState } from '../../components/ui'
 import { PAGE_SIZE } from '../../constants/pagination'
+import useContent from '../../i18n/useContent'
 
-const fmtDate = (d) =>
+const fmtDate = (d, language) =>
   d
-    ? new Date(d).toLocaleDateString('de-CH', {
+    ? new Date(d).toLocaleDateString(language === 'en' ? 'en-GB' : 'de-CH', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
       })
     : '—'
 
-const STATUS_LABEL = {
-  ausstehend: 'Ausstehend (Elaya)',
-  genehmigt: 'Genehmigt',
-  abgelehnt: 'Abgelehnt',
-}
-
 const STATUS_CLASS = {
   ausstehend: 'text-studio-gold-2',
   genehmigt: 'text-studio-teal-2',
   abgelehnt: 'text-[#e05555]',
-}
-
-const RICHTUNG_LABEL = {
-  eingehend: 'Eingehend',
-  ausgehend: 'Ausgehend',
 }
 
 const RICHTUNG_CLASS = {
@@ -36,6 +26,9 @@ const RICHTUNG_CLASS = {
 }
 
 const StudioTransfers = () => {
+  const { language, studioPages } = useContent()
+  const copy = studioPages.transfers
+
   const [transfers, setTransfers] = useState([])
   const [pagination, setPagination] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -51,43 +44,47 @@ const StudioTransfers = () => {
       setTransfers(res.data.data.transfers ?? [])
       setPagination(res.data.data.pagination)
     } catch {
-      toast.error('Wechselanfragen konnten nicht geladen werden.')
+      toast.error(copy.loadError)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [copy.loadError])
 
   useEffect(() => {
     load(page, statusFilter, { background: page > 1 })
   }, [page, statusFilter, load])
 
+  const filters = [
+    { value: 'ausstehend', label: copy.filters.open },
+    { value: 'genehmigt', label: copy.filters.approved },
+    { value: 'abgelehnt', label: copy.filters.rejected },
+    { value: '', label: copy.filters.all },
+  ]
+
+  const headers = [
+    copy.headers.request,
+    copy.headers.joined,
+    copy.headers.transfer,
+    copy.headers.direction,
+    copy.headers.customer,
+    copy.headers.fromStudio,
+    copy.headers.toStudio,
+    copy.headers.status,
+  ]
+
   return (
     <div className="p-6 max-w-[1100px]">
-      <PageHeader
-        title="Studio-Wechsel"
-        subtitle="Eingehende und ausgehende Wechselanfragen — Genehmigung durch Elaya"
-      />
+      <PageHeader title={copy.title} subtitle={copy.subtitle} />
 
       <div className="mb-4 px-4 py-3 rounded-[12px] border border-elaya-border bg-studio-bg-4">
-        <p className="text-studio-w2 text-[12px] m-0 leading-relaxed">
-          Wechselanfragen werden von <strong className="text-studio-white">Elaya Plattform-Admin</strong>{' '}
-          geprüft und genehmigt (Handoff §10.15). Studios können Anfragen einsehen, aber nicht
-          selbst annehmen. <strong className="text-studio-white">Eingehend</strong> = Kunde wechselt
-          zu euch · <strong className="text-studio-white">Ausgehend</strong> = Kunde verlässt euer Studio.
-          Nach Genehmigung erscheint der Kunde beim Ziel-Studio inkl. medizinischer Akte und Elaycoins.
-          {' '}
-          <strong className="text-studio-white">Beitritt</strong> = Kunde trat beim Quell-Studio ein ·{' '}
-          <strong className="text-studio-white">Wechsel</strong> = von Elaya genehmigt.
-        </p>
+        <p
+          className="text-studio-w2 text-[12px] m-0 leading-relaxed [&_strong]:text-studio-white"
+          dangerouslySetInnerHTML={{ __html: copy.info }}
+        />
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        {[
-          { value: 'ausstehend', label: 'Offen' },
-          { value: 'genehmigt', label: 'Genehmigt' },
-          { value: 'abgelehnt', label: 'Abgelehnt' },
-          { value: '', label: 'Alle' },
-        ].map((f) => (
+        {filters.map((f) => (
           <button
             key={f.label}
             type="button"
@@ -111,10 +108,7 @@ const StudioTransfers = () => {
           <Spinner size="lg" />
         </div>
       ) : transfers.length === 0 ? (
-        <EmptyState
-          title="Keine Wechselanfragen"
-          description="Eingehende Anfragen (Kunden zu euch) und ausgehende Anfragen (Kunden verlassen euch) erscheinen hier."
-        />
+        <EmptyState title={copy.emptyTitle} description={copy.emptyDesc} />
       ) : (
         <Card
           padding="none"
@@ -124,7 +118,7 @@ const StudioTransfers = () => {
             <table className="w-full min-w-[720px]">
               <thead>
                 <tr className="border-b border-elaya-border">
-                  {['Anfrage', 'Beitritt', 'Wechsel', 'Richtung', 'Kunde', 'Von Studio', 'Zu Studio', 'Status'].map((h) => (
+                  {headers.map((h) => (
                     <th
                       key={h}
                       className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap"
@@ -135,54 +129,54 @@ const StudioTransfers = () => {
                 </tr>
               </thead>
               <tbody>
-                {transfers.map((t) => (
+                {transfers.map((tr) => (
                   <tr
-                    key={t.id}
+                    key={tr.id}
                     className="border-b border-elaya-border last:border-0 hover:bg-studio-bg-4"
                   >
                     <td className="px-5 py-3 text-studio-w2 text-[12px] font-mono whitespace-nowrap">
-                      {fmtDate(t.erstellt_am)}
+                      {fmtDate(tr.erstellt_am, language)}
                     </td>
                     <td className="px-5 py-3 text-studio-w2 text-[12px] font-mono whitespace-nowrap">
-                      {fmtDate(t.beitritt_quelle_am)}
+                      {fmtDate(tr.beitritt_quelle_am, language)}
                     </td>
                     <td className="px-5 py-3 text-studio-w2 text-[12px] font-mono whitespace-nowrap">
-                      {t.status === 'genehmigt'
-                        ? fmtDate(t.wechsel_genehmigt_am ?? t.genehmigt_am ?? t.bearbeitet_am)
-                        : t.status === 'ausstehend'
+                      {tr.status === 'genehmigt'
+                        ? fmtDate(tr.wechsel_genehmigt_am ?? tr.genehmigt_am ?? tr.bearbeitet_am, language)
+                        : tr.status === 'ausstehend'
                           ? '—'
-                          : fmtDate(t.bearbeitet_am)}
+                          : fmtDate(tr.bearbeitet_am, language)}
                     </td>
                     <td className="px-5 py-3 text-[12px]">
-                      {t.richtung ? (
+                      {tr.richtung ? (
                         <span
-                          className={`inline-flex px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${RICHTUNG_CLASS[t.richtung] || ''}`}
+                          className={`inline-flex px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${RICHTUNG_CLASS[tr.richtung] || ''}`}
                         >
-                          {RICHTUNG_LABEL[t.richtung] ?? t.richtung}
+                          {copy.direction[tr.richtung] ?? tr.richtung}
                         </span>
                       ) : (
                         <span className="text-studio-w4">—</span>
                       )}
                     </td>
                     <td className="px-5 py-3 text-studio-white text-[12px] font-medium">
-                      {t.kunde_name || '—'}
+                      {tr.kunde_name || '—'}
                     </td>
                     <td className="px-5 py-3 text-studio-w2 text-[12px] max-w-[180px] truncate">
-                      {t.von_firma_name || '—'}
+                      {tr.von_firma_name || '—'}
                     </td>
                     <td className="px-5 py-3 text-studio-w2 text-[12px] max-w-[180px] truncate">
-                      {t.zu_firma_name || '—'}
+                      {tr.zu_firma_name || '—'}
                     </td>
                     <td
-                      className={`px-5 py-3 text-[12px] font-semibold ${STATUS_CLASS[t.status] || ''}`}
+                      className={`px-5 py-3 text-[12px] font-semibold ${STATUS_CLASS[tr.status] || ''}`}
                     >
-                      {STATUS_LABEL[t.status] ?? t.status}
-                      {t.status === 'abgelehnt' && t.ablehnungsgrund ? (
+                      {copy.status[tr.status] ?? tr.status}
+                      {tr.status === 'abgelehnt' && tr.ablehnungsgrund ? (
                         <span
                           className="block text-studio-w4 text-[10px] font-normal mt-0.5 truncate max-w-[160px]"
-                          title={t.ablehnungsgrund}
+                          title={tr.ablehnungsgrund}
                         >
-                          {t.ablehnungsgrund}
+                          {tr.ablehnungsgrund}
                         </span>
                       ) : null}
                     </td>

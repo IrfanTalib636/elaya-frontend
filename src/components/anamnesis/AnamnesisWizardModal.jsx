@@ -11,24 +11,12 @@ import {
   pickAnamnesisAnswers,
   AMPEL_LABELS,
 } from '../../utils/anamnesisAmpel'
+import useContent from '../../i18n/useContent'
 
-const HAUT_OPTIONS = [
-  ['nein', 'Nein'],
-  ['neurodermitis', 'Neurodermitis'],
-  ['psoriasis', 'Psoriasis'],
-  ['ekzem', 'Ekzem'],
-  ['vitiligo', 'Vitiligo'],
-  ['akne', 'Akne'],
-  ['herpes', 'Herpes'],
-  ['andere', 'Andere'],
-]
-
-const INFEKT_OPTIONS = [
-  ['nein', 'Nein'],
-  ['hepatitis', 'Hepatitis'],
-  ['hiv', 'HIV'],
-  ['andere', 'Andere'],
-]
+const HAUT_KEYS = ['nein', 'neurodermitis', 'psoriasis', 'ekzem', 'vitiligo', 'akne', 'herpes', 'andere']
+const INFEKT_KEYS = ['nein', 'hepatitis', 'hiv', 'andere']
+const DIABETES_KEYS = ['nein', 'typ1', 'typ2', 'unbekannt']
+const STEP_IDS = ['skin', 'health1', 'health2', 'closing', 'summary']
 
 const Opt = ({ active, onClick, children }) => (
   <button
@@ -62,10 +50,10 @@ const Question = ({ num, label, children, hint }) => (
   </div>
 )
 
-const JaNein = ({ value, onChange }) => (
+const JaNein = ({ value, onChange, yesLabel, noLabel }) => (
   <div className="flex flex-wrap gap-2">
-    <Opt active={value === 'nein'} onClick={() => onChange('nein')}>Nein</Opt>
-    <Opt active={value === 'ja'} onClick={() => onChange('ja')}>Ja</Opt>
+    <Opt active={value === 'nein'} onClick={() => onChange('nein')}>{noLabel}</Opt>
+    <Opt active={value === 'ja'} onClick={() => onChange('ja')}>{yesLabel}</Opt>
   </div>
 )
 
@@ -74,6 +62,8 @@ const SectionTitle = ({ children }) => (
 )
 
 const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
+  const { components } = useContent()
+  const w = components.anamnesis.wizard
   const [form, setForm] = useState(() => ({
     ...EMPTY_ANAMNESIS,
     ...pickAnamnesisAnswers(initialAnswers),
@@ -107,7 +97,7 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
   const ampel = useMemo(() => computeAmpel(form), [form])
   const ampelMeta = AMPEL_LABELS[ampel.ampel_status]
 
-  const steps = ['Haut', 'Gesundheit I', 'Gesundheit II', 'Abschluss', 'Zusammenfassung']
+  const steps = STEP_IDS.map((id) => w.steps[id])
 
   useEffect(() => {
     if (!caseId) return undefined
@@ -145,7 +135,7 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
 
   const handleSubmit = async () => {
     if (!isAnamnesisComplete(form)) {
-      toast.error('Bitte alle Fragen beantworten.')
+      toast.error(w.incomplete)
       return
     }
 
@@ -155,7 +145,7 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
       const res = await upsertCaseAnamnesis(caseId, {
         antworten: { ...answers, ausgefuellt_im_studio: true },
       })
-      toast.success('Anamnese gespeichert.')
+      toast.success(w.saved)
       if (onSaved) {
         await onSaved(res.data.data)
       } else {
@@ -169,12 +159,12 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
   }
 
   return (
-    <Modal title="Medizinische Anamnese" onClose={onClose} width="max-w-2xl" scrollResetKey={step}>
+    <Modal title={w.title} onClose={onClose} width="max-w-2xl" scrollResetKey={step}>
       <div className="flex flex-col gap-5">
         <div className="flex gap-1.5 flex-wrap">
           {steps.map((label, i) => (
             <span
-              key={label}
+              key={STEP_IDS[i]}
               className={`text-[10px] px-2.5 py-1 rounded-full border ${
                 i === step
                   ? 'border-studio-gold/40 bg-studio-gold/10 text-studio-white font-semibold'
@@ -190,99 +180,99 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
 
         {step === 0 && (
           <div className="flex flex-col gap-4">
-            <SectionTitle>Abschnitt 1 — Hauterkrankungen</SectionTitle>
-            <Question num={1} label="Haben Sie Hauterkrankungen? (Mehrfachauswahl)" hint={hintsByKey.hauterkrankungen}>
+            <SectionTitle>{w.sectionSkin}</SectionTitle>
+            <Question num={1} label={w.q1} hint={hintsByKey.hauterkrankungen}>
               <div className="flex flex-wrap gap-2">
-                {HAUT_OPTIONS.map(([v, l]) => (
+                {HAUT_KEYS.map((v) => (
                   <Opt key={v} active={(form.hauterkrankungen || []).includes(v)} onClick={() => toggleMulti('hauterkrankungen', v)}>
-                    {l}
+                    {w.haut[v]}
                   </Opt>
                 ))}
               </div>
               {(form.hauterkrankungen || []).includes('andere') && (
                 <input
                   className="w-full px-3 py-2 rounded-[8px] border border-elaya-border-strong bg-studio-bg-3 text-studio-white text-[12px] outline-none focus:border-studio-gold"
-                  placeholder="Bitte angeben…"
+                  placeholder={w.specifyPh}
                   value={form.hauterkrankungen_andere}
                   onChange={(e) => set('hauterkrankungen_andere', e.target.value)}
                 />
               )}
             </Question>
-            <Question num={2} label="Pigmentstörungen oder helle/dunkle Flecken nach Verletzungen?" hint={hintsByKey.pigmentstoerungen}>
-              <JaNein value={form.pigmentstoerungen} onChange={(v) => set('pigmentstoerungen', v)} />
+            <Question num={2} label={w.q2} hint={hintsByKey.pigmentstoerungen}>
+              <JaNein value={form.pigmentstoerungen} onChange={(v) => set('pigmentstoerungen', v)} yesLabel={w.yes} noLabel={w.no} />
             </Question>
           </div>
         )}
 
         {step === 1 && (
           <div className="flex flex-col gap-4">
-            <SectionTitle>Abschnitt 2 — Allgemeine Gesundheit</SectionTitle>
-            <Question num={3} label="Akute Erkrankung, Fieber oder Infektion?" hint={hintsByKey.akute_erkrankung}>
-              <JaNein value={form.akute_erkrankung} onChange={(v) => set('akute_erkrankung', v)} />
+            <SectionTitle>{w.sectionHealth1}</SectionTitle>
+            <Question num={3} label={w.q3} hint={hintsByKey.akute_erkrankung}>
+              <JaNein value={form.akute_erkrankung} onChange={(v) => set('akute_erkrankung', v)} yesLabel={w.yes} noLabel={w.no} />
             </Question>
-            <Question num={4} label="Chronische Erkrankungen?" hint={hintsByKey.chronische_erkrankungen}>
-              <JaNein value={form.chronische_erkrankungen} onChange={(v) => set('chronische_erkrankungen', v)} />
+            <Question num={4} label={w.q4} hint={hintsByKey.chronische_erkrankungen}>
+              <JaNein value={form.chronische_erkrankungen} onChange={(v) => set('chronische_erkrankungen', v)} yesLabel={w.yes} noLabel={w.no} />
               {form.chronische_erkrankungen === 'ja' && (
                 <input
                   className="w-full px-3 py-2 rounded-[8px] border border-elaya-border-strong bg-studio-bg-3 text-studio-white text-[12px] outline-none focus:border-studio-gold"
-                  placeholder="Welche? (optional)"
+                  placeholder={w.whichOptional}
                   value={form.chronische_erkrankungen_text}
                   onChange={(e) => set('chronische_erkrankungen_text', e.target.value)}
                 />
               )}
             </Question>
-            <Question num={5} label="Diabetes?" hint={hintsByKey.diabetes}>
+            <Question num={5} label={w.q5} hint={hintsByKey.diabetes}>
               <div className="flex flex-wrap gap-2">
-                {[['nein', 'Nein'], ['typ1', 'Typ 1'], ['typ2', 'Typ 2'], ['unbekannt', 'Weiss nicht']].map(([v, l]) => (
-                  <Opt key={v} active={form.diabetes === v} onClick={() => set('diabetes', v)}>{l}</Opt>
+                {DIABETES_KEYS.map((v) => (
+                  <Opt key={v} active={form.diabetes === v} onClick={() => set('diabetes', v)}>{w.diabetes[v]}</Opt>
                 ))}
               </div>
             </Question>
-            <Question num={6} label="Autoimmunerkrankung?" hint={hintsByKey.autoimmun}>
-              <JaNein value={form.autoimmun} onChange={(v) => set('autoimmun', v)} />
+            <Question num={6} label={w.q6} hint={hintsByKey.autoimmun}>
+              <JaNein value={form.autoimmun} onChange={(v) => set('autoimmun', v)} yesLabel={w.yes} noLabel={w.no} />
               {form.autoimmun === 'ja' && (
                 <input
                   className="w-full px-3 py-2 rounded-[8px] border border-elaya-border-strong bg-studio-bg-3 text-studio-white text-[12px] outline-none focus:border-studio-gold"
-                  placeholder="Welche? (optional)"
+                  placeholder={w.whichOptional}
                   value={form.autoimmun_text}
                   onChange={(e) => set('autoimmun_text', e.target.value)}
                 />
               )}
             </Question>
-            <Question num={7} label="Immunschwäche oder immunsuppressive Medikamente?" hint={hintsByKey.immunschwaeche}>
-              <JaNein value={form.immunschwaeche} onChange={(v) => set('immunschwaeche', v)} />
+            <Question num={7} label={w.q7} hint={hintsByKey.immunschwaeche}>
+              <JaNein value={form.immunschwaeche} onChange={(v) => set('immunschwaeche', v)} yesLabel={w.yes} noLabel={w.no} />
             </Question>
           </div>
         )}
 
         {step === 2 && (
           <div className="flex flex-col gap-4">
-            <SectionTitle>Abschnitt 3 — Weitere Angaben</SectionTitle>
-            <Question num={8} label="Herz- oder Kreislauferkrankung?" hint={hintsByKey.herz_kreislauf}>
-              <JaNein value={form.herz_kreislauf} onChange={(v) => set('herz_kreislauf', v)} />
+            <SectionTitle>{w.sectionHealth2}</SectionTitle>
+            <Question num={8} label={w.q8} hint={hintsByKey.herz_kreislauf}>
+              <JaNein value={form.herz_kreislauf} onChange={(v) => set('herz_kreislauf', v)} yesLabel={w.yes} noLabel={w.no} />
             </Question>
-            <Question num={9} label="Epilepsie oder Krampfanfälle?" hint={hintsByKey.epilepsie}>
-              <JaNein value={form.epilepsie} onChange={(v) => set('epilepsie', v)} />
+            <Question num={9} label={w.q9} hint={hintsByKey.epilepsie}>
+              <JaNein value={form.epilepsie} onChange={(v) => set('epilepsie', v)} yesLabel={w.yes} noLabel={w.no} />
             </Question>
-            <Question num={10} label="Blutgerinnungsstörung?" hint={hintsByKey.blutgerinnung}>
-              <JaNein value={form.blutgerinnung} onChange={(v) => set('blutgerinnung', v)} />
+            <Question num={10} label={w.q10} hint={hintsByKey.blutgerinnung}>
+              <JaNein value={form.blutgerinnung} onChange={(v) => set('blutgerinnung', v)} yesLabel={w.yes} noLabel={w.no} />
             </Question>
-            <Question num={11} label="Blutverdünnende Medikamente?" hint={hintsByKey.blutverduenner}>
-              <JaNein value={form.blutverduenner} onChange={(v) => set('blutverduenner', v)} />
+            <Question num={11} label={w.q11} hint={hintsByKey.blutverduenner}>
+              <JaNein value={form.blutverduenner} onChange={(v) => set('blutverduenner', v)} yesLabel={w.yes} noLabel={w.no} />
               {form.blutverduenner === 'ja' && (
                 <input
                   className="w-full px-3 py-2 rounded-[8px] border border-elaya-border-strong bg-studio-bg-3 text-studio-white text-[12px] outline-none focus:border-studio-gold"
-                  placeholder="Welche? (optional)"
+                  placeholder={w.whichOptional}
                   value={form.blutverduenner_text}
                   onChange={(e) => set('blutverduenner_text', e.target.value)}
                 />
               )}
             </Question>
-            <Question num={12} label="Infektionskrankheiten? (Mehrfachauswahl)" hint={hintsByKey.infektionskrankheiten}>
+            <Question num={12} label={w.q12} hint={hintsByKey.infektionskrankheiten}>
               <div className="flex flex-wrap gap-2">
-                {INFEKT_OPTIONS.map(([v, l]) => (
+                {INFEKT_KEYS.map((v) => (
                   <Opt key={v} active={(form.infektionskrankheiten || []).includes(v)} onClick={() => toggleMulti('infektionskrankheiten', v)}>
-                    {l}
+                    {w.infekt[v]}
                   </Opt>
                 ))}
               </div>
@@ -292,44 +282,44 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
 
         {step === 3 && (
           <div className="flex flex-col gap-4">
-            <SectionTitle>Abschnitt 4 — Abschlussfragen</SectionTitle>
-            <Question num={13} label="Allergien?" hint={hintsByKey.allergien}>
-              <JaNein value={form.allergien} onChange={(v) => set('allergien', v)} />
+            <SectionTitle>{w.sectionClosing}</SectionTitle>
+            <Question num={13} label={w.q13} hint={hintsByKey.allergien}>
+              <JaNein value={form.allergien} onChange={(v) => set('allergien', v)} yesLabel={w.yes} noLabel={w.no} />
               {form.allergien === 'ja' && (
                 <input
                   className="w-full px-3 py-2 rounded-[8px] border border-elaya-border-strong bg-studio-bg-3 text-studio-white text-[12px] outline-none focus:border-studio-gold"
-                  placeholder="Welche? (optional)"
+                  placeholder={w.whichOptional}
                   value={form.allergien_text}
                   onChange={(e) => set('allergien_text', e.target.value)}
                 />
               )}
             </Question>
-            <Question num={14} label="Schlechte Wundheilung oder frühere Laserbehandlungen?" hint={hintsByKey.wundheilung}>
-              <JaNein value={form.wundheilung} onChange={(v) => set('wundheilung', v)} />
+            <Question num={14} label={w.q14} hint={hintsByKey.wundheilung}>
+              <JaNein value={form.wundheilung} onChange={(v) => set('wundheilung', v)} yesLabel={w.yes} noLabel={w.no} />
             </Question>
-            <Question num={15} label="Herpes im Behandlungsbereich?" hint={hintsByKey.herpes_bereich}>
-              <JaNein value={form.herpes_bereich} onChange={(v) => set('herpes_bereich', v)} />
+            <Question num={15} label={w.q15} hint={hintsByKey.herpes_bereich}>
+              <JaNein value={form.herpes_bereich} onChange={(v) => set('herpes_bereich', v)} yesLabel={w.yes} noLabel={w.no} />
             </Question>
-            <Question num={16} label="Schwanger, stillend oder unsicher?" hint={hintsByKey.schwanger}>
+            <Question num={16} label={w.q16} hint={hintsByKey.schwanger}>
               <div className="flex flex-wrap gap-2">
-                {[['nein', 'Nein'], ['ja', 'Ja'], ['unsicher', 'Unsicher']].map(([v, l]) => (
+                {[['nein', w.no], ['ja', w.yes], ['unsicher', w.unsure]].map(([v, l]) => (
                   <Opt key={v} active={form.schwanger === v} onClick={() => set('schwanger', v)}>{l}</Opt>
                 ))}
               </div>
             </Question>
-            <Question num={17} label="Unter Alkohol- oder Drogeneinfluss?" hint={hintsByKey.alkohol_drogen}>
-              <JaNein value={form.alkohol_drogen} onChange={(v) => set('alkohol_drogen', v)} />
+            <Question num={17} label={w.q17} hint={hintsByKey.alkohol_drogen}>
+              <JaNein value={form.alkohol_drogen} onChange={(v) => set('alkohol_drogen', v)} yesLabel={w.yes} noLabel={w.no} />
             </Question>
-            <Question num={18} label="Sind Sie urteilsfähig?" hint={hintsByKey.urteilsfaehig}>
-              <JaNein value={form.urteilsfaehig} onChange={(v) => set('urteilsfaehig', v)} />
+            <Question num={18} label={w.q18} hint={hintsByKey.urteilsfaehig}>
+              <JaNein value={form.urteilsfaehig} onChange={(v) => set('urteilsfaehig', v)} yesLabel={w.yes} noLabel={w.no} />
             </Question>
-            <Question num={19} label="Mindestens 18 Jahre alt?" hint={hintsByKey.mindestalter_18}>
-              <JaNein value={form.mindestalter_18} onChange={(v) => set('mindestalter_18', v)} />
+            <Question num={19} label={w.q19} hint={hintsByKey.mindestalter_18}>
+              <JaNein value={form.mindestalter_18} onChange={(v) => set('mindestalter_18', v)} yesLabel={w.yes} noLabel={w.no} />
             </Question>
             {has_ko_flags && step === 3 && (
               <div className="rounded-[12px] border border-studio-red/30 bg-studio-red/8 px-4 py-3 text-[12px] text-studio-w2 leading-relaxed">
-                <p className="text-studio-red font-semibold m-0 mb-1">🔴 Aufgrund deiner Angaben ist eine Abklärung nötig.</p>
-                Du kannst die Anamnese trotzdem abschliessen. Beim Terminbuchen wirst du nochmals gefragt.
+                <p className="text-studio-red font-semibold m-0 mb-1">{w.koBannerTitle}</p>
+                {w.koBannerBody}
               </div>
             )}
           </div>
@@ -342,7 +332,7 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
             </div>
             {ampel.orange_fragen.length > 0 && (
               <div className="rounded-[12px] border border-studio-gold/25 bg-studio-gold/5 p-4">
-                <p className="text-studio-gold text-[12px] font-semibold m-0 mb-2">Hinweise für das Studio</p>
+                <p className="text-studio-gold text-[12px] font-semibold m-0 mb-2">{w.studioHints}</p>
                 <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
                   {ampel.orange_fragen.map((f) => (
                     <li key={f.frage_text} className="text-[12px] text-studio-w2">· {f.frage_text}: <strong className="text-studio-white">{f.antwort}</strong></li>
@@ -352,7 +342,7 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
             )}
             {ampel.rote_fragen.length > 0 && (
               <div className="rounded-[12px] border border-studio-red/25 bg-studio-red/5 p-4">
-                <p className="text-studio-red text-[12px] font-semibold m-0 mb-2">Abklärung nötig</p>
+                <p className="text-studio-red text-[12px] font-semibold m-0 mb-2">{w.clarificationNeeded}</p>
                 <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
                   {ampel.rote_fragen.map((f) => (
                     <li key={f.frage_text} className="text-[12px] text-studio-w2">· {f.frage_text}: <strong className="text-studio-white">{f.antwort}</strong></li>
@@ -361,7 +351,7 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
               </div>
             )}
             <p className="text-studio-w3 text-[11px] m-0 leading-relaxed">
-              Mit dem Speichern bestätigen Sie, dass alle Angaben wahrheitsgemäss erfasst wurden.
+              {w.confirmTruth}
             </p>
           </div>
         )}
@@ -373,15 +363,15 @@ const AnamnesisWizardModal = ({ caseId, initialAnswers, onClose, onSaved }) => {
             disabled={step === 0}
             onClick={() => setStep((s) => s - 1)}
           >
-            Zurück
+            {w.back}
           </Button>
           {step < steps.length - 1 ? (
             <Button size="sm" onClick={() => setStep((s) => s + 1)}>
-              Weiter
+              {w.next}
             </Button>
           ) : (
             <Button size="sm" loading={loading} onClick={handleSubmit}>
-              Anamnese speichern
+              {w.save}
             </Button>
           )}
         </div>

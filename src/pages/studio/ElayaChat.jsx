@@ -8,16 +8,16 @@ import { listCases } from '../../api/cases'
 import { getApiErrorMessage } from '../../lib/apiError'
 import { Button, Card, PageHeader, Spinner } from '../../components/ui'
 import ElayaLogo from '../../components/ElayaLogo'
-import { studioElayaChat as copy } from '../../content'
+import useContent from '../../i18n/useContent'
 
 const STORAGE_KEY = 'elaya-studio-chat-v1'
 
 const createId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
-const welcomeMessage = () => ({
+const welcomeMessage = (welcomeText) => ({
   id: 'welcome',
   role: 'assistant',
-  text: copy.welcome,
+  text: welcomeText,
   ts: Date.now(),
 })
 
@@ -50,9 +50,10 @@ export default function StudioElayaChat() {
   const [searchParams, setSearchParams] = useSearchParams()
   const customerIdParam = searchParams.get('customerId') || ''
   const caseIdParam = searchParams.get('caseId') || ''
+  const { studioElayaChat: copy } = useContent()
 
   const stored = useMemo(() => loadStored(), [])
-  const [messages, setMessages] = useState(() => stored?.messages || [welcomeMessage()])
+  const [messages, setMessages] = useState(() => stored?.messages || [welcomeMessage(copy.welcome)])
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const [customerQuery, setCustomerQuery] = useState('')
@@ -95,7 +96,7 @@ export default function StudioElayaChat() {
     return () => {
       cancelled = true
     }
-  }, [customerIdParam])
+  }, [customerIdParam, copy.contextCustomer])
 
   useEffect(() => {
     const cid = focusCustomer?.id
@@ -126,7 +127,7 @@ export default function StudioElayaChat() {
     return () => {
       cancelled = true
     }
-  }, [focusCustomer?.id, caseIdParam])
+  }, [focusCustomer?.id, caseIdParam, copy.openCase])
 
   const runSearch = useCallback(async (q) => {
     const term = q.trim()
@@ -173,7 +174,7 @@ export default function StudioElayaChat() {
   }
 
   const resetChat = () => {
-    setMessages([welcomeMessage()])
+    setMessages([welcomeMessage(copy.welcome)])
     setDraft('')
   }
 

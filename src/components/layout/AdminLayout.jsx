@@ -1,8 +1,10 @@
 import { LogOut } from 'lucide-react'
 import ElayaLogo from '../ElayaLogo'
-import { common } from '../../content'
+import useContent from '../../i18n/useContent'
 
 const AdminLayout = ({ onLogout, children }) => {
+  const { common } = useContent()
+
   return (
     <div className="theme-admin min-h-screen bg-admin-bg font-admin flex">
       <aside className="elaya-sidebar fixed left-0 top-0 z-50 flex h-screen w-admin-sidebar flex-col border-r border-admin-line bg-admin-bg-card px-4 py-5">

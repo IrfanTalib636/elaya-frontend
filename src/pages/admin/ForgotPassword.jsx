@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../../components/ElayaLogo'
 import { forgotPassword } from '../../api/auth'
-import { adminAuth, common, toast as toastMessages } from '../../content'
+import useContent from '../../i18n/useContent'
 import { getApiErrorMessage } from '../../lib/apiError'
 
 const Field = ({ label, children }) => (
@@ -23,6 +23,7 @@ const Input = ({ className = '', ...props }) => (
 )
 
 const AdminForgotPassword = () => {
+  const { adminAuth, common, toast: toastMessages } = useContent()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)

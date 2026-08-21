@@ -3,11 +3,15 @@ import { Card, PageHeader, Spinner } from '../../components/ui'
 import { getShopFinance } from '../../api/adminShop'
 import { getAdminElaycoinOverview } from '../../api/adminElaycoins'
 import { listAdminStudios } from '../../api/adminStudios'
+import useContent from '../../i18n/useContent'
 
 const fmt = (n) =>
   new Intl.NumberFormat('de-CH', { style: 'currency', currency: 'CHF' }).format(n || 0)
 
 const AdminOverview = () => {
+  const { t, adminPages } = useContent()
+  const copy = adminPages.overview
+
   const [loading, setLoading] = useState(true)
   const [finance, setFinance] = useState(null)
   const [coins, setCoins] = useState(null)
@@ -40,31 +44,33 @@ const AdminOverview = () => {
 
   const totals = finance?.totals || {}
   const studioList = Array.isArray(studios) ? studios : []
+  const topList =
+    (finance?.studios || [])
+      .slice(0, 5)
+      .map((s) => `${s.studio_name || s.studio_code} (${fmt(s.revenue)})`)
+      .join(' · ') || '—'
 
   return (
     <div className="p-6 max-w-[1100px]">
-      <PageHeader
-        title="Admin Übersicht"
-        subtitle="Plattform-KPIs · Shop-Provision · Elaycoins (Stripe Connect pending)"
-      />
+      <PageHeader title={copy.title} subtitle={copy.subtitle} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
-          <p className="text-[12px] text-admin-muted m-0">Studios</p>
+          <p className="text-[12px] text-admin-muted m-0">{copy.studios}</p>
           <p className="text-[22px] font-bold m-0 mt-1">{studioList.length}</p>
         </Card>
         <Card>
-          <p className="text-[12px] text-admin-muted m-0">Shop Umsatz</p>
+          <p className="text-[12px] text-admin-muted m-0">{copy.shopRevenue}</p>
           <p className="text-[22px] font-bold m-0 mt-1">{fmt(totals.revenue)}</p>
         </Card>
         <Card>
-          <p className="text-[12px] text-admin-muted m-0">Studio-Provision (offen)</p>
+          <p className="text-[12px] text-admin-muted m-0">{copy.provisionOpen}</p>
           <p className="text-[22px] font-bold m-0 mt-1 text-amber-600">
             {fmt(totals.pending_provision)}
           </p>
         </Card>
         <Card>
-          <p className="text-[12px] text-admin-muted m-0">Elaycoins gesamt</p>
+          <p className="text-[12px] text-admin-muted m-0">{copy.coinsTotal}</p>
           <p className="text-[22px] font-bold m-0 mt-1">
             {coins?.summary?.total_balance ?? 0}
           </p>
@@ -73,15 +79,15 @@ const AdminOverview = () => {
 
       <Card>
         <p className="text-[13px] text-admin-muted m-0 mb-2">
-          Provision Standard: {finance?.provision_percent_default ?? 20}% an Studios ·{' '}
-          Stripe Connect: {finance?.stripe_connect_enabled ? 'aktiv' : 'ausstehend (Keys pending)'}
+          {t('adminPages.overview.provisionStandard', {
+            pct: finance?.provision_percent_default ?? 20,
+            stripe: finance?.stripe_connect_enabled
+              ? copy.stripeActive
+              : copy.stripePending,
+          })}
         </p>
         <p className="text-[12px] m-0 text-admin-muted">
-          Top Studios nach Shop-Umsatz:{' '}
-          {(finance?.studios || [])
-            .slice(0, 5)
-            .map((s) => `${s.studio_name || s.studio_code} (${fmt(s.revenue)})`)
-            .join(' · ') || '—'}
+          {t('adminPages.overview.topStudios', { list: topList })}
         </p>
       </Card>
     </div>

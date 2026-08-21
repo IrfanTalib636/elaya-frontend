@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../../components/ElayaLogo'
-import { adminAuth, common, toast as toastMessages } from '../../content'
+import useContent from '../../i18n/useContent'
 import useAuthStore from '../../store/authStore'
 import { ADMIN_ROLES } from '../../constants/roles'
 import { getApiErrorMessage } from '../../lib/apiError'
@@ -29,6 +29,7 @@ const AdminLogin = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const signIn = useAuthStore((state) => state.login)
+  const { adminAuth, common, toast: toastMessages } = useContent()
 
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)

@@ -7,8 +7,8 @@ import { listAppointments } from '../../api/appointments'
 import { listSessions } from '../../api/sessions'
 import { listNachsorge } from '../../api/nachsorge'
 import { Card, Badge, Button, Spinner, PageHeader } from '../../components/ui'
+import useContent from '../../i18n/useContent'
 
-// Cached formatter — created once, not on every render
 const chfFormatter = new Intl.NumberFormat('de-CH', {
   style: 'currency',
   currency: 'CHF',
@@ -18,14 +18,6 @@ const fmtCHF = (n) => chfFormatter.format(n ?? 0)
 
 const todayISO = () => new Date().toISOString().slice(0, 10)
 
-const formatDate = (d) =>
-  new Date(d).toLocaleDateString('de-CH', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  })
-
-const TABLE_HEADERS = ['Kunde', 'Fall', 'Zeit', 'Session', 'Status']
-
-// ── Sub-components ────────────────────────────────────────────────────────
 const KpiCard = ({ icon: Icon, label, value, color = 'text-studio-gold-2' }) => (
   <Card className="flex items-start gap-4">
     <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 bg-studio-bg-4 ${color}`}>
@@ -38,12 +30,12 @@ const KpiCard = ({ icon: Icon, label, value, color = 'text-studio-gold-2' }) => 
   </Card>
 )
 
-const ApptRow = ({ appt, onClick }) => {
+const ApptRow = ({ appt, onClick, typeConsultation, typeTreatment }) => {
   const caseLabel    = appt.case?.caseId ?? '—'
   const customerName = appt.customer
     ? `${appt.customer.vorname ?? ''} ${appt.customer.nachname ?? ''}`.trim() || '—'
     : '—'
-  const sessionLabel = appt.type === 'beratung' ? 'Beratung' : 'Behandlung'
+  const sessionLabel = appt.type === 'beratung' ? typeConsultation : typeTreatment
 
   return (
     <tr
@@ -61,16 +53,31 @@ const ApptRow = ({ appt, onClick }) => {
   )
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────
 const StudioOverview = () => {
   const navigate = useNavigate()
+  const { language, studioPages } = useContent()
+  const copy = studioPages.overview
   const profile = useAuthStore((s) => s.profile)
   const user = useAuthStore((s) => s.user)
 
   const [loading, setLoading] = useState(true)
   const [kpis, setKpis] = useState({ customers: 0, todayAppts: 0, weekRevenue: 0, openAftercare: 0 })
   const [todayAppts, setTodayAppts] = useState([])
-  const todayLabel = useMemo(() => formatDate(new Date()), [])
+  const todayLabel = useMemo(
+    () =>
+      new Date().toLocaleDateString(language === 'en' ? 'en-GB' : 'de-CH', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+      }),
+    [language]
+  )
+
+  const tableHeaders = [
+    copy.headers.customer,
+    copy.headers.case,
+    copy.headers.time,
+    copy.headers.session,
+    copy.headers.status,
+  ]
 
   useEffect(() => {
     const load = async () => {
@@ -91,7 +98,6 @@ const StudioOverview = () => {
           .filter((s) => !s.is_no_show && !s.is_draft)
           .reduce((sum, s) => sum + (s.zahlung?.betragCHF ?? 0), 0)
 
-        // Open aftercare: red/orange checks from the last 14 days (first page only)
         const twoWeeksAgo = Date.now() - 14 * 864e5
         const openAftercare = (nachsorgeRes?.data.data.checks ?? []).filter(
           (c) =>
@@ -115,7 +121,7 @@ const StudioOverview = () => {
     load()
   }, [])
 
-  const studioName = profile?.firma ?? user?.email ?? 'Studio'
+  const studioName = profile?.firma ?? user?.email ?? copy.studioFallback
 
   if (loading) {
     return (
@@ -128,45 +134,45 @@ const StudioOverview = () => {
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader
-        title="Dashboard"
+        title={copy.title}
         subtitle={`${studioName} · ${todayLabel}`}
       >
         <Button size="sm" variant="secondary" onClick={() => navigate('/studio/customers')}>
-          Kunden ansehen
+          {copy.viewCustomers}
         </Button>
       </PageHeader>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <KpiCard icon={Users}      label="Aktive Kunden"       value={kpis.customers}           color="text-studio-gold-2" />
-        <KpiCard icon={Calendar}   label="Heute Termine"       value={kpis.todayAppts}          color="text-studio-teal"   />
-        <KpiCard icon={TrendingUp} label="Umsatz diese Woche"  value={fmtCHF(kpis.weekRevenue)} color="text-studio-gold-2" />
-        <KpiCard icon={Heart}      label="Offene Nachsorgen"   value={kpis.openAftercare}       color="text-studio-amber"  />
+        <KpiCard icon={Users}      label={copy.kpiActiveCustomers}  value={kpis.customers}           color="text-studio-gold-2" />
+        <KpiCard icon={Calendar}   label={copy.kpiTodayAppointments} value={kpis.todayAppts}          color="text-studio-teal"   />
+        <KpiCard icon={TrendingUp} label={copy.kpiWeekRevenue}      value={fmtCHF(kpis.weekRevenue)} color="text-studio-gold-2" />
+        <KpiCard icon={Heart}      label={copy.kpiOpenAftercare}    value={kpis.openAftercare}       color="text-studio-amber"  />
       </div>
 
       <Card padding="none">
         <div className="flex items-center justify-between px-5 py-4 border-b border-elaya-border">
-          <h2 className="text-[14px] font-semibold text-studio-white m-0">Heutige Termine</h2>
+          <h2 className="text-[14px] font-semibold text-studio-white m-0">{copy.todayAppointments}</h2>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate('/studio/today')}
             className="text-studio-gold-2 hover:text-studio-gold-3 gap-1"
           >
-            Alle ansehen <ArrowRight size={13} />
+            {copy.viewAll} <ArrowRight size={13} />
           </Button>
         </div>
 
         {todayAppts.length === 0 ? (
           <div className="py-12 text-center">
             <Calendar size={32} className="text-studio-w4 mx-auto mb-3" />
-            <p className="text-studio-w2 text-[13px] m-0">Heute keine Termine</p>
+            <p className="text-studio-w2 text-[13px] m-0">{copy.noAppointmentsToday}</p>
           </div>
         ) : (
           <div className="px-5 overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-elaya-border">
-                  {TABLE_HEADERS.map((h) => (
+                  {tableHeaders.map((h) => (
                     <th key={h} className="py-2.5 pr-4 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider">
                       {h}
                     </th>
@@ -178,6 +184,8 @@ const StudioOverview = () => {
                   <ApptRow
                     key={appt._id}
                     appt={appt}
+                    typeConsultation={copy.typeConsultation}
+                    typeTreatment={copy.typeTreatment}
                     onClick={() => navigate(`/studio/cases/${appt.case?._id ?? appt.case}`)}
                   />
                 ))}

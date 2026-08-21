@@ -4,7 +4,7 @@ import { ScrollText } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { listStudioActivity } from '../../api/activity'
 import { Card, Spinner, EmptyState, Pagination } from '../ui'
-import { studioActivity as copy } from '../../content'
+import useContent from '../../i18n/useContent'
 import { ActivityIcon, ActivityTag, fmtActivityWhen } from './activityMeta'
 
 const CATEGORY_KEYS = [
@@ -97,6 +97,7 @@ const ActivityFeed = ({
   defaultRange = 'd30',
 }) => {
   const navigate = useNavigate()
+  const { studioActivity: copy } = useContent()
   const [category, setCategory] = useState('all')
   const [range, setRange] = useState(defaultRange)
   const [from, setFrom] = useState(() => rangeToDates(defaultRange).from)
@@ -126,7 +127,7 @@ const ActivityFeed = ({
     } finally {
       setLoading(false)
     }
-  }, [category, customerId, from, to, page])
+  }, [category, customerId, from, to, page, copy.loadError])
 
   useEffect(() => {
     load()

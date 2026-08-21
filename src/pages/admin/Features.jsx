@@ -7,6 +7,7 @@ import {
   getFeatureCatalog,
   updatePlatformConfig,
 } from '../../api/adminConfig'
+import useContent from '../../i18n/useContent'
 
 const PLANS = [
   { value: 'basic', label: 'Basic' },
@@ -15,6 +16,8 @@ const PLANS = [
 ]
 
 const AdminFeatures = () => {
+  const { t, adminPages } = useContent()
+  const copy = adminPages.features
   const [loading, setLoading] = useState(true)
   const [catalog, setCatalog] = useState([])
   const [studios, setStudios] = useState([])
@@ -31,7 +34,7 @@ const AdminFeatures = () => {
       setGlobal(c.data.data.feature_global || {})
       setStudios(s.data.data.studios || [])
     } catch {
-      toast.error('Features konnten nicht geladen werden')
+      toast.error(copy.loadError)
     } finally {
       setLoading(false)
     }
@@ -45,10 +48,10 @@ const AdminFeatures = () => {
     setSavingId(studio.studio_id)
     try {
       await updateStudioConfigAdmin(studio.studio_id, { subscription_plan: plan })
-      toast.success('Paket aktualisiert')
+      toast.success(copy.planUpdated)
       await load()
     } catch {
-      toast.error('Paket konnte nicht gespeichert werden')
+      toast.error(copy.planError)
     } finally {
       setSavingId(null)
     }
@@ -71,7 +74,7 @@ const AdminFeatures = () => {
       await updateStudioConfigAdmin(studio.studio_id, { feature_overrides: overrides })
       await load()
     } catch {
-      toast.error('Override fehlgeschlagen')
+      toast.error(copy.overrideError)
     } finally {
       setSavingId(null)
     }
@@ -86,10 +89,10 @@ const AdminFeatures = () => {
     }
     try {
       await updatePlatformConfig({ feature_global: payload })
-      toast.success('Globale Features aktualisiert')
+      toast.success(copy.globalUpdated)
       await load()
     } catch {
-      toast.error('Globale Features fehlgeschlagen')
+      toast.error(copy.globalError)
     }
   }
 
@@ -103,13 +106,10 @@ const AdminFeatures = () => {
 
   return (
     <div className="p-6 max-w-[1200px]">
-      <PageHeader
-        title="Feature Management"
-        subtitle="Pakete (Basic / Professional / Enterprise) · globale Schalter · Studio-Overrides"
-      />
+      <PageHeader title={copy.title} subtitle={copy.subtitle} />
 
       <Card className="mb-6">
-        <p className="font-semibold m-0 mb-3">Globale Feature-Schalter</p>
+        <p className="font-semibold m-0 mb-3">{copy.globalTitle}</p>
         <div className="flex flex-wrap gap-2">
           {catalog.map((f) => (
             <button
@@ -128,9 +128,11 @@ const AdminFeatures = () => {
           ))}
         </div>
         <p className="text-[11px] text-admin-muted m-0 mt-2">
-          Plan defaults — Basic: {(plans.basic || []).length} · Professional:{' '}
-          {(plans.professional || []).length} · Enterprise:{' '}
-          {(plans.enterprise || []).length} Features
+          {t('adminPages.features.planDefaults', {
+            basic: (plans.basic || []).length,
+            pro: (plans.professional || []).length,
+            ent: (plans.enterprise || []).length,
+          })}
         </p>
       </Card>
 
@@ -167,10 +169,10 @@ const AdminFeatures = () => {
                     type="button"
                     title={
                       ov === true
-                        ? 'Force ON'
+                        ? copy.forceOn
                         : ov === false
-                          ? 'Force OFF'
-                          : 'Plan default'
+                          ? copy.forceOff
+                          : copy.planDefault
                     }
                     onClick={() => toggleOverride(s, f.key)}
                     className={`px-2 py-1 rounded text-[11px] border cursor-pointer ${

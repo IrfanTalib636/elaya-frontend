@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../../components/ElayaLogo'
-import { studioAuth, common, toast as toastMessages } from '../../content'
+import useContent from '../../i18n/useContent'
 import useAuthStore from '../../store/authStore'
 import { STUDIO_ROLES } from '../../constants/roles'
 import { getApiErrorMessage } from '../../lib/apiError'
@@ -27,6 +27,7 @@ const StudioLogin = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const login = useAuthStore((state) => state.login)
+  const { studioAuth, common, toast: toastMessages } = useContent()
 
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)

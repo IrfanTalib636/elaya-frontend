@@ -7,6 +7,7 @@ import { listCases, getCase, getCasePricing, getCaseAvailability } from '../../a
 import { getPublicConfig } from '../../api/config'
 import { fmtDateDeLong } from '../../utils/time'
 import { Button, Spinner, Modal, Input, Select } from '../ui'
+import useContent from '../../i18n/useContent'
 import {
   DEFAULT_GRUPPEN_CONFIG,
   isGroupEligibleCase,
@@ -23,13 +24,13 @@ const addDaysISO = (iso, n) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-const bookingErrorMessage = (err) => {
+const bookingErrorMessage = (err, copy) => {
   const msg = err.response?.data?.message
   const fruehestes = err.response?.data?.errors?.fruehestes ?? err.response?.data?.fruehestes
   if (fruehestes) {
-    return `${msg ?? 'Termin nicht erlaubt.'} Frühestens: ${fmtDateDeLong(fruehestes)}.`
+    return `${msg ?? copy.notAllowed} ${copy.earliest.replace('{{date}}', fmtDateDeLong(fruehestes))}`
   }
-  return msg ?? 'Fehler beim Buchen des Gruppen-Termins.'
+  return msg ?? copy.bookError
 }
 
 const SIZE_BADGE = {
@@ -39,6 +40,8 @@ const SIZE_BADGE = {
 }
 
 const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => {
+  const { t, components } = useContent()
+  const copy = components.groupBooking
   const [customerId, setCustomerId] = useState('')
   const [customers, setCustomers] = useState([])
   const [cases, setCases] = useState([])
@@ -188,15 +191,15 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
 
   const handleSubmit = async () => {
     if (selectedIds.length < 2) {
-      toast.error('Mindestens 2 Tattoos für einen Gruppen-Termin auswählen.')
+      toast.error(copy.minCases)
       return
     }
     if (!date || !time) {
-      toast.error('Datum und Uhrzeit sind Pflichtfelder.')
+      toast.error(copy.dateTimeRequired)
       return
     }
     if (fruehestes && date < fruehestes) {
-      toast.error(`Termin zu früh. Frühestens buchbar ab ${fmtDateDeLong(fruehestes)}.`)
+      toast.error(t('components.groupBooking.tooEarly', { date: fmtDateDeLong(fruehestes) }))
       return
     }
 
@@ -214,30 +217,28 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
         gruppen_rabatt: config.gruppen_rabatt ?? 0.15,
         gruppen_preis_total: pricing.gesamt,
       })
-      toast.success(`Gruppen-Termin gebucht (${selectedIds.length} Fälle).`)
+      toast.success(t('components.groupBooking.bookSuccess', { count: selectedIds.length }))
       onCreated()
     } catch (err) {
-      toast.error(bookingErrorMessage(err))
+      toast.error(bookingErrorMessage(err, copy))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal title="Gruppen-Termin" onClose={onClose} width="max-w-lg">
+    <Modal title={copy.title} onClose={onClose} width="max-w-lg">
       <div className="flex flex-col gap-4">
         <p className="text-studio-w2 text-[12px] m-0 leading-relaxed">
-          Mehrere Tattoos desselben Kunden in einem gemeinsamen Termin.
-          Rabatt {rabattPctLabel}%. Max. {config.max_punkte} Grössen-Punkte
-          (Klein=1, Mittel=2, Gross=4 allein).
+          {t('components.groupBooking.intro', { pct: rabattPctLabel, max: config.max_punkte })}
         </p>
 
         <Select
-          label="Kunde *"
+          label={copy.customer}
           value={customerId}
           onChange={(e) => setCustomerId(e.target.value)}
         >
-          <option value="">Kunden auswählen…</option>
+          <option value="">{copy.selectCustomer}</option>
           {customers.map((c) => (
             <option key={c._id} value={c._id}>
               {c.vorname} {c.nachname}
@@ -247,19 +248,17 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
 
         <div>
           <p className="text-studio-w3 text-[10px] font-semibold uppercase tracking-wider m-0 mb-2">
-            Fälle auswählen * ({selectedIds.length} gewählt · {punkte}/{config.max_punkte} Pkt.)
+            {t('components.groupBooking.selectCases', { count: selectedIds.length, points: punkte, max: config.max_punkte })}
           </p>
 
           {!customerId ? (
-            <p className="text-studio-w3 text-[12px] m-0">Zuerst Kunden auswählen…</p>
+            <p className="text-studio-w3 text-[12px] m-0">{copy.selectCustomerFirst}</p>
           ) : loadingCases ? (
             <div className="flex justify-center py-6">
               <Spinner size="sm" />
             </div>
           ) : cases.length === 0 ? (
-            <p className="text-studio-w3 text-[12px] m-0">
-              Keine geeigneten Tattoo-Fälle (PMU und abgeschlossene Fälle sind ausgeschlossen).
-            </p>
+            <p className="text-studio-w3 text-[12px] m-0">{copy.noEligible}</p>
           ) : (
             <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto">
               {cases.map((c) => {
@@ -292,7 +291,7 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
                         {c.caseId} · {c.tc_title || c.bodyLabel || 'Tattoo'}
                       </p>
                       <p className="text-studio-w3 text-[10px] m-0 mt-0.5">
-                        {g.cm2 > 0 ? `${g.cm2.toFixed(0)} cm²` : 'Fläche n/a'} · {fmtCHF(c.pricePerSession)}/Sitzung
+                        {g.cm2 > 0 ? `${g.cm2.toFixed(0)} cm²` : copy.areaNa} · {fmtCHF(c.pricePerSession)}{copy.perSession}
                       </p>
                     </div>
                     <span
@@ -314,7 +313,7 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
         {selectedIds.length >= 2 && (
           <div className="rounded-[10px] border border-studio-gold/25 bg-studio-gold/5 px-3 py-3">
             <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-2">
-              Preisübersicht ({rabattPctLabel}% Gruppen-Rabatt)
+              {t('components.groupBooking.priceOverview', { pct: rabattPctLabel })}
             </p>
             <div className="flex flex-col gap-1">
               {pricing.einzel.map((row) => (
@@ -324,15 +323,15 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
                 </div>
               ))}
               <div className="border-t border-elaya-border mt-1.5 pt-1.5 flex justify-between text-[12px]">
-                <span className="text-studio-w2">Zwischensumme</span>
+                <span className="text-studio-w2">{copy.subtotal}</span>
                 <span className="text-studio-w1 tabular-nums">{fmtCHF(pricing.zwischensumme)}</span>
               </div>
               <div className="flex justify-between text-[12px]">
-                <span className="text-studio-gold-2">Rabatt −{rabattPctLabel}%</span>
+                <span className="text-studio-gold-2">{t('components.groupBooking.discount', { pct: rabattPctLabel })}</span>
                 <span className="text-studio-gold-2 tabular-nums">−{fmtCHF(pricing.rabatt)}</span>
               </div>
               <div className="flex justify-between text-[13px] font-semibold mt-0.5">
-                <span className="text-studio-white">Gesamt</span>
+                <span className="text-studio-white">{copy.total}</span>
                 <span className="text-studio-white tabular-nums">{fmtCHF(pricing.gesamt)}</span>
               </div>
             </div>
@@ -342,36 +341,36 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
         {selectedIds.length >= 2 && (
           <div className="rounded-[10px] border border-elaya-border bg-studio-bg-4 px-3 py-2.5">
             {loadingLockout ? (
-              <p className="text-studio-w3 text-[11px] m-0">Sperrfristen werden geladen…</p>
+              <p className="text-studio-w3 text-[11px] m-0">{copy.lockoutLoading}</p>
             ) : fruehestes ? (
               <>
                 <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-1 flex items-center gap-1">
                   <Lock size={10} className="text-elaya-warning" />
-                  Sperrfrist (strengster Fall)
+                  {copy.lockoutTitle}
                 </p>
                 <p className="text-studio-white text-[12px] font-semibold m-0">
-                  Frühestens: {fmtDateDeLong(fruehestes)}
+                  {t('components.groupBooking.earliest', { date: fmtDateDeLong(fruehestes) })}
                 </p>
               </>
             ) : (
-              <p className="text-studio-w3 text-[11px] m-0">Keine Sperrfrist — Termin frei wählbar.</p>
+              <p className="text-studio-w3 text-[11px] m-0">{copy.noLockout}</p>
             )}
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-4">
           <Input
-            label="Datum *"
+            label={copy.dateRequired}
             type="date"
             value={date}
             min={fruehestes || undefined}
             onChange={(e) => setDate(e.target.value)}
           />
-          <Input label="Uhrzeit *" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          <Input label={copy.timeRequired} type="time" value={time} onChange={(e) => setTime(e.target.value)} />
         </div>
 
         <Input
-          label="Dauer (Min.)"
+          label={copy.durationMin}
           type="number"
           min={30}
           step={15}
@@ -381,7 +380,7 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
 
         <div className="flex justify-end gap-3 pt-2">
           <Button variant="ghost" onClick={onClose} disabled={saving}>
-            Abbrechen
+            {copy.cancel}
           </Button>
           <Button
             loading={saving}
@@ -389,7 +388,7 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
             onClick={handleSubmit}
           >
             <Users size={14} />
-            Gruppen-Termin buchen
+            {copy.book}
           </Button>
         </div>
       </div>

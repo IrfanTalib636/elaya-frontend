@@ -2,18 +2,15 @@ import { Users, ChevronRight } from 'lucide-react'
 import { Modal, Button } from '../ui'
 import { fmtCHF } from '../../utils/groupBooking'
 import { fmtDateDeLong } from '../../utils/time'
-
-const TYPE_LABELS = {
-  beratung: 'Beratung',
-  treatment: 'Behandlung',
-  first: 'Erstbehandlung',
-}
+import useContent from '../../i18n/useContent'
 
 /**
  * Detail panel for a Gruppen-Termin — lists sibling cases + rabatt/total.
- * @param {{ appt: object, siblings?: object[], onClose: () => void, onOpenCase: (caseId: string) => void }} props
  */
 const GroupDetailModal = ({ appt, siblings = [], onClose, onOpenCase }) => {
+  const { t, components } = useContent()
+  const copy = components.groupDetail
+
   const name = appt.customer
     ? `${appt.customer.vorname ?? ''} ${appt.customer.nachname ?? ''}`.trim()
     : '—'
@@ -22,7 +19,7 @@ const GroupDetailModal = ({ appt, siblings = [], onClose, onOpenCase }) => {
     apptId: a.id ?? a._id,
     caseId: a.case?._id ?? a.case?.id ?? a.case,
     caseLabel: a.case?.caseId ?? '—',
-    title: a.case?.tc_title || a.case?.bodyLabel || a.case?.type || 'Tattoo',
+    title: a.case?.tc_title || a.case?.bodyLabel || a.case?.type || copy.tattoo,
     type: a.case?.type,
   }))
 
@@ -38,23 +35,24 @@ const GroupDetailModal = ({ appt, siblings = [], onClose, onOpenCase }) => {
     : '—'
 
   return (
-    <Modal title="Gruppen-Termin" onClose={onClose} width="max-w-md">
+    <Modal title={copy.title} onClose={onClose} width="max-w-md">
       <div className="flex flex-col gap-4">
         <div>
           <p className="text-studio-white text-[18px] font-bold m-0 leading-tight">{name}</p>
           <p className="text-studio-w2 text-[12px] m-0 mt-1">
-            {dateLabel} · {appt.time || '—'} Uhr
-            {appt.dauer_minuten ? ` · ${appt.dauer_minuten} min` : ''}
+            {dateLabel}
+            {appt.time ? t('components.groupDetail.timeSuffix', { time: appt.time }) : ''}
+            {appt.dauer_minuten ? t('components.groupDetail.minutes', { count: appt.dauer_minuten }) : ''}
           </p>
           <p className="text-studio-w3 text-[11px] m-0 mt-0.5">
-            {TYPE_LABELS[appt.type] ?? appt.type} · Status: {appt.status || 'gebucht'}
+            {copy.types[appt.type] ?? appt.type} · {t('components.groupDetail.status', { status: appt.status || 'gebucht' })}
           </p>
         </div>
 
         <div className="rounded-[10px] border border-studio-gold/25 bg-studio-gold/5 px-3 py-3">
           <p className="text-studio-gold-2 text-[12px] font-semibold m-0 mb-2 flex items-center gap-1.5">
             <Users size={14} />
-            Gruppen-Termin ({n} Fälle)
+            {t('components.groupDetail.groupCases', { count: n })}
           </p>
 
           <div className="flex flex-col gap-1">
@@ -72,7 +70,7 @@ const GroupDetailModal = ({ appt, siblings = [], onClose, onOpenCase }) => {
                     {row.caseLabel} · {row.title}
                   </p>
                   <p className="text-studio-w3 text-[10px] m-0 mt-0.5">
-                    {row.type === 'pmu' ? 'PMU' : 'Tattoo'} · Akte öffnen
+                    {row.type === 'pmu' ? copy.pmu : copy.tattoo}{copy.openRecord}
                   </p>
                 </div>
                 <ChevronRight size={14} className="text-studio-w3 shrink-0" />
@@ -82,11 +80,11 @@ const GroupDetailModal = ({ appt, siblings = [], onClose, onOpenCase }) => {
 
           <div className="border-t border-elaya-border mt-3 pt-2.5 flex flex-col gap-1">
             <div className="flex justify-between text-[12px]">
-              <span className="text-studio-gold-2">Gruppen-Rabatt {rabattPct}%</span>
-              <span className="text-studio-w2 tabular-nums">angewendet</span>
+              <span className="text-studio-gold-2">{t('components.groupDetail.discount', { pct: rabattPct })}</span>
+              <span className="text-studio-w2 tabular-nums">{copy.applied}</span>
             </div>
             <div className="flex justify-between text-[13px] font-semibold">
-              <span className="text-studio-white">Gesamt</span>
+              <span className="text-studio-white">{copy.total}</span>
               <span className="text-studio-white tabular-nums">
                 {fmtCHF(appt.gruppen_preis_total)}
               </span>
@@ -94,14 +92,11 @@ const GroupDetailModal = ({ appt, siblings = [], onClose, onOpenCase }) => {
           </div>
         </div>
 
-        <p className="text-studio-w3 text-[11px] m-0 leading-relaxed">
-          Jeder Fall braucht weiterhin eine eigene Sitzungsdokumentation.
-          Tippen Sie einen Fall an, um die Akte zu öffnen.
-        </p>
+        <p className="text-studio-w3 text-[11px] m-0 leading-relaxed">{copy.hint}</p>
 
         <div className="flex justify-end pt-1">
           <Button size="sm" variant="secondary" onClick={onClose}>
-            Schliessen
+            {copy.close}
           </Button>
         </div>
       </div>

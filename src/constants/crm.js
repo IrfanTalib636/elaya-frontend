@@ -1,36 +1,41 @@
+/** CRM option values (API keys). Translate labels via `t('crm.*')`. */
+
 export const CRM_TASK_TYPEN = [
-  { value: 'followup', label: 'Follow-up' },
-  { value: 'anruf',    label: 'Anruf'     },
-  { value: 'email',    label: 'E-Mail'    },
-  { value: 'termin',   label: 'Termin'    },
-  { value: 'sonstiges', label: 'Sonstiges' },
+  { value: 'followup' },
+  { value: 'anruf' },
+  { value: 'email' },
+  { value: 'termin' },
+  { value: 'sonstiges' },
 ]
 
 export const CRM_TASK_PRIORITAET = [
-  { value: 'niedrig', label: 'Niedrig' },
-  { value: 'mittel',  label: 'Mittel'  },
-  { value: 'hoch',    label: 'Hoch'    },
+  { value: 'niedrig' },
+  { value: 'mittel' },
+  { value: 'hoch' },
 ]
 
 export const CRM_NOTE_TYPEN = [
-  { value: 'anruf',     label: 'Anruf'     },
-  { value: 'email',     label: 'E-Mail'    },
-  { value: 'meeting',   label: 'Meeting'   },
-  { value: 'sonstiges', label: 'Sonstiges' },
+  { value: 'anruf' },
+  { value: 'email' },
+  { value: 'meeting' },
+  { value: 'sonstiges' },
 ]
 
-export const CRM_STAGE_AKTION = {
-  'Neu':               'Ersten Fall anlegen',
-  'Beratung geplant':  'Termin bestätigen',
-  'Behandlung aktiv':  'Nächsten Termin planen',
-  'Beratung erledigt': 'Follow-up senden',
+export const CRM_STAGE_AKTION_KEYS = {
+  Neu: 'Neu',
+  'Beratung geplant': 'Beratung geplant',
+  'Behandlung aktiv': 'Behandlung aktiv',
+  'Beratung erledigt': 'Beratung erledigt',
 }
 
 /** Neu + existing case(s) → book consultation (matches backend getStageAktion). */
-export const getStageAktion = (stage, faelleGesamt = 0) => {
-  if (stage === 'Neu' && faelleGesamt > 0) return 'Beratung terminieren'
-  return CRM_STAGE_AKTION[stage] ?? ''
+export const getStageAktionKey = (stage, faelleGesamt = 0) => {
+  if (stage === 'Neu' && faelleGesamt > 0) return 'bookConsultation'
+  return CRM_STAGE_AKTION_KEYS[stage] ?? ''
 }
+
+/** @deprecated Prefer getStageAktionKey + t('crm.stageActions.*') */
+export const getStageAktion = (stage, faelleGesamt = 0) => getStageAktionKey(stage, faelleGesamt)
 
 export const PRIORITY_ICON = {
   hoch: '🔴',
@@ -44,8 +49,8 @@ export const defaultDueDate = () => {
   return d.toISOString().slice(0, 10)
 }
 
-export const fmtCrmDate = (d) =>
-  d ? new Date(d).toLocaleDateString('de-CH', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
+export const fmtCrmDate = (d, locale = 'de-CH') =>
+  d ? new Date(d).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
 
 export const startOfDay = (d = new Date()) => {
   const x = new Date(d)

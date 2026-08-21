@@ -15,6 +15,7 @@ import GroupDetailModal from '../../components/appointments/GroupDetailModal'
 import { Button, Spinner, Modal, Input, Select } from '../../components/ui'
 import useAuthStore from '../../store/authStore'
 import { ROLES } from '../../constants/roles'
+import useContent from '../../i18n/useContent'
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const HOUR_H    = 64
@@ -91,13 +92,14 @@ const snapTime = (yPx) => {
   return `${String(Math.floor(clamped / 60)).padStart(2, '0')}:${String(clamped % 60).padStart(2, '0')}`
 }
 
-const bookingErrorMessage = (err) => {
+const bookingErrorMessage = (err, t) => {
   const msg = err.response?.data?.message
   const fruehestes = err.response?.data?.errors?.fruehestes ?? err.response?.data?.fruehestes
   if (fruehestes) {
-    return `${msg ?? 'Termin nicht erlaubt.'} Frühestens: ${fmtDateDeLong(fruehestes)}.`
+    const base = msg ?? t('studioPages.appointments.bookNotAllowed')
+    return `${base} ${t('studioPages.appointments.earliest', { date: fmtDateDeLong(fruehestes) })}`
   }
-  return msg ?? 'Fehler beim Buchen.'
+  return msg ?? t('studioPages.appointments.bookError')
 }
 
 // ── CurrentTimeLine ────────────────────────────────────────────────────────
@@ -130,7 +132,7 @@ const CurrentTimeLine = () => {
 }
 
 // ── ApptBlock ──────────────────────────────────────────────────────────────
-const ApptBlock = memo(({ appt, onClick }) => {
+const ApptBlock = memo(({ appt, onClick, typeLabels, groupLabel }) => {
   const startMin = toMinutes(appt.time)
   const dur      = appt.dauer_minuten ?? 60
   const top      = (startMin - DAY_START * 60) / 60 * HOUR_H
@@ -155,14 +157,14 @@ const ApptBlock = memo(({ appt, onClick }) => {
         ${faded ? 'opacity-40' : 'hover:brightness-125 active:brightness-90'}
         transition-[filter]`}
       onClick={(e) => { e.stopPropagation(); onClick(appt) }}
-      title={`${name} · ${TYPE_LABELS[appt.type] ?? appt.type}${isGroup ? ` · Gruppen (${groupN})` : ''}`}
+      title={`${name} · ${typeLabels[appt.type] ?? appt.type}${isGroup ? ` · ${groupLabel(groupN)}` : ''}`}
     >
       <p className="text-[11px] font-bold truncate m-0 leading-snug">{name}</p>
       {height > 36 && (
         <p className="text-[10px] opacity-75 truncate m-0 leading-snug">
           {isGroup
-            ? `Gruppen (${groupN}) · ${TYPE_LABELS[appt.type] ?? appt.type}`
-            : `${appt.case?.caseId ?? '—'} · ${TYPE_LABELS[appt.type] ?? appt.type}`}
+            ? `${groupLabel(groupN)} · ${typeLabels[appt.type] ?? appt.type}`
+            : `${appt.case?.caseId ?? '—'} · ${typeLabels[appt.type] ?? appt.type}`}
         </p>
       )}
       {height > 56 && (
@@ -199,7 +201,7 @@ const collapseGroupAppointments = (appointments) => {
 }
 
 // ── DayCol ─────────────────────────────────────────────────────────────────
-const DayCol = memo(({ dateISO, isToday, appointments, closed, onApptClick, onCellClick }) => {
+const DayCol = memo(({ dateISO, isToday, appointments, closed, onApptClick, onCellClick, typeLabels, groupLabel }) => {
   const handleClick = useCallback((e) => {
     if (closed) return
     const rect = e.currentTarget.getBoundingClientRect()
@@ -228,7 +230,7 @@ const DayCol = memo(({ dateISO, isToday, appointments, closed, onApptClick, onCe
 
       <div className="absolute inset-0 pointer-events-none">
         {collapseGroupAppointments(appointments).map((a) => (
-          <ApptBlock key={a.gruppen_id || a.id || a._id} appt={a} onClick={onApptClick} />
+          <ApptBlock key={a.gruppen_id || a.id || a._id} appt={a} onClick={onApptClick} typeLabels={typeLabels} groupLabel={groupLabel} />
         ))}
       </div>
 
@@ -238,7 +240,7 @@ const DayCol = memo(({ dateISO, isToday, appointments, closed, onApptClick, onCe
 })
 
 // ── DayHeaders ─────────────────────────────────────────────────────────────
-const DayHeaders = memo(({ weekDays, todayISO, hoursByIso = {}, onDayClick }) => (
+const DayHeaders = memo(({ weekDays, todayISO, hoursByIso = {}, onDayClick, daysShort = DAYS_DE }) => (
   <div className="flex shrink-0 border-b border-elaya-border bg-studio-bg">
     <div className="w-14 shrink-0" />
     {weekDays.map(({ date, iso }) => {
@@ -251,13 +253,13 @@ const DayHeaders = memo(({ weekDays, todayISO, hoursByIso = {}, onDayClick }) =>
           type="button"
           onClick={() => onDayClick?.(iso)}
           className="flex-1 flex flex-col items-center py-2.5 border-l border-elaya-border bg-transparent cursor-pointer hover:bg-studio-bg-4 transition-colors"
-          title="Verfügbarkeit dieses Tages bearbeiten"
+          title={copy.editDayAvailability}
         >
           <span
             translate="no"
             className={`text-[10px] font-semibold uppercase tracking-wider mb-1.5 ${isToday ? 'text-studio-gold-2' : 'text-studio-w3'}`}
           >
-            {DAYS_DE[dayIdx]}
+            {daysShort[dayIdx]}
           </span>
           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[13px] font-bold ${isToday ? 'bg-studio-gold text-studio-bg' : 'text-studio-w1'}`}>
             {date.getDate()}
@@ -286,6 +288,8 @@ const NewApptModal = ({
   onClose,
   onCreated,
 }) => {
+  const { t, studioPages } = useContent()
+  const copy = studioPages.appointments
   const [form, setForm] = useState({
     ...EMPTY_FORM,
     customer_id: defaultCustomerId,
@@ -369,7 +373,7 @@ const NewApptModal = ({
 
   const handleSubmit = async () => {
     if (!form.case_id || !form.date || !form.time) {
-      toast.error('Fall, Datum und Uhrzeit sind Pflichtfelder.')
+      toast.error(copy.requiredFields)
       return
     }
 
@@ -378,7 +382,7 @@ const NewApptModal = ({
       form.type !== 'beratung' &&
       form.date < availability.fruehestes
     ) {
-      toast.error(`Termin zu früh. Frühestens buchbar ab ${fmtDateDeLong(availability.fruehestes)}.`)
+      toast.error(t('studioPages.appointments.tooEarly', { date: fmtDateDeLong(availability.fruehestes) }))
       return
     }
 
@@ -393,17 +397,17 @@ const NewApptModal = ({
         consultationOnly: form.type === 'beratung',
         preSessionCheck:  form.type === 'beratung' ? undefined : preSessionToBody(preSession),
       })
-      toast.success('Termin erfolgreich gebucht.')
+      toast.success(copy.bookSuccess)
       onCreated()
     } catch (err) {
-      toast.error(bookingErrorMessage(err))
+      toast.error(bookingErrorMessage(err, t))
     } finally {
       setSaving(false)
     }
   }
 
   const casePlaceholder = !form.customer_id
-    ? 'Zuerst Kunden auswählen…'
+    ? copy.selectCustomerFirst
     : loadingCases
     ? 'Lädt…'
     : cases.length === 0
@@ -413,10 +417,10 @@ const NewApptModal = ({
   const showLockoutHint = form.case_id && form.type !== 'beratung'
 
   return (
-    <Modal title="Neuen Termin buchen" onClose={onClose} width="max-w-lg">
+    <Modal title={copy.modalTitle} onClose={onClose} width="max-w-lg">
       <div className="flex flex-col gap-4">
         <Select label="Kunde *" value={form.customer_id} onChange={onCustomerChange}>
-          <option value="">Kunden auswählen…</option>
+          <option value="">{copy.selectCustomer}</option>
           {customers.map((c) => (
             <option key={c._id} value={c._id}>{c.vorname} {c.nachname}</option>
           ))}
@@ -447,7 +451,7 @@ const NewApptModal = ({
                   Intelligente Buchung
                 </p>
                 <p translate="no" className="text-studio-white text-[12px] font-semibold m-0">
-                  Frühestens: {fmtDateDeLong(availability.fruehestes)}
+                  {copy.earliestPrefix} {fmtDateDeLong(availability.fruehestes)}
                 </p>
                 {availability.sperren?.length > 0 && (
                   <ul className="mt-2 mb-0 pl-0 list-none flex flex-col gap-1">
@@ -461,7 +465,7 @@ const NewApptModal = ({
                 )}
               </>
             ) : (
-              <p className="text-studio-w3 text-[11px] m-0">Verfügbarkeit konnte nicht geladen werden.</p>
+              <p className="text-studio-w3 text-[11px] m-0">{copy.availabilityLoadError}</p>
             )}
           </div>
           </>
@@ -469,27 +473,27 @@ const NewApptModal = ({
 
         <div className="grid grid-cols-2 gap-4">
           <Input
-            label="Datum *"
+            label={copy.dateRequired}
             type="date"
             value={form.date}
             min={showLockoutHint && availability?.fruehestes ? availability.fruehestes : undefined}
             onChange={set('date')}
           />
-          <Input label="Uhrzeit *" type="time" value={form.time} onChange={set('time')} />
+          <Input label={copy.timeRequired} type="time" value={form.time} onChange={set('time')} />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <Select label="Art" value={form.type} onChange={onTypeChange}>
-            <option value="treatment">Behandlung</option>
-            <option value="beratung">Beratung</option>
+            <option value="treatment">{copy.types.treatment}</option>
+            <option value="beratung">{copy.types.beratung}</option>
             <option value="first">Erstbehandlung</option>
           </Select>
-          <Input label="Dauer (Min.)" type="number" min={15} step={15} value={form.dauer_minuten} onChange={set('dauer_minuten')} />
+          <Input label={copy.durationMin} type="number" min={15} step={15} value={form.dauer_minuten} onChange={set('dauer_minuten')} />
         </div>
 
         {form.type === 'beratung' && (
           <p className="text-studio-w3 text-[11px] m-0">
-            Beratungstermine sind von Behandlungs-Sperrfristen ausgenommen.
+            {copy.consultationExempt}
           </p>
         )}
 
@@ -497,7 +501,7 @@ const NewApptModal = ({
           <Button variant="ghost" onClick={onClose} disabled={saving}>Abbrechen</Button>
           <Button loading={saving} disabled={cases.length === 0} onClick={handleSubmit}>
             <Plus size={14} />
-            Buchen
+            {copy.book}
           </Button>
         </div>
       </div>
@@ -513,6 +517,8 @@ const AvailabilityDayModal = ({
   onClose,
   onSaved,
 }) => {
+  const { t, studioPages } = useContent()
+  const copy = studioPages.appointments
   const current = resolveHoursForDate(weekly, exceptions, dateISO)
   const [mode, setMode] = useState(current.source === 'exception' ? (current.offen ? 'open' : 'closed') : 'weekly')
   const [von, setVon] = useState(current.von || '10:00')
@@ -536,17 +542,17 @@ const AvailabilityDayModal = ({
         })
       }
       const res = await updateStudioSettings({ oeffnungs_ausnahmen: next })
-      toast.success('Verfügbarkeit gespeichert.')
+      toast.success(copy.availabilitySaved)
       onSaved(res.data.data.settings.oeffnungs_ausnahmen ?? next)
     } catch (err) {
-      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+      toast.error(err?.response?.data?.message ?? copy.saveFailed)
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal title="Tages-Verfügbarkeit" onClose={onClose} width="max-w-md">
+    <Modal title={copy.dayAvailabilityTitle} onClose={onClose} width="max-w-md">
       <div className="flex flex-col gap-4">
         <p className="text-studio-white text-[14px] font-semibold m-0">{fmtDateDeLong(dateISO)}</p>
         <p className="text-studio-w3 text-[12px] m-0">
@@ -557,9 +563,9 @@ const AvailabilityDayModal = ({
 
         <div className="flex flex-col gap-2">
           {[
-            { id: 'weekly', label: 'Wochenschema verwenden' },
-            { id: 'open', label: 'Extra öffnen / abweichende Zeiten' },
-            { id: 'closed', label: 'Diesen Tag schliessen' },
+            { id: 'weekly', label: copy.modes.weekly },
+            { id: 'open', label: copy.modes.open },
+            { id: 'closed', label: copy.modes.closed },
           ].map((opt) => (
             <label key={opt.id} className="flex items-center gap-2 text-[13px] text-studio-white cursor-pointer">
               <input
@@ -579,18 +585,18 @@ const AvailabilityDayModal = ({
           <div className="flex flex-wrap gap-3">
             <Input label="Von" type="time" value={von} onChange={(e) => setVon(e.target.value)} disabled={!canEdit} className="max-w-[140px]" />
             <Input label="Bis" type="time" value={bis} onChange={(e) => setBis(e.target.value)} disabled={!canEdit} className="max-w-[140px]" />
-            <Input label="Notiz" value={notiz} onChange={(e) => setNotiz(e.target.value)} disabled={!canEdit} placeholder="optional" />
+            <Input label={copy.note} value={notiz} onChange={(e) => setNotiz(e.target.value)} disabled={!canEdit} placeholder={copy.noteOptional} />
           </div>
         )}
 
         {mode === 'closed' && (
-          <Input label="Notiz" value={notiz} onChange={(e) => setNotiz(e.target.value)} disabled={!canEdit} placeholder="z. B. Feiertag" />
+          <Input label={copy.note} value={notiz} onChange={(e) => setNotiz(e.target.value)} disabled={!canEdit} placeholder={copy.noteHoliday} />
         )}
 
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="ghost" onClick={onClose} disabled={saving}>Abbrechen</Button>
           {canEdit && (
-            <Button loading={saving} onClick={handleSave}>Speichern</Button>
+            <Button loading={saving} onClick={handleSave}>{copy.save}</Button>
           )}
         </div>
       </div>
@@ -600,6 +606,22 @@ const AvailabilityDayModal = ({
 
 // ── Page ───────────────────────────────────────────────────────────────────
 const StudioAppointments = () => {
+  const { t, studioPages } = useContent()
+  const copy = studioPages.appointments
+  const typeLabels = copy.types
+  const groupLabel = (n) => t('studioPages.appointments.groupLabel', { count: n })
+  const MONTHS = copy.months
+  const daysShort = copy.daysShort
+
+  const fmtWeekRangeI18n = (monday) => {
+    const sunday    = addDays(monday, 6)
+    const sameMonth = monday.getMonth() === sunday.getMonth()
+    if (sameMonth) {
+      return `${monday.getDate()}. – ${sunday.getDate()}. ${MONTHS[sunday.getMonth()]} ${sunday.getFullYear()}`
+    }
+    return `${monday.getDate()}. ${MONTHS[monday.getMonth()]} – ${sunday.getDate()}. ${MONTHS[sunday.getMonth()]} ${sunday.getFullYear()}`
+  }
+
   const navigate  = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const scrollRef = useRef(null)
@@ -648,7 +670,7 @@ const StudioAppointments = () => {
       }
       setApptsByDay(grouped)
     } catch {
-      toast.error('Termine konnten nicht geladen werden.')
+      toast.error(t('studioPages.appointments.loadError'))
     } finally {
       setLoading(false)
     }
@@ -741,14 +763,17 @@ const StudioAppointments = () => {
       <div className="px-6 pt-5 pb-3 border-b border-elaya-border bg-studio-bg shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 className="text-[20px] font-bold text-studio-white m-0 leading-none">Termine</h1>
+            <h1 className="text-[20px] font-bold text-studio-white m-0 leading-none">{copy.title}</h1>
             <p className="text-studio-w2 text-[12px] m-0 mt-1">
-              KW {weekNum} · {totalCount} Termin{totalCount !== 1 ? 'e' : ''} diese Woche
-              {' · '}Klick auf einen Tag, um Verfügbarkeit zu ändern
+              {t('studioPages.appointments.weekSubtitle', {
+                week: weekNum,
+                count: totalCount,
+                plural: totalCount !== 1 ? copy.pluralSuffix : '',
+              })}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="secondary" onClick={goToToday}>Heute</Button>
+            <Button size="sm" variant="secondary" onClick={goToToday}>{copy.today}</Button>
             <Button
               size="sm"
               variant="secondary"
@@ -758,11 +783,11 @@ const StudioAppointments = () => {
               }}
             >
               <Users size={14} />
-              Gruppen-Termin
+              {copy.groupAppointment}
             </Button>
             <Button size="sm" onClick={() => openModal(todayISO, '09:00')}>
               <Plus size={14} />
-              Neuer Termin
+              {copy.newAppointment}
             </Button>
           </div>
         </div>
@@ -776,7 +801,7 @@ const StudioAppointments = () => {
             <ChevronLeft size={15} />
           </button>
           <span className="text-studio-white text-[13px] font-semibold min-w-[210px]">
-            {fmtWeekRange(weekStart)}
+            {fmtWeekRangeI18n(weekStart)}
           </span>
           <button
             type="button"
@@ -794,6 +819,7 @@ const StudioAppointments = () => {
         todayISO={todayISO}
         hoursByIso={hoursByIso}
         onDayClick={setEditDay}
+        daysShort={daysShort}
       />
 
       {/* Scrollable time grid */}
@@ -830,6 +856,8 @@ const StudioAppointments = () => {
                 closed={hoursByIso[iso]?.offen === false}
                 onApptClick={handleApptClick}
                 onCellClick={openModal}
+                typeLabels={typeLabels}
+                groupLabel={groupLabel}
               />
             ))}
           </div>

@@ -11,6 +11,7 @@ import {
   ClipboardList,
   CircleDot,
 } from 'lucide-react'
+import useContent from '../../i18n/useContent'
 
 const TAG_CLASS = {
   BUCHUNG: 'bg-elaya-success/15 text-elaya-success',
@@ -52,15 +53,20 @@ export const fmtActivityWhen = (ts) => {
   })
 }
 
-export const ActivityTag = ({ tag }) => (
-  <span
-    className={`inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold tracking-wide uppercase ${
-      TAG_CLASS[tag] || TAG_CLASS.SONSTIGES
-    }`}
-  >
-    {tag || 'Sonstiges'}
-  </span>
-)
+export const ActivityTag = ({ tag }) => {
+  const { components } = useContent()
+  const key = tag || 'SONSTIGES'
+  const label = components.activityTags?.[key] || components.activityTags?.SONSTIGES || key
+  return (
+    <span
+      className={`inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold tracking-wide uppercase ${
+        TAG_CLASS[key] || TAG_CLASS.SONSTIGES
+      }`}
+    >
+      {label}
+    </span>
+  )
+}
 
 export const ActivityIcon = ({ category }) => {
   const meta = ICON_CLASS[category] || ICON_CLASS.other

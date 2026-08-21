@@ -16,8 +16,11 @@ import {
   pricingValuesFromConfig,
   buildStudioPricing,
 } from '../../components/pricing/pricingFields'
+import useContent from '../../i18n/useContent'
 
 const AdminStudios = () => {
+  const { t, adminPages } = useContent()
+  const copy = adminPages.studios
   const [loading, setLoading] = useState(true)
   const [studios, setStudios] = useState([])
 
@@ -34,7 +37,7 @@ const AdminStudios = () => {
       const data = res.data.data
       setStudios(data.studios ?? data ?? [])
     } catch {
-      toast.error('Studios konnten nicht geladen werden')
+      toast.error(copy.loadError)
     } finally {
       setLoading(false)
     }
@@ -47,10 +50,10 @@ const AdminStudios = () => {
   const setStatus = async (studio, status) => {
     try {
       await patchStudioStatus(studio.id || studio._id, status)
-      toast.success('Status aktualisiert')
+      toast.success(copy.statusUpdated)
       load()
     } catch {
-      toast.error('Status-Update fehlgeschlagen')
+      toast.error(copy.statusUpdateFailed)
     }
   }
 
@@ -64,7 +67,7 @@ const AdminStudios = () => {
       setPricingValues(pricingValuesFromConfig(cfg.studio_pricing))
       setPricingDefaults(cfg.pricing_defaults ?? null)
     } catch {
-      toast.error('Preiskonfiguration konnte nicht geladen werden')
+      toast.error(copy.pricingLoadError)
       setPricingStudio(null)
     } finally {
       setPricingLoading(false)
@@ -75,14 +78,13 @@ const AdminStudios = () => {
     if (!pricingStudio) return
     setPricingSaving(true)
     try {
-      // studio_pricing replaces the whole override set — always send every filled key.
       await updateStudioConfigAdmin(pricingStudio.id || pricingStudio._id, {
         studio_pricing: buildStudioPricing(pricingValues),
       })
-      toast.success('Preise gespeichert')
+      toast.success(copy.pricingSaved)
       setPricingStudio(null)
     } catch (e) {
-      toast.error(e?.response?.data?.message || 'Speichern fehlgeschlagen')
+      toast.error(e?.response?.data?.message || copy.saveFailed)
     } finally {
       setPricingSaving(false)
     }
@@ -91,8 +93,8 @@ const AdminStudios = () => {
   return (
     <div className="p-6 max-w-[1000px]">
       <PageHeader
-        title="Studios"
-        subtitle="Freigabe / Sperre · Paketverwaltung unter Features"
+        title={copy.title}
+        subtitle={copy.subtitle}
       />
 
       {loading ? (
@@ -100,7 +102,7 @@ const AdminStudios = () => {
           <Spinner size="lg" />
         </div>
       ) : studios.length === 0 ? (
-        <EmptyState title="Keine Studios" />
+        <EmptyState title={copy.empty} />
       ) : (
         <div className="space-y-3">
           {studios.map((s) => {
@@ -118,13 +120,13 @@ const AdminStudios = () => {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="ghost" onClick={() => openPricing(s)}>
-                    Preise
+                    {copy.prices}
                   </Button>
                   {s.status !== 'aktiv' ? (
-                    <Button onClick={() => setStatus(s, 'aktiv')}>Aktivieren</Button>
+                    <Button onClick={() => setStatus(s, 'aktiv')}>{copy.activate}</Button>
                   ) : (
                     <Button variant="secondary" onClick={() => setStatus(s, 'gesperrt')}>
-                      Sperren
+                      {copy.lock}
                     </Button>
                   )}
                 </div>
@@ -137,7 +139,9 @@ const AdminStudios = () => {
       {pricingStudio ? (
         <Modal
           onClose={() => setPricingStudio(null)}
-          title={`Preise · ${pricingStudio.firma ?? pricingStudio.studio_code ?? ''}`}
+          title={t('adminPages.studios.pricingModalTitle', {
+            name: pricingStudio.firma ?? pricingStudio.studio_code ?? '',
+          })}
           width="max-w-2xl"
         >
           {pricingLoading ? (
@@ -155,7 +159,7 @@ const AdminStudios = () => {
                 disabled={pricingSaving}
               />
               <Button onClick={savePricing} loading={pricingSaving} className="w-full">
-                Speichern
+                {copy.save}
               </Button>
             </div>
           )}

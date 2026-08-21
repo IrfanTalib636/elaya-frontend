@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import { listShopOrders, patchShopOrderStatus } from '../../api/shop'
 import { Card, PageHeader, Spinner, Pagination, EmptyState, Modal } from '../../components/ui'
 import { PAGE_SIZE } from '../../constants/pagination'
+import useContent from '../../i18n/useContent'
 
 const chfFmt = new Intl.NumberFormat('de-CH', { style: 'currency', currency: 'CHF' })
 const fmtCHF = (n) => chfFmt.format(n ?? 0)
@@ -10,21 +11,18 @@ const fmtCHF = (n) => chfFmt.format(n ?? 0)
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'
 
-const STATUS_OPTIONS = [
-  { value: 'bestellt',  label: 'Bestellt'  },
-  { value: 'versendet', label: 'Versendet' },
-  { value: 'geliefert', label: 'Geliefert' },
-]
-
-const STATUS_LABEL = Object.fromEntries(STATUS_OPTIONS.map((s) => [s.value, s.label]))
+const STATUS_VALUES = ['bestellt', 'versendet', 'geliefert']
 
 const OrderDetailModal = ({ order, onClose }) => {
+  const { t, studioPages } = useContent()
+  const copy = studioPages.shop
   const addr = order.lieferadresse
   const brutto = (order.total_chf ?? 0) + (order.versandkosten ?? 0)
+  const statusLabel = (s) => copy.status[s] ?? s
 
   return (
     <Modal
-      title={order.order_number ? `Bestellung ${order.order_number}` : 'Bestelldetails'}
+      title={order.order_number ? t('studioPages.shop.detailsTitle', { number: order.order_number }) : copy.detailsFallback}
       onClose={onClose}
       width="max-w-lg"
       scrollResetKey={order.id}
@@ -32,30 +30,30 @@ const OrderDetailModal = ({ order, onClose }) => {
       <div className="space-y-5">
         <div className="grid grid-cols-2 gap-3 text-[12px]">
           <div>
-            <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-0.5">Datum</p>
+            <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-0.5">{copy.labelDate}</p>
             <p className="text-studio-white m-0 font-mono">{fmtDate(order.erstellt_am)}</p>
           </div>
           <div>
-            <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-0.5">Status</p>
-            <p className="text-studio-white m-0 font-semibold">{STATUS_LABEL[order.status] ?? order.status}</p>
+            <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-0.5">{copy.labelStatus}</p>
+            <p className="text-studio-white m-0 font-semibold">{statusLabel(order.status)}</p>
           </div>
           <div>
-            <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-0.5">Kunde</p>
+            <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-0.5">{copy.labelCustomer}</p>
             <p className="text-studio-white m-0 font-medium">{order.kunden_name || '—'}</p>
           </div>
           <div>
-            <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-0.5">Zahlung</p>
+            <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-0.5">{copy.labelPayment}</p>
             <p className="text-studio-white m-0 capitalize">
               {order.zahlungsart || '—'}
               {order.zahlung_simuliert ? (
-                <span className="text-studio-w3 text-[10px] ml-1.5 normal-case">(simuliert)</span>
+                <span className="text-studio-w3 text-[10px] ml-1.5 normal-case">{copy.simulated}</span>
               ) : null}
             </p>
           </div>
         </div>
 
         <div>
-          <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-2">Produkte</p>
+          <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-2">{copy.products}</p>
           <ul className="m-0 p-0 list-none divide-y divide-elaya-border border border-elaya-border rounded-[10px] overflow-hidden">
             {(order.produkte ?? []).map((p, i) => (
               <li
@@ -76,43 +74,43 @@ const OrderDetailModal = ({ order, onClose }) => {
               </li>
             ))}
             {(order.produkte ?? []).length === 0 && (
-              <li className="px-3.5 py-3 text-studio-w3 text-[12px]">Keine Produkte</li>
+              <li className="px-3.5 py-3 text-studio-w3 text-[12px]">{copy.noProducts}</li>
             )}
           </ul>
         </div>
 
         <div className="space-y-1.5 text-[12px] border-t border-elaya-border pt-4">
           <div className="flex justify-between gap-3">
-            <span className="text-studio-w2">Warenwert</span>
+            <span className="text-studio-w2">{copy.goodsValue}</span>
             <span className="text-studio-white font-mono">{fmtCHF(order.total_chf)}</span>
           </div>
           <div className="flex justify-between gap-3">
-            <span className="text-studio-w2">Versand ({order.lieferland || '—'})</span>
+            <span className="text-studio-w2">{t('studioPages.shop.shipping', { country: order.lieferland || '—' })}</span>
             <span className="text-studio-white font-mono">{fmtCHF(order.versandkosten)}</span>
           </div>
           <div className="flex justify-between gap-3 pt-1">
-            <span className="text-studio-white font-semibold">Brutto</span>
+            <span className="text-studio-white font-semibold">{copy.gross}</span>
             <span className="text-studio-teal-2 font-mono font-bold">{fmtCHF(brutto)}</span>
           </div>
           <div className="flex justify-between gap-3">
-            <span className="text-studio-w2">Provision ({order.provision_prozent}%)</span>
+            <span className="text-studio-w2">{t('studioPages.shop.provision', { pct: order.provision_prozent })}</span>
             <span className="text-studio-gold-2 font-mono">{fmtCHF(order.provision_betrag)}</span>
           </div>
           <div className="flex justify-between gap-3">
-            <span className="text-studio-w2">Auszahlung</span>
+            <span className="text-studio-w2">{copy.payout}</span>
             <span className="font-mono">
               {order.commission_status === 'paid'
-                ? 'Ausgezahlt'
+                ? copy.commission.paid
                 : order.commission_status === 'cancelled'
-                  ? 'Storniert'
-                  : 'Offen'}
+                  ? copy.commission.cancelled
+                  : copy.commission.open}
             </span>
           </div>
         </div>
 
         {addr && (addr.strasse || addr.ort) ? (
           <div>
-            <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-1.5">Lieferadresse</p>
+            <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-1.5">{copy.shippingAddress}</p>
             <p className="text-studio-w1 text-[12px] m-0 leading-relaxed">
               {[addr.vorname, addr.nachname].filter(Boolean).join(' ')}
               <br />
@@ -134,6 +132,10 @@ const OrderDetailModal = ({ order, onClose }) => {
 }
 
 const StudioShop = () => {
+  const { t, studioPages } = useContent()
+  const copy = studioPages.shop
+  const STATUS_OPTIONS = STATUS_VALUES.map((value) => ({ value, label: copy.status[value] }))
+
   const [orders, setOrders] = useState([])
   const [summary, setSummary] = useState(null)
   const [pagination, setPagination] = useState(null)
@@ -153,8 +155,8 @@ const StudioShop = () => {
       const status = err?.response?.status
       toast.error(
         status === 403
-          ? 'Keine Berechtigung — bitte als Studio abmelden und erneut anmelden.'
-          : 'Bestellungen konnten nicht geladen werden.'
+          ? copy.loadForbidden
+          : copy.loadError
       )
     } finally {
       setLoading(false)
@@ -179,7 +181,7 @@ const StudioShop = () => {
 
     try {
       await patchShopOrderStatus(orderId, newStatus)
-      toast.success('Status aktualisiert.')
+      toast.success(copy.statusUpdated)
     } catch {
       setOrders((prev) =>
         prev.map((o) => (o.id === orderId ? { ...o, status: previous } : o))
@@ -187,54 +189,48 @@ const StudioShop = () => {
       setDetailOrder((prev) =>
         prev?.id === orderId ? { ...prev, status: previous } : prev
       )
-      toast.error('Status konnte nicht gespeichert werden.')
+      toast.error(copy.statusError)
     } finally {
       setUpdatingId(null)
     }
   }
 
   const commissionLabel = (status) => {
-    if (status === 'paid') return { text: 'Ausgezahlt', cls: 'text-studio-teal-2' }
-    if (status === 'cancelled') return { text: 'Storniert', cls: 'text-studio-w3' }
-    return { text: 'Offen', cls: 'text-studio-gold-2' }
+    if (status === 'paid') return { text: copy.commission.paid, cls: 'text-studio-teal-2' }
+    if (status === 'cancelled') return { text: copy.commission.cancelled, cls: 'text-studio-w3' }
+    return { text: copy.commission.open, cls: 'text-studio-gold-2' }
   }
 
   return (
     <div className="p-6 max-w-[1200px]">
-      <PageHeader
-        title="ElayShop"
-        subtitle="Bestellungen deiner Kunden · Versandstatus & Provisionsauszahlung"
-      />
+      <PageHeader title={copy.title} subtitle={copy.subtitle} />
 
       {loading && orders.length === 0 && !pagination?.total ? (
         <div className="flex justify-center py-20"><Spinner size="lg" /></div>
       ) : orders.length === 0 && !pagination?.total ? (
-        <EmptyState
-          title="Keine Shop-Bestellungen"
-          description="Bestellungen erscheinen hier, sobald Kunden im ElayShop einkaufen. Dev: npm run seed:shop"
-        />
+        <EmptyState title={copy.emptyTitle} description={copy.emptyDesc} />
       ) : (
         <Card padding="none" className={loading && orders.length > 0 ? 'opacity-60 pointer-events-none' : ''}>
           {pagination?.total > 0 && (
             <div className="px-5 py-4 border-b border-elaya-border flex flex-wrap gap-6">
               <div>
-                <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">Bestellungen</p>
+                <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">{copy.kpiOrders}</p>
                 <p className="text-studio-white text-[18px] font-bold m-0 tabular-nums">{pagination.total}</p>
               </div>
               <div>
-                <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">Umsatz</p>
+                <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">{copy.kpiRevenue}</p>
                 <p className="text-studio-white text-[18px] font-bold m-0 tabular-nums">
                   {fmtCHF(summary?.revenue ?? 0)}
                 </p>
               </div>
               <div>
-                <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">Provision offen</p>
+                <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">{copy.kpiProvOpen}</p>
                 <p className="text-studio-gold-2 text-[18px] font-bold m-0 tabular-nums">
                   {fmtCHF(summary?.pending_provision ?? 0)}
                 </p>
               </div>
               <div>
-                <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">Provision ausgezahlt</p>
+                <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">{copy.kpiProvPaid}</p>
                 <p className="text-studio-teal-2 text-[18px] font-bold m-0 tabular-nums">
                   {fmtCHF(summary?.paid_provision ?? 0)}
                 </p>
@@ -246,7 +242,7 @@ const StudioShop = () => {
             <table className="w-full min-w-[860px]">
               <thead>
                 <tr className="border-b border-elaya-border">
-                  {['Datum', 'Kunde', 'Produkte', 'Betrag', 'Prov.', 'Auszahlung', 'Status'].map((h) => (
+                  {[copy.headers.date, copy.headers.customer, copy.headers.products, copy.headers.amount, copy.headers.prov, copy.headers.payout, copy.headers.status].map((h) => (
                     <th
                       key={h}
                       className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap"
@@ -274,7 +270,7 @@ const StudioShop = () => {
                         <button
                           type="button"
                           onClick={() => setDetailOrder(o)}
-                          title="Details anzeigen"
+                          title={copy.showDetails}
                           className="w-full text-left truncate text-studio-teal-2 hover:text-studio-teal underline-offset-2 hover:underline bg-transparent border-0 p-0 cursor-pointer font-inherit text-[11px]"
                         >
                           {prodTxt}
@@ -316,10 +312,7 @@ const StudioShop = () => {
         </Card>
       )}
 
-      <p className="text-studio-w4 text-[11px] mt-4 m-0">
-        Nur der Versandstatus ist editierbar. Betrag und Provision sind schreibgeschützt.
-        Produktnamen antippen für Bestelldetails.
-      </p>
+      <p className="text-studio-w4 text-[11px] mt-4 m-0">{copy.footerHint}</p>
 
       {detailOrder && (
         <OrderDetailModal order={detailOrder} onClose={() => setDetailOrder(null)} />

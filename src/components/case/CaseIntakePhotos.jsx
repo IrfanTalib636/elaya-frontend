@@ -1,15 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchPhotoBlobUrl } from '../../api/files'
-import { caseForm } from '../../content'
+import useContent from '../../i18n/useContent'
 import { Card, Button, Modal } from '../ui'
-
-const photoUi = caseForm.ui.photos
-
-const PHOTO_SLOTS = [
-  { field: 'photo_intake_main', label: photoUi.main, hint: photoUi.mainHint },
-  { field: 'photo_intake_detail', label: photoUi.detail, hint: photoUi.detailHint },
-  { field: 'photo_marker', label: photoUi.marker, hint: photoUi.markerHint },
-]
 
 const IntakePhotoThumb = ({ fileId, label, hint, onOpen }) => {
   const [previewUrl, setPreviewUrl] = useState('')
@@ -72,9 +64,17 @@ const IntakePhotoThumb = ({ fileId, label, hint, onOpen }) => {
 }
 
 const CaseIntakePhotos = ({ caseData }) => {
+  const { caseForm, components } = useContent()
+  const photoUi = caseForm.ui.photos
   const [lightbox, setLightbox] = useState(null)
 
-  const slots = PHOTO_SLOTS.filter(({ field }) => caseData?.[field])
+  const photoSlots = [
+    { field: 'photo_intake_main', label: photoUi.main, hint: photoUi.mainHint },
+    { field: 'photo_intake_detail', label: photoUi.detail, hint: photoUi.detailHint },
+    { field: 'photo_marker', label: photoUi.marker, hint: photoUi.markerHint },
+  ]
+
+  const slots = photoSlots.filter(({ field }) => caseData?.[field])
   if (!slots.length) return null
 
   return (
@@ -111,7 +111,7 @@ const CaseIntakePhotos = ({ caseData }) => {
             )}
             <div className="flex justify-end pt-1">
               <Button size="sm" variant="secondary" onClick={() => setLightbox(null)}>
-                Schliessen
+                {components.caseIntakePhotos.close}
               </Button>
             </div>
           </div>

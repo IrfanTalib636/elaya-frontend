@@ -1,16 +1,18 @@
 import { Check } from 'lucide-react'
-import { WIZARD_STEPS } from '../../constants/caseIntake'
+import useContent from '../../i18n/useContent'
 
-const CaseWizardProgress = ({ step, steps = WIZARD_STEPS }) => {
-  const total = steps.length
+const CaseWizardProgress = ({ step, steps }) => {
+  const { t, caseForm } = useContent()
+  const resolvedSteps = steps ?? caseForm.wizardSteps
+  const total = resolvedSteps.length
   const pct = Math.round(((step + 1) / total) * 100)
-  const current = steps[step]
+  const current = resolvedSteps[step]
 
   return (
     <div className="mb-6 select-none">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[10px] font-mono tracking-widest text-studio-teal-2 uppercase">
-          {current?.code} · Schritt {step + 1} / {total}
+          {current?.code} · {t('components.caseWizard.stepOf', { current: step + 1, total })}
         </span>
         <span className="text-[10px] text-studio-w3 tabular-nums">{pct}%</span>
       </div>
@@ -30,7 +32,7 @@ const CaseWizardProgress = ({ step, steps = WIZARD_STEPS }) => {
 
       <div className="overflow-x-auto pb-2 pt-2 -mx-1 px-1">
         <div className="flex items-start min-w-max">
-          {steps.map((s, i) => {
+          {resolvedSteps.map((s, i) => {
             const done = i < step
             const active = i === step
             return (
@@ -54,7 +56,7 @@ const CaseWizardProgress = ({ step, steps = WIZARD_STEPS }) => {
                     {s.title}
                   </span>
                 </div>
-                {i < steps.length - 1 && (
+                {i < resolvedSteps.length - 1 && (
                   <div className="w-6 sm:w-8 h-9 flex items-center shrink-0" aria-hidden>
                     <div
                       className={`h-0.5 w-full rounded transition-colors duration-300

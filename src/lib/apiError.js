@@ -1,6 +1,7 @@
-import { common } from '../content'
+import i18n from '../i18n/i18n.config'
 
-export function getApiErrorMessage(error, fallback = common.serverError) {
+export function getApiErrorMessage(error, fallback) {
+  const resolvedFallback = fallback ?? i18n.t('common.serverError')
   const data = error?.response?.data
 
   if (Array.isArray(data?.errors) && data.errors.length > 0) {
@@ -15,5 +16,5 @@ export function getApiErrorMessage(error, fallback = common.serverError) {
     return error.message
   }
 
-  return fallback
+  return resolvedFallback
 }

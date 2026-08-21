@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import useAuthStore from '../store/authStore'
-import { toast as toastMessages, adminNav } from '../content'
+import useContent from '../i18n/useContent'
 import ElayaLogo from './ElayaLogo'
 
 const ICONS = {
@@ -40,6 +40,7 @@ const NAV = [
 const AdminShell = () => {
   const navigate = useNavigate()
   const { logout } = useAuthStore()
+  const { toast: toastMessages, adminNav, common } = useContent()
 
   const handleLogout = async () => {
     await logout()
@@ -88,7 +89,7 @@ const AdminShell = () => {
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-admin-line bg-admin-bg-card-2 py-2 text-admin-ivory text-[13px] font-semibold cursor-pointer hover:border-admin-emerald transition-colors font-sans"
           >
             <LogOut size={14} />
-            Logout
+            {common.logout}
           </button>
         </div>
       </aside>

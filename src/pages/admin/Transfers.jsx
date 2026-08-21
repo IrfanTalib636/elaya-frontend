@@ -6,8 +6,12 @@ import {
   approveStudioTransfer,
   rejectStudioTransfer,
 } from '../../api/studioTransfers'
+import useContent from '../../i18n/useContent'
 
 const AdminTransfers = () => {
+  const { t, adminPages } = useContent()
+  const copy = adminPages.transfers
+
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState([])
   const [rejectId, setRejectId] = useState(null)
@@ -20,7 +24,7 @@ const AdminTransfers = () => {
       const res = await listStudioTransfers({ limit: 50 })
       setItems(res.data.data?.transfers ?? [])
     } catch {
-      toast.error('Transfers konnten nicht geladen werden')
+      toast.error(copy.loadError)
     } finally {
       setLoading(false)
     }
@@ -34,10 +38,10 @@ const AdminTransfers = () => {
     setActing(id)
     try {
       await approveStudioTransfer(id)
-      toast.success('Genehmigt')
+      toast.success(copy.approved)
       load()
     } catch {
-      toast.error('Genehmigung fehlgeschlagen')
+      toast.error(copy.approveError)
     } finally {
       setActing(null)
     }
@@ -47,62 +51,65 @@ const AdminTransfers = () => {
     if (!rejectId) return
     const reason = ablehnungsgrund.trim()
     if (!reason) {
-      toast.error('Bitte Ablehnungsgrund angeben')
+      toast.error(copy.reasonRequired)
       return
     }
     setActing(rejectId)
     try {
       await rejectStudioTransfer(rejectId, { ablehnungsgrund: reason })
-      toast.success('Abgelehnt')
+      toast.success(copy.rejected)
       setRejectId(null)
       setAblehnungsgrund('')
       load()
     } catch {
-      toast.error('Ablehnung fehlgeschlagen')
+      toast.error(copy.rejectError)
     } finally {
       setActing(null)
     }
   }
 
+  const statusLabel = (status) =>
+    t(`adminPages.transfers.statuses.${status}`, { defaultValue: status })
+
   return (
     <div className="p-6 max-w-[1000px]">
-      <PageHeader title="Studio-Wechsel" subtitle="Anfragen genehmigen oder ablehnen" />
+      <PageHeader title={copy.title} subtitle={copy.subtitle} />
       {loading ? (
         <div className="flex justify-center py-16">
           <Spinner size="lg" />
         </div>
       ) : items.length === 0 ? (
-        <EmptyState title="Keine Anfragen" />
+        <EmptyState title={copy.empty} />
       ) : (
         <div className="space-y-3">
-          {items.map((t) => (
-            <Card key={t.id || t._id} className="flex justify-between gap-4">
+          {items.map((tr) => (
+            <Card key={tr.id || tr._id} className="flex justify-between gap-4">
               <div>
-                <p className="font-semibold m-0">{t.kunde_name || 'Kunde'}</p>
+                <p className="font-semibold m-0">{tr.kunde_name || copy.customerFallback}</p>
                 <p className="text-[12px] text-admin-muted m-0">
-                  {(t.von_firma_name || '?')} → {(t.zu_firma_name || '?')}
+                  {(tr.von_firma_name || '?')} → {(tr.zu_firma_name || '?')}
                 </p>
-                <Badge className="mt-1" variant="status" value={t.status}>
-                  {t.status}
+                <Badge className="mt-1" variant="status" value={tr.status}>
+                  {statusLabel(tr.status)}
                 </Badge>
               </div>
-              {t.status === 'ausstehend' || t.status === 'pending' ? (
+              {tr.status === 'ausstehend' || tr.status === 'pending' ? (
                 <div className="flex gap-2">
                   <Button
-                    disabled={acting === (t.id || t._id)}
-                    onClick={() => approve(t.id || t._id)}
+                    disabled={acting === (tr.id || tr._id)}
+                    onClick={() => approve(tr.id || tr._id)}
                   >
-                    Genehmigen
+                    {copy.approve}
                   </Button>
                   <Button
                     variant="secondary"
-                    disabled={acting === (t.id || t._id)}
+                    disabled={acting === (tr.id || tr._id)}
                     onClick={() => {
-                      setRejectId(t.id || t._id)
+                      setRejectId(tr.id || tr._id)
                       setAblehnungsgrund('')
                     }}
                   >
-                    Ablehnen
+                    {copy.reject}
                   </Button>
                 </div>
               ) : null}
@@ -112,19 +119,19 @@ const AdminTransfers = () => {
       )}
 
       {rejectId ? (
-        <Modal title="Wechsel ablehnen" onClose={() => setRejectId(null)}>
+        <Modal title={copy.rejectTitle} onClose={() => setRejectId(null)}>
           <Input
-            label="Ablehnungsgrund"
+            label={copy.rejectReason}
             value={ablehnungsgrund}
             onChange={(e) => setAblehnungsgrund(e.target.value)}
-            placeholder="Grund für die Ablehnung"
+            placeholder={copy.rejectPh}
           />
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="secondary" onClick={() => setRejectId(null)}>
-              Abbrechen
+              {copy.cancel}
             </Button>
             <Button disabled={!!acting} onClick={reject}>
-              Ablehnen
+              {copy.reject}
             </Button>
           </div>
         </Modal>

@@ -4,70 +4,27 @@ import { Input, Select, Button, Spinner } from '../ui'
 import CaseWizardProgress from './CaseWizardProgress'
 import PhotoUploadField from './PhotoUploadField'
 import { previewCasePricing } from '../../api/cases'
-import { caseForm } from '../../content'
+import useContent from '../../i18n/useContent'
 import {
-  CASE_TYPES,
-  WIZARD_STEPS,
-  PMU_WIZARD_STEPS,
-  BODY_LOCATIONS,
-  TC_SIDES,
-  TC_AGE_BUCKETS,
-  TC_TYPES,
-  TC_COVERUP,
-  QUALITY_LEVEL,
-  SHADING_LEVEL,
-  LINEWORK_LEVEL,
-  INK_COLORS,
-  FITZPATRICK,
-  RISK_LEVEL,
-  SUN_EXPOSURE,
-  LIFE_SMOKER,
-  LIFE_ALCOHOL,
-  LIFE_ACTIVITY,
-  LIFE_SPORT_FREQ,
-  LIFE_SLEEP_HOURS,
-  LIFE_SLEEP_QUALITY,
-  LIFE_STRESS,
-  LIFE_HYDRATION,
-  LIFE_NUTRITION,
-  GOAL_TARGETS,
-  ZONE_DICHTE,
-  ZONE_FLAECHEN,
   INITIAL_CASE_FORM,
-  PHOTO_STD_CHECKLIST,
   labelFor,
   bodyLocationLabel,
 } from '../../constants/caseIntake'
-import {
-  PMU_TYPES,
-  PMU_SIDES,
-  PMU_AGE_RANGES,
-  PMU_TECHNIQUES,
-  PMU_PIGMENTS,
-  PMU_STITCH_DEPTHS,
-  PMU_COLORS,
-  PMU_COLOR_DENSITY,
-  PMU_COLOR_SATURATION,
-  PMU_LIFE_SMOKER,
-  PMU_LIFE_ALCOHOL,
-  PMU_LIFE_ACTIVITY,
-  PMU_LIFE_HYDRATION,
-  PMU_LIFE_AFTERCARE,
-  buildPmuBodyLabel,
-} from '../../constants/pmuIntake'
+import { buildPmuBodyLabel } from '../../constants/pmuIntake'
 
 // ── Shared UI bits ────────────────────────────────────────────────────────
-const ui = caseForm.ui
-
-const FieldLabel = ({ children, hint, optional }) => (
+const FieldLabel = ({ children, hint, optional }) => {
+  const { caseForm } = useContent()
+  return (
   <div className="mb-2">
     <p className="text-studio-white text-[12px] font-semibold m-0">
       {children}
-      {optional && <span className="text-studio-w4 font-normal ml-1">{ui.optional}</span>}
+      {optional && <span className="text-studio-w4 font-normal ml-1">{caseForm.ui.optional}</span>}
     </p>
     {hint && <p className="text-studio-w3 text-[11px] m-0 mt-0.5 leading-snug">{hint}</p>}
   </div>
-)
+  )
+}
 
 const SELECTED_CHIP =
   'border-studio-gold-2 bg-studio-gold/30 text-studio-white font-semibold ring-2 ring-studio-gold/40 shadow-[0_0_14px_rgba(74,154,255,0.35)]'
@@ -123,7 +80,6 @@ const zoneFlaeche = (z) => {
 const zoneValid = (z) =>
   !!(z.bezeichnung?.trim() && z.koerperstelle && z.farben?.length && z.dichte && zoneFlaeche(z) > 0)
 
-const PRICING_STEP = WIZARD_STEPS.findIndex((s) => s.id === 'pricing')
 const PMU_PROGNOSIS_STEP = 4
 
 const fmtCHF = (n) => (n != null && !Number.isNaN(Number(n))
@@ -142,6 +98,52 @@ const toggleListValue = (list, value) => (
 
 // ── CaseForm wizard ───────────────────────────────────────────────────────
 const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => {
+  const { caseForm } = useContent()
+  const ui = caseForm.ui
+  const CASE_TYPES = caseForm.caseTypes
+  const WIZARD_STEPS = caseForm.wizardSteps
+  const PMU_WIZARD_STEPS = caseForm.pmuWizardSteps
+  const BODY_LOCATIONS = caseForm.bodyLocations
+  const TC_SIDES = caseForm.tcSides
+  const TC_AGE_BUCKETS = caseForm.tcAgeBuckets
+  const TC_TYPES = caseForm.tcTypes
+  const TC_COVERUP = caseForm.tcCoverup
+  const QUALITY_LEVEL = caseForm.qualityLevel
+  const SHADING_LEVEL = caseForm.shadingLevel
+  const LINEWORK_LEVEL = caseForm.lineworkLevel
+  const INK_COLORS = caseForm.inkColors
+  const FITZPATRICK = caseForm.fitzpatrick
+  const RISK_LEVEL = caseForm.riskLevel
+  const SUN_EXPOSURE = caseForm.sunExposure
+  const LIFE_SMOKER = caseForm.lifeSmoker
+  const LIFE_ALCOHOL = caseForm.lifeAlcohol
+  const LIFE_ACTIVITY = caseForm.lifeActivity
+  const LIFE_SPORT_FREQ = caseForm.lifeSportFreq
+  const LIFE_SLEEP_HOURS = caseForm.lifeSleepHours
+  const LIFE_SLEEP_QUALITY = caseForm.lifeSleepQuality
+  const LIFE_STRESS = caseForm.lifeStress
+  const LIFE_HYDRATION = caseForm.lifeHydration
+  const LIFE_NUTRITION = caseForm.lifeNutrition
+  const GOAL_TARGETS = caseForm.goalTargets
+  const ZONE_DICHTE = caseForm.zoneDichte
+  const ZONE_FLAECHEN = caseForm.zoneFlaechen
+  const PHOTO_STD_CHECKLIST = caseForm.photoChecklist
+  const PMU_TYPES = caseForm.pmuTypes
+  const PMU_SIDES = caseForm.pmuSides
+  const PMU_AGE_RANGES = caseForm.pmuAgeRanges
+  const PMU_TECHNIQUES = caseForm.pmuTechniques
+  const PMU_PIGMENTS = caseForm.pmuPigments
+  const PMU_STITCH_DEPTHS = caseForm.pmuStitchDepths
+  const PMU_COLORS = caseForm.pmuColors
+  const PMU_COLOR_DENSITY = caseForm.pmuColorDensity
+  const PMU_COLOR_SATURATION = caseForm.pmuColorSaturation
+  const PMU_LIFE_SMOKER = caseForm.pmuLifeSmoker
+  const PMU_LIFE_ALCOHOL = caseForm.pmuLifeAlcohol
+  const PMU_LIFE_ACTIVITY = caseForm.pmuLifeActivity
+  const PMU_LIFE_HYDRATION = caseForm.pmuLifeHydration
+  const PMU_LIFE_AFTERCARE = caseForm.pmuLifeAftercare
+  const PRICING_STEP = WIZARD_STEPS.findIndex((s) => s.id === 'pricing')
+
   const [form, setForm] = useState(INITIAL_CASE_FORM)
   const [step, setStep] = useState(0)
   const [error, setError] = useState('')

@@ -1,16 +1,20 @@
+/** Weekday keys for opening hours — labels via settingsPage.hours.weekdays.* */
 export const WEEKDAYS = [
-  { key: 'mo', label: 'Montag'     },
-  { key: 'di', label: 'Dienstag'   },
-  { key: 'mi', label: 'Mittwoch'   },
-  { key: 'do', label: 'Donnerstag' },
-  { key: 'fr', label: 'Freitag'    },
-  { key: 'sa', label: 'Samstag'    },
-  { key: 'so', label: 'Sonntag'    },
+  { key: 'mo' },
+  { key: 'di' },
+  { key: 'mi' },
+  { key: 'do' },
+  { key: 'fr' },
+  { key: 'sa' },
+  { key: 'so' },
 ]
 
+/**
+ * Staff role API values (stable German strings) + i18n keys under settingsPage.staff.roles.*
+ */
 export const MITARBEITER_ROLLEN = [
-  'Studiobetreiber',
-  'Laser-Therapeutin',
-  'Empfang',
-  'Andere',
+  { value: 'Studiobetreiber', i18nKey: 'studioOwner' },
+  { value: 'Laser-Therapeutin', i18nKey: 'laserTherapist' },
+  { value: 'Empfang', i18nKey: 'reception' },
+  { value: 'Andere', i18nKey: 'other' },
 ]

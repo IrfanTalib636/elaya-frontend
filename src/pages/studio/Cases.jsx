@@ -6,25 +6,7 @@ import { listCases, deleteCase } from '../../api/cases'
 import { Card, Badge, Spinner, PageHeader, EmptyState, Pagination } from '../../components/ui'
 import MedicalAmpelDot from '../../components/medical/MedicalAmpelDot'
 import { PAGE_SIZE, SEARCH_FETCH_LIMIT } from '../../constants/pagination'
-
-const STATUS_FILTERS = [
-  { value: '',                         label: 'Alle'              },
-  { value: 'pending',                  label: 'Ausstehend'        },
-  { value: 'active',                   label: 'Aktiv'             },
-  { value: 'completed',                label: 'Abgeschlossen'     },
-  { value: 'loeschantrag_ausstehend',  label: 'Löschantrag pend.' },
-]
-
-const MEDICAL_FILTERS = [
-  { value: '',       label: 'Alle Ampeln' },
-  { value: 'rot',    label: '🔴 Abklärung' },
-  { value: 'orange', label: '🟡 Hinweise' },
-  { value: 'gruen',  label: '🟢 Geklärt' },
-]
-
-const TYPE_LABELS = { tattoo: 'Tattoo', pmu: 'PMU' }
-
-const TABLE_HEADERS = ['Fall', 'Kunde', 'Körperstelle', 'Typ', 'Sitzungen', 'Ampel', 'Status', '', '']
+import useContent from '../../i18n/useContent'
 
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString('de-CH', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
@@ -35,8 +17,8 @@ const customerName = (c) => {
   return n || c.email || '—'
 }
 
-const CaseRow = ({ c, onClick, onDelete, deleting }) => {
-  const label = c.bodyLabel || c.tc_title || TYPE_LABELS[c.type] || '—'
+const CaseRow = ({ c, onClick, onDelete, deleting, copy, t }) => {
+  const label = c.bodyLabel || c.tc_title || copy.types[c.type] || '—'
   const progress = c.sessions > 0
     ? `${c.sessionsDone ?? 0}/${c.sessions}`
     : `${c.sessionsDone ?? 0}`
@@ -50,16 +32,16 @@ const CaseRow = ({ c, onClick, onDelete, deleting }) => {
         <span className="text-studio-gold-2 text-[12px] font-mono font-semibold">{c.caseId ?? '—'}</span>
         {c.transferiert ? (
           <p className="text-studio-gold-2 text-[10px] font-semibold uppercase tracking-wide m-0 mt-0.5">
-            Transferiert
+            {copy.transferred}
           </p>
         ) : null}
         {c.lastSessionDate && (
-          <p className="text-studio-w3 text-[10px] m-0 mt-0.5">Letzte: {fmtDate(c.lastSessionDate)}</p>
+          <p className="text-studio-w3 text-[10px] m-0 mt-0.5">{t('studioPages.cases.lastSession', { date: fmtDate(c.lastSessionDate) })}</p>
         )}
       </td>
       <td className="px-5 py-3 text-studio-white text-[13px]">{customerName(c.customer)}</td>
       <td className="px-5 py-3 text-studio-w1 text-[12px]">{label}</td>
-      <td className="px-5 py-3 text-studio-w2 text-[12px]">{TYPE_LABELS[c.type] ?? c.type ?? '—'}</td>
+      <td className="px-5 py-3 text-studio-w2 text-[12px]">{copy.types[c.type] ?? c.type ?? '—'}</td>
       <td className="px-5 py-3 text-studio-w1 text-[12px] tabular-nums">{progress}</td>
       <td className="px-5 py-3">
         <MedicalAmpelDot
@@ -83,7 +65,7 @@ const CaseRow = ({ c, onClick, onDelete, deleting }) => {
             onDelete?.(c)
           }}
           disabled={deleting || c.transferiert}
-          title={c.transferiert ? 'Transferierte Fälle können hier nicht gelöscht werden.' : 'Test-Fall löschen'}
+          title={c.transferiert ? copy.deleteTransferredTitle : copy.deleteTitle}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] border text-[11px] font-semibold cursor-pointer transition-colors ${
             deleting || c.transferiert
               ? 'border-elaya-border text-studio-w4 cursor-not-allowed'
@@ -91,7 +73,7 @@ const CaseRow = ({ c, onClick, onDelete, deleting }) => {
           }`}
         >
           <Trash2 size={12} />
-          {deleting ? 'Löscht…' : 'Test löschen'}
+          {deleting ? copy.deleting : copy.deleteTest}
         </button>
       </td>
     </tr>
@@ -100,6 +82,27 @@ const CaseRow = ({ c, onClick, onDelete, deleting }) => {
 
 const StudioCases = () => {
   const navigate = useNavigate()
+  const { t, studioPages } = useContent()
+  const copy = studioPages.cases
+
+  const STATUS_FILTERS = [
+    { value: '', label: copy.statusFilters.all },
+    { value: 'pending', label: copy.statusFilters.pending },
+    { value: 'active', label: copy.statusFilters.active },
+    { value: 'completed', label: copy.statusFilters.completed },
+    { value: 'loeschantrag_ausstehend', label: copy.statusFilters.loeschantrag_ausstehend },
+  ]
+  const MEDICAL_FILTERS = [
+    { value: '', label: copy.medicalFilters.all },
+    { value: 'rot', label: copy.medicalFilters.rot },
+    { value: 'orange', label: copy.medicalFilters.orange },
+    { value: 'gruen', label: copy.medicalFilters.gruen },
+  ]
+  const TABLE_HEADERS = [
+    copy.headers.case, copy.headers.customer, copy.headers.body, copy.headers.type,
+    copy.headers.sessions, copy.headers.ampel, copy.headers.status, '', '',
+  ]
+
 
   const [cases, setCases]       = useState([])
   const [pagination, setPagination] = useState(null)
@@ -125,11 +128,11 @@ const StudioCases = () => {
       setCases(res.data.data.cases ?? [])
       setPagination(res.data.data.pagination)
     } catch {
-      toast.error('Fälle konnten nicht geladen werden.')
+      toast.error(copy.loadError)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [copy.loadError])
 
   useEffect(() => { load(statusFilter, medicalFilter, page, isSearching) }, [statusFilter, medicalFilter, page, isSearching, load])
 
@@ -150,19 +153,17 @@ const StudioCases = () => {
   }, [cases, search])
 
   const handleDelete = async (caseItem) => {
-    const label = caseItem?.caseId || caseItem?.tc_title || caseItem?.bodyLabel || 'diesen Fall'
-    const ok = window.confirm(
-      `Test-Löschung aktiv:\nSoll ${label} wirklich gelöscht werden?\n\nDiese Aktion entfernt den Fall auch aus der Customer App.`
-    )
+    const label = caseItem?.caseId || caseItem?.tc_title || caseItem?.bodyLabel || copy.thisCase
+    const ok = window.confirm(t('studioPages.cases.deleteConfirm', { label }))
     if (!ok) return
 
     setDeletingId(caseItem.id)
     try {
       await deleteCase(caseItem.id)
       setCases((prev) => prev.filter((row) => row.id !== caseItem.id))
-      toast.success('Test-Fall gelöscht (Studio & Customer App synchronisiert).')
+      toast.success(copy.deleteSuccess)
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Fall konnte nicht gelöscht werden.')
+      toast.error(err?.response?.data?.message || copy.deleteError)
     } finally {
       setDeletingId(null)
     }
@@ -171,8 +172,8 @@ const StudioCases = () => {
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader
-        title="Alle Fälle"
-        subtitle={pagination ? `${pagination.total} Fälle gesamt` : ''}
+        title={copy.title}
+        subtitle={pagination ? t('studioPages.cases.subtitle', { count: pagination.total }) : ''}
       />
 
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
@@ -182,7 +183,7 @@ const StudioCases = () => {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Fall-ID, Körperstelle, Kunde…"
+            placeholder={copy.searchPlaceholder}
             className="w-full pl-8 pr-4 py-[9px] rounded-[10px] border-[1.5px] border-elaya-border-strong bg-studio-bg-3 text-studio-white text-[13px] outline-none focus:border-studio-gold transition-colors placeholder:text-studio-w3"
           />
         </div>
@@ -227,8 +228,8 @@ const StudioCases = () => {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={FolderOpen}
-          title="Keine Fälle gefunden"
-          description={search ? 'Versuche einen anderen Suchbegriff.' : 'Noch keine Fälle angelegt.'}
+          title={copy.emptyTitle}
+          description={search ? copy.emptySearch : copy.emptyHint}
         />
       ) : (
         <Card padding="none">
@@ -251,6 +252,8 @@ const StudioCases = () => {
                     onClick={() => navigate(`/studio/cases/${c.id}`)}
                     onDelete={handleDelete}
                     deleting={deletingId === c.id}
+                    copy={copy}
+                    t={t}
                   />
                 ))}
               </tbody>

@@ -8,8 +8,10 @@ import {
   CRM_TASK_PRIORITAET,
   defaultDueDate,
 } from '../../constants/crm'
+import useContent from '../../i18n/useContent'
 
 const CrmNoteModal = ({ customer, onClose, onSaved }) => {
+  const { t } = useContent()
   const [typ, setTyp] = useState('anruf')
   const [inhalt, setInhalt] = useState('')
   const [createTask, setCreateTask] = useState(false)
@@ -24,11 +26,11 @@ const CrmNoteModal = ({ customer, onClose, onSaved }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!inhalt.trim()) {
-      toast.error('Bitte Notiz eingeben.')
+      toast.error(t('crmModals.noteRequired'))
       return
     }
     if (createTask && !taskTitel.trim()) {
-      toast.error('Bitte Aufgaben-Titel eingeben.')
+      toast.error(t('crmModals.taskTitleRequired'))
       return
     }
 
@@ -48,34 +50,34 @@ const CrmNoteModal = ({ customer, onClose, onSaved }) => {
         }
       }
       await createCrmNote(body)
-      toast.success('Notiz gespeichert.')
+      toast.success(t('crmModals.noteSaved'))
       onSaved?.()
       onClose()
     } catch {
-      toast.error('Notiz konnte nicht gespeichert werden.')
+      toast.error(t('crmModals.noteSaveFailed'))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal title={`CRM-Notiz · ${name}`} onClose={onClose}>
+    <Modal title={t('crmModals.noteTitle', { name })} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Select label="Typ" value={typ} onChange={(e) => setTyp(e.target.value)}>
-          {CRM_NOTE_TYPEN.map((t) => (
-            <option key={t.value} value={t.value}>{t.label}</option>
+        <Select label={t('crmModals.noteType')} value={typ} onChange={(e) => setTyp(e.target.value)}>
+          {CRM_NOTE_TYPEN.map((item) => (
+            <option key={item.value} value={item.value}>{t(`crm.noteTypes.${item.value}`)}</option>
           ))}
         </Select>
 
         <div>
           <label className="block text-[11px] font-semibold text-studio-w2 uppercase tracking-wider mb-1.5">
-            Inhalt
+            {t('crmModals.noteContentLabel')}
           </label>
           <textarea
             value={inhalt}
             onChange={(e) => setInhalt(e.target.value)}
             rows={4}
-            placeholder="Gespräch, E-Mail, Ergebnis…"
+            placeholder={t('crmModals.noteContentPlaceholder')}
             className="w-full px-3 py-2.5 rounded-[10px] border-[1.5px] border-elaya-border-strong bg-studio-bg-4 text-studio-white text-[13px] outline-none focus:border-studio-gold transition-colors placeholder:text-studio-w3 resize-y min-h-[100px]"
           />
         </div>
@@ -87,31 +89,31 @@ const CrmNoteModal = ({ customer, onClose, onSaved }) => {
             onChange={(e) => setCreateTask(e.target.checked)}
             className="accent-studio-gold"
           />
-          Follow-up-Aufgabe erstellen
+          {t('crmModals.createFollowUpTask')}
         </label>
 
         {createTask && (
           <div className="flex flex-col gap-3 pl-1 border-l-2 border-studio-gold/30 ml-1">
             <Input
-              label="Aufgaben-Titel"
+              label={t('crmModals.taskTitle')}
               value={taskTitel}
               onChange={(e) => setTaskTitel(e.target.value)}
-              placeholder="z.B. Erneut anrufen"
+              placeholder={t('crmModals.taskTitlePlaceholder')}
             />
             <div className="grid grid-cols-2 gap-3">
-              <Select label="Aufgaben-Typ" value={taskTyp} onChange={(e) => setTaskTyp(e.target.value)}>
-                {CRM_TASK_TYPEN.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+              <Select label={t('crmModals.taskTypeLabel')} value={taskTyp} onChange={(e) => setTaskTyp(e.target.value)}>
+                {CRM_TASK_TYPEN.map((item) => (
+                  <option key={item.value} value={item.value}>{t(`crm.taskTypes.${item.value}`)}</option>
                 ))}
               </Select>
-              <Select label="Priorität" value={taskPrio} onChange={(e) => setTaskPrio(e.target.value)}>
-                {CRM_TASK_PRIORITAET.map((p) => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
+              <Select label={t('crmModals.taskPriority')} value={taskPrio} onChange={(e) => setTaskPrio(e.target.value)}>
+                {CRM_TASK_PRIORITAET.map((item) => (
+                  <option key={item.value} value={item.value}>{t(`crm.priorities.${item.value}`)}</option>
                 ))}
               </Select>
             </div>
             <Input
-              label="Fällig am"
+              label={t('crmModals.taskDue')}
               type="date"
               value={taskDue}
               onChange={(e) => setTaskDue(e.target.value)}
@@ -120,8 +122,8 @@ const CrmNoteModal = ({ customer, onClose, onSaved }) => {
         )}
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={onClose}>Abbrechen</Button>
-          <Button type="submit" loading={saving}>Speichern</Button>
+          <Button type="button" variant="ghost" onClick={onClose}>{t('crmModals.cancel')}</Button>
+          <Button type="submit" loading={saving}>{t('crmModals.save')}</Button>
         </div>
       </form>
     </Modal>

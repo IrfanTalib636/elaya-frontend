@@ -1,16 +1,7 @@
-const UV_OPTIONS = [
-  { value: 'keine', label: 'Keine' },
-  { value: 'leicht', label: 'Leicht' },
-  { value: 'mittel', label: 'Mittel (+21 Tage)' },
-  { value: 'intensiv', label: 'Intensiv (+28 Tage)' },
-]
+import useContent from '../../i18n/useContent'
 
-const MED_OPTIONS = [
-  { value: 'keine', label: 'Keine' },
-  { value: 'retinoide', label: 'Retinoide (+180 Tage)' },
-  { value: 'antibiotika', label: 'Antibiotika (+14 Tage)' },
-  { value: 'antidepressiva', label: 'Antidepressiva (+14 Tage)' },
-]
+const UV_VALUES = ['keine', 'leicht', 'mittel', 'intensiv']
+const MED_VALUES = ['keine', 'retinoide', 'antibiotika', 'antidepressiva']
 
 const REAL_MED_KEYS = new Set(['retinoide', 'antibiotika', 'antidepressiva'])
 
@@ -59,6 +50,8 @@ const Chip = ({ active, onClick, children }) => (
 )
 
 const PreSessionCheck = ({ value, onChange, compact = false }) => {
+  const { components } = useContent()
+  const copy = components.preSessionCheck
   const meds = value.medikamente ?? []
   const realMeds = meds.filter((m) => REAL_MED_KEYS.has(m))
 
@@ -84,34 +77,34 @@ const PreSessionCheck = ({ value, onChange, compact = false }) => {
     <div className={`rounded-[10px] border border-elaya-border bg-studio-bg-4 ${compact ? 'px-3 py-2.5' : 'px-3 py-3'} flex flex-col gap-3`}>
       <div>
         <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-2">
-          Vorbehandlungs-Check
+          {copy.title}
         </p>
         <p className="text-studio-w3 text-[10px] m-0 mb-2">
-          UV-Exposition und Medikamente beeinflussen die Sperrfrist.
+          {copy.hint}
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {UV_OPTIONS.map((opt) => (
+          {UV_VALUES.map((valueKey) => (
             <Chip
-              key={opt.value}
-              active={value.uv_exposition === opt.value}
-              onClick={() => setUv(opt.value)}
+              key={valueKey}
+              active={value.uv_exposition === valueKey}
+              onClick={() => setUv(valueKey)}
             >
-              {opt.label}
+              {copy.uv[valueKey]}
             </Chip>
           ))}
         </div>
       </div>
 
       <div>
-        <p className="text-studio-w3 text-[10px] m-0 mb-2">Medikamente (letzte Einnahme)</p>
+        <p className="text-studio-w3 text-[10px] m-0 mb-2">{copy.medsLabel}</p>
         <div className="flex flex-wrap gap-1.5">
-          {MED_OPTIONS.map((opt) => (
+          {MED_VALUES.map((valueKey) => (
             <Chip
-              key={opt.value}
-              active={(value.medikamente ?? []).includes(opt.value)}
-              onClick={() => toggleMed(opt.value)}
+              key={valueKey}
+              active={(value.medikamente ?? []).includes(valueKey)}
+              onClick={() => toggleMed(valueKey)}
             >
-              {(value.medikamente ?? []).includes(opt.value) ? '✓ ' : ''}{opt.label}
+              {(value.medikamente ?? []).includes(valueKey) ? '✓ ' : ''}{copy.meds[valueKey]}
             </Chip>
           ))}
         </div>

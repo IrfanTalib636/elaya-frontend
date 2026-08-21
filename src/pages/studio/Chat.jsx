@@ -12,11 +12,12 @@ import {
 import { getApiErrorMessage } from '../../lib/apiError'
 import useMessagingSocket from '../../hooks/useMessagingSocket'
 import { Card, EmptyState, PageHeader, Spinner } from '../../components/ui'
+import useContent from '../../i18n/useContent'
 
-const customerName = (c) => {
-  if (!c) return 'Kunde'
+const customerName = (c, fallback = 'Customer') => {
+  if (!c) return fallback
   const name = [c.vorname, c.nachname].filter(Boolean).join(' ').trim()
-  return name || c.email || 'Kunde'
+  return name || c.email || fallback
 }
 
 const fmtTime = (d) => {
@@ -34,6 +35,8 @@ const fmtTime = (d) => {
 }
 
 export default function StudioChatPage() {
+  const { studioPages } = useContent()
+  const copy = studioPages.chat
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const customerIdParam = searchParams.get('customerId')
@@ -60,7 +63,7 @@ export default function StudioChatPage() {
       const res = await listConversations({ limit: 50 })
       setConversations(res.data?.data?.conversations || [])
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Chat-Inbox konnte nicht geladen werden'))
+      toast.error(getApiErrorMessage(err, copy.inboxLoadError))
     } finally {
       setLoadingInbox(false)
     }
@@ -86,7 +89,7 @@ export default function StudioChatPage() {
         setActiveId(conversation.id)
         setSearchParams({}, { replace: true })
       } catch (err) {
-        toast.error(getApiErrorMessage(err, 'Chat konnte nicht geöffnet werden'))
+        toast.error(getApiErrorMessage(err, copy.openError))
       }
     })()
     return () => {
@@ -107,7 +110,7 @@ export default function StudioChatPage() {
         )
       )
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Nachrichten konnten nicht geladen werden'))
+      toast.error(getApiErrorMessage(err, copy.messagesLoadError))
     } finally {
       setLoadingThread(false)
     }
@@ -181,7 +184,7 @@ export default function StudioChatPage() {
       if (payload?.message) upsertMessage(payload.message, payload.conversation)
     } catch (err) {
       setDraft(text)
-      toast.error(getApiErrorMessage(err, 'Senden fehlgeschlagen'))
+      toast.error(getApiErrorMessage(err, copy.sendFailed))
     } finally {
       setSending(false)
     }
@@ -196,19 +199,16 @@ export default function StudioChatPage() {
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto h-[calc(100vh-2rem)] flex flex-col">
-      <PageHeader
-        title="Kunden-Chat"
-        subtitle="Direktnachrichten mit Kundinnen und Kunden"
-      >
+      <PageHeader title={copy.title} subtitle={copy.subtitle}>
         <div className="flex items-center gap-2 text-[12px] text-studio-w2">
           {secureTransport ? <Lock size={13} className="text-studio-teal-2" /> : null}
           {connected ? (
             <span className="inline-flex items-center gap-1 text-studio-teal-2">
-              <Radio size={13} /> {secureTransport ? 'Sicher · Live' : 'Live'}
+              <Radio size={13} /> {secureTransport ? copy.liveSecure : copy.live}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 text-studio-w3">
-              <WifiOff size={13} /> Verbinden…
+              <WifiOff size={13} /> {copy.connecting}
             </span>
           )}
         </div>
@@ -219,7 +219,7 @@ export default function StudioChatPage() {
         <Card padding="none" className="overflow-hidden flex flex-col min-h-[280px]">
           <div className="px-4 py-3 border-b border-elaya-border">
             <p className="text-studio-w3 text-[11px] font-semibold uppercase tracking-wider m-0">
-              Unterhaltungen
+              {copy.conversations}
             </p>
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -231,15 +231,15 @@ export default function StudioChatPage() {
               <div className="p-4">
                 <EmptyState
                   icon={MessageCircle}
-                  title="Noch keine Chats"
-                  description="Öffne einen Kunden und starte eine Nachricht."
+                  title={copy.emptyInboxTitle}
+                  description={copy.emptyInboxDesc}
                 />
                 <button
                   type="button"
                   className="mt-3 text-studio-gold-2 text-[13px] bg-transparent border-0 cursor-pointer"
                   onClick={() => navigate('/studio/customers')}
                 >
-                  Zu den Kunden →
+                  {copy.toCustomers}
                 </button>
               </div>
             ) : (
@@ -257,7 +257,7 @@ export default function StudioChatPage() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-studio-white text-[13px] font-semibold m-0 truncate">
-                        {customerName(c.customer)}
+                        {customerName(c.customer, copy.customerFallback)}
                       </p>
                       {unread > 0 ? (
                         <span className="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-studio-gold text-[10px] font-bold text-studio-bg flex items-center justify-center">
@@ -266,7 +266,7 @@ export default function StudioChatPage() {
                       ) : null}
                     </div>
                     <p className="text-studio-w3 text-[12px] m-0 mt-1 truncate">
-                      {c.last_message_preview || 'Noch keine Nachrichten'}
+                      {c.last_message_preview || copy.noMessagesYet}
                     </p>
                     <p className="text-studio-w3 text-[10px] m-0 mt-1">
                       {fmtTime(c.last_message_at)}
@@ -284,8 +284,8 @@ export default function StudioChatPage() {
             <div className="flex-1 flex items-center justify-center p-8">
               <EmptyState
                 icon={MessageCircle}
-                title="Unterhaltung wählen"
-                description="Wähle links einen Chat oder starte einen vom Kundenprofil."
+                title={copy.selectTitle}
+                description={copy.selectDesc}
               />
             </div>
           ) : (
@@ -293,12 +293,12 @@ export default function StudioChatPage() {
               <div className="px-4 py-3 border-b border-elaya-border flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-studio-white text-[14px] font-semibold m-0 truncate">
-                    {customerName(activeConversation?.customer)}
+                    {customerName(activeConversation?.customer, copy.customerFallback)}
                   </p>
                   <p className="text-studio-w3 text-[11px] m-0 mt-0.5">
                     {peerTyping
-                      ? 'Kunde tippt…'
-                      : activeConversation?.customer?.email || 'Live-Chat'}
+                      ? copy.customerTyping
+                      : activeConversation?.customer?.email || copy.liveChat}
                   </p>
                 </div>
               </div>
@@ -310,7 +310,7 @@ export default function StudioChatPage() {
                   </div>
                 ) : messages.length === 0 ? (
                   <p className="text-studio-w3 text-[13px] text-center py-10 m-0">
-                    Schreib die erste Nachricht.
+                    {copy.writeFirst}
                   </p>
                 ) : (
                   messages.map((m) => {
@@ -358,14 +358,14 @@ export default function StudioChatPage() {
                   }}
                   rows={2}
                   maxLength={4000}
-                  placeholder="Nachricht schreiben…"
+                  placeholder={copy.placeholder}
                   className="flex-1 resize-none rounded-[12px] bg-studio-bg-4 border border-elaya-border text-studio-white text-[13px] px-3 py-2.5 outline-none focus:border-studio-gold/50"
                 />
                 <button
                   type="submit"
                   disabled={sending || !draft.trim()}
                   className="shrink-0 w-11 h-11 rounded-[12px] bg-studio-gold text-studio-bg flex items-center justify-center border-0 cursor-pointer disabled:opacity-40"
-                  aria-label="Senden"
+                  aria-label={copy.sendAria}
                 >
                   <Send size={16} />
                 </button>

@@ -8,8 +8,11 @@ import {
   cloneSessionPrediction,
 } from '../../components/sessionPrediction/sessionPredictionFields'
 import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
+import useContent from '../../i18n/useContent'
 
 const AdminSettings = () => {
+  const { adminPages } = useContent()
+  const copy = adminPages.settings
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [values, setValues] = useState(null)
@@ -25,11 +28,11 @@ const AdminSettings = () => {
       setSavedBaseline(cloneSessionPrediction(next))
       setPlausibility(res.data.data.excel_plausibility || null)
     } catch {
-      toast.error('Sitzungsprognose konnte nicht geladen werden')
+      toast.error(copy.loadError)
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [])
+  }, [copy.loadError])
 
   useEffect(() => {
     load()
@@ -38,7 +41,7 @@ const AdminSettings = () => {
   usePlatformConfigSocket({
     enabled: true,
     onSessionPredictionUpdated: () => {
-      toast('Sitzungsprognose wurde aktualisiert — lade neu…', { icon: '↻' })
+      toast(copy.updatedReload, { icon: '↻' })
       load({ silent: true })
     },
   })
@@ -53,9 +56,9 @@ const AdminSettings = () => {
       setValues(next)
       setSavedBaseline(cloneSessionPrediction(next))
       setPlausibility(res.data.data.excel_plausibility || null)
-      toast.success('Sitzungsprognose gespeichert — Studio & Apps werden live aktualisiert')
+      toast.success(copy.saved)
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Speichern fehlgeschlagen')
+      toast.error(err?.response?.data?.message || copy.saveFailed)
     } finally {
       setSaving(false)
     }
@@ -72,8 +75,8 @@ const AdminSettings = () => {
   return (
     <div className="p-6 max-w-[960px]">
       <PageHeader
-        title="Einstellungen"
-        subtitle="Sitzungsprognose — Parameter ändern und im Live-Rechner sofort die Sitzungsrange sehen. Speichern übernimmt die Werte plattformweit (Socket)."
+        title={copy.title}
+        subtitle={copy.subtitle}
       />
 
       <Card className="flex flex-col gap-5">
@@ -85,11 +88,11 @@ const AdminSettings = () => {
             savedBaseline={savedBaseline}
           />
         ) : (
-          <p className="text-admin-muted text-[13px] m-0">Keine Parameter geladen.</p>
+          <p className="text-admin-muted text-[13px] m-0">{copy.noParameters}</p>
         )}
         <div className="flex justify-end pt-2 border-t border-admin-line">
           <Button loading={saving} onClick={handleSave} disabled={!values}>
-            Speichern
+            {copy.save}
           </Button>
         </div>
       </Card>

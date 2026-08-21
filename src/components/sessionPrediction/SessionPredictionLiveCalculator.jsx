@@ -3,12 +3,9 @@ import { Calculator, RefreshCw } from 'lucide-react'
 import { previewSessionPrediction } from '../../api/config'
 import { buildSessionPredictionPayload } from './sessionPredictionFields'
 import { Button, Select, Spinner } from '../ui'
+import useContent from '../../i18n/useContent'
 
-const PRESET_OPTIONS = [
-  { id: 'example_1', label: 'Excel §7 · Kleines schwarzes Tattoo (6–8)' },
-  { id: 'example_2', label: 'Excel §7 · Buntes Tattoo (10–14)' },
-  { id: 'example_3', label: 'Excel §7 · Cover-up Hand (12–16)' },
-]
+const PRESET_IDS = ['example_1', 'example_2', 'example_3']
 
 const fmtDelta = (n) => {
   if (n == null || n === 0) return '±0'
@@ -16,13 +13,14 @@ const fmtDelta = (n) => {
 }
 
 const RangeBadge = ({ min, max, tone = 'live' }) => {
+  const { t } = useContent()
   const classes =
     tone === 'baseline'
       ? 'bg-studio-bg-4 border-elaya-border text-studio-w2'
       : 'bg-studio-gold/10 border-studio-gold/35 text-studio-gold-2'
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-[8px] border text-[13px] font-bold tabular-nums ${classes}`}>
-      {min != null && max != null ? `${min}–${max}` : '—'} Sitzungen
+      {min != null && max != null ? t('components.sessionPrediction.sessionsRange', { min, max }) : '—'}
     </span>
   )
 }
@@ -33,6 +31,8 @@ const RangeBadge = ({ min, max, tone = 'live' }) => {
  * `values` = current form draft (admin) or saved params (studio).
  */
 const SessionPredictionLiveCalculator = ({ values, savedBaseline = null }) => {
+  const { t, components } = useContent()
+  const copy = components.sessionPrediction
   const [presetId, setPresetId] = useState('example_1')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -63,7 +63,7 @@ const SessionPredictionLiveCalculator = ({ values, savedBaseline = null }) => {
         setResult(res.data.data)
       } catch (err) {
         if (seq !== reqSeq.current) return
-        setError(err?.response?.data?.message || 'Vorschau fehlgeschlagen')
+        setError(err?.response?.data?.message || copy.previewFailed)
       } finally {
         if (seq === reqSeq.current) setLoading(false)
       }
@@ -91,9 +91,9 @@ const SessionPredictionLiveCalculator = ({ values, savedBaseline = null }) => {
         <div className="flex items-center gap-2">
           <Calculator size={16} className="text-studio-gold shrink-0" />
           <div>
-            <p className="text-[13px] font-semibold text-studio-white m-0">Live-Rechner · Sitzungsprognose</p>
+            <p className="text-[13px] font-semibold text-studio-white m-0">{copy.liveTitle}</p>
             <p className="text-[11px] text-studio-w3 m-0">
-              Parameter ändern → Prognose aktualisiert sofort (ohne Speichern). Gleiche Engine wie bei Case-Erstellung.
+              {copy.liveSubtitle}
             </p>
           </div>
         </div>
@@ -101,12 +101,12 @@ const SessionPredictionLiveCalculator = ({ values, savedBaseline = null }) => {
       </div>
 
       <Select
-        label="Beispiel-Fall"
+        label={copy.exampleCase}
         value={presetId}
         onChange={(e) => setPresetId(e.target.value)}
       >
-        {PRESET_OPTIONS.map((opt) => (
-          <option key={opt.id} value={opt.id}>{opt.label}</option>
+        {PRESET_IDS.map((id) => (
+          <option key={id} value={id}>{copy.presets[id]}</option>
         ))}
       </Select>
 
@@ -120,23 +120,26 @@ const SessionPredictionLiveCalculator = ({ values, savedBaseline = null }) => {
             {baseline && paramsDifferFromSaved ? (
               <>
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] uppercase tracking-wider text-studio-w3 font-semibold">Gespeichert</span>
+                  <span className="text-[10px] uppercase tracking-wider text-studio-w3 font-semibold">{copy.saved}</span>
                   <RangeBadge min={baseline.min} max={baseline.max} tone="baseline" />
                 </div>
                 <span className="text-studio-w3 text-[16px] self-end pb-1">→</span>
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] uppercase tracking-wider text-studio-gold-2 font-semibold">Live (Entwurf)</span>
+                  <span className="text-[10px] uppercase tracking-wider text-studio-gold-2 font-semibold">{copy.liveDraft}</span>
                   <RangeBadge min={live.min} max={live.max} tone="live" />
                 </div>
                 {delta ? (
                   <span className="text-[12px] text-studio-w2 self-end pb-1.5">
-                    Änderung {fmtDelta(delta.sessions_min)} / {fmtDelta(delta.sessions_max)} Sitzungen
+                    {t('components.sessionPrediction.changeSessions', {
+                      minDelta: fmtDelta(delta.sessions_min),
+                      maxDelta: fmtDelta(delta.sessions_max),
+                    })}
                   </span>
                 ) : null}
               </>
             ) : (
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wider text-studio-gold-2 font-semibold">Aktuelle Prognose</span>
+                <span className="text-[10px] uppercase tracking-wider text-studio-gold-2 font-semibold">{copy.currentForecast}</span>
                 <RangeBadge min={live.min} max={live.max} tone="live" />
               </div>
             )}
@@ -149,7 +152,7 @@ const SessionPredictionLiveCalculator = ({ values, savedBaseline = null }) => {
               {formula.mid}
               {' → '}
               −{formula.spread_low}/+{formula.spread_high}
-              {formula.aftercare_extra_max ? ` +${formula.aftercare_extra_max} Nachsorge` : ''}
+              {formula.aftercare_extra_max ? ` +${formula.aftercare_extra_max} ${copy.aftercareInFormula}` : ''}
               {' → '}
               <strong className="text-studio-gold-2">{live.min}–{live.max}</strong>
             </p>
@@ -157,17 +160,20 @@ const SessionPredictionLiveCalculator = ({ values, savedBaseline = null }) => {
 
           <div className="grid sm:grid-cols-3 gap-2 text-[11px]">
             <div className="rounded-[8px] border border-elaya-border bg-studio-bg-4 px-2.5 py-2">
-              <p className="text-studio-w3 m-0 mb-0.5">Tattoo-Delta</p>
+              <p className="text-studio-w3 m-0 mb-0.5">{copy.tattooDeltaLabel}</p>
               <p className="text-studio-white font-semibold m-0 tabular-nums">{fmtDelta(live.tattoo_delta)}</p>
             </div>
             <div className="rounded-[8px] border border-elaya-border bg-studio-bg-4 px-2.5 py-2">
-              <p className="text-studio-w3 m-0 mb-0.5">Lifestyle</p>
+              <p className="text-studio-w3 m-0 mb-0.5">{copy.lifestyleLabel}</p>
               <p className="text-studio-white font-semibold m-0 tabular-nums">
-                Score {live.lifestyle_score} · ×{live.lifestyle_multiplier}
+                {t('components.sessionPrediction.lifestyleScoreLine', {
+                  score: live.lifestyle_score,
+                  mult: live.lifestyle_multiplier,
+                })}
               </p>
             </div>
             <div className="rounded-[8px] border border-elaya-border bg-studio-bg-4 px-2.5 py-2">
-              <p className="text-studio-w3 m-0 mb-0.5">Mitte / Konfidenz</p>
+              <p className="text-studio-w3 m-0 mb-0.5">{copy.midConfidence}</p>
               <p className="text-studio-white font-semibold m-0 tabular-nums">
                 {live.base} · {live.confidence_score}%
               </p>
@@ -177,7 +183,7 @@ const SessionPredictionLiveCalculator = ({ values, savedBaseline = null }) => {
           {(live.factors || []).filter((f) => f.delta !== 0).length > 0 ? (
             <div>
               <p className="text-[10px] uppercase tracking-wider text-studio-w3 font-semibold m-0 mb-1.5">
-                Wirksame Tattoo-Faktoren
+                {copy.activeFactors}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {(live.factors || [])
@@ -198,7 +204,7 @@ const SessionPredictionLiveCalculator = ({ values, savedBaseline = null }) => {
             </div>
           ) : (
             <p className="text-[11px] text-studio-w3 m-0">
-              Keine Tattoo-Deltas ≠ 0 — einfache Prognose (±1 Sitzung um die Mitte).
+              {copy.noDeltas}
             </p>
           )}
         </>
@@ -206,7 +212,7 @@ const SessionPredictionLiveCalculator = ({ values, savedBaseline = null }) => {
         !loading && (
           <Button size="sm" variant="secondary" onClick={() => setPresetId((p) => p)}>
             <RefreshCw size={12} className="mr-1" />
-            Vorschau laden
+            {copy.loadPreview}
           </Button>
         )
       )}

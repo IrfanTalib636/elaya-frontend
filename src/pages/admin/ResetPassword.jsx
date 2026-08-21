@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../../components/ElayaLogo'
 import { resetPassword } from '../../api/auth'
-import { adminAuth, common, toast as toastMessages } from '../../content'
+import useContent from '../../i18n/useContent'
 import { getApiErrorMessage } from '../../lib/apiError'
 
 const Field = ({ label, children }) => (
@@ -26,6 +26,7 @@ const AdminResetPassword = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') || ''
+  const { adminAuth, common, toast: toastMessages } = useContent()
 
   const [form, setForm] = useState({ password: '', confirmPassword: '' })
   const [loading, setLoading] = useState(false)

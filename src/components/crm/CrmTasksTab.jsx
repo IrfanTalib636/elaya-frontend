@@ -5,8 +5,11 @@ import { Card, Button, EmptyState } from '../ui'
 import MedicalAmpelDot from '../medical/MedicalAmpelDot'
 import { updateCrmTask, deleteCrmTask } from '../../api/crm'
 import { PRIORITY_ICON, fmtCrmDate, startOfDay } from '../../constants/crm'
+import useContent from '../../i18n/useContent'
 
 const TaskRow = ({ task, onChange }) => {
+  const { t, components } = useContent()
+  const copy = components.crmTasks
   const heute = startOfDay()
   const faellig = startOfDay(new Date(task.faellig_am))
   const overdue = !task.erledigt && faellig < heute
@@ -14,20 +17,20 @@ const TaskRow = ({ task, onChange }) => {
   const complete = async () => {
     try {
       await updateCrmTask(task.id, { erledigt: true })
-      toast.success('Erledigt.')
+      toast.success(copy.done)
       onChange()
     } catch {
-      toast.error('Konnte nicht aktualisiert werden.')
+      toast.error(copy.updateError)
     }
   }
 
   const remove = async () => {
     try {
       await deleteCrmTask(task.id)
-      toast.success('Aufgabe gelöscht.')
+      toast.success(copy.deleted)
       onChange()
     } catch {
-      toast.error('Konnte nicht gelöscht werden.')
+      toast.error(copy.deleteError)
     }
   }
 
@@ -54,10 +57,10 @@ const TaskRow = ({ task, onChange }) => {
               />
             </span>
           ) : (
-            'Allgemein'
+            copy.general
           )}
           {' · '}
-          {task.typ} · Fällig: {fmtCrmDate(task.faellig_am)}
+          {t(`crm.taskTypes.${task.typ}`, { defaultValue: task.typ })} · {t('components.crmTasks.due', { date: fmtCrmDate(task.faellig_am) })}
           {overdue && ' ⚠'}
         </p>
       </div>
@@ -66,7 +69,7 @@ const TaskRow = ({ task, onChange }) => {
           type="button"
           onClick={complete}
           className="p-1.5 rounded-md border-0 bg-elaya-success/15 text-elaya-success cursor-pointer hover:bg-elaya-success/25"
-          title="Erledigen"
+          title={copy.completeTitle}
         >
           <Check size={14} />
         </button>
@@ -74,7 +77,7 @@ const TaskRow = ({ task, onChange }) => {
           type="button"
           onClick={remove}
           className="p-1.5 rounded-md border-0 bg-studio-red/10 text-studio-red cursor-pointer hover:bg-studio-red/20"
-          title="Löschen"
+          title={copy.deleteTitle}
         >
           <Trash2 size={14} />
         </button>
@@ -90,14 +93,17 @@ const Section = ({ title, tasks, colorClass, onChange }) => {
       <h3 className={`text-[10px] font-bold uppercase tracking-wider mb-2 m-0 ${colorClass}`}>
         {title} ({tasks.length})
       </h3>
-      {tasks.map((t) => (
-        <TaskRow key={t.id} task={t} onChange={onChange} />
+      {tasks.map((task) => (
+        <TaskRow key={task.id} task={task} onChange={onChange} />
       ))}
     </div>
   )
 }
 
 const CrmTasksTab = ({ tasks, loading, onRefresh, onNewTask }) => {
+  const { components } = useContent()
+  const copy = components.crmTasks
+
   const grouped = useMemo(() => {
     const heute = startOfDay()
     const morgen = new Date(heute)
@@ -105,68 +111,65 @@ const CrmTasksTab = ({ tasks, loading, onRefresh, onNewTask }) => {
     const wEnde = new Date(heute)
     wEnde.setDate(wEnde.getDate() + 7)
 
-    const open = tasks.filter((t) => !t.erledigt)
-    const done = tasks.filter((t) => t.erledigt).slice(-5).reverse()
+    const open = tasks.filter((task) => !task.erledigt)
+    const done = tasks.filter((task) => task.erledigt).slice(-5).reverse()
 
-    const byDate = (t) => startOfDay(new Date(t.faellig_am))
+    const byDate = (task) => startOfDay(new Date(task.faellig_am))
 
     return {
-      overdue: open.filter((t) => byDate(t) < heute),
-      today: open.filter((t) => {
-        const d = byDate(t)
+      overdue: open.filter((task) => byDate(task) < heute),
+      today: open.filter((task) => {
+        const d = byDate(task)
         return d >= heute && d < morgen
       }),
-      week: open.filter((t) => {
-        const d = byDate(t)
+      week: open.filter((task) => {
+        const d = byDate(task)
         return d >= morgen && d <= wEnde
       }),
-      later: open.filter((t) => byDate(t) > wEnde),
+      later: open.filter((task) => byDate(task) > wEnde),
       done,
       openCount: open.length,
     }
   }, [tasks])
 
   if (loading) {
-    return <div className="py-16 text-center text-studio-w2 text-[13px]">Lade Aufgaben…</div>
+    return <div className="py-16 text-center text-studio-w2 text-[13px]">{copy.loading}</div>
   }
 
   return (
     <div>
       <div className="flex justify-end mb-4">
-        <Button size="sm" onClick={onNewTask}>+ Neue Aufgabe</Button>
+        <Button size="sm" onClick={onNewTask}>{copy.newTask}</Button>
       </div>
 
       {tasks.length === 0 ? (
-        <EmptyState
-          title="Keine Aufgaben"
-          description="Lege Follow-ups und Erinnerungen für deine Leads an."
-        />
+        <EmptyState title={copy.emptyTitle} description={copy.emptyDesc} />
       ) : (
         <>
           {grouped.openCount === 0 && (
             <Card className="mb-4 text-center py-5">
-              <p className="text-elaya-success text-[13px] m-0">Alle Aufgaben erledigt!</p>
+              <p className="text-elaya-success text-[13px] m-0">{copy.allDone}</p>
             </Card>
           )}
 
-          <Section title="Überfällig" tasks={grouped.overdue} colorClass="text-studio-red" onChange={onRefresh} />
-          <Section title="Heute" tasks={grouped.today} colorClass="text-studio-gold" onChange={onRefresh} />
-          <Section title="Diese Woche" tasks={grouped.week} colorClass="text-studio-teal-2" onChange={onRefresh} />
-          <Section title="Später" tasks={grouped.later} colorClass="text-studio-w4" onChange={onRefresh} />
+          <Section title={copy.overdue} tasks={grouped.overdue} colorClass="text-studio-red" onChange={onRefresh} />
+          <Section title={copy.today} tasks={grouped.today} colorClass="text-studio-gold" onChange={onRefresh} />
+          <Section title={copy.thisWeek} tasks={grouped.week} colorClass="text-studio-teal-2" onChange={onRefresh} />
+          <Section title={copy.later} tasks={grouped.later} colorClass="text-studio-w4" onChange={onRefresh} />
 
           {grouped.done.length > 0 && (
             <div className="mt-6">
               <h3 className="text-[10px] font-bold uppercase tracking-wider text-studio-w4 mb-2 m-0">
-                Zuletzt erledigt
+                {copy.recentlyDone}
               </h3>
-              {grouped.done.map((t) => (
+              {grouped.done.map((task) => (
                 <div
-                  key={t.id}
+                  key={task.id}
                   className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-studio-bg-3/30 mb-1 opacity-60"
                 >
                   <span className="text-[11px]">✓</span>
-                  <span className="flex-1 text-[11px] text-studio-w3 line-through truncate">{t.titel}</span>
-                  <span className="text-[9px] text-studio-w4">{fmtCrmDate(t.erledigt_am)}</span>
+                  <span className="flex-1 text-[11px] text-studio-w3 line-through truncate">{task.titel}</span>
+                  <span className="text-[9px] text-studio-w4">{fmtCrmDate(task.erledigt_am)}</span>
                 </div>
               ))}
             </div>

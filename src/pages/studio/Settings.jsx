@@ -16,6 +16,7 @@ import {
 import PricingConfigForm from '../../components/pricing/PricingConfigForm'
 import SessionPredictionForm from '../../components/sessionPrediction/SessionPredictionForm'
 import { cloneSessionPrediction } from '../../components/sessionPrediction/sessionPredictionFields'
+import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
 import {
   PRICING_GROUPS,
   PRICING_LABELS,
@@ -278,43 +279,74 @@ const PricingTab = () => {
 }
 
 const SessionPredictionTab = () => {
-  const [config, setConfig] = useState(null)
-  const [loading, setLoading] = useState(true)
+  /**
+   * TEMP testing phase: studio may tweak parameters locally to see the live
+   * calculator effect. Changes are NOT saved — only Admin persists platform-wide.
+   * Set to false for production (view-only form).
+   */
+  const TEMP_STUDIO_WHAT_IF = true
 
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      try {
-        const res = await getStudioConfig()
-        if (!cancelled) setConfig(res.data.data.studio_config)
-      } catch {
-        toast.error('Sitzungsprognose konnte nicht geladen werden.')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
-    return () => {
-      cancelled = true
+  const [loading, setLoading] = useState(true)
+  const [values, setValues] = useState(null)
+  const [savedBaseline, setSavedBaseline] = useState(null)
+
+  const load = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true)
+    try {
+      const res = await getStudioConfig()
+      const next = cloneSessionPrediction(res.data.data.studio_config?.session_prediction)
+      setValues(next)
+      setSavedBaseline(cloneSessionPrediction(next))
+    } catch {
+      toast.error('Sitzungsprognose konnte nicht geladen werden.')
+    } finally {
+      if (!silent) setLoading(false)
     }
   }, [])
 
-  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
+  useEffect(() => {
+    load()
+  }, [load])
 
-  const prediction = cloneSessionPrediction(config?.session_prediction)
+  usePlatformConfigSocket({
+    enabled: true,
+    onSessionPredictionUpdated: () => {
+      toast('Sitzungsprognose wurde vom Admin aktualisiert', { icon: '↻' })
+      load({ silent: true })
+    },
+  })
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
 
   return (
     <Section
       title="Sitzungsprognose"
-      desc="Plattform-Parameter für die geschätzte Sitzungszahl. Nur die Elaya-Administration kann diese Werte ändern."
+      desc="Plattform-Parameter für die geschätzte Sitzungszahl. Der Live-Rechner zeigt sofort, wie sich Faktoren auf Min/Max-Sitzungen auswirken."
     >
       <p className="text-studio-w3 text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4">
-        Sichtbar für das Studio, nicht editierbar. Bei jeder neuen Case-Erstellung fliessen Lifestyle,
-        Hauttyp, Farben, Cover-up und die übrigen Faktoren automatisch in Min/Max-Sitzungen und den Preisrange ein.
+        {TEMP_STUDIO_WHAT_IF
+          ? 'Testmodus: Parameter dürfen lokal geändert werden, um den Live-Rechner zu prüfen — Speichern kann nur die Elaya-Administration. Nach Admin-Speichern aktualisiert sich diese Ansicht live.'
+          : 'Sichtbar für das Studio, nicht editierbar. Bei jeder neuen Case-Erstellung fliessen Lifestyle, Hauttyp, Farben, Cover-up und die übrigen Faktoren automatisch in Min/Max-Sitzungen ein. Updates vom Admin erscheinen live.'}
       </p>
-      {prediction && Object.keys(prediction).length > 0 ? (
-        <SessionPredictionForm values={prediction} onChange={() => {}} disabled />
+      {values && Object.keys(values).length > 0 ? (
+        <SessionPredictionForm
+          values={values}
+          onChange={TEMP_STUDIO_WHAT_IF ? setValues : () => {}}
+          disabled={!TEMP_STUDIO_WHAT_IF}
+          savedBaseline={savedBaseline}
+        />
       ) : (
         <p className="text-studio-w2 text-[12px] m-0">Keine Parameter hinterlegt.</p>
+      )}
+      {TEMP_STUDIO_WHAT_IF && (
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => setValues(cloneSessionPrediction(savedBaseline))}
+          disabled={!savedBaseline}
+        >
+          Auf gespeicherte Werte zurücksetzen
+        </Button>
       )}
     </Section>
   )
@@ -492,6 +524,14 @@ const HoursTab = () => {
 
   useEffect(() => { load() }, [load])
 
+  usePlatformConfigSocket({
+    enabled: true,
+    onStudioScheduleUpdated: () => {
+      if (isEditing) return
+      void load()
+    },
+  })
+
   const setDay = (key, field, value) =>
     setHours((prev) => ({
       ...prev,
@@ -531,7 +571,7 @@ const HoursTab = () => {
     <div className="flex flex-col gap-5">
     <Section
       title="Öffnungszeiten"
-      desc="Wöchentliches Schema. Einzelne Tage (extra öffnen oder schliessen) stehen darunter."
+      desc="Öffnungsfenster pro Wochentag (Von–Bis). Kund:innen sehen auf dem Handy stündliche Buchungszeiten innerhalb dieses Fensters — z. B. 9:00–19:00 → 9:00, 10:00, … 18:00. Einzelne Tage (extra öffnen oder schliessen) stehen darunter."
       canEdit={canEdit}
       isEditing={isEditing}
       onEdit={() => setIsEditing(true)}
@@ -545,13 +585,35 @@ const HoursTab = () => {
         <>
           {WEEKDAYS.map(({ key, label }) => {
             const day = hours[key] ?? { offen: true, von: '10:00', bis: '19:00' }
+            const open = day.offen !== false
+            const range = open
+              ? formatTimeRange12(day.von ?? '10:00', day.bis ?? '19:00')
+              : 'Geschlossen'
+            const slotHint = open
+              ? (() => {
+                  const slots = []
+                  const toMin = (t) => {
+                    const [h, m] = String(t || '10:00').split(':').map(Number)
+                    return h * 60 + m
+                  }
+                  const fromMin = (n) =>
+                    `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`
+                  let cursor = toMin(day.von ?? '10:00')
+                  const end = toMin(day.bis ?? '19:00')
+                  while (cursor < end) {
+                    slots.push(fromMin(cursor))
+                    cursor += 60
+                  }
+                  if (!slots.length) return ''
+                  if (slots.length <= 4) return slots.join(', ')
+                  return `${slots[0]}, ${slots[1]}, … ${slots[slots.length - 1]} (${slots.length} Zeiten)`
+                })()
+              : ''
             return (
               <InfoRow
                 key={key}
                 label={label}
-                value={day.offen !== false
-                  ? formatTimeRange12(day.von ?? '10:00', day.bis ?? '19:00')
-                  : 'Geschlossen'}
+                value={open && slotHint ? `${range} · ${slotHint}` : range}
               />
             )
           })}
@@ -640,6 +702,17 @@ const HoursExceptions = ({ canEdit }) => {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  usePlatformConfigSocket({
+    enabled: true,
+    onStudioScheduleUpdated: (payload) => {
+      if (payload?.schedule?.exceptions) {
+        setItems(payload.schedule.exceptions)
+        return
+      }
+      void load()
+    },
+  })
 
   const persist = async (next) => {
     setSaving(true)

@@ -5,6 +5,7 @@ import {
   SESSION_BASE_FIELDS,
   TATTOO_DELTA_GROUPS,
 } from './sessionPredictionFields'
+import SessionPredictionLiveCalculator from './SessionPredictionLiveCalculator'
 
 const NumberField = ({ id, label, value, onChange, disabled, step = '0.05', hint }) => (
   <Input
@@ -54,8 +55,15 @@ const PlausibilityPanel = ({ report }) => {
 /**
  * Shared editor for platform Sitzungsprognose parameters.
  * Admin: editable. Studio: pass disabled.
+ * Live calculator shows effect of current `values` immediately.
  */
-const SessionPredictionForm = ({ values, onChange, disabled = false, plausibility = null }) => {
+const SessionPredictionForm = ({
+  values,
+  onChange,
+  disabled = false,
+  plausibility = null,
+  savedBaseline = null,
+}) => {
   const setBase = (key, value) => onChange({ ...values, [key]: value })
 
   const setMap = (bucket, group, key, value) => {
@@ -85,6 +93,11 @@ const SessionPredictionForm = ({ values, onChange, disabled = false, plausibilit
         Lifestyle-Score 1 = ×0.85 (optimal), Score 5 = ×1.50 (stark beeinträchtigt). Kunden sehen diese
         Parameter nicht.
       </p>
+
+      {values ? (
+        <SessionPredictionLiveCalculator values={values} savedBaseline={savedBaseline} />
+      ) : null}
+
       <PlausibilityPanel report={plausibility} />
 
       <div>

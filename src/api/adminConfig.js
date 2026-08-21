@@ -3,6 +3,9 @@ import api from '../lib/axios'
 export const getPlatformConfig = () => api.get('/config/platform')
 export const updatePlatformConfig = (payload) => api.patch('/config/platform', payload)
 
+export const previewSessionPrediction = (data) =>
+  api.post('/config/session-prediction/preview', data)
+
 export const getFeatureCatalog = () => api.get('/config/features/catalog')
 export const getEffectiveFeatures = (params) =>
   api.get('/config/features/effective', { params })

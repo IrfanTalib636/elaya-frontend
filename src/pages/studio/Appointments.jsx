@@ -8,6 +8,7 @@ import { listCases, getCaseAvailability } from '../../api/cases'
 import { getStudioSettings, updateStudioSettings } from '../../api/studio'
 import { fmtDateDeLong } from '../../utils/time'
 import { resolveHoursForDate } from '../../utils/studioHours'
+import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
 import PreSessionCheck, { EMPTY_PRE_SESSION, preSessionToParams, preSessionToBody } from '../../components/case/PreSessionCheck'
 import GroupBookingModal from '../../components/appointments/GroupBookingModal'
 import GroupDetailModal from '../../components/appointments/GroupDetailModal'
@@ -664,6 +665,25 @@ const StudioAppointments = () => {
       })
       .catch(() => {})
   }, [])
+
+  usePlatformConfigSocket({
+    enabled: true,
+    onStudioScheduleUpdated: (payload) => {
+      const schedule = payload?.schedule
+      if (schedule?.weekly) {
+        setWeeklyHours(schedule.weekly)
+        setExceptions(schedule.exceptions ?? [])
+        return
+      }
+      getStudioSettings()
+        .then((res) => {
+          const settings = res.data.data.settings
+          setWeeklyHours(settings.oeffnungszeiten ?? {})
+          setExceptions(settings.oeffnungs_ausnahmen ?? [])
+        })
+        .catch(() => {})
+    },
+  })
 
   useEffect(() => {
     if (!urlBook) return

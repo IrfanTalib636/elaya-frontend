@@ -353,7 +353,7 @@ const NewSession = () => {
         className="flex items-center gap-1.5 text-studio-w2 text-[12px] mb-5 hover:text-studio-white transition-colors cursor-pointer bg-transparent border-0"
       >
         <ArrowLeft size={13} />
-        Zum Fall
+        {copy.backToCase}
       </button>
 
       <PageHeader
@@ -361,13 +361,13 @@ const NewSession = () => {
         subtitle={`${caseTitle} · ${caseData?.caseId ?? ''}${linkedAppointment ? copy.fromAppointment : ''}`}
       >
         <Button variant="ghost" onClick={() => navigate(`/studio/cases/${caseId}`)} disabled={saving}>
-          Abbrechen
+          {copy.cancel}
         </Button>
         <Button variant="secondary" loading={savingDraft} disabled={saving} onClick={() => handleSave(true)}>
-          Als Entwurf speichern
+          {copy.saveDraft}
         </Button>
         <Button loading={savingFinal} disabled={saving} onClick={() => handleSave(false)}>
-          Sitzung abschliessen
+          {copy.complete}
         </Button>
       </PageHeader>
 
@@ -377,9 +377,11 @@ const NewSession = () => {
         <Section title={copy.general}>
           {linkedAppointment ? (
             <p className="text-studio-gold-2 text-[12px] m-0 -mt-1">
-              Datum, Uhrzeit und Fall stammen vom gebuchten Termin
-              {linkedAppointment.time ? ` (${toDateInput(linkedAppointment.date)} · ${toTimeInput(linkedAppointment)})` : ''}.
-              Laserparameter bitte ergänzen.
+              {t('studioPages.newSession.linkedApptHint', {
+                when: linkedAppointment.time
+                  ? ` (${toDateInput(linkedAppointment.date)} · ${toTimeInput(linkedAppointment)})`
+                  : '',
+              })}
             </p>
           ) : null}
           <div className="grid grid-cols-3 gap-4">
@@ -543,7 +545,7 @@ const NewSession = () => {
               placeholder="120.00"
             />
             <Select label={copy.paymentMethod} value={form.zahlung_zahlungsart} onChange={set('zahlung_zahlungsart')}>
-              <option value="">— Auswählen —</option>
+              <option value="">{copy.selectOption}</option>
               <option value="bar">{copy.cash}</option>
               <option value="karte">{copy.card}</option>
               <option value="twint">{copy.twint}</option>
@@ -577,13 +579,13 @@ const NewSession = () => {
         {/* ── Bottom actions ── */}
         <div className="flex justify-end gap-3 pb-4">
           <Button variant="ghost" onClick={() => navigate(`/studio/cases/${caseId}`)} disabled={saving}>
-            Abbrechen
+            {copy.cancel}
           </Button>
           <Button variant="secondary" loading={savingDraft} disabled={saving} onClick={() => handleSave(true)}>
-            Als Entwurf speichern
+            {copy.saveDraft}
           </Button>
           <Button loading={savingFinal} disabled={saving} onClick={() => handleSave(false)}>
-            Sitzung abschliessen
+            {copy.complete}
           </Button>
         </div>
 

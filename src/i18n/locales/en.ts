@@ -1844,7 +1844,54 @@ const en = {
       "estimateRequired": "Price and session range are required.",
       "estimateSaveFailed": "Save failed.",
       "adjustEstimateTitle": "Adjust estimate",
-      "customerNotePlaceholder": "Note for the customer (optional)…"
+      "customerNotePlaceholder": "Note for the customer (optional)…",
+      "estimatePanel": {
+        "title": "AI calculation & confirmation",
+        "statusOffen": "AI estimate — not yet confirmed",
+        "statusBestaetigt": "Confirmed by studio",
+        "statusAngepasst": "Adjusted by studio",
+        "calculatedPrice": "Calculated price (system)",
+        "confirmedPrice": "Confirmed studio price",
+        "notConfirmed": "Not yet confirmed",
+        "sessionRange": "Session range",
+        "sessionsValue": "{{min}}–{{max}} sessions",
+        "calculatedSessions": "Calculated sessions",
+        "totalCost": "Total cost (min–max)",
+        "note": "Note",
+        "reviewTitle": "Studio review recommended",
+        "reviewBody": "The calculation ran with incomplete or uncertain data. Please confirm or adjust.",
+        "transparency": "The calculated price stays visible. After confirmation or adjustment, the studio price applies for the customer — both values remain transparent.",
+        "confirm": "Confirm estimate",
+        "adjust": "Adjust…",
+        "reopen": "Reopen",
+        "pricePerSession": "Price per session (CHF)",
+        "sessionsMin": "Sessions min.",
+        "sessionsMax": "Sessions max.",
+        "customerNoteLabel": "Note for the customer (optional)",
+        "cancel": "Cancel",
+        "saveAdjustment": "Save adjustment",
+        "toastConfirmed": "Confirmation saved",
+        "toastAdjusted": "Adjustment saved",
+        "toastReopened": "Estimate reopened",
+        "toastChatNotified": "{{message}} — customer notified in chat"
+      },
+      "reviewTriggers": {
+        "missing_size": "Size incomplete",
+        "missing_colors": "Colours missing",
+        "missing_fitzpatrick": "Skin type unclear",
+        "missing_location": "Body area unclear",
+        "missing_age": "Tattoo age missing",
+        "missing_intake_photo": "No initial photo",
+        "photo_full_visible": "Tattoo not fully visible",
+        "photo_good_light": "Insufficient lighting",
+        "photo_focus": "Photo out of focus",
+        "photo_distance": "Unsuitable distance",
+        "photo_no_filter": "Filter suspected",
+        "sit_scarring": "Scarring / scar tissue",
+        "sit_coverup": "Cover-up complexity",
+        "sit_multicolour": "Multi-colour tattoo",
+        "sit_large_area": "Large area"
+      }
     },
     "appointments": {
       "title": "Appointments",
@@ -2187,9 +2234,12 @@ const en = {
       "caseFallback": "Case",
       "fromAppointment": " · taken from appointment",
       "title": "Session #{{number}}",
+      "backToCase": "Back to case",
       "cancel": "Cancel",
-      "saveDraft": "Save draft",
+      "saveDraft": "Save as draft",
       "complete": "Complete session",
+      "selectOption": "— Select —",
+      "linkedApptHint": "Date, time and case are taken from the booked appointment{{when}}. Please add laser parameters.",
       "linkedAppt": "Linked to appointment{{when}}.",
       "general": "General",
       "dateRequiredLabel": "Date *",
@@ -3321,7 +3371,8 @@ const en = {
     "studioWide": "General (studio-wide)",
     "titlePlaceholder": "e.g. Follow-up after consultation"
   }
-} as const
+}
 
+/** Structure matches `en`; leaf values are plain `string` so `de` can differ. */
 export type TranslationSchema = typeof en
 export default en

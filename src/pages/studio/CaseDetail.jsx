@@ -26,20 +26,6 @@ const APPT_TYPE_LABELS = {
   first:     'Erstbehandlung',
 }
 
-const ESTIMATE_REVIEW_LABELS = {
-  missing_size: 'Grösse unvollständig',
-  missing_colors: 'Farben fehlen',
-  missing_fitzpatrick: 'Hauttyp unklar',
-  missing_location: 'Körperstelle unklar',
-  missing_age: 'Tattoalter fehlt',
-  missing_intake_photo: 'Kein Initialfoto',
-  photo_full_visible: 'Tattoo nicht vollständig sichtbar',
-  photo_good_light: 'Beleuchtung unzureichend',
-  photo_focus: 'Foto unscharf',
-  photo_distance: 'Abstand ungeeignet',
-  photo_no_filter: 'Filter verdächtig',
-}
-
 const CANCELLED_APPT = new Set(['storniert', 'cancelled', 'completed'])
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -181,27 +167,28 @@ const ZoneRow = ({ z }) => (
 )
 
 // ── Estimate confirmation ─────────────────────────────────────────────────
-const ESTIMATE_STATUS_META = {
-  offen: {
-    label: 'KI-Schätzung — noch nicht bestätigt',
-    classes: 'bg-elaya-warning/15 text-elaya-warning',
-  },
-  bestaetigt: {
-    label: 'Vom Studio bestätigt',
-    classes: 'bg-elaya-success/15 text-elaya-success',
-  },
-  angepasst: {
-    label: 'Vom Studio angepasst',
-    classes: 'bg-studio-blue/15 text-studio-blue',
-  },
+const ESTIMATE_STATUS_CLASSES = {
+  offen: 'bg-elaya-warning/15 text-elaya-warning',
+  bestaetigt: 'bg-elaya-success/15 text-elaya-success',
+  angepasst: 'bg-studio-blue/15 text-studio-blue',
 }
 
 const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
   const { t, studioPages } = useContent()
   const copy = studioPages.caseDetail
+  const ep = copy.estimatePanel
   const confirmation = caseData.estimate_confirmation ?? { status: 'offen' }
   const status = confirmation.status ?? 'offen'
-  const meta = ESTIMATE_STATUS_META[status] ?? ESTIMATE_STATUS_META.offen
+  const statusLabel =
+    status === 'bestaetigt'
+      ? ep.statusBestaetigt
+      : status === 'angepasst'
+        ? ep.statusAngepasst
+        : ep.statusOffen
+  const statusClasses = ESTIMATE_STATUS_CLASSES[status] ?? ESTIMATE_STATUS_CLASSES.offen
+
+  const triggerLabel = (id) =>
+    t(`studioPages.caseDetail.reviewTriggers.${id}`, { defaultValue: id })
 
   const [saving, setSaving] = useState(false)
   const [notiz, setNotiz] = useState('')
@@ -221,7 +208,7 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
       onUpdated(d)
       toast.success(
         d.chat_notified
-          ? `${successMessage} — Kunde wurde im Chat benachrichtigt`
+          ? t('studioPages.caseDetail.estimatePanel.toastChatNotified', { message: successMessage })
           : successMessage
       )
       setNotiz('')
@@ -238,10 +225,10 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
   const confirmEstimate = () =>
     submit(
       { status: 'bestaetigt', ...(notiz.trim() ? { notiz: notiz.trim() } : {}) },
-      'Bestätigung gespeichert'
+      ep.toastConfirmed
     )
 
-  const reopenEstimate = () => submit({ status: 'offen' }, 'Schätzung neu geöffnet')
+  const reopenEstimate = () => submit({ status: 'offen' }, ep.toastReopened)
 
   const openAdjust = () => {
     setAdjustForm({
@@ -269,7 +256,7 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
         sessionsMax: max,
         ...(adjustForm.notiz.trim() ? { notiz: adjustForm.notiz.trim() } : {}),
       },
-      'Anpassung gespeichert'
+      ep.toastAdjusted
     )
   }
 
@@ -289,15 +276,20 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
   const totalMin = displayPrice > 0 && displayMin != null ? displayPrice * displayMin : null
   const totalMax = displayPrice > 0 && displayMax != null ? displayPrice * displayMax : null
 
+  const sessionsLabel = (min, max) =>
+    min != null && max != null
+      ? t('studioPages.caseDetail.estimatePanel.sessionsValue', { min, max })
+      : null
+
   return (
     <>
       <Card className="flex flex-col gap-3">
         <h3 className="text-[13px] font-semibold text-studio-white m-0">
-          KI-Kalkulation &amp; Bestätigung
+          {ep.title}
         </h3>
 
-        <span className={`inline-flex self-start items-center px-2 py-1 rounded-full text-[10px] font-semibold ${meta.classes}`}>
-          {meta.label}
+        <span className={`inline-flex self-start items-center px-2 py-1 rounded-full text-[10px] font-semibold ${statusClasses}`}>
+          {statusLabel}
         </span>
 
         {status !== 'offen' && (confirmation.datum || confirmation.bestaetigt_von) && (
@@ -307,61 +299,55 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
         )}
 
         <InfoRow
-          label="Kalkulierter Preis (System)"
+          label={ep.calculatedPrice}
           value={fmtCHF(caseData.calculated_pricePerSession ?? (!['bestaetigt', 'angepasst'].includes(status) ? caseData.pricePerSession : null))}
         />
         <InfoRow
-          label="Bestätigter Studio-Preis"
+          label={ep.confirmedPrice}
           value={
             ['bestaetigt', 'angepasst'].includes(status)
               ? fmtCHF(caseData.confirmed_pricePerSession ?? confirmation.pricePerSession ?? caseData.pricePerSession)
-              : 'Noch nicht bestätigt'
+              : ep.notConfirmed
           }
         />
         <InfoRow
-          label="Sitzungsbereich"
+          label={ep.sessionRange}
           value={
             ['bestaetigt', 'angepasst'].includes(status) && caseData.confirmed_sessionsMin != null
-              ? `${caseData.confirmed_sessionsMin}–${caseData.confirmed_sessionsMax} Sitzungen`
-              : caseData.sessionsMin != null
-                ? `${caseData.sessionsMin}–${caseData.sessionsMax} Sitzungen`
-                : null
+              ? sessionsLabel(caseData.confirmed_sessionsMin, caseData.confirmed_sessionsMax)
+              : sessionsLabel(caseData.sessionsMin, caseData.sessionsMax)
           }
         />
         {status !== 'offen' && caseData.calculated_sessionsMin != null && (
           <InfoRow
-            label="Kalkulierte Sitzungen"
-            value={`${caseData.calculated_sessionsMin}–${caseData.calculated_sessionsMax} Sitzungen`}
+            label={ep.calculatedSessions}
+            value={sessionsLabel(caseData.calculated_sessionsMin, caseData.calculated_sessionsMax)}
           />
         )}
         {totalMin != null && totalMax != null && (
           <InfoRow
-            label="Gesamtkosten (min–max)"
+            label={ep.totalCost}
             value={`${fmtCHF(totalMin)} – ${fmtCHF(totalMax)}`}
           />
         )}
-        {confirmation.notiz && <InfoRow label="Notiz" value={confirmation.notiz} />}
+        {confirmation.notiz && <InfoRow label={ep.note} value={confirmation.notiz} />}
 
         {status === 'offen' && caseData.estimate_needs_review && (
           <div className="rounded-[10px] border border-elaya-warning/40 bg-elaya-warning/10 px-3 py-2">
             <p className="text-elaya-warning text-[11px] font-semibold m-0 mb-1">
-              Studio-Review empfohlen
+              {ep.reviewTitle}
             </p>
             <p className="text-studio-w2 text-[11px] m-0 leading-relaxed">
-              Die Kalkulation lief mit unvollständigen oder unsicheren Angaben. Bitte bestätigen
-              oder anpassen.
+              {ep.reviewBody}
               {(caseData.estimate_review_triggers || []).length > 0
-                ? ` · ${(caseData.estimate_review_triggers || [])
-                    .map((id) => ESTIMATE_REVIEW_LABELS[id] || id)
-                    .join(', ')}`
+                ? ` · ${(caseData.estimate_review_triggers || []).map(triggerLabel).join(', ')}`
                 : ''}
             </p>
           </div>
         )}
 
         <p className="text-studio-w3 text-[11px] m-0">
-          Der kalkulierte Preis bleibt sichtbar. Nach Bestätigung oder Anpassung gilt der Studio-Preis
-          für den Kunden — beide Werte bleiben transparent.
+          {ep.transparency}
         </p>
 
         {!caseData.read_only && (
@@ -375,15 +361,15 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
                 className="w-full px-3 py-2 rounded-[10px] border-[1.5px] border-elaya-border-strong bg-studio-bg-3 text-studio-w1 text-[12px] outline-none focus:border-studio-gold transition-colors placeholder:text-studio-w3 resize-none"
               />
               <Button size="sm" loading={saving} onClick={confirmEstimate} className="w-full">
-                Schätzung bestätigen
+                {ep.confirm}
               </Button>
               <Button size="sm" variant="secondary" disabled={saving} onClick={openAdjust} className="w-full">
-                Anpassen…
+                {ep.adjust}
               </Button>
             </div>
           ) : (
             <Button size="sm" variant="secondary" loading={saving} onClick={reopenEstimate} className="w-full">
-              Neu öffnen
+              {ep.reopen}
             </Button>
           )
         )}
@@ -393,7 +379,7 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
         <Modal title={copy.adjustEstimateTitle} onClose={() => setAdjustOpen(false)}>
           <div className="flex flex-col gap-3">
             <Input
-              label="Preis pro Sitzung (CHF)"
+              label={ep.pricePerSession}
               type="number"
               min={0}
               step="0.01"
@@ -402,7 +388,7 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
             />
             <div className="grid grid-cols-2 gap-3">
               <Input
-                label="Sitzungen min."
+                label={ep.sessionsMin}
                 type="number"
                 min={1}
                 step="1"
@@ -410,7 +396,7 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
                 onChange={setAdjust('sessionsMin')}
               />
               <Input
-                label="Sitzungen max."
+                label={ep.sessionsMax}
                 type="number"
                 min={1}
                 step="1"
@@ -420,7 +406,7 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
             </div>
             <div className="flex flex-col gap-1.5">
               <label htmlFor="estimate-notiz" className="text-studio-white text-[12px] font-semibold">
-                Notiz an den Kunden (optional)
+                {ep.customerNoteLabel}
               </label>
               <textarea
                 id="estimate-notiz"
@@ -432,10 +418,10 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
             </div>
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="ghost" onClick={() => setAdjustOpen(false)} disabled={saving}>
-                Abbrechen
+                {ep.cancel}
               </Button>
               <Button loading={saving} onClick={submitAdjust}>
-                Anpassung speichern
+                {ep.saveAdjustment}
               </Button>
             </div>
           </div>

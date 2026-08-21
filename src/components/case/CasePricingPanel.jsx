@@ -77,7 +77,11 @@ const CasePricingPanel = ({ caseId }) => {
             <p className="text-elaya-warning text-[11px] m-0">
               {copy.reviewRecommended}
               {(data.review_triggers || []).length > 0
-                ? ` · ${data.review_triggers.join(', ')}`
+                ? ` · ${(data.review_triggers || [])
+                    .map((id) =>
+                      t(`studioPages.caseDetail.reviewTriggers.${id}`, { defaultValue: id })
+                    )
+                    .join(', ')}`
                 : ''}
             </p>
           )}

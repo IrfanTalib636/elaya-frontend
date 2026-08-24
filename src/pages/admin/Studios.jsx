@@ -8,6 +8,7 @@ import {
   Badge,
   Modal,
   EmptyState,
+  Input,
 } from '../../components/ui'
 import { listAdminStudios, patchStudioStatus } from '../../api/adminStudios'
 import { getStudioConfigAdmin, updateStudioConfigAdmin } from '../../api/adminConfig'
@@ -29,6 +30,12 @@ const AdminStudios = () => {
   const [pricingSaving, setPricingSaving] = useState(false)
   const [pricingDefaults, setPricingDefaults] = useState(null)
   const [pricingValues, setPricingValues] = useState(() => pricingValuesFromConfig())
+  const [groupForm, setGroupForm] = useState({
+    klein_max_cm2: 50,
+    mittelgross_max_cm2: 150,
+    max_punkte: 4,
+    gruppen_rabatt_pct: 15,
+  })
 
   const load = async () => {
     setLoading(true)
@@ -66,6 +73,13 @@ const AdminStudios = () => {
       const cfg = res.data.data.studio_config
       setPricingValues(pricingValuesFromConfig(cfg.studio_pricing))
       setPricingDefaults(cfg.pricing_defaults ?? null)
+      const gg = cfg.gruppen_groessen ?? {}
+      setGroupForm({
+        klein_max_cm2: gg.klein_max_cm2 ?? 50,
+        mittelgross_max_cm2: gg.mittelgross_max_cm2 ?? 150,
+        max_punkte: gg.max_punkte ?? 4,
+        gruppen_rabatt_pct: Math.round((gg.gruppen_rabatt ?? 0.15) * 100),
+      })
     } catch {
       toast.error(copy.pricingLoadError)
       setPricingStudio(null)
@@ -80,6 +94,12 @@ const AdminStudios = () => {
     try {
       await updateStudioConfigAdmin(pricingStudio.id || pricingStudio._id, {
         studio_pricing: buildStudioPricing(pricingValues),
+        gruppen_groessen: {
+          klein_max_cm2: Number(groupForm.klein_max_cm2),
+          mittelgross_max_cm2: Number(groupForm.mittelgross_max_cm2),
+          max_punkte: Number(groupForm.max_punkte),
+          gruppen_rabatt: Number(groupForm.gruppen_rabatt_pct) / 100,
+        },
       })
       toast.success(copy.pricingSaved)
       setPricingStudio(null)
@@ -158,6 +178,46 @@ const AdminStudios = () => {
                 }
                 disabled={pricingSaving}
               />
+              <div className="space-y-2 pt-2 border-t border-elaya-border">
+                <p className="text-[13px] font-semibold m-0">{copy.groupTitle}</p>
+                <p className="text-[12px] text-admin-muted m-0">{copy.groupDesc}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label={copy.groupSmallMax}
+                    type="number"
+                    min={1}
+                    value={groupForm.klein_max_cm2}
+                    onChange={(e) => setGroupForm((p) => ({ ...p, klein_max_cm2: e.target.value }))}
+                    disabled={pricingSaving}
+                  />
+                  <Input
+                    label={copy.groupMediumMax}
+                    type="number"
+                    min={1}
+                    value={groupForm.mittelgross_max_cm2}
+                    onChange={(e) => setGroupForm((p) => ({ ...p, mittelgross_max_cm2: e.target.value }))}
+                    disabled={pricingSaving}
+                  />
+                  <Input
+                    label={copy.groupMaxPoints}
+                    type="number"
+                    min={1}
+                    max={16}
+                    value={groupForm.max_punkte}
+                    onChange={(e) => setGroupForm((p) => ({ ...p, max_punkte: e.target.value }))}
+                    disabled={pricingSaving}
+                  />
+                  <Input
+                    label={copy.groupDiscount}
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={groupForm.gruppen_rabatt_pct}
+                    onChange={(e) => setGroupForm((p) => ({ ...p, gruppen_rabatt_pct: e.target.value }))}
+                    disabled={pricingSaving}
+                  />
+                </div>
+              </div>
               <Button onClick={savePricing} loading={pricingSaving} className="w-full">
                 {copy.save}
               </Button>

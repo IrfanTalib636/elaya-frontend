@@ -1314,6 +1314,7 @@ const en = {
       "prices": "Prices",
       "sessionPrediction": "Session prediction",
       "hours": "Opening hours",
+      "groupBooking": "Group booking",
       "rooms": "Rooms",
       "staff": "Staff",
       "stripe": "Stripe"
@@ -1418,6 +1419,15 @@ const en = {
         "adminUpdated": "Session prediction was updated by admin"
       }
     },
+    "groupBooking": {
+      "title": "Group booking",
+      "desc": "Size points and group discount for booking several tattoos in one appointment. These values are stored per studio.",
+      "smallMax": "Small tattoo max (cm²)",
+      "mediumMax": "Medium tattoo max (cm²)",
+      "maxPoints": "Max points per appointment",
+      "discount": "Group discount (%)",
+      "discountHint": "Applied to the combined session price of all selected cases."
+    },
     "hours": {
       "title": "Opening hours",
       "desc": "Opening window per weekday (From–To). Customers see hourly booking times on mobile within this window — e.g. 9:00–19:00 → 9:00, 10:00, … 18:00. Individual days (extra open or closed) are below.",
@@ -1425,6 +1435,9 @@ const en = {
       "bufferValue": "{{minutes}} min",
       "bufferInputLabel": "Buffer time after appointments (minutes)",
       "bufferHint": "Time between consecutive appointments.",
+      "slotIntervalLabel": "Slot interval",
+      "slotIntervalValue": "{{minutes}} min",
+      "slotIntervalHint": "Length of each bookable time slot in the customer app.",
       "slotCountSuffix": "({{count}} times)",
       "slotPreviewTruncated": "{{first}}, {{second}}, … {{last}} ({{count}} times)",
       "weekdays": {
@@ -1443,7 +1456,8 @@ const en = {
         "openWithRange": "Open {{range}}",
         "removeDayAria": "Remove day",
         "addOrOverwrite": "Add or overwrite day",
-        "date": "Date",
+        "date": "Date from",
+        "dateTo": "Date to",
         "note": "Note",
         "notePlaceholder": "e.g. Holiday"
       },
@@ -1899,7 +1913,8 @@ const en = {
     },
     "appointments": {
       "title": "Appointments",
-      "weekSubtitle": "CW {{week}} · {{count}} appointment{{plural}} this week · Click a day to change availability",
+      "weekSubtitle": "CW {{week}} · {{count}} appointment{{plural}} this week · Click a day to change extra open/closed dates",
+      "manageAvailability": "Opening hours",
       "pluralSuffix": "s",
       "today": "Today",
       "groupAppointment": "Group appointment",
@@ -2516,7 +2531,13 @@ const en = {
       "activate": "Activate",
       "lock": "Lock",
       "pricingModalTitle": "Prices · {{name}}",
-      "save": "Save"
+      "save": "Save",
+      "groupTitle": "Group booking",
+      "groupDesc": "Size points and group discount for this studio. Stored per studio.",
+      "groupSmallMax": "Small tattoo max (cm²)",
+      "groupMediumMax": "Medium tattoo max (cm²)",
+      "groupMaxPoints": "Max points per appointment",
+      "groupDiscount": "Group discount (%)"
     },
     "settings": {
       "title": "Settings",

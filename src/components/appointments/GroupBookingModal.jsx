@@ -16,6 +16,7 @@ import {
   totalPunkte,
   canToggleCase,
   fmtCHF,
+  normalizeGruppenConfig,
 } from '../../utils/groupBooking'
 
 const addDaysISO = (iso, n) => {
@@ -64,7 +65,7 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
     getPublicConfig()
       .then((r) => {
         const gg = r.data?.data?.config?.gruppen_groessen
-        if (gg) setConfig({ ...DEFAULT_GRUPPEN_CONFIG, ...gg })
+        if (gg) setConfig(normalizeGruppenConfig(gg))
       })
       .catch(() => {})
   }, [])

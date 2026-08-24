@@ -1316,6 +1316,7 @@ const de: TranslationSchema = {
       "prices": "Preise",
       "sessionPrediction": "Sitzungsprognose",
       "hours": "Öffnungszeiten",
+      "groupBooking": "Gruppenbuchung",
       "rooms": "Räume",
       "staff": "Mitarbeiter",
       "stripe": "Stripe"
@@ -1420,6 +1421,15 @@ const de: TranslationSchema = {
         "adminUpdated": "Sitzungsprognose wurde vom Admin aktualisiert"
       }
     },
+    "groupBooking": {
+      "title": "Gruppenbuchung",
+      "desc": "Grössenpunkte und Gruppenrabatt für mehrere Tattoos in einem Termin. Diese Werte gelten nur für dieses Studio.",
+      "smallMax": "Kleines Tattoo max. (cm²)",
+      "mediumMax": "Mittleres Tattoo max. (cm²)",
+      "maxPoints": "Max. Punkte pro Termin",
+      "discount": "Gruppenrabatt (%)",
+      "discountHint": "Wird auf den kombinierten Sitzungspreis aller gewählten Cases angewendet."
+    },
     "hours": {
       "title": "Öffnungszeiten",
       "desc": "Öffnungsfenster pro Wochentag (Von–Bis). Kund:innen sehen auf dem Handy stündliche Buchungszeiten innerhalb dieses Fensters — z. B. 9:00–19:00 → 9:00, 10:00, … 18:00. Einzelne Tage (extra öffnen oder schliessen) stehen darunter.",
@@ -1427,6 +1437,9 @@ const de: TranslationSchema = {
       "bufferValue": "{{minutes}} Min.",
       "bufferInputLabel": "Pufferzeit nach Terminen (Minuten)",
       "bufferHint": "Zeit zwischen aufeinanderfolgenden Terminen.",
+      "slotIntervalLabel": "Slot-Intervall",
+      "slotIntervalValue": "{{minutes}} Min.",
+      "slotIntervalHint": "Länge jedes buchbaren Zeitfensters in der Kunden-App.",
       "slotCountSuffix": "({{count}} Zeiten)",
       "slotPreviewTruncated": "{{first}}, {{second}}, … {{last}} ({{count}} Zeiten)",
       "weekdays": {
@@ -1445,7 +1458,8 @@ const de: TranslationSchema = {
         "openWithRange": "Geöffnet {{range}}",
         "removeDayAria": "Tag entfernen",
         "addOrOverwrite": "Tag hinzufügen oder überschreiben",
-        "date": "Datum",
+        "date": "Datum von",
+        "dateTo": "Datum bis",
         "note": "Notiz",
         "notePlaceholder": "z. B. Feiertag"
       },
@@ -1901,7 +1915,8 @@ const de: TranslationSchema = {
     },
     "appointments": {
       "title": "Termine",
-      "weekSubtitle": "KW {{week}} · {{count}} Termin{{plural}} diese Woche · Klick auf einen Tag, um Verfügbarkeit zu ändern",
+      "weekSubtitle": "KW {{week}} · {{count}} Termin{{plural}} diese Woche · Klick auf einen Tag für extra offen/geschlossen",
+      "manageAvailability": "Öffnungszeiten",
       "pluralSuffix": "e",
       "today": "Heute",
       "groupAppointment": "Gruppen-Termin",
@@ -2518,7 +2533,13 @@ const de: TranslationSchema = {
       "activate": "Aktivieren",
       "lock": "Sperren",
       "pricingModalTitle": "Preise · {{name}}",
-      "save": "Speichern"
+      "save": "Speichern",
+      "groupTitle": "Gruppenbuchung",
+      "groupDesc": "Grössenpunkte und Gruppenrabatt für dieses Studio. Wird pro Studio gespeichert.",
+      "groupSmallMax": "Kleines Tattoo max. (cm²)",
+      "groupMediumMax": "Mittleres Tattoo max. (cm²)",
+      "groupMaxPoints": "Max. Punkte pro Termin",
+      "groupDiscount": "Gruppenrabatt (%)"
     },
     "settings": {
       "title": "Einstellungen",

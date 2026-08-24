@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Plus, Lock, Users, Pencil } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Lock, Users, Pencil, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { listAppointments, createAppointment } from '../../api/appointments'
 import { listCustomers } from '../../api/customers'
@@ -773,6 +773,14 @@ const StudioAppointments = () => {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => navigate('/studio/settings?tab=hours')}
+            >
+              <Clock size={14} />
+              {t('studioPages.appointments.manageAvailability')}
+            </Button>
             <Button size="sm" variant="secondary" onClick={goToToday}>{copy.today}</Button>
             <Button
               size="sm"

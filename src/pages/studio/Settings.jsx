@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Sun, Moon, Monitor, Check, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Activity } from 'lucide-react'
+import { Sun, Moon, Monitor, Check, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Activity, Layers } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Card, PageHeader, Input, Button, Spinner, Select, Badge } from '../../components/ui'
 import LanguageToggle from '../../components/LanguageToggle'
@@ -35,6 +35,7 @@ const TAB_I18N = {
   pricing: 'prices',
   sessions: 'sessionPrediction',
   hours: 'hours',
+  group: 'groupBooking',
   rooms: 'rooms',
   staff: 'staff',
   stripe: 'stripe',
@@ -46,6 +47,7 @@ const TABS = [
   { id: 'pricing',    icon: DollarSign },
   { id: 'sessions',   icon: Activity },
   { id: 'hours',      icon: Clock },
+  { id: 'group',      icon: Layers },
   { id: 'rooms',      icon: Grid },
   { id: 'staff',      icon: Users },
   { id: 'stripe',     icon: CreditCard },
@@ -552,10 +554,12 @@ const HoursTab = () => {
   const [saving, setSaving] = useState(false)
   const [hours, setHours] = useState({})
   const [pufferzeit, setPufferzeit] = useState('10')
+  const [slotInterval, setSlotInterval] = useState('60')
 
   const applySettings = (settings) => {
     setHours(settings.oeffnungszeiten ?? {})
     setPufferzeit(String(settings.pufferzeit_minuten ?? 10))
+    setSlotInterval(String(settings.slot_interval_minuten ?? 60))
   }
 
   const load = useCallback(async () => {
@@ -600,9 +604,11 @@ const HoursTab = () => {
     setSaving(true)
     try {
       const puffer = parseInt(pufferzeit, 10)
+      const interval = parseInt(slotInterval, 10)
       await updateStudioSettings({
         oeffnungszeiten: hours,
         pufferzeit_minuten: Number.isNaN(puffer) ? 10 : puffer,
+        slot_interval_minuten: [15, 30, 45, 60].includes(interval) ? interval : 60,
       })
       setIsEditing(false)
       toast.success(t('settingsPage.hours.toasts.saved'))
@@ -650,9 +656,10 @@ const HoursTab = () => {
                     `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`
                   let cursor = toMin(day.von ?? '10:00')
                   const end = toMin(day.bis ?? '19:00')
+                  const step = Math.max(15, parseInt(slotInterval, 10) || 60)
                   while (cursor < end) {
                     slots.push(fromMin(cursor))
-                    cursor += 60
+                    cursor += step
                   }
                   if (!slots.length) return ''
                   if (slots.length <= 4) return slots.join(', ')
@@ -676,6 +683,10 @@ const HoursTab = () => {
           <InfoRow
             label={t('settingsPage.hours.bufferLabel')}
             value={t('settingsPage.hours.bufferValue', { minutes: pufferzeit })}
+          />
+          <InfoRow
+            label={t('settingsPage.hours.slotIntervalLabel')}
+            value={t('settingsPage.hours.slotIntervalValue', { minutes: slotInterval })}
           />
         </>
       ) : (
@@ -731,6 +742,18 @@ const HoursTab = () => {
             hint={t('settingsPage.hours.bufferHint')}
             className="max-w-[200px]"
           />
+          <Select
+            label={t('settingsPage.hours.slotIntervalLabel')}
+            value={slotInterval}
+            onChange={(e) => setSlotInterval(e.target.value)}
+            hint={t('settingsPage.hours.slotIntervalHint')}
+            className="max-w-[200px]"
+          >
+            <option value="15">15</option>
+            <option value="30">30</option>
+            <option value="45">45</option>
+            <option value="60">60</option>
+          </Select>
         </>
       )}
     </Section>
@@ -739,7 +762,7 @@ const HoursTab = () => {
   )
 }
 
-const EMPTY_AUSNAHME = { datum: '', offen: true, von: '10:00', bis: '19:00', notiz: '' }
+const EMPTY_AUSNAHME = { datum: '', bis_datum: '', offen: true, von: '10:00', bis: '19:00', notiz: '' }
 
 const HoursExceptions = ({ canEdit }) => {
   const { t } = useTranslation()
@@ -791,9 +814,25 @@ const HoursExceptions = ({ canEdit }) => {
       toast.error(t('settingsPage.hours.toasts.dateRequired'))
       return
     }
+    const start = draft.datum
+    const end = draft.bis_datum && draft.bis_datum >= start ? draft.bis_datum : start
+    const dates = []
+    for (let cursor = new Date(`${start}T12:00:00`); cursor <= new Date(`${end}T12:00:00`); cursor.setDate(cursor.getDate() + 1)) {
+      const y = cursor.getFullYear()
+      const m = String(cursor.getMonth() + 1).padStart(2, '0')
+      const d = String(cursor.getDate()).padStart(2, '0')
+      dates.push(`${y}-${m}-${d}`)
+    }
+    const dateSet = new Set(dates)
+    const entry = {
+      offen: draft.offen !== false,
+      von: draft.von,
+      bis: draft.bis,
+      notiz: draft.notiz,
+    }
     const next = [
-      ...items.filter((item) => item.datum !== draft.datum),
-      { ...draft, offen: draft.offen !== false },
+      ...items.filter((item) => !dateSet.has(item.datum)),
+      ...dates.map((datum) => ({ ...entry, datum })),
     ].sort((a, b) => a.datum.localeCompare(b.datum))
     await persist(next)
     setDraft(EMPTY_AUSNAHME)
@@ -869,6 +908,13 @@ const HoursExceptions = ({ canEdit }) => {
               type="date"
               value={draft.datum}
               onChange={(e) => setDraft((prev) => ({ ...prev, datum: e.target.value }))}
+              className="max-w-[180px]"
+            />
+            <Input
+              label={t('settingsPage.hours.exceptions.dateTo')}
+              type="date"
+              value={draft.bis_datum}
+              onChange={(e) => setDraft((prev) => ({ ...prev, bis_datum: e.target.value }))}
               className="max-w-[180px]"
             />
             <label className="flex items-center gap-2 pb-2 cursor-pointer">
@@ -1447,6 +1493,105 @@ const StripeTab = () => {
   )
 }
 
+const EMPTY_GROUP = {
+  klein_max_cm2: 50,
+  mittelgross_max_cm2: 150,
+  max_punkte: 4,
+  gruppen_rabatt_pct: 15,
+}
+
+const GroupBookingTab = () => {
+  const { t } = useTranslation()
+  const canEdit = useCanEditSettings()
+  const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState(EMPTY_GROUP)
+
+  const applyConfig = (cfg) => {
+    const gg = cfg?.gruppen_groessen ?? {}
+    setForm({
+      klein_max_cm2: gg.klein_max_cm2 ?? 50,
+      mittelgross_max_cm2: gg.mittelgross_max_cm2 ?? 150,
+      max_punkte: gg.max_punkte ?? 4,
+      gruppen_rabatt_pct: Math.round((gg.gruppen_rabatt ?? 0.15) * 100),
+    })
+  }
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await getStudioConfig()
+      applyConfig(res.data.data.studio_config)
+    } catch {
+      toast.error(t('settings.loadFailed'))
+    } finally {
+      setLoading(false)
+    }
+  }, [t])
+
+  useEffect(() => { load() }, [load])
+
+  const setField = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const klein = Number(form.klein_max_cm2)
+      const mittel = Number(form.mittelgross_max_cm2)
+      const maxPts = Number(form.max_punkte)
+      const pct = Number(form.gruppen_rabatt_pct)
+      const res = await updateStudioConfig({
+        gruppen_groessen: {
+          klein_max_cm2: klein,
+          mittelgross_max_cm2: mittel,
+          max_punkte: maxPts,
+          gruppen_rabatt: Number.isNaN(pct) ? 0.15 : pct / 100,
+        },
+      })
+      applyConfig(res.data.data.studio_config)
+      setIsEditing(false)
+      toast.success(t('settings.saved'))
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? t('settings.saveFailed'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
+
+  return (
+    <Section
+      title={t('settingsPage.groupBooking.title')}
+      desc={t('settingsPage.groupBooking.desc')}
+      canEdit={canEdit}
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      saving={saving}
+      onCancel={() => { setIsEditing(false); load() }}
+      onSave={handleSave}
+    >
+      {!canEdit && <ReadOnlyHint />}
+      {!isEditing ? (
+        <>
+          <InfoRow label={t('settingsPage.groupBooking.smallMax')} value={`${form.klein_max_cm2} cm²`} />
+          <InfoRow label={t('settingsPage.groupBooking.mediumMax')} value={`${form.mittelgross_max_cm2} cm²`} />
+          <InfoRow label={t('settingsPage.groupBooking.maxPoints')} value={String(form.max_punkte)} />
+          <InfoRow label={t('settingsPage.groupBooking.discount')} value={`${form.gruppen_rabatt_pct} %`} />
+        </>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          <Input label={t('settingsPage.groupBooking.smallMax')} type="number" min={1} value={form.klein_max_cm2} onChange={setField('klein_max_cm2')} />
+          <Input label={t('settingsPage.groupBooking.mediumMax')} type="number" min={1} value={form.mittelgross_max_cm2} onChange={setField('mittelgross_max_cm2')} />
+          <Input label={t('settingsPage.groupBooking.maxPoints')} type="number" min={1} max={16} value={form.max_punkte} onChange={setField('max_punkte')} />
+          <Input label={t('settingsPage.groupBooking.discount')} type="number" min={0} max={100} value={form.gruppen_rabatt_pct} onChange={setField('gruppen_rabatt_pct')} hint={t('settingsPage.groupBooking.discountHint')} />
+        </div>
+      )}
+    </Section>
+  )
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 const StudioSettings = () => {
   const { t } = useTranslation()
@@ -1527,6 +1672,7 @@ const StudioSettings = () => {
           {activeTab === 'pricing' && <PricingTab />}
           {activeTab === 'sessions' && <SessionPredictionTab />}
           {activeTab === 'hours'   && <HoursTab />}
+          {activeTab === 'group'   && <GroupBookingTab />}
           {activeTab === 'rooms'   && <RoomsTab />}
           {activeTab === 'staff'   && <StaffTab />}
           {activeTab === 'stripe'  && <StripeTab />}

@@ -13,10 +13,12 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.3.1",
     "axios": "^1.18.1",
+    "i18next": "^26.4.0",
     "lucide-react": "^1.21.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-hot-toast": "^2.6.0",
+    "react-i18next": "^17.0.12",
     "react-router-dom": "^7.18.0",
     "recharts": "^3.9.1",
     "socket.io-client": "^4.8.3",
@@ -35,6 +37,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
+    "typescript": "^7.0.2",
     "vite": "^8.0.12"
   }
 }

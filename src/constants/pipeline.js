@@ -1,8 +1,9 @@
-export const PIPELINE_STAGES = [
-  { value: 'Neu',               label: 'Neu'               },
-  { value: 'Beratung geplant',  label: 'Beratung geplant'  },
-  { value: 'Behandlung aktiv',  label: 'Behandlung aktiv'  },
-  { value: 'Beratung erledigt', label: 'Beratung erledigt' },
+/** API pipeline stage values (unchanged keys). Translate labels via `t('pipeline.<value>')`. */
+export const PIPELINE_VALUES = [
+  'Neu',
+  'Beratung geplant',
+  'Behandlung aktiv',
+  'Beratung erledigt',
 ]
 
-export const PIPELINE_VALUES = PIPELINE_STAGES.map((s) => s.value)
+export const PIPELINE_STAGES = PIPELINE_VALUES.map((value) => ({ value }))

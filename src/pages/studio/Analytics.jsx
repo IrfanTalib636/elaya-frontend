@@ -14,29 +14,22 @@ import {
 import { getAnalyticsSummary } from '../../api/analytics'
 import { PIPELINE_STAGES } from '../../constants/pipeline'
 import { Card, PageHeader, Spinner } from '../../components/ui'
+import useContent from '../../i18n/useContent'
 
 // ── Formatters ─────────────────────────────────────────────────────────────
 const chfFmt = new Intl.NumberFormat('de-CH', { style: 'currency', currency: 'CHF', maximumFractionDigits: 0 })
 const fmtCHF = (n) => chfFmt.format(n ?? 0)
 const fmtPct = (n, total) => (total > 0 ? `${Math.round((n / total) * 100)}%` : '—')
 
-const PIPELINE_CHART = PIPELINE_STAGES.map((s, i) => ({
-  ...s,
-  color: ['#4a9aff', '#f0a030', '#2ecc8a', '#80b8ff'][i],
-}))
+const PIPELINE_CHART_COLORS = ['#4a9aff', '#f0a030', '#2ecc8a', '#80b8ff']
 
-const PERIODS = [
-  { id: 'month',   label: 'Dieser Monat' },
-  { id: 'quarter', label: 'Quartal'       },
-  { id: 'year',    label: 'Dieses Jahr'   },
-  { id: 'all',     label: 'Gesamt'        },
+const PERIOD_IDS = ['month', 'quarter', 'year', 'all']
+
+const AKQUISE_KEYS = [
+  { key: 'studio_eigen', icon: '🟢', fee: false },
+  { key: 'plattform_vermittelt', icon: '🔵', fee: true },
+  { key: 'studio_wechsel', icon: '🟠', fee: true },
 ]
-
-const AKQUISE_META = {
-  studio_eigen:         { label: 'Studio-Eigen', icon: '🟢', fee: false },
-  plattform_vermittelt: { label: 'Plattform',    icon: '🔵', fee: true  },
-  studio_wechsel:       { label: 'Wechsel',      icon: '🟠', fee: true  },
-}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const toISO = (d) =>
@@ -91,6 +84,9 @@ const KpiCard = ({ icon: Icon, label, value, sub, color = 'text-studio-gold-2' }
 
 // ── Page ───────────────────────────────────────────────────────────────────
 const StudioAnalytics = () => {
+  const { t, studioPages } = useContent()
+  const copy = studioPages.analytics
+  const PERIODS = PERIOD_IDS.map((id) => ({ id, label: copy.periods[id] }))
   const [period, setPeriod] = useState('month')
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState(null)
@@ -129,14 +125,16 @@ const StudioAnalytics = () => {
 
   const avgPerSession = stats.sessionsDone > 0 ? stats.revenue / stats.sessionsDone : 0
 
-  const pieData = PIPELINE_CHART.flatMap((s) => {
+  const pieData = PIPELINE_STAGES.flatMap((s, i) => {
     const count = stats.pipeline[s.value] ?? 0
-    return count > 0 ? [{ name: s.label, value: count, count, color: s.color }] : []
+    return count > 0
+      ? [{ name: t(`pipeline.${s.value}`), value: count, count, color: PIPELINE_CHART_COLORS[i] }]
+      : []
   })
 
   return (
     <div className="p-6 max-w-[1100px]">
-      <PageHeader title="Analytik" subtitle="Umsatz, Sitzungen & Kunden">
+      <PageHeader title={copy.title} subtitle={copy.subtitle}>
         <div className="flex gap-1 bg-studio-bg-3 p-1 rounded-[10px] border border-elaya-border">
           {PERIODS.map((p) => (
             <button
@@ -165,27 +163,32 @@ const StudioAnalytics = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <KpiCard
               icon={TrendingUp}
-              label="Umsatz"
+              label={copy.kpiRevenue}
               value={fmtCHF(stats.revenue)}
             />
             <KpiCard
               icon={BarChart2}
-              label="Sitzungen abgeschlossen"
+              label={copy.kpiSessionsDone}
               value={stats.sessionsDone}
-              sub={`Ø ${fmtCHF(avgPerSession)} / Sitzung`}
+              sub={t('studioPages.analytics.kpiAvgPerSession', { amount: fmtCHF(avgPerSession) })}
             />
             <KpiCard
               icon={AlertCircle}
-              label="No-Shows"
+              label={copy.kpiNoShows}
               value={stats.noShows}
-              sub={fmtPct(stats.noShows, stats.sessionsDone + stats.noShows) + ' Rate'}
+              sub={t('studioPages.analytics.kpiNoShowRate', {
+                pct: fmtPct(stats.noShows, stats.sessionsDone + stats.noShows),
+              })}
               color="text-elaya-error"
             />
             <KpiCard
               icon={Calendar}
-              label="Stornierte Termine"
+              label={copy.kpiCancelled}
               value={stats.apptCancelled}
-              sub={fmtPct(stats.apptCancelled, stats.apptTotal) + ' von ' + stats.apptTotal}
+              sub={t('studioPages.analytics.kpiCancelledOf', {
+                pct: fmtPct(stats.apptCancelled, stats.apptTotal),
+                total: stats.apptTotal,
+              })}
               color="text-studio-amber"
             />
           </div>
@@ -197,8 +200,8 @@ const StudioAnalytics = () => {
             <Card className="lg:col-span-2">
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h2 className="text-[14px] font-semibold text-studio-white m-0">Umsatz – letzte 6 Monate</h2>
-                  <p className="text-studio-w3 text-[11px] m-0 mt-0.5">Abgeschlossene Sitzungen</p>
+                  <h2 className="text-[14px] font-semibold text-studio-white m-0">{copy.chartRevenueTitle}</h2>
+                  <p className="text-studio-w3 text-[11px] m-0 mt-0.5">{copy.chartRevenueSub}</p>
                 </div>
                 {chartData.length === 0 && loading && <Spinner size="sm" />}
               </div>
@@ -233,7 +236,7 @@ const StudioAnalytics = () => {
                 </div>
                 <div>
                   <p className="text-[22px] font-bold text-studio-white m-0 leading-none">{stats.totalCustomers}</p>
-                  <p className="text-studio-w2 text-[12px] m-0 mt-0.5">Aktive Kunden</p>
+                  <p className="text-studio-w2 text-[12px] m-0 mt-0.5">{copy.activeCustomers}</p>
                 </div>
               </div>
 
@@ -271,7 +274,7 @@ const StudioAnalytics = () => {
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
-                  <p className="text-studio-w3 text-[12px] m-0">Keine Kunden vorhanden</p>
+                  <p className="text-studio-w3 text-[12px] m-0">{copy.noCustomers}</p>
                 </div>
               )}
             </Card>
@@ -279,13 +282,13 @@ const StudioAnalytics = () => {
 
           {/* ── Summary row ── */}
           <Card className="mb-5">
-            <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-4">Sitzungen – Übersicht</h2>
+            <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-4">{copy.sessionsOverview}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
               {[
-                { label: 'Abgeschlossen',  value: stats.sessionsDone,    color: 'text-elaya-success' },
-                { label: 'No-Show',        value: stats.noShows,         color: 'text-elaya-error'   },
-                { label: 'Ø Umsatz',       value: fmtCHF(avgPerSession), color: 'text-studio-gold-2' },
-                { label: 'Termine gesamt', value: stats.apptTotal,       color: 'text-studio-w1'     },
+                { label: copy.statDone, value: stats.sessionsDone, color: 'text-elaya-success' },
+                { label: copy.statNoShow, value: stats.noShows, color: 'text-elaya-error' },
+                { label: copy.statAvgRevenue, value: fmtCHF(avgPerSession), color: 'text-studio-gold-2' },
+                { label: copy.statApptsTotal, value: stats.apptTotal, color: 'text-studio-w1' },
               ].map(({ label, value, color }) => (
                 <div key={label} className="flex flex-col gap-1">
                   <span className={`text-[20px] font-bold leading-none ${color}`}>{value}</span>
@@ -299,27 +302,32 @@ const StudioAnalytics = () => {
           {summary && (
             <>
               <Card className="mb-5">
-                <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-1">Umsatz nach Herkunft</h2>
-                <p className="text-studio-w3 text-[11px] m-0 mb-4">Behandlungsumsatz ohne No-Shows</p>
+                <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-1">{copy.revenueBySource}</h2>
+                <p className="text-studio-w3 text-[11px] m-0 mb-4">{copy.revenueBySourceSub}</p>
                 <div className="bg-studio-gold/10 border border-studio-gold/20 rounded-[12px] p-4 mb-4">
-                  <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">Gesamt-Behandlungsumsatz</p>
+                  <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0">{copy.totalTreatmentRevenue}</p>
                   <p className="text-studio-gold-2 text-[24px] font-bold m-0 mt-1 tabular-nums">
                     {fmtCHF(summary.treatment?.revenue)}
                   </p>
-                  <p className="text-studio-w4 text-[10px] m-0 mt-1">{summary.treatment?.session_count ?? 0} Sitzung(en)</p>
+                  <p className="text-studio-w4 text-[10px] m-0 mt-1">
+                    {t('studioPages.analytics.sessionCount', { count: summary.treatment?.session_count ?? 0 })}
+                  </p>
                 </div>
-                {Object.entries(AKQUISE_META).map(([key, meta]) => {
+                {AKQUISE_KEYS.map(({ key, icon, fee }) => {
                   const row = summary.treatment?.by_akquise?.[key] ?? { umsatz: 0, count: 0 }
-                  const fee = meta.fee ? row.umsatz * ((summary.platform_fee?.percent ?? 3) / 100) : 0
+                  const feeAmt = fee ? row.umsatz * ((summary.platform_fee?.percent ?? 3) / 100) : 0
                   return (
                     <div key={key} className="flex justify-between items-center py-2.5 border-b border-elaya-border last:border-0">
                       <div className="flex items-center gap-2">
-                        <span>{meta.icon}</span>
+                        <span>{icon}</span>
                         <div>
-                          <p className="text-studio-w1 text-[12px] font-semibold m-0">{meta.label}</p>
+                          <p className="text-studio-w1 text-[12px] font-semibold m-0">{copy.akquise[key]}</p>
                           <p className="text-studio-w4 text-[10px] m-0">
-                            {row.count} Sitzung(en)
-                            {meta.fee && row.umsatz > 0 && ` · ${summary.platform_fee?.percent}% Gebühr: ${fmtCHF(fee)}`}
+                            {t('studioPages.analytics.sessionCount', { count: row.count })}
+                            {fee && row.umsatz > 0 && t('studioPages.analytics.feeLine', {
+                              pct: summary.platform_fee?.percent,
+                              amount: fmtCHF(feeAmt),
+                            })}
                           </p>
                         </div>
                       </div>
@@ -331,40 +339,40 @@ const StudioAnalytics = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
                 <Card>
-                  <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-1">Shop-Provision</h2>
+                  <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-1">{copy.shopProvision}</h2>
                   <p className="text-studio-w3 text-[11px] m-0 mb-4">
-                    {summary.shop?.provision_percent ?? 20}% auf ElayShop-Käufe
+                    {t('studioPages.analytics.shopProvisionSub', { pct: summary.shop?.provision_percent ?? 20 })}
                   </p>
                   <div className="grid grid-cols-3 gap-3 mb-4">
                     <div className="text-center p-3 rounded-[10px] bg-studio-bg-4">
                       <p className="text-[18px] font-bold text-studio-white m-0">{summary.shop?.order_count ?? 0}</p>
-                      <p className="text-studio-w4 text-[10px] m-0 mt-1">Bestellungen</p>
+                      <p className="text-studio-w4 text-[10px] m-0 mt-1">{copy.orders}</p>
                     </div>
                     <div className="text-center p-3 rounded-[10px] bg-studio-bg-4">
                       <p className="text-[16px] font-bold text-studio-teal-2 m-0 tabular-nums">{fmtCHF(summary.shop?.revenue)}</p>
-                      <p className="text-studio-w4 text-[10px] m-0 mt-1">Shop-Umsatz</p>
+                      <p className="text-studio-w4 text-[10px] m-0 mt-1">{copy.shopRevenue}</p>
                     </div>
                     <div className="text-center p-3 rounded-[10px] bg-studio-gold/10">
                       <p className="text-[16px] font-bold text-studio-gold-2 m-0 tabular-nums">{fmtCHF(summary.shop?.provision_total)}</p>
-                      <p className="text-studio-gold-2 text-[10px] m-0 mt-1">Provision</p>
+                      <p className="text-studio-gold-2 text-[10px] m-0 mt-1">{copy.provision}</p>
                     </div>
                   </div>
                 </Card>
 
                 <Card>
-                  <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-1">Elaycoins</h2>
-                  <p className="text-studio-w3 text-[11px] m-0 mb-4">Übersicht im gewählten Zeitraum</p>
+                  <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-1">{copy.elaycoins}</h2>
+                  <p className="text-studio-w3 text-[11px] m-0 mb-4">{copy.elaycoinsSub}</p>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-studio-w2 text-[12px]">Coins gesamt (Studio)</span>
+                      <span className="text-studio-w2 text-[12px]">{copy.coinsTotal}</span>
                       <span className="text-studio-gold-2 font-bold tabular-nums">{summary.coins?.total_balance ?? 0}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-studio-w2 text-[12px]">Kunden mit Guthaben</span>
+                      <span className="text-studio-w2 text-[12px]">{copy.customersWithBalance}</span>
                       <span className="text-studio-white font-semibold tabular-nums">{summary.coins?.customers_with_balance ?? 0}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-studio-w2 text-[12px]">Vergeben im Zeitraum</span>
+                      <span className="text-studio-w2 text-[12px]">{copy.rewardedInPeriod}</span>
                       <span className="text-elaya-success font-semibold tabular-nums">+{summary.coins?.rewarded_in_period ?? 0}</span>
                     </div>
                   </div>
@@ -372,23 +380,25 @@ const StudioAnalytics = () => {
               </div>
 
               <Card className="border border-studio-teal-2/20">
-                <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-1">Netto-Übersicht (ca.)</h2>
-                <p className="text-studio-w3 text-[11px] m-0 mb-4">Grobe Rechnung für den gewählten Zeitraum</p>
+                <h2 className="text-[14px] font-semibold text-studio-white m-0 mb-1">{copy.nettoTitle}</h2>
+                <p className="text-studio-w3 text-[11px] m-0 mb-4">{copy.nettoSub}</p>
                 <div className="space-y-2">
                   <div className="flex justify-between py-1.5 border-b border-elaya-border">
-                    <span className="text-studio-w2 text-[12px]">Behandlungsumsatz</span>
+                    <span className="text-studio-w2 text-[12px]">{copy.treatmentRevenue}</span>
                     <span className="text-studio-white font-semibold font-mono tabular-nums">{fmtCHF(summary.treatment?.revenue)}</span>
                   </div>
                   <div className="flex justify-between py-1.5 border-b border-elaya-border">
-                    <span className="text-studio-w2 text-[12px]">− Plattform-Gebühr ({summary.platform_fee?.percent ?? 3}%)</span>
+                    <span className="text-studio-w2 text-[12px]">
+                      {t('studioPages.analytics.platformFee', { pct: summary.platform_fee?.percent ?? 3 })}
+                    </span>
                     <span className="text-studio-red font-semibold font-mono tabular-nums">− {fmtCHF(summary.platform_fee?.amount)}</span>
                   </div>
                   <div className="flex justify-between py-1.5 border-b border-elaya-border">
-                    <span className="text-studio-w2 text-[12px]">+ Shop-Provision</span>
+                    <span className="text-studio-w2 text-[12px]">{copy.plusShopProvision}</span>
                     <span className="text-elaya-success font-semibold font-mono tabular-nums">+ {fmtCHF(summary.shop?.provision_total)}</span>
                   </div>
                   <div className="flex justify-between pt-3 mt-1 border-t-2 border-elaya-border">
-                    <span className="text-studio-white font-bold text-[13px]">Netto (ca.)</span>
+                    <span className="text-studio-white font-bold text-[13px]">{copy.nettoApprox}</span>
                     <span className="text-studio-teal-2 text-[18px] font-bold font-mono tabular-nums">{fmtCHF(summary.netto_approx)}</span>
                   </div>
                 </div>

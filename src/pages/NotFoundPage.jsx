@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import ElayaLogo from '../components/ElayaLogo'
-import { notFound } from '../content'
+import useContent from '../i18n/useContent'
 
 const NotFoundPage = () => {
   const navigate = useNavigate()
+  const { notFound } = useContent()
 
   return (
     <div className="min-h-screen bg-landing-bg flex flex-col items-center justify-center font-sans px-4 text-center gap-6">

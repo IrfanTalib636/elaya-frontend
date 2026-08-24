@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Sun, Moon, Monitor, Check, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Activity } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { Sun, Moon, Monitor, Check, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Activity, Layers } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Card, PageHeader, Input, Button, Spinner, Select, Badge } from '../../components/ui'
+import LanguageToggle from '../../components/LanguageToggle'
 import useTheme from '../../hooks/useTheme'
 import useAuthStore from '../../store/authStore'
 import { getStudioConfig, updateStudioConfig } from '../../api/config'
@@ -16,6 +18,7 @@ import {
 import PricingConfigForm from '../../components/pricing/PricingConfigForm'
 import SessionPredictionForm from '../../components/sessionPrediction/SessionPredictionForm'
 import { cloneSessionPrediction } from '../../components/sessionPrediction/sessionPredictionFields'
+import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
 import {
   PRICING_GROUPS,
   PRICING_LABELS,
@@ -26,13 +29,37 @@ import { ROLES } from '../../constants/roles'
 import { WEEKDAYS, MITARBEITER_ROLLEN } from '../../constants/studio'
 import { formatTimeRange12, fmtDateDeLong } from '../../utils/time'
 
-// ── Theme ──────────────────────────────────────────────────────────────────
-const THEME_OPTIONS = [
-  { value: 'light',  icon: Sun,     label: 'Hell',   desc: 'Heller Hintergrund'      },
-  { value: 'dark',   icon: Moon,    label: 'Dunkel', desc: 'Dunkler Hintergrund'      },
-  { value: 'system', icon: Monitor, label: 'System', desc: 'Folgt Systemeinstellung'  },
+const TAB_I18N = {
+  appearance: 'appearance',
+  profile: 'profile',
+  pricing: 'prices',
+  sessions: 'sessionPrediction',
+  hours: 'hours',
+  group: 'groupBooking',
+  rooms: 'rooms',
+  staff: 'staff',
+  stripe: 'stripe',
+}
+
+const TABS = [
+  { id: 'appearance', icon: Monitor },
+  { id: 'profile',    icon: User },
+  { id: 'pricing',    icon: DollarSign },
+  { id: 'sessions',   icon: Activity },
+  { id: 'hours',      icon: Clock },
+  { id: 'group',      icon: Layers },
+  { id: 'rooms',      icon: Grid },
+  { id: 'staff',      icon: Users },
+  { id: 'stripe',     icon: CreditCard },
 ]
 
+const THEME_OPTION_META = [
+  { value: 'light',  icon: Sun,     labelKey: 'theme.light',  descKey: 'settingsPage.appearance.themeLightDesc' },
+  { value: 'dark',   icon: Moon,    labelKey: 'theme.dark',   descKey: 'settingsPage.appearance.themeDarkDesc' },
+  { value: 'system', icon: Monitor, labelKey: 'theme.system', descKey: 'settingsPage.appearance.themeSystemDesc' },
+]
+
+// ── Theme ──────────────────────────────────────────────────────────────────
 const ThemeOption = ({ value, icon: Icon, label, desc, active, onSelect }) => (
   <button
     type="button"
@@ -59,14 +86,17 @@ const ThemeOption = ({ value, icon: Icon, label, desc, active, onSelect }) => (
 )
 
 // ── Shared layout ──────────────────────────────────────────────────────────
-const InfoRow = ({ label, value, children }) => (
-  <div className="flex items-start justify-between gap-4 py-2.5 border-b border-elaya-border last:border-0">
-    <span className="text-studio-w2 text-[12px] shrink-0 w-36">{label}</span>
-    <span className="text-studio-white text-[12px] font-medium text-right break-all">
-      {children ?? (value || '—')}
-    </span>
-  </div>
-)
+const InfoRow = ({ label, value, children }) => {
+  const { t } = useTranslation()
+  return (
+    <div className="flex items-start justify-between gap-4 py-2.5 border-b border-elaya-border last:border-0">
+      <span className="text-studio-w2 text-[12px] shrink-0 w-36">{label}</span>
+      <span className="text-studio-white text-[12px] font-medium text-right break-all">
+        {children ?? (value || t('settingsPage.shared.emptyValue'))}
+      </span>
+    </div>
+  )
+}
 
 const Section = ({
   title,
@@ -78,61 +108,61 @@ const Section = ({
   saving,
   onCancel,
   onSave,
-}) => (
-  <Card className="flex flex-col gap-5">
-    <div className="border-b border-elaya-border pb-4 flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <h2 className="text-[15px] font-bold text-studio-white m-0">{title}</h2>
-        {desc && <p className="text-studio-w3 text-[12px] m-0 mt-1">{desc}</p>}
+}) => {
+  const { t } = useTranslation()
+  return (
+    <Card className="flex flex-col gap-5">
+      <div className="border-b border-elaya-border pb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-[15px] font-bold text-studio-white m-0">{title}</h2>
+          {desc && <p className="text-studio-w3 text-[12px] m-0 mt-1">{desc}</p>}
+        </div>
+        {canEdit && !isEditing && (
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={t('settings.edit')}
+            className="shrink-0 p-2 rounded-[10px] text-studio-w2 hover:text-studio-gold-2 hover:bg-studio-bg-4 border-0 bg-transparent cursor-pointer transition-colors"
+          >
+            <Pencil size={15} />
+          </button>
+        )}
       </div>
-      {canEdit && !isEditing && (
-        <button
-          type="button"
-          onClick={onEdit}
-          aria-label="Bearbeiten"
-          className="shrink-0 p-2 rounded-[10px] text-studio-w2 hover:text-studio-gold-2 hover:bg-studio-bg-4 border-0 bg-transparent cursor-pointer transition-colors"
-        >
-          <Pencil size={15} />
-        </button>
+      {children}
+      {isEditing && (
+        <div className="flex justify-end gap-2 pt-2 border-t border-elaya-border">
+          <Button variant="ghost" onClick={onCancel} disabled={saving}>{t('settings.cancel')}</Button>
+          <Button loading={saving} onClick={onSave}>{t('settings.save')}</Button>
+        </div>
       )}
-    </div>
-    {children}
-    {isEditing && (
-      <div className="flex justify-end gap-2 pt-2 border-t border-elaya-border">
-        <Button variant="ghost" onClick={onCancel} disabled={saving}>Abbrechen</Button>
-        <Button loading={saving} onClick={onSave}>Speichern</Button>
-      </div>
-    )}
-  </Card>
-)
+    </Card>
+  )
+}
 
-const ReadOnlyHint = () => (
-  <p className="text-studio-w3 text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4">
-    Nur Studio-Administratoren können Einstellungen ändern.
-  </p>
-)
-
-// ── Tabs ───────────────────────────────────────────────────────────────────
-const TABS = [
-  { id: 'appearance', icon: Monitor,     label: 'Darstellung'     },
-  { id: 'profile',    icon: User,        label: 'Studio-Profil'   },
-  { id: 'pricing',    icon: DollarSign,  label: 'Preise'          },
-  { id: 'sessions',   icon: Activity,    label: 'Sitzungsprognose' },
-  { id: 'hours',      icon: Clock,       label: 'Öffnungszeiten'  },
-  { id: 'rooms',      icon: Grid,        label: 'Räume'           },
-  { id: 'staff',      icon: Users,       label: 'Mitarbeiter'     },
-  { id: 'stripe',     icon: CreditCard,  label: 'Stripe'          },
-]
+const ReadOnlyHint = () => {
+  const { t } = useTranslation()
+  return (
+    <p className="text-studio-w3 text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4">
+      {t('settingsPage.shared.readOnlyHint')}
+    </p>
+  )
+}
 
 const useCanEditSettings = () => {
   const role = useAuthStore((s) => s.user?.role)
   return role === ROLES.STUDIO_ADMIN
 }
 
+const staffRoleLabel = (t, rolle) => {
+  const found = MITARBEITER_ROLLEN.find((r) => r.value === rolle)
+  return found ? t(`settingsPage.staff.roles.${found.i18nKey}`) : rolle
+}
+
 // ── Pricing tab ────────────────────────────────────────────────────────────
 const BASE_PRICE_KEYS = ['basePricePerCm2', 'minPrice', 'pmuPrice']
 
 const PricingTab = () => {
+  const { t } = useTranslation()
   const canEdit = useCanEditSettings()
   const [isEditing, setIsEditing] = useState(false)
   const [config,   setConfig]   = useState(null)
@@ -153,11 +183,11 @@ const PricingTab = () => {
       const res = await getStudioConfig()
       applyConfig(res.data.data.studio_config)
     } catch {
-      toast.error('Konfiguration konnte nicht geladen werden.')
+      toast.error(t('settingsPage.pricing.toasts.loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { load() }, [load])
 
@@ -180,9 +210,9 @@ const PricingTab = () => {
       const res = await updateStudioConfig(payload)
       applyConfig(res.data.data.studio_config)
       setIsEditing(false)
-      toast.success('Preise gespeichert.')
+      toast.success(t('settingsPage.pricing.toasts.saved'))
     } catch (err) {
-      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+      toast.error(err?.response?.data?.message ?? t('settingsPage.shared.saveFailedFallback'))
     } finally {
       setSaving(false)
     }
@@ -191,7 +221,11 @@ const PricingTab = () => {
   if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
 
   const limits = config?.platform_limits
-  const fmtPrice = (v) => (v !== '' && v != null ? `CHF ${v}` : 'Plattform-Standard')
+  const fmtPrice = (v) => (
+    v !== '' && v != null
+      ? t('settingsPage.pricing.priceWithCurrency', { value: v })
+      : t('settingsPage.pricing.platformDefault')
+  )
 
   const overriddenMultipliers = PRICING_GROUPS
     .flatMap((group) => group.fields)
@@ -199,8 +233,8 @@ const PricingTab = () => {
 
   return (
     <Section
-      title="Preise & Elaycoin"
-      desc="Studio-spezifische Preisanpassungen. Plattform-Standardwerte gelten, wenn kein Wert gesetzt ist."
+      title={t('settingsPage.pricing.title')}
+      desc={t('settingsPage.pricing.desc')}
       canEdit={canEdit}
       isEditing={isEditing}
       onEdit={() => setIsEditing(true)}
@@ -212,43 +246,49 @@ const PricingTab = () => {
 
       {!isEditing ? (
         <>
-          <InfoRow label="CHF pro Coin" value={fmtPrice(coinWert)} />
+          <InfoRow label={t('settingsPage.pricing.chfPerCoin')} value={fmtPrice(coinWert)} />
           {limits && (
             <p className="text-studio-w3 text-[11px] m-0 -mt-2">
-              Erlaubter Bereich: CHF {limits.minWert} – CHF {limits.maxWert}
-              &nbsp;·&nbsp;Plattform-Standard: CHF {limits.coinWert}
+              {t('settingsPage.pricing.allowedRange', {
+                min: limits.minWert,
+                max: limits.maxWert,
+                default: limits.coinWert,
+              })}
             </p>
           )}
           <div className="h-px bg-elaya-border" />
-          <InfoRow label="Basispreis / cm²" value={fmtPrice(pricing.basePricePerCm2)} />
-          <InfoRow label="Mindestpreis / Sitzung" value={fmtPrice(pricing.minPrice)} />
-          <InfoRow label="PMU-Preis" value={fmtPrice(pricing.pmuPrice)} />
+          <InfoRow label={t('settingsPage.pricing.basePricePerCm2')} value={fmtPrice(pricing.basePricePerCm2)} />
+          <InfoRow label={t('settingsPage.pricing.minPricePerSession')} value={fmtPrice(pricing.minPrice)} />
+          <InfoRow label={t('settingsPage.pricing.pmuPrice')} value={fmtPrice(pricing.pmuPrice)} />
           <div className="h-px bg-elaya-border" />
           {overriddenMultipliers.length === 0 ? (
             <p className="text-studio-w2 text-[12px] m-0">
-              Alle Multiplikatoren (Farbe, Tiefe, Alter…) verwenden den Plattform-Standard.
+              {t('settingsPage.pricing.allMultipliersPlatformDefault')}
             </p>
           ) : (
             <div>
               <p className="text-[12px] font-semibold text-studio-w2 m-0 mb-1">
-                Angepasste Multiplikatoren ({overriddenMultipliers.length})
+                {t('settingsPage.pricing.adjustedMultipliers', { count: overriddenMultipliers.length })}
               </p>
               {overriddenMultipliers.map(({ key }) => (
-                <InfoRow key={key} label={PRICING_LABELS[key]} value={`× ${pricing[key]}`} />
+                <InfoRow
+                  key={key}
+                  label={PRICING_LABELS[key]}
+                  value={t('settingsPage.pricing.multiplierValue', { value: pricing[key] })}
+                />
               ))}
             </div>
           )}
           <p className="text-studio-w3 text-[11px] m-0">
-            Diese Werte steuern die KI-Preisberechnung und die Sitzungsschätzung für die Kunden
-            dieses Studios.
+            {t('settingsPage.pricing.aiPricingHint')}
           </p>
         </>
       ) : (
         <>
           <div>
-            <p className="text-[12px] font-semibold text-studio-w2 m-0 mb-3">Elaycoin-Wert</p>
+            <p className="text-[12px] font-semibold text-studio-w2 m-0 mb-3">{t('settingsPage.pricing.coinSectionTitle')}</p>
             <Input
-              label="CHF pro Coin"
+              label={t('settingsPage.pricing.chfPerCoin')}
               type="number"
               min={limits?.minWert}
               max={limits?.maxWert}
@@ -258,8 +298,11 @@ const PricingTab = () => {
             />
             {limits && (
               <p className="text-studio-w3 text-[11px] m-0 mt-1.5">
-                Erlaubter Bereich: CHF {limits.minWert} – CHF {limits.maxWert}
-                &nbsp;·&nbsp;Plattform-Standard: CHF {limits.coinWert}
+                {t('settingsPage.pricing.allowedRange', {
+                  min: limits.minWert,
+                  max: limits.maxWert,
+                  default: limits.coinWert,
+                })}
               </p>
             )}
           </div>
@@ -278,43 +321,75 @@ const PricingTab = () => {
 }
 
 const SessionPredictionTab = () => {
-  const [config, setConfig] = useState(null)
+  /**
+   * TEMP testing phase: studio may tweak parameters locally to see the live
+   * calculator effect. Changes are NOT saved — only Admin persists platform-wide.
+   * Set to false for production (view-only form).
+   */
+  const TEMP_STUDIO_WHAT_IF = true
+
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
+  const [values, setValues] = useState(null)
+  const [savedBaseline, setSavedBaseline] = useState(null)
+
+  const load = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true)
+    try {
+      const res = await getStudioConfig()
+      const next = cloneSessionPrediction(res.data.data.studio_config?.session_prediction)
+      setValues(next)
+      setSavedBaseline(cloneSessionPrediction(next))
+    } catch {
+      toast.error(t('settingsPage.sessions.toasts.loadFailed'))
+    } finally {
+      if (!silent) setLoading(false)
+    }
+  }, [t])
 
   useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      try {
-        const res = await getStudioConfig()
-        if (!cancelled) setConfig(res.data.data.studio_config)
-      } catch {
-        toast.error('Sitzungsprognose konnte nicht geladen werden.')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
+    load()
+  }, [load])
+
+  usePlatformConfigSocket({
+    enabled: true,
+    onSessionPredictionUpdated: () => {
+      toast(t('settingsPage.sessions.toasts.adminUpdated'), { icon: '↻' })
+      load({ silent: true })
+    },
+  })
 
   if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
 
-  const prediction = cloneSessionPrediction(config?.session_prediction)
-
   return (
     <Section
-      title="Sitzungsprognose"
-      desc="Plattform-Parameter für die geschätzte Sitzungszahl. Nur die Elaya-Administration kann diese Werte ändern."
+      title={t('settingsPage.sessions.title')}
+      desc={t('settingsPage.sessions.desc')}
     >
       <p className="text-studio-w3 text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4">
-        Sichtbar für das Studio, nicht editierbar. Bei jeder neuen Case-Erstellung fliessen Lifestyle,
-        Hauttyp, Farben, Cover-up und die übrigen Faktoren automatisch in Min/Max-Sitzungen und den Preisrange ein.
+        {TEMP_STUDIO_WHAT_IF
+          ? t('settingsPage.sessions.testModeHint')
+          : t('settingsPage.sessions.viewOnlyHint')}
       </p>
-      {prediction && Object.keys(prediction).length > 0 ? (
-        <SessionPredictionForm values={prediction} onChange={() => {}} disabled />
+      {values && Object.keys(values).length > 0 ? (
+        <SessionPredictionForm
+          values={values}
+          onChange={TEMP_STUDIO_WHAT_IF ? setValues : () => {}}
+          disabled={!TEMP_STUDIO_WHAT_IF}
+          savedBaseline={savedBaseline}
+        />
       ) : (
-        <p className="text-studio-w2 text-[12px] m-0">Keine Parameter hinterlegt.</p>
+        <p className="text-studio-w2 text-[12px] m-0">{t('settingsPage.sessions.noParameters')}</p>
+      )}
+      {TEMP_STUDIO_WHAT_IF && (
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => setValues(cloneSessionPrediction(savedBaseline))}
+          disabled={!savedBaseline}
+        >
+          {t('settingsPage.sessions.resetToSaved')}
+        </Button>
       )}
     </Section>
   )
@@ -322,6 +397,7 @@ const SessionPredictionTab = () => {
 
 // ── Profile tab ────────────────────────────────────────────────────────────
 const ProfileTab = () => {
+  const { t } = useTranslation()
   const canEdit = useCanEditSettings()
   const user = useAuthStore((s) => s.user)
   const refreshProfile = useAuthStore((s) => s.refreshProfile)
@@ -329,11 +405,13 @@ const ProfileTab = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
-    firma: '', telefon: '', strasse: '', plz: '', ort: '', land: 'Schweiz', notizen: '',
+    firma: '', telefon: '', strasse: '', plz: '', ort: '', land: '', notizen: '',
   })
   const [readOnly, setReadOnly] = useState({
     email: '', studio_code: '', status: '',
   })
+
+  const defaultCountry = t('settingsPage.profile.defaultCountry')
 
   const applyProfile = (profile) => {
     setForm({
@@ -342,7 +420,7 @@ const ProfileTab = () => {
       strasse: profile.strasse ?? '',
       plz: profile.plz ?? '',
       ort: profile.ort ?? '',
-      land: profile.land ?? 'Schweiz',
+      land: profile.land ?? defaultCountry,
       notizen: profile.notizen ?? '',
     })
     setReadOnly({
@@ -358,11 +436,13 @@ const ProfileTab = () => {
       const res = await getStudioSettings()
       applyProfile(res.data.data.settings.profile)
     } catch {
-      toast.error('Profil konnte nicht geladen werden.')
+      toast.error(t('settingsPage.profile.toasts.loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [user?.email])
+  // applyProfile closes over defaultCountry / user — intentionally reload when those change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email, t, defaultCountry])
 
   useEffect(() => { load() }, [load])
 
@@ -384,9 +464,9 @@ const ProfileTab = () => {
       await updateStudioSettings({ profile: form })
       await refreshProfile()
       setIsEditing(false)
-      toast.success('Profil gespeichert.')
+      toast.success(t('settingsPage.profile.toasts.saved'))
     } catch (err) {
-      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+      toast.error(err?.response?.data?.message ?? t('settingsPage.shared.saveFailedFallback'))
     } finally {
       setSaving(false)
     }
@@ -395,11 +475,12 @@ const ProfileTab = () => {
   if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
 
   const address = [form.strasse, form.plz, form.ort, form.land].filter(Boolean).join(', ')
+  const empty = t('settingsPage.shared.emptyValue')
 
   return (
     <Section
-      title="Studio-Profil"
-      desc="Kontakt- und Standortdaten des Studios."
+      title={t('settingsPage.profile.title')}
+      desc={t('settingsPage.profile.desc')}
       canEdit={canEdit}
       isEditing={isEditing}
       onEdit={() => setIsEditing(true)}
@@ -411,35 +492,35 @@ const ProfileTab = () => {
 
       {!isEditing ? (
         <>
-          <InfoRow label="Firmenname" value={form.firma} />
-          <InfoRow label="Telefon" value={form.telefon} />
-          <InfoRow label="Adresse" value={address} />
-          <InfoRow label="Notizen" value={form.notizen} />
+          <InfoRow label={t('settingsPage.profile.companyName')} value={form.firma} />
+          <InfoRow label={t('settingsPage.profile.phone')} value={form.telefon} />
+          <InfoRow label={t('settingsPage.profile.address')} value={address} />
+          <InfoRow label={t('settingsPage.profile.notes')} value={form.notizen} />
           <div className="h-px bg-elaya-border" />
-          <InfoRow label="E-Mail" value={readOnly.email} />
-          <InfoRow label="Studio-Code" value={readOnly.studio_code} />
-          <InfoRow label="Status">
+          <InfoRow label={t('common.email')} value={readOnly.email} />
+          <InfoRow label={t('settingsPage.profile.studioCode')} value={readOnly.studio_code} />
+          <InfoRow label={t('commonUi.status')}>
             {readOnly.status
               ? <Badge variant="status" value={readOnly.status}>{readOnly.status}</Badge>
-              : '—'}
+              : empty}
           </InfoRow>
           <p className="text-studio-w3 text-[11px] m-0 -mt-2">
-            E-Mail, Studio-Code und Status können nur vom Elaya-Administrator geändert werden.
+            {t('settingsPage.profile.adminOnlyFieldsHint')}
           </p>
         </>
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input label="Firmenname" value={form.firma} onChange={set('firma')} />
-            <Input label="Telefon" value={form.telefon} onChange={set('telefon')} />
-            <Input label="Strasse" value={form.strasse} onChange={set('strasse')} />
-            <Input label="PLZ" value={form.plz} onChange={set('plz')} />
-            <Input label="Ort" value={form.ort} onChange={set('ort')} />
-            <Input label="Land" value={form.land} onChange={set('land')} />
+            <Input label={t('settingsPage.profile.companyName')} value={form.firma} onChange={set('firma')} />
+            <Input label={t('settingsPage.profile.phone')} value={form.telefon} onChange={set('telefon')} />
+            <Input label={t('settingsPage.profile.street')} value={form.strasse} onChange={set('strasse')} />
+            <Input label={t('settingsPage.profile.postalCode')} value={form.plz} onChange={set('plz')} />
+            <Input label={t('settingsPage.profile.city')} value={form.ort} onChange={set('ort')} />
+            <Input label={t('settingsPage.profile.country')} value={form.land} onChange={set('land')} />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="notizen" className="text-studio-white text-[12px] font-semibold">Notizen</label>
+            <label htmlFor="notizen" className="text-studio-white text-[12px] font-semibold">{t('settingsPage.profile.notes')}</label>
             <textarea
               id="notizen"
               rows={3}
@@ -451,12 +532,12 @@ const ProfileTab = () => {
 
           <div className="h-px bg-elaya-border" />
 
-          <InfoRow label="E-Mail" value={readOnly.email} />
-          <InfoRow label="Studio-Code" value={readOnly.studio_code} />
-          <InfoRow label="Status">
+          <InfoRow label={t('common.email')} value={readOnly.email} />
+          <InfoRow label={t('settingsPage.profile.studioCode')} value={readOnly.studio_code} />
+          <InfoRow label={t('commonUi.status')}>
             {readOnly.status
               ? <Badge variant="status" value={readOnly.status}>{readOnly.status}</Badge>
-              : '—'}
+              : empty}
           </InfoRow>
         </>
       )}
@@ -466,16 +547,19 @@ const ProfileTab = () => {
 
 // ── Hours tab ──────────────────────────────────────────────────────────────
 const HoursTab = () => {
+  const { t } = useTranslation()
   const canEdit = useCanEditSettings()
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [hours, setHours] = useState({})
   const [pufferzeit, setPufferzeit] = useState('10')
+  const [slotInterval, setSlotInterval] = useState('60')
 
   const applySettings = (settings) => {
     setHours(settings.oeffnungszeiten ?? {})
     setPufferzeit(String(settings.pufferzeit_minuten ?? 10))
+    setSlotInterval(String(settings.slot_interval_minuten ?? 60))
   }
 
   const load = useCallback(async () => {
@@ -484,13 +568,21 @@ const HoursTab = () => {
       const res = await getStudioSettings()
       applySettings(res.data.data.settings)
     } catch {
-      toast.error('Öffnungszeiten konnten nicht geladen werden.')
+      toast.error(t('settingsPage.hours.toasts.loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { load() }, [load])
+
+  usePlatformConfigSocket({
+    enabled: true,
+    onStudioScheduleUpdated: () => {
+      if (isEditing) return
+      void load()
+    },
+  })
 
   const setDay = (key, field, value) =>
     setHours((prev) => ({
@@ -512,14 +604,16 @@ const HoursTab = () => {
     setSaving(true)
     try {
       const puffer = parseInt(pufferzeit, 10)
+      const interval = parseInt(slotInterval, 10)
       await updateStudioSettings({
         oeffnungszeiten: hours,
         pufferzeit_minuten: Number.isNaN(puffer) ? 10 : puffer,
+        slot_interval_minuten: [15, 30, 45, 60].includes(interval) ? interval : 60,
       })
       setIsEditing(false)
-      toast.success('Öffnungszeiten gespeichert.')
+      toast.success(t('settingsPage.hours.toasts.saved'))
     } catch (err) {
-      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+      toast.error(err?.response?.data?.message ?? t('settingsPage.shared.saveFailedFallback'))
     } finally {
       setSaving(false)
     }
@@ -527,11 +621,13 @@ const HoursTab = () => {
 
   if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
 
+  const weekdayLabel = (key) => t(`settingsPage.hours.weekdays.${key}`)
+
   return (
     <div className="flex flex-col gap-5">
     <Section
-      title="Öffnungszeiten"
-      desc="Wöchentliches Schema. Einzelne Tage (extra öffnen oder schliessen) stehen darunter."
+      title={t('settingsPage.hours.title')}
+      desc={t('settingsPage.hours.desc')}
       canEdit={canEdit}
       isEditing={isEditing}
       onEdit={() => setIsEditing(true)}
@@ -543,25 +639,60 @@ const HoursTab = () => {
 
       {!isEditing ? (
         <>
-          {WEEKDAYS.map(({ key, label }) => {
+          {WEEKDAYS.map(({ key }) => {
             const day = hours[key] ?? { offen: true, von: '10:00', bis: '19:00' }
+            const open = day.offen !== false
+            const range = open
+              ? formatTimeRange12(day.von ?? '10:00', day.bis ?? '19:00')
+              : t('commonUi.closed')
+            const slotHint = open
+              ? (() => {
+                  const slots = []
+                  const toMin = (tm) => {
+                    const [h, m] = String(tm || '10:00').split(':').map(Number)
+                    return h * 60 + m
+                  }
+                  const fromMin = (n) =>
+                    `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`
+                  let cursor = toMin(day.von ?? '10:00')
+                  const end = toMin(day.bis ?? '19:00')
+                  const step = Math.max(15, parseInt(slotInterval, 10) || 60)
+                  while (cursor < end) {
+                    slots.push(fromMin(cursor))
+                    cursor += step
+                  }
+                  if (!slots.length) return ''
+                  if (slots.length <= 4) return slots.join(', ')
+                  return t('settingsPage.hours.slotPreviewTruncated', {
+                    first: slots[0],
+                    second: slots[1],
+                    last: slots[slots.length - 1],
+                    count: slots.length,
+                  })
+                })()
+              : ''
             return (
               <InfoRow
                 key={key}
-                label={label}
-                value={day.offen !== false
-                  ? formatTimeRange12(day.von ?? '10:00', day.bis ?? '19:00')
-                  : 'Geschlossen'}
+                label={weekdayLabel(key)}
+                value={open && slotHint ? `${range} · ${slotHint}` : range}
               />
             )
           })}
           <div className="h-px bg-elaya-border" />
-          <InfoRow label="Pufferzeit" value={`${pufferzeit} Min.`} />
+          <InfoRow
+            label={t('settingsPage.hours.bufferLabel')}
+            value={t('settingsPage.hours.bufferValue', { minutes: pufferzeit })}
+          />
+          <InfoRow
+            label={t('settingsPage.hours.slotIntervalLabel')}
+            value={t('settingsPage.hours.slotIntervalValue', { minutes: slotInterval })}
+          />
         </>
       ) : (
         <>
           <div className="flex flex-col gap-2">
-            {WEEKDAYS.map(({ key, label }) => {
+            {WEEKDAYS.map(({ key }) => {
               const day = hours[key] ?? { offen: true, von: '10:00', bis: '19:00' }
               return (
                 <div
@@ -575,10 +706,10 @@ const HoursTab = () => {
                       onChange={(e) => setDay(key, 'offen', e.target.checked)}
                       className="accent-studio-gold"
                     />
-                    <span className="text-studio-white text-[13px] font-medium">{label}</span>
+                    <span className="text-studio-white text-[13px] font-medium">{weekdayLabel(key)}</span>
                   </label>
                   <Input
-                    label="Von"
+                    label={t('commonUi.from')}
                     type="time"
                     value={day.von ?? '10:00'}
                     onChange={(e) => setDay(key, 'von', e.target.value)}
@@ -586,7 +717,7 @@ const HoursTab = () => {
                     className="max-w-[130px]"
                   />
                   <Input
-                    label="Bis"
+                    label={t('commonUi.to')}
                     type="time"
                     value={day.bis ?? '19:00'}
                     onChange={(e) => setDay(key, 'bis', e.target.value)}
@@ -601,16 +732,28 @@ const HoursTab = () => {
           <div className="h-px bg-elaya-border" />
 
           <Input
-            label="Pufferzeit nach Terminen (Minuten)"
+            label={t('settingsPage.hours.bufferInputLabel')}
             type="number"
             min={0}
             max={120}
             step={1}
             value={pufferzeit}
             onChange={(e) => setPufferzeit(e.target.value)}
-            hint="Zeit zwischen aufeinanderfolgenden Terminen."
+            hint={t('settingsPage.hours.bufferHint')}
             className="max-w-[200px]"
           />
+          <Select
+            label={t('settingsPage.hours.slotIntervalLabel')}
+            value={slotInterval}
+            onChange={(e) => setSlotInterval(e.target.value)}
+            hint={t('settingsPage.hours.slotIntervalHint')}
+            className="max-w-[200px]"
+          >
+            <option value="15">15</option>
+            <option value="30">30</option>
+            <option value="45">45</option>
+            <option value="60">60</option>
+          </Select>
         </>
       )}
     </Section>
@@ -619,9 +762,10 @@ const HoursTab = () => {
   )
 }
 
-const EMPTY_AUSNAHME = { datum: '', offen: true, von: '10:00', bis: '19:00', notiz: '' }
+const EMPTY_AUSNAHME = { datum: '', bis_datum: '', offen: true, von: '10:00', bis: '19:00', notiz: '' }
 
 const HoursExceptions = ({ canEdit }) => {
+  const { t } = useTranslation()
   const [items, setItems] = useState([])
   const [draft, setDraft] = useState(EMPTY_AUSNAHME)
   const [loading, setLoading] = useState(true)
@@ -633,22 +777,33 @@ const HoursExceptions = ({ canEdit }) => {
       const res = await getStudioSettings()
       setItems(res.data.data.settings.oeffnungs_ausnahmen ?? [])
     } catch {
-      toast.error('Einzelne Tage konnten nicht geladen werden.')
+      toast.error(t('settingsPage.hours.toasts.exceptionsLoadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { load() }, [load])
+
+  usePlatformConfigSocket({
+    enabled: true,
+    onStudioScheduleUpdated: (payload) => {
+      if (payload?.schedule?.exceptions) {
+        setItems(payload.schedule.exceptions)
+        return
+      }
+      void load()
+    },
+  })
 
   const persist = async (next) => {
     setSaving(true)
     try {
       const res = await updateStudioSettings({ oeffnungs_ausnahmen: next })
       setItems(res.data.data.settings.oeffnungs_ausnahmen ?? next)
-      toast.success('Verfügbare Tage gespeichert.')
+      toast.success(t('settingsPage.hours.toasts.exceptionsSaved'))
     } catch (err) {
-      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+      toast.error(err?.response?.data?.message ?? t('settingsPage.shared.saveFailedFallback'))
     } finally {
       setSaving(false)
     }
@@ -656,12 +811,28 @@ const HoursExceptions = ({ canEdit }) => {
 
   const addItem = async () => {
     if (!draft.datum) {
-      toast.error('Bitte ein Datum wählen.')
+      toast.error(t('settingsPage.hours.toasts.dateRequired'))
       return
     }
+    const start = draft.datum
+    const end = draft.bis_datum && draft.bis_datum >= start ? draft.bis_datum : start
+    const dates = []
+    for (let cursor = new Date(`${start}T12:00:00`); cursor <= new Date(`${end}T12:00:00`); cursor.setDate(cursor.getDate() + 1)) {
+      const y = cursor.getFullYear()
+      const m = String(cursor.getMonth() + 1).padStart(2, '0')
+      const d = String(cursor.getDate()).padStart(2, '0')
+      dates.push(`${y}-${m}-${d}`)
+    }
+    const dateSet = new Set(dates)
+    const entry = {
+      offen: draft.offen !== false,
+      von: draft.von,
+      bis: draft.bis,
+      notiz: draft.notiz,
+    }
     const next = [
-      ...items.filter((item) => item.datum !== draft.datum),
-      { ...draft, offen: draft.offen !== false },
+      ...items.filter((item) => !dateSet.has(item.datum)),
+      ...dates.map((datum) => ({ ...entry, datum })),
     ].sort((a, b) => a.datum.localeCompare(b.datum))
     await persist(next)
     setDraft(EMPTY_AUSNAHME)
@@ -675,13 +846,13 @@ const HoursExceptions = ({ canEdit }) => {
 
   return (
     <Section
-      title="Einzelne Tage"
-      desc="Zusätzliche Öffnungstage oder geschlossene Tage (z. B. Feiertage) — unabhängig vom Wochenschema."
+      title={t('settingsPage.hours.exceptions.title')}
+      desc={t('settingsPage.hours.exceptions.desc')}
     >
       {!canEdit && <ReadOnlyHint />}
 
       {items.length === 0 ? (
-        <p className="text-studio-w3 text-[12px] m-0">Noch keine einzelnen Tage hinterlegt.</p>
+        <p className="text-studio-w3 text-[12px] m-0">{t('settingsPage.hours.exceptions.empty')}</p>
       ) : (
         <div className="flex flex-col">
           {items.map((item) => (
@@ -705,8 +876,10 @@ const HoursExceptions = ({ canEdit }) => {
                 </p>
                 <p className="text-studio-w3 text-[11px] m-0 mt-0.5">
                   {item.offen !== false
-                    ? `Geöffnet ${formatTimeRange12(item.von, item.bis)}`
-                    : 'Geschlossen'}
+                    ? t('settingsPage.hours.exceptions.openWithRange', {
+                        range: formatTimeRange12(item.von, item.bis),
+                      })
+                    : t('commonUi.closed')}
                   {item.notiz ? ` · ${item.notiz}` : ''}
                 </p>
               </button>
@@ -716,7 +889,7 @@ const HoursExceptions = ({ canEdit }) => {
                   onClick={() => removeItem(item.datum)}
                   disabled={saving}
                   className="p-1.5 rounded-[8px] text-studio-w3 hover:text-elaya-error border-0 bg-transparent cursor-pointer"
-                  aria-label="Tag entfernen"
+                  aria-label={t('settingsPage.hours.exceptions.removeDayAria')}
                 >
                   <Trash2 size={14} />
                 </button>
@@ -728,13 +901,20 @@ const HoursExceptions = ({ canEdit }) => {
 
       {canEdit && (
         <div className="flex flex-col gap-3 pt-2 border-t border-elaya-border">
-          <p className="text-studio-w2 text-[12px] m-0">Tag hinzufügen oder überschreiben</p>
+          <p className="text-studio-w2 text-[12px] m-0">{t('settingsPage.hours.exceptions.addOrOverwrite')}</p>
           <div className="flex flex-wrap items-end gap-3">
             <Input
-              label="Datum"
+              label={t('settingsPage.hours.exceptions.date')}
               type="date"
               value={draft.datum}
               onChange={(e) => setDraft((prev) => ({ ...prev, datum: e.target.value }))}
+              className="max-w-[180px]"
+            />
+            <Input
+              label={t('settingsPage.hours.exceptions.dateTo')}
+              type="date"
+              value={draft.bis_datum}
+              onChange={(e) => setDraft((prev) => ({ ...prev, bis_datum: e.target.value }))}
               className="max-w-[180px]"
             />
             <label className="flex items-center gap-2 pb-2 cursor-pointer">
@@ -744,10 +924,10 @@ const HoursExceptions = ({ canEdit }) => {
                 onChange={(e) => setDraft((prev) => ({ ...prev, offen: e.target.checked }))}
                 className="accent-studio-gold"
               />
-              <span className="text-studio-white text-[13px]">Geöffnet</span>
+              <span className="text-studio-white text-[13px]">{t('commonUi.open')}</span>
             </label>
             <Input
-              label="Von"
+              label={t('commonUi.from')}
               type="time"
               value={draft.von}
               onChange={(e) => setDraft((prev) => ({ ...prev, von: e.target.value }))}
@@ -755,7 +935,7 @@ const HoursExceptions = ({ canEdit }) => {
               className="max-w-[130px]"
             />
             <Input
-              label="Bis"
+              label={t('commonUi.to')}
               type="time"
               value={draft.bis}
               onChange={(e) => setDraft((prev) => ({ ...prev, bis: e.target.value }))}
@@ -763,15 +943,15 @@ const HoursExceptions = ({ canEdit }) => {
               className="max-w-[130px]"
             />
             <Input
-              label="Notiz"
+              label={t('settingsPage.hours.exceptions.note')}
               value={draft.notiz}
               onChange={(e) => setDraft((prev) => ({ ...prev, notiz: e.target.value }))}
-              placeholder="z. B. Feiertag"
+              placeholder={t('settingsPage.hours.exceptions.notePlaceholder')}
               className="max-w-[180px]"
             />
             <Button size="sm" onClick={addItem} loading={saving} disabled={!draft.datum}>
               <Plus size={14} />
-              Speichern
+              {t('settings.save')}
             </Button>
           </div>
         </div>
@@ -791,6 +971,7 @@ const emptyRoom = () => ({
 })
 
 const RoomsTab = () => {
+  const { t } = useTranslation()
   const canEdit = useCanEditSettings()
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -803,11 +984,11 @@ const RoomsTab = () => {
       const res = await getStudioSettings()
       setRooms(res.data.data.settings.behandlungsraeume ?? [])
     } catch {
-      toast.error('Räume konnten nicht geladen werden.')
+      toast.error(t('settingsPage.rooms.toasts.loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { load() }, [load])
 
@@ -831,7 +1012,7 @@ const RoomsTab = () => {
 
   const handleSave = async () => {
     if (rooms.some((r) => !r.name?.trim())) {
-      toast.error('Jeder Raum braucht einen Namen.')
+      toast.error(t('settingsPage.rooms.toasts.nameRequired'))
       return
     }
     setSaving(true)
@@ -847,9 +1028,9 @@ const RoomsTab = () => {
       const res = await updateStudioSettings({ behandlungsraeume: payload })
       setRooms(res.data.data.settings.behandlungsraeume ?? [])
       setIsEditing(false)
-      toast.success('Räume gespeichert.')
+      toast.success(t('settingsPage.rooms.toasts.saved'))
     } catch (err) {
-      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+      toast.error(err?.response?.data?.message ?? t('settingsPage.shared.saveFailedFallback'))
     } finally {
       setSaving(false)
     }
@@ -859,8 +1040,8 @@ const RoomsTab = () => {
 
   return (
     <Section
-      title="Räume & Geräte"
-      desc="Behandlungsräume und Laser-Geräte für Kalender und Sitzungen."
+      title={t('settingsPage.rooms.title')}
+      desc={t('settingsPage.rooms.desc')}
       canEdit={canEdit}
       isEditing={isEditing}
       onEdit={() => setIsEditing(true)}
@@ -871,7 +1052,7 @@ const RoomsTab = () => {
       {!canEdit && <ReadOnlyHint />}
 
       {rooms.length === 0 && (
-        <p className="text-studio-w3 text-[13px] m-0">Noch keine Räume angelegt.</p>
+        <p className="text-studio-w3 text-[13px] m-0">{t('settingsPage.rooms.empty')}</p>
       )}
 
       {!isEditing ? (
@@ -888,7 +1069,7 @@ const RoomsTab = () => {
                 />
                 <span className="text-studio-white text-[13px] font-semibold">{room.name}</span>
                 {room.aktiv === false && (
-                  <Badge variant="status" value="gesperrt">Inaktiv</Badge>
+                  <Badge variant="status" value="gesperrt">{t('settingsPage.rooms.inactive')}</Badge>
                 )}
               </div>
               {(room.laser_brand || room.laser_model) && (
@@ -914,17 +1095,17 @@ const RoomsTab = () => {
                       value={room.farbe ?? '#3B8BD4'}
                       onChange={(e) => updateRoom(index, 'farbe', e.target.value)}
                       className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
-                      aria-label="Raumfarbe"
+                      aria-label={t('settingsPage.rooms.colorAria')}
                     />
                     <span className="text-studio-white text-[13px] font-semibold">
-                      {room.name || `Raum ${index + 1}`}
+                      {room.name || t('settingsPage.rooms.fallbackName', { index: index + 1 })}
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => removeRoom(index)}
                     className="p-1.5 rounded-[8px] text-studio-w2 hover:text-studio-red hover:bg-studio-red/10 border-0 bg-transparent cursor-pointer"
-                    aria-label="Raum entfernen"
+                    aria-label={t('settingsPage.rooms.removeAria')}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -932,7 +1113,7 @@ const RoomsTab = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input
-                    label="Name"
+                    label={t('settingsPage.rooms.name')}
                     value={room.name}
                     onChange={(e) => updateRoom(index, 'name', e.target.value)}
                   />
@@ -944,20 +1125,20 @@ const RoomsTab = () => {
                         onChange={(e) => updateRoom(index, 'aktiv', e.target.checked)}
                         className="accent-studio-gold"
                       />
-                      <span className="text-studio-w2 text-[12px]">Aktiv</span>
+                      <span className="text-studio-w2 text-[12px]">{t('settingsPage.rooms.active')}</span>
                     </label>
                   </div>
                   <Input
-                    label="Laser-Marke"
+                    label={t('settingsPage.rooms.laserBrand')}
                     value={room.laser_brand ?? ''}
                     onChange={(e) => updateRoom(index, 'laser_brand', e.target.value)}
-                    placeholder="z. B. Candela"
+                    placeholder={t('settingsPage.rooms.laserBrandPlaceholder')}
                   />
                   <Input
-                    label="Laser-Modell"
+                    label={t('settingsPage.rooms.laserModel')}
                     value={room.laser_model ?? ''}
                     onChange={(e) => updateRoom(index, 'laser_model', e.target.value)}
-                    placeholder="z. B. GentleMax Pro"
+                    placeholder={t('settingsPage.rooms.laserModelPlaceholder')}
                   />
                 </div>
               </div>
@@ -966,7 +1147,7 @@ const RoomsTab = () => {
 
           <Button variant="secondary" size="sm" onClick={addRoom}>
             <Plus size={14} />
-            Raum hinzufügen
+            {t('settingsPage.rooms.addRoom')}
           </Button>
         </>
       )}
@@ -975,16 +1156,19 @@ const RoomsTab = () => {
 }
 
 // ── Staff tab ──────────────────────────────────────────────────────────────
+const DEFAULT_STAFF_ROLE = 'Laser-Therapeutin'
+
 const emptyStaff = () => ({
   id: undefined,
   vorname: '',
   nachname: '',
-  rolle: 'Laser-Therapeutin',
+  rolle: DEFAULT_STAFF_ROLE,
   raum_id: '',
   aktiv: true,
 })
 
 const StaffTab = () => {
+  const { t } = useTranslation()
   const canEdit = useCanEditSettings()
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -1000,16 +1184,17 @@ const StaffTab = () => {
       setStaff(settings.mitarbeiter ?? [])
       setRooms(settings.behandlungsraeume ?? [])
     } catch {
-      toast.error('Mitarbeiter konnten nicht geladen werden.')
+      toast.error(t('settingsPage.staff.toasts.loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { load() }, [load])
 
+  const empty = t('settingsPage.shared.emptyValue')
   const roomName = (raumId) =>
-    rooms.find((r) => r.id === raumId)?.name ?? '—'
+    rooms.find((r) => r.id === raumId)?.name ?? empty
 
   const updateMember = (index, field, value) =>
     setStaff((prev) => prev.map((m, i) => (i === index ? { ...m, [field]: value } : m)))
@@ -1033,7 +1218,7 @@ const StaffTab = () => {
 
   const handleSave = async () => {
     if (staff.some((m) => !m.vorname?.trim() || !m.nachname?.trim())) {
-      toast.error('Vor- und Nachname sind Pflichtfelder.')
+      toast.error(t('settingsPage.staff.toasts.nameRequired'))
       return
     }
     setSaving(true)
@@ -1042,16 +1227,16 @@ const StaffTab = () => {
         ...(id ? { id } : {}),
         vorname: vorname.trim(),
         nachname: nachname.trim(),
-        rolle: rolle || 'Laser-Therapeutin',
+        rolle: rolle || DEFAULT_STAFF_ROLE,
         raum_id: raum_id ?? '',
         aktiv: aktiv !== false,
       }))
       const res = await updateStudioSettings({ mitarbeiter: payload })
       setStaff(res.data.data.settings.mitarbeiter ?? [])
       setIsEditing(false)
-      toast.success('Mitarbeiter gespeichert.')
+      toast.success(t('settingsPage.staff.toasts.saved'))
     } catch (err) {
-      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+      toast.error(err?.response?.data?.message ?? t('settingsPage.shared.saveFailedFallback'))
     } finally {
       setSaving(false)
     }
@@ -1061,8 +1246,8 @@ const StaffTab = () => {
 
   return (
     <Section
-      title="Mitarbeiter"
-      desc="Team-Roster für Kalender und Zuordnung. Login-Einladungen folgen in einer späteren Version."
+      title={t('settingsPage.staff.title')}
+      desc={t('settingsPage.staff.desc')}
       canEdit={canEdit}
       isEditing={isEditing}
       onEdit={() => setIsEditing(true)}
@@ -1073,7 +1258,7 @@ const StaffTab = () => {
       {!canEdit && <ReadOnlyHint />}
 
       {staff.length === 0 && (
-        <p className="text-studio-w3 text-[13px] m-0">Noch keine Mitarbeiter erfasst.</p>
+        <p className="text-studio-w3 text-[13px] m-0">{t('settingsPage.staff.empty')}</p>
       )}
 
       {!isEditing ? (
@@ -1088,12 +1273,14 @@ const StaffTab = () => {
                   {`${member.vorname} ${member.nachname}`.trim()}
                 </span>
                 {member.aktiv === false && (
-                  <Badge variant="status" value="gesperrt">Inaktiv</Badge>
+                  <Badge variant="status" value="gesperrt">{t('settingsPage.staff.inactive')}</Badge>
                 )}
               </div>
-              <p className="text-studio-w2 text-[12px] m-0">{member.rolle}</p>
+              <p className="text-studio-w2 text-[12px] m-0">{staffRoleLabel(t, member.rolle)}</p>
               {member.raum_id && (
-                <p className="text-studio-w3 text-[11px] m-0">Raum: {roomName(member.raum_id)}</p>
+                <p className="text-studio-w3 text-[11px] m-0">
+                  {t('settingsPage.staff.roomPrefix', { name: roomName(member.raum_id) })}
+                </p>
               )}
             </div>
           ))}
@@ -1102,7 +1289,7 @@ const StaffTab = () => {
         <>
           {rooms.length === 0 && (
             <p className="text-studio-w3 text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2">
-              Tipp: Lege zuerst unter «Räume» mindestens einen Behandlungsraum an.
+              {t('settingsPage.staff.roomsTip')}
             </p>
           )}
 
@@ -1116,13 +1303,13 @@ const StaffTab = () => {
                   <span className="text-studio-white text-[13px] font-semibold">
                     {member.vorname || member.nachname
                       ? `${member.vorname} ${member.nachname}`.trim()
-                      : `Mitarbeiter ${index + 1}`}
+                      : t('settingsPage.staff.fallbackName', { index: index + 1 })}
                   </span>
                   <button
                     type="button"
                     onClick={() => removeMember(index)}
                     className="p-1.5 rounded-[8px] text-studio-w2 hover:text-studio-red hover:bg-studio-red/10 border-0 bg-transparent cursor-pointer"
-                    aria-label="Mitarbeiter entfernen"
+                    aria-label={t('settingsPage.staff.removeAria')}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -1130,30 +1317,32 @@ const StaffTab = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input
-                    label="Vorname"
+                    label={t('settingsPage.staff.firstName')}
                     value={member.vorname}
                     onChange={(e) => updateMember(index, 'vorname', e.target.value)}
                   />
                   <Input
-                    label="Nachname"
+                    label={t('settingsPage.staff.lastName')}
                     value={member.nachname}
                     onChange={(e) => updateMember(index, 'nachname', e.target.value)}
                   />
                   <Select
-                    label="Rolle"
-                    value={member.rolle ?? 'Laser-Therapeutin'}
+                    label={t('settingsPage.staff.role')}
+                    value={member.rolle ?? DEFAULT_STAFF_ROLE}
                     onChange={(e) => updateMember(index, 'rolle', e.target.value)}
                   >
-                    {MITARBEITER_ROLLEN.map((rolle) => (
-                      <option key={rolle} value={rolle}>{rolle}</option>
+                    {MITARBEITER_ROLLEN.map(({ value, i18nKey }) => (
+                      <option key={value} value={value}>
+                        {t(`settingsPage.staff.roles.${i18nKey}`)}
+                      </option>
                     ))}
                   </Select>
                   <Select
-                    label="Raum"
+                    label={t('settingsPage.staff.room')}
                     value={member.raum_id ?? ''}
                     onChange={(e) => updateMember(index, 'raum_id', e.target.value)}
                   >
-                    <option value="">— Kein Raum —</option>
+                    <option value="">{t('settingsPage.staff.noRoom')}</option>
                     {rooms.filter((r) => r.aktiv !== false).map((r) => (
                       <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
@@ -1166,7 +1355,7 @@ const StaffTab = () => {
                         onChange={(e) => updateMember(index, 'aktiv', e.target.checked)}
                         className="accent-studio-gold"
                       />
-                      <span className="text-studio-w2 text-[12px]">Aktiv</span>
+                      <span className="text-studio-w2 text-[12px]">{t('settingsPage.staff.active')}</span>
                     </label>
                   </div>
                 </div>
@@ -1176,7 +1365,7 @@ const StaffTab = () => {
 
           <Button variant="secondary" size="sm" onClick={addMember}>
             <Plus size={14} />
-            Mitarbeiter hinzufügen
+            {t('settingsPage.staff.addStaff')}
           </Button>
         </>
       )}
@@ -1186,6 +1375,7 @@ const StaffTab = () => {
 
 // ── Stripe Connect tab ─────────────────────────────────────────────────────
 const StripeTab = () => {
+  const { t } = useTranslation()
   const canEdit = useCanEditSettings()
   const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(true)
@@ -1198,11 +1388,11 @@ const StripeTab = () => {
       const res = await getStudioStripeStatus()
       setStatus(res.data.data)
     } catch {
-      toast.error('Stripe-Status konnte nicht geladen werden')
+      toast.error(t('settingsPage.stripe.toasts.loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     load()
@@ -1214,14 +1404,14 @@ const StripeTab = () => {
       ;(async () => {
         try {
           await refreshStudioStripeConnect()
-          toast.success('Stripe-Status aktualisiert')
+          toast.success(t('settingsPage.stripe.toasts.statusUpdated'))
           load()
         } catch {
           /* ignore */
         }
       })()
     }
-  }, [searchParams, load])
+  }, [searchParams, load, t])
 
   const connect = async () => {
     if (!canEdit) return
@@ -1232,7 +1422,7 @@ const StripeTab = () => {
       if (!url) throw new Error('No onboarding URL')
       window.location.href = url
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Stripe Connect fehlgeschlagen')
+      toast.error(err?.response?.data?.message || t('settingsPage.stripe.toasts.connectFailed'))
       setBusy(false)
     }
   }
@@ -1247,51 +1437,155 @@ const StripeTab = () => {
 
   return (
     <Section
-      title="Stripe Connect"
-      desc="Verbinde dein Studio-Konto, um Shop-Provisionen ausgezahlt zu bekommen (Testmodus möglich)."
+      title={t('settingsPage.stripe.title')}
+      desc={t('settingsPage.stripe.desc')}
     >
       {!status?.stripe_enabled ? (
         <p className="text-studio-w2 text-[13px] m-0">
-          Stripe ist auf dem Server noch nicht konfiguriert (STRIPE_SECRET_KEY fehlt).
+          {t('settingsPage.stripe.notConfigured')}
         </p>
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap gap-3">
             <Badge variant="status" value={status.onboarding_complete ? 'aktiv' : 'ausstehend'}>
-              {status.onboarding_complete ? 'Onboarding fertig' : 'Onboarding offen'}
+              {status.onboarding_complete
+                ? t('settingsPage.stripe.onboardingComplete')
+                : t('settingsPage.stripe.onboardingOpen')}
             </Badge>
             {status.stripe_test_mode ? (
-              <Badge>Testmodus</Badge>
+              <Badge>{t('settingsPage.stripe.testMode')}</Badge>
             ) : null}
           </div>
           <div className="text-[13px] text-studio-w2 space-y-1">
             <p className="m-0">
-              Account:{' '}
+              {t('settingsPage.stripe.accountLabel')}{' '}
               <span className="font-mono text-studio-w1">
-                {status.account_id || '— noch nicht verbunden'}
+                {status.account_id || t('settingsPage.stripe.notConnected')}
               </span>
             </p>
             <p className="m-0">
-              Charges: {status.charges_enabled ? 'ja' : 'nein'} · Payouts:{' '}
-              {status.payouts_enabled ? 'ja' : 'nein'}
+              {t('settingsPage.stripe.chargesPayouts', {
+                charges: status.charges_enabled ? t('commonUi.yes') : t('commonUi.no'),
+                payouts: status.payouts_enabled ? t('commonUi.yes') : t('commonUi.no'),
+              })}
             </p>
           </div>
           {canEdit ? (
             <div className="flex gap-2">
               <Button disabled={busy} onClick={connect}>
-                {status.account_id ? 'Onboarding fortsetzen' : 'Mit Stripe verbinden'}
+                {status.account_id
+                  ? t('settingsPage.stripe.continueOnboarding')
+                  : t('settingsPage.stripe.connectWithStripe')}
               </Button>
               <Button variant="secondary" disabled={busy} onClick={load}>
-                Status aktualisieren
+                {t('settingsPage.stripe.refreshStatus')}
               </Button>
             </div>
           ) : (
-            <p className="text-studio-w3 text-[12px] m-0">Nur Studio-Admin kann Stripe verbinden.</p>
+            <p className="text-studio-w3 text-[12px] m-0">{t('settingsPage.stripe.adminOnly')}</p>
           )}
           <p className="text-studio-w4 text-[11px] m-0">
-            Im Stripe-Testmodus kannst du die Onboarding-Formulare mit Testdaten ausfüllen.
-            Später werden die Live-Keys des Clients eingetragen.
+            {t('settingsPage.stripe.testModeHint')}
           </p>
+        </div>
+      )}
+    </Section>
+  )
+}
+
+const EMPTY_GROUP = {
+  klein_max_cm2: 50,
+  mittelgross_max_cm2: 150,
+  max_punkte: 4,
+  gruppen_rabatt_pct: 15,
+}
+
+const GroupBookingTab = () => {
+  const { t } = useTranslation()
+  const canEdit = useCanEditSettings()
+  const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState(EMPTY_GROUP)
+
+  const applyConfig = (cfg) => {
+    const gg = cfg?.gruppen_groessen ?? {}
+    setForm({
+      klein_max_cm2: gg.klein_max_cm2 ?? 50,
+      mittelgross_max_cm2: gg.mittelgross_max_cm2 ?? 150,
+      max_punkte: gg.max_punkte ?? 4,
+      gruppen_rabatt_pct: Math.round((gg.gruppen_rabatt ?? 0.15) * 100),
+    })
+  }
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await getStudioConfig()
+      applyConfig(res.data.data.studio_config)
+    } catch {
+      toast.error(t('settings.loadFailed'))
+    } finally {
+      setLoading(false)
+    }
+  }, [t])
+
+  useEffect(() => { load() }, [load])
+
+  const setField = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const klein = Number(form.klein_max_cm2)
+      const mittel = Number(form.mittelgross_max_cm2)
+      const maxPts = Number(form.max_punkte)
+      const pct = Number(form.gruppen_rabatt_pct)
+      const res = await updateStudioConfig({
+        gruppen_groessen: {
+          klein_max_cm2: klein,
+          mittelgross_max_cm2: mittel,
+          max_punkte: maxPts,
+          gruppen_rabatt: Number.isNaN(pct) ? 0.15 : pct / 100,
+        },
+      })
+      applyConfig(res.data.data.studio_config)
+      setIsEditing(false)
+      toast.success(t('settings.saved'))
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? t('settings.saveFailed'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
+
+  return (
+    <Section
+      title={t('settingsPage.groupBooking.title')}
+      desc={t('settingsPage.groupBooking.desc')}
+      canEdit={canEdit}
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      saving={saving}
+      onCancel={() => { setIsEditing(false); load() }}
+      onSave={handleSave}
+    >
+      {!canEdit && <ReadOnlyHint />}
+      {!isEditing ? (
+        <>
+          <InfoRow label={t('settingsPage.groupBooking.smallMax')} value={`${form.klein_max_cm2} cm²`} />
+          <InfoRow label={t('settingsPage.groupBooking.mediumMax')} value={`${form.mittelgross_max_cm2} cm²`} />
+          <InfoRow label={t('settingsPage.groupBooking.maxPoints')} value={String(form.max_punkte)} />
+          <InfoRow label={t('settingsPage.groupBooking.discount')} value={`${form.gruppen_rabatt_pct} %`} />
+        </>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          <Input label={t('settingsPage.groupBooking.smallMax')} type="number" min={1} value={form.klein_max_cm2} onChange={setField('klein_max_cm2')} />
+          <Input label={t('settingsPage.groupBooking.mediumMax')} type="number" min={1} value={form.mittelgross_max_cm2} onChange={setField('mittelgross_max_cm2')} />
+          <Input label={t('settingsPage.groupBooking.maxPoints')} type="number" min={1} max={16} value={form.max_punkte} onChange={setField('max_punkte')} />
+          <Input label={t('settingsPage.groupBooking.discount')} type="number" min={0} max={100} value={form.gruppen_rabatt_pct} onChange={setField('gruppen_rabatt_pct')} hint={t('settingsPage.groupBooking.discountHint')} />
         </div>
       )}
     </Section>
@@ -1300,15 +1594,25 @@ const StripeTab = () => {
 
 // ── Main component ─────────────────────────────────────────────────────────
 const StudioSettings = () => {
+  const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromUrl = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState(
-    TABS.some((t) => t.id === tabFromUrl) ? tabFromUrl : 'appearance'
+    TABS.some((tab) => tab.id === tabFromUrl) ? tabFromUrl : 'appearance'
   )
   const { preference, setPreference } = useTheme()
 
+  const themeOptions = useMemo(
+    () => THEME_OPTION_META.map((opt) => ({
+      ...opt,
+      label: t(opt.labelKey),
+      desc: t(opt.descKey),
+    })),
+    [t],
+  )
+
   useEffect(() => {
-    if (tabFromUrl && TABS.some((t) => t.id === tabFromUrl)) {
+    if (tabFromUrl && TABS.some((tab) => tab.id === tabFromUrl)) {
       setActiveTab(tabFromUrl)
     }
   }, [tabFromUrl])
@@ -1320,11 +1624,11 @@ const StudioSettings = () => {
 
   return (
     <div className="p-6 max-w-[860px]">
-      <PageHeader title="Einstellungen" subtitle="Studio-Konfiguration und Darstellung" />
+      <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
 
       <div className="flex gap-6">
         <nav className="flex flex-col gap-0.5 w-44 shrink-0" translate="no">
-          {TABS.map(({ id, icon: Icon, label }) => (
+          {TABS.map(({ id, icon: Icon }) => (
             <button
               key={id}
               type="button"
@@ -1336,16 +1640,16 @@ const StudioSettings = () => {
               }`}
             >
               <Icon size={14} className="shrink-0" />
-              {label}
+              {t(`settings.tabs.${TAB_I18N[id]}`)}
             </button>
           ))}
         </nav>
 
         <div className="flex-1 flex flex-col gap-5">
           {activeTab === 'appearance' && (
-            <Section title="Darstellung" desc="Wähle das Farbschema für das Studio-Dashboard.">
+            <Section title={t('theme.title')} desc={t('theme.desc')}>
               <div className="grid grid-cols-3 gap-3">
-                {THEME_OPTIONS.map((opt) => (
+                {themeOptions.map((opt) => (
                   <ThemeOption
                     key={opt.value}
                     value={opt.value}
@@ -1357,8 +1661,9 @@ const StudioSettings = () => {
                   />
                 ))}
               </div>
+              <LanguageToggle />
               <p className="text-studio-w4 text-[11px] m-0">
-                Die Einstellung wird im Browser gespeichert und gilt nur für dieses Gerät.
+                {t('settingsPage.appearance.deviceNote')}
               </p>
             </Section>
           )}
@@ -1367,6 +1672,7 @@ const StudioSettings = () => {
           {activeTab === 'pricing' && <PricingTab />}
           {activeTab === 'sessions' && <SessionPredictionTab />}
           {activeTab === 'hours'   && <HoursTab />}
+          {activeTab === 'group'   && <GroupBookingTab />}
           {activeTab === 'rooms'   && <RoomsTab />}
           {activeTab === 'staff'   && <StaffTab />}
           {activeTab === 'stripe'  && <StripeTab />}

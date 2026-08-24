@@ -2,12 +2,9 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { updateKlaerung } from '../../api/anamnesis'
 import { getApiErrorMessage } from '../../lib/apiError'
+import useContent from '../../i18n/useContent'
 
-const STATUS_OPTIONS = [
-  { value: 'offen', label: '🔴 Noch nicht besprochen' },
-  { value: 'in_klaerung', label: '🟡 Weitere Klärung nötig' },
-  { value: 'geklaert', label: '🟢 Geklärt' },
-]
+const STATUS_VALUES = ['offen', 'in_klaerung', 'geklaert']
 
 const statusStyles = {
   offen: 'border-studio-red/40 bg-studio-red/5',
@@ -25,6 +22,13 @@ const fmtDate = (iso) =>
     : ''
 
 const KlaerungItem = ({ caseId, flag, type, klaerung, onUpdated }) => {
+  const { components } = useContent()
+  const copy = components.anamnesis
+  const STATUS_OPTIONS = [
+    { value: 'offen', label: copy.klaerungPending },
+    { value: 'in_klaerung', label: copy.klaerungMore },
+    { value: 'geklaert', label: copy.klaerungDone },
+  ]
   const frageKey = `F${flag.frage_nr}`
   const entry = klaerung?.[frageKey] || {}
   const status = entry.status || 'offen'
@@ -40,9 +44,9 @@ const KlaerungItem = ({ caseId, flag, type, klaerung, onUpdated }) => {
         notiz: nextNotiz,
       })
       onUpdated?.(res.data.data, res.data.case_flags)
-      toast.success('Klärung gespeichert')
+      toast.success(copy.klaerungSaved)
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Klärung konnte nicht gespeichert werden.'))
+      toast.error(getApiErrorMessage(err, copy.klaerungError))
     } finally {
       setSaving(false)
     }
@@ -73,7 +77,7 @@ const KlaerungItem = ({ caseId, flag, type, klaerung, onUpdated }) => {
               if (notiz !== (entry.notiz || '')) save(status, notiz)
             }}
             rows={2}
-            placeholder="Notiz zur Klärung (optional)…"
+            placeholder={copy.klaerungNotePh}
             className="w-full px-2 py-1.5 rounded-[6px] border border-elaya-border bg-studio-bg-2 text-studio-white text-[11px] outline-none resize-y placeholder:text-studio-w4"
           />
           {status === 'geklaert' && entry.datum && (

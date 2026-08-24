@@ -1,10 +1,24 @@
-/** Group booking size points + 15% discount — matches inkderm prototype § gruppenTermin */
+/** Group booking size points + discount — matches platform `gruppen_groessen`. */
 
 export const DEFAULT_GRUPPEN_CONFIG = {
   klein_max_cm2: 50,
   mittelgross_max_cm2: 150,
   max_punkte: 4,
   gruppen_rabatt: 0.15,
+}
+
+export const normalizeGruppenConfig = (raw = {}) => ({
+  klein_max_cm2: Number(raw.klein_max_cm2 ?? raw.klein_max_cm2 ?? DEFAULT_GRUPPEN_CONFIG.klein_max_cm2),
+  mittelgross_max_cm2: Number(
+    raw.mittelgross_max_cm2 ?? raw.mittelgross_max_cm2 ?? DEFAULT_GRUPPEN_CONFIG.mittelgross_max_cm2
+  ),
+  max_punkte: Number(raw.max_punkte ?? raw.max_punkte ?? DEFAULT_GRUPPEN_CONFIG.max_punkte),
+  gruppen_rabatt: Number(raw.gruppen_rabatt ?? raw.gruppen_rabatt ?? DEFAULT_GRUPPEN_CONFIG.gruppen_rabatt),
+})
+
+export const extractGruppenConfig = (payload) => {
+  const raw = payload?.gruppen_groessen ?? payload?.config?.gruppen_groessen ?? {}
+  return normalizeGruppenConfig(raw)
 }
 
 export const caseFlaecheCm2 = (c) => {
@@ -20,7 +34,7 @@ export const caseFlaecheCm2 = (c) => {
 }
 
 export const caseGroesse = (c, config = DEFAULT_GRUPPEN_CONFIG) => {
-  const cfg = { ...DEFAULT_GRUPPEN_CONFIG, ...config }
+  const cfg = normalizeGruppenConfig({ ...DEFAULT_GRUPPEN_CONFIG, ...config })
   const cm2 = caseFlaecheCm2(c)
   if (cm2 <= cfg.klein_max_cm2) return { kategorie: 'klein', label: 'Klein', punkte: 1, cm2 }
   if (cm2 <= cfg.mittelgross_max_cm2) {
@@ -30,7 +44,7 @@ export const caseGroesse = (c, config = DEFAULT_GRUPPEN_CONFIG) => {
 }
 
 export const casePreis = (c) => {
-  const p = Number.parseFloat(c?.pricePerSession)
+  const p = Number.parseFloat(c?.pricePerSession ?? c?.priceFrom)
   return p > 0 ? p : 0
 }
 
@@ -38,13 +52,13 @@ export const round5 = (n) => Math.round(n / 5) * 5
 
 export const isGroupEligibleCase = (c) => {
   if (!c) return false
-  if (c.type === 'pmu') return false
+  if (c.type === 'pmu' || c.type === 'pmu') return false
   const st = c.status
   return st !== 'draft' && st !== 'completed' && st !== 'abgeschlossen' && st !== 'done'
 }
 
 export const calcGroupPricing = (selectedCases, config = DEFAULT_GRUPPEN_CONFIG) => {
-  const cfg = { ...DEFAULT_GRUPPEN_CONFIG, ...config }
+  const cfg = normalizeGruppenConfig({ ...DEFAULT_GRUPPEN_CONFIG, ...config })
   const einzel = selectedCases.map((c) => ({
     id: c.id ?? c._id,
     label: c.bodyLabel || c.tc_title || c.caseId || 'Tattoo',
@@ -63,14 +77,8 @@ export const totalPunkte = (selectedCases, config) =>
 export const hasGross = (selectedCases, config) =>
   selectedCases.some((c) => caseGroesse(c, config).kategorie === 'gross')
 
-/**
- * Toggle rules from prototype:
- * - Gross alone only
- * - Cannot add more if a gross is already selected
- * - Cannot exceed max_punkte
- */
 export const canToggleCase = (caseDoc, selectedIds, allCases, config = DEFAULT_GRUPPEN_CONFIG) => {
-  const cfg = { ...DEFAULT_GRUPPEN_CONFIG, ...config }
+  const cfg = normalizeGruppenConfig({ ...DEFAULT_GRUPPEN_CONFIG, ...config })
   const id = String(caseDoc.id ?? caseDoc._id)
   const selected = selectedIds.map(String)
   const isSel = selected.includes(id)
@@ -79,23 +87,27 @@ export const canToggleCase = (caseDoc, selectedIds, allCases, config = DEFAULT_G
 
   const g = caseGroesse(caseDoc, cfg)
   if (g.kategorie === 'gross') {
+    if (selected.length > 0) return { ok: false, reason: 'gross_alone' }
     return { ok: true, next: [id] }
   }
 
   const selectedCases = allCases.filter((c) => selected.includes(String(c.id ?? c._id)))
   if (hasGross(selectedCases, cfg)) {
-    return { ok: false, reason: 'Grosser Tattoo muss allein gebucht werden.' }
+    return { ok: false, reason: 'gross_alone' }
   }
 
   const pts = totalPunkte(selectedCases, cfg)
   if (pts + g.punkte > cfg.max_punkte) {
-    return { ok: false, reason: `Max. ${cfg.max_punkte} Punkte überschritten.` }
+    return { ok: false, reason: 'max_points' }
   }
 
   return { ok: true, next: [...selected, id] }
 }
 
-export const fmtCHF = (n) =>
+export const fmtCHF = (n, lang = 'de') =>
   n != null
-    ? `CHF ${Number(n).toLocaleString('de-CH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+    ? `CHF ${Number(n).toLocaleString(lang.startsWith('de') ? 'de-CH' : 'en-CH', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      })}`
     : '—'

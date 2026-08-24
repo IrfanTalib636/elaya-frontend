@@ -4,6 +4,7 @@
  */
 export const PRICING_GROUPS = [
   {
+    id: 'base',
     title: 'Grundpreise',
     fields: [
       { key: 'basePricePerCm2', label: 'Basispreis / cm² (CHF)',       step: '0.01' },
@@ -12,6 +13,7 @@ export const PRICING_GROUPS = [
     ],
   },
   {
+    id: 'color',
     title: 'Farb-Multiplikatoren',
     fields: [
       { key: 'color_black',     label: 'Schwarz'      },
@@ -21,6 +23,7 @@ export const PRICING_GROUPS = [
     ],
   },
   {
+    id: 'depth',
     title: 'Stichtiefe',
     fields: [
       { key: 'depth_shallow',   label: 'Oberflächlich' },
@@ -30,6 +33,7 @@ export const PRICING_GROUPS = [
     ],
   },
   {
+    id: 'age',
     title: 'Tattoo-Alter',
     fields: [
       { key: 'age_under1', label: 'unter 1 Jahr'  },
@@ -40,6 +44,7 @@ export const PRICING_GROUPS = [
     ],
   },
   {
+    id: 'skin',
     title: 'Hauttyp (Fitzpatrick)',
     fields: [
       { key: 'skin_1', label: 'Typ I'   },
@@ -51,6 +56,7 @@ export const PRICING_GROUPS = [
     ],
   },
   {
+    id: 'location',
     title: 'Körperstelle',
     fields: [
       { key: 'location_arm',   label: 'Arm'         },
@@ -63,6 +69,7 @@ export const PRICING_GROUPS = [
     ],
   },
   {
+    id: 'layering',
     title: 'Layering / Cover-up',
     fields: [
       { key: 'layering_none',  label: 'Kein'     },
@@ -71,6 +78,7 @@ export const PRICING_GROUPS = [
     ],
   },
   {
+    id: 'goal',
     title: 'Behandlungsziel',
     fields: [
       { key: 'goal_full',    label: 'Vollständige Entfernung'  },

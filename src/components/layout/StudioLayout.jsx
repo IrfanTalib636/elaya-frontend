@@ -9,36 +9,7 @@ import {
 import toast from 'react-hot-toast'
 import ElayaLogo from '../ElayaLogo'
 import useAuthStore from '../../store/authStore'
-import { common, toast as toastMessages, studioNav } from '../../content'
-
-const NAV_SECTIONS = [
-  {
-    label: 'STUDIO',
-    items: [
-      { to: '/studio/dashboard',    icon: LayoutDashboard, label: studioNav?.dashboard    ?? 'Dashboard'    },
-      { to: '/studio/appointments', icon: Calendar,        label: studioNav?.appointments ?? 'Kalender'     },
-      { to: '/studio/today',        icon: CalendarDays,    label: studioNav?.today        ?? 'Heute'        },
-      { to: '/studio/customers',    icon: Users,           label: studioNav?.customers    ?? 'Kunden'       },
-      { to: '/studio/cases',        icon: FolderOpen,      label: studioNav?.cases        ?? 'Alle Fälle', end: true },
-      { to: '/studio/sessions',     icon: ClipboardList,   label: studioNav?.sessions     ?? 'Sitzungen', end: true },
-      { to: '/studio/analytics',    icon: BarChart2,       label: studioNav?.analytics    ?? 'Analytik'     },
-      { to: '/studio/aftercare',    icon: Heart,           label: studioNav?.aftercare    ?? 'Nachsorge'    },
-      { to: '/studio/crm',          icon: ListChecks,      label: studioNav?.crm          ?? 'CRM'          },
-      { to: '/studio/activity',     icon: History,         label: studioNav?.activity     ?? 'Verlauf'      },
-      { to: '/studio/elaya',        icon: Sparkles,        label: studioNav?.elayaChat    ?? 'Elaya Chat'   },
-      { to: '/studio/chat',         icon: MessageCircle,   label: studioNav?.chat         ?? 'Kunden-Chat'  },
-    ],
-  },
-  {
-    label: 'VERWALTUNG',
-    items: [
-      { to: '/studio/shop',      icon: ShoppingBag,   label: studioNav?.shop      ?? 'Avora Shop'    },
-      { to: '/studio/transfers', icon: ArrowLeftRight, label: studioNav?.transfers ?? 'Studio-Wechsel' },
-      { to: '/studio/elaycoins', icon: Coins,         label: studioNav?.elaycoins ?? 'Elaycoins'     },
-      { to: '/studio/settings',  icon: Settings,      label: studioNav?.settings  ?? 'Einstellungen' },
-    ],
-  },
-]
+import useContent from '../../i18n/useContent'
 
 // ── NavItem ────────────────────────────────────────────────────────────────
 const NavItem = ({ to, icon: Icon, label, collapsed, end }) => (
@@ -75,6 +46,36 @@ const StudioLayout = ({ children }) => {
   const logout   = useAuthStore((s) => s.logout)
   const user     = useAuthStore((s) => s.user)
   const profile  = useAuthStore((s) => s.profile)
+  const { common, toast: toastMessages, studioNav, t } = useContent()
+
+  const NAV_SECTIONS = [
+    {
+      label: t('studio.sectionStudio'),
+      items: [
+        { to: '/studio/dashboard',    icon: LayoutDashboard, label: studioNav.dashboard },
+        { to: '/studio/appointments', icon: Calendar,        label: studioNav.appointments },
+        { to: '/studio/today',        icon: CalendarDays,    label: studioNav.today },
+        { to: '/studio/customers',    icon: Users,           label: studioNav.customers },
+        { to: '/studio/cases',        icon: FolderOpen,      label: studioNav.cases, end: true },
+        { to: '/studio/sessions',     icon: ClipboardList,   label: studioNav.sessions, end: true },
+        { to: '/studio/analytics',    icon: BarChart2,       label: studioNav.analytics },
+        { to: '/studio/aftercare',    icon: Heart,           label: studioNav.aftercare },
+        { to: '/studio/crm',          icon: ListChecks,      label: studioNav.crm },
+        { to: '/studio/activity',     icon: History,         label: studioNav.activity },
+        { to: '/studio/elaya',        icon: Sparkles,        label: studioNav.elayaChat },
+        { to: '/studio/chat',         icon: MessageCircle,   label: studioNav.chat },
+      ],
+    },
+    {
+      label: t('studio.sectionAdmin'),
+      items: [
+        { to: '/studio/shop',      icon: ShoppingBag,   label: studioNav.shop },
+        { to: '/studio/transfers', icon: ArrowLeftRight, label: studioNav.transfers },
+        { to: '/studio/elaycoins', icon: Coins,         label: studioNav.elaycoins },
+        { to: '/studio/settings',  icon: Settings,      label: studioNav.settings },
+      ],
+    },
+  ]
 
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem('sidebar_collapsed') === '1' } catch { return false }

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { getCaseAvailability } from '../../api/cases'
 import { fmtDateDeLong } from '../../utils/time'
 import { Card, Button, Spinner } from '../ui'
+import useContent from '../../i18n/useContent'
 
 const addDaysIso = (iso, days) => {
   const d = new Date(`${iso}T12:00:00`)
@@ -12,6 +13,8 @@ const addDaysIso = (iso, days) => {
 }
 
 const CaseAvailabilityPanel = ({ caseId, customerId, compact = false }) => {
+  const { t, components } = useContent()
+  const copy = components.caseAvailability
   const navigate = useNavigate()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -48,18 +51,18 @@ const CaseAvailabilityPanel = ({ caseId, customerId, compact = false }) => {
     <Card className={`flex flex-col gap-3 ${compact ? '' : ''}`}>
       <div className="flex items-center gap-2">
         <CalendarClock size={14} className="text-studio-teal-2 shrink-0" />
-        <h3 translate="no" className="text-[13px] font-semibold text-studio-white m-0">Buchbarkeit & Sperrfristen</h3>
+        <h3 className="text-[13px] font-semibold text-studio-white m-0">{copy.title}</h3>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-4"><Spinner size="sm" /></div>
       ) : error ? (
-        <p className="text-studio-w3 text-[12px] m-0">Verfügbarkeit konnte nicht geladen werden.</p>
+        <p className="text-studio-w3 text-[12px] m-0">{copy.error}</p>
       ) : data ? (
         <>
           <div className="rounded-[10px] border border-studio-teal-2/25 bg-studio-teal-2/10 px-3 py-2.5">
-            <p translate="no" className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-1">Frühestens buchbar</p>
-            <p translate="no" className="text-studio-white text-[15px] font-bold m-0 tabular-nums">
+            <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-1">{copy.earliest}</p>
+            <p className="text-studio-white text-[15px] font-bold m-0 tabular-nums">
               {fmtDateDeLong(data.fruehestes)}
             </p>
           </div>
@@ -72,10 +75,12 @@ const CaseAvailabilityPanel = ({ caseId, customerId, compact = false }) => {
                   className="flex gap-2 text-[11px] text-studio-w2 leading-snug"
                 >
                   <Lock size={12} className="text-elaya-warning shrink-0 mt-0.5" />
-                  <span translate="no">
+                  <span>
                     {s.grund}
                     {s.bis_string && (
-                      <span className="text-studio-w3"> · gesperrt bis {s.bis_string}</span>
+                      <span className="text-studio-w3">
+                        {t('components.caseAvailability.lockedUntil', { until: s.bis_string })}
+                      </span>
                     )}
                   </span>
                 </li>
@@ -84,13 +89,15 @@ const CaseAvailabilityPanel = ({ caseId, customerId, compact = false }) => {
           ) : (
             <div className="flex items-center gap-2 text-elaya-success text-[12px]">
               <Unlock size={13} />
-              <span>Keine aktiven Sperrfristen</span>
+              <span>{copy.noLockouts}</span>
             </div>
           )}
 
           {data.frei_fenster?.length > 0 && data.frei_fenster[0] && (
-            <p translate="no" className="text-studio-w3 text-[10px] m-0">
-              Nächstes freies Fenster ab {data.frei_fenster[0].von_string ?? fmtDateDeLong(data.frei_fenster[0].von)}
+            <p className="text-studio-w3 text-[10px] m-0">
+              {t('components.caseAvailability.nextWindow', {
+                from: data.frei_fenster[0].von_string ?? fmtDateDeLong(data.frei_fenster[0].von),
+              })}
             </p>
           )}
 
@@ -101,7 +108,7 @@ const CaseAvailabilityPanel = ({ caseId, customerId, compact = false }) => {
               className="w-full mt-1"
               onClick={() => navigate(bookUrl)}
             >
-              Termin buchen
+              {copy.book}
             </Button>
           )}
         </>

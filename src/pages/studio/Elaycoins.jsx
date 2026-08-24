@@ -6,17 +6,12 @@ import { getStudioElaycoinOverview } from '../../api/elaycoins'
 import { Card, PageHeader, Spinner, Pagination, EmptyState, Badge } from '../../components/ui'
 import CustomerAvatar from '../../components/CustomerAvatar'
 import { PAGE_SIZE } from '../../constants/pagination'
+import useContent from '../../i18n/useContent'
 
-const SOURCE_LABELS = {
-  studio_eigen:         'Studio',
-  plattform_vermittelt: 'Plattform',
-  studio_wechsel:       'Wechsel',
-}
-
-const fmtDate = (d) => {
+const fmtDate = (d, language) => {
   if (!d) return '—'
   try {
-    return new Intl.DateTimeFormat('de-CH', {
+    return new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : 'de-CH', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -28,6 +23,9 @@ const fmtDate = (d) => {
 
 const StudioElaycoins = () => {
   const navigate = useNavigate()
+  const { language, studioPages } = useContent()
+  const copy = studioPages.elaycoins
+
   const [customers, setCustomers] = useState([])
   const [summary, setSummary] = useState(null)
   const [pagination, setPagination] = useState(null)
@@ -43,11 +41,11 @@ const StudioElaycoins = () => {
       setSummary(res.data.data.summary ?? null)
       setPagination(res.data.data.pagination)
     } catch {
-      toast.error('Elaycoins konnten nicht geladen werden.')
+      toast.error(copy.loadError)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [copy.loadError])
 
   useEffect(() => {
     load(page, { background: page > 1 })
@@ -56,12 +54,19 @@ const StudioElaycoins = () => {
   const totalRedeemed = customers.reduce((s, c) => s + (c.redeemed_at_studio ?? 0), 0)
   const totalCredited = customers.reduce((s, c) => s + (c.credited_at_studio ?? 0), 0)
 
+  const headers = [
+    copy.headers.customer,
+    copy.headers.email,
+    copy.headers.source,
+    copy.headers.balance,
+    copy.headers.credited,
+    copy.headers.redeemed,
+    '',
+  ]
+
   return (
     <div className="p-6 max-w-[1100px]">
-      <PageHeader
-        title="Elaycoins"
-        subtitle="Coin-Guthaben, Gutschriften und Einlösungen deiner Kunden"
-      />
+      <PageHeader title={copy.title} subtitle={copy.subtitle} />
 
       {loading && customers.length === 0 ? (
         <div className="flex justify-center py-20"><Spinner size="lg" /></div>
@@ -75,33 +80,33 @@ const StudioElaycoins = () => {
                 </div>
                 <div>
                   <p className="text-[20px] font-bold text-studio-white m-0 tabular-nums">{summary.total_balance ?? 0}</p>
-                  <p className="text-studio-w2 text-[12px] m-0">Coins gesamt</p>
+                  <p className="text-studio-w2 text-[12px] m-0">{copy.kpiTotal}</p>
                 </div>
               </Card>
               <Card>
                 <p className="text-[20px] font-bold text-studio-white m-0 tabular-nums">{summary.customers_with_balance ?? 0}</p>
-                <p className="text-studio-w2 text-[12px] m-0 mt-1">Kunden mit Guthaben</p>
+                <p className="text-studio-w2 text-[12px] m-0 mt-1">{copy.kpiWithBalance}</p>
               </Card>
               <Card>
                 <p className="text-[20px] font-bold text-studio-teal-2 m-0 tabular-nums">+{totalCredited}</p>
-                <p className="text-studio-w2 text-[12px] m-0 mt-1">Gutgeschrieben (Seite)</p>
+                <p className="text-studio-w2 text-[12px] m-0 mt-1">{copy.kpiCredited}</p>
               </Card>
               <Card>
                 <p className="text-[20px] font-bold text-studio-gold-2 m-0 tabular-nums">−{totalRedeemed}</p>
-                <p className="text-studio-w2 text-[12px] m-0 mt-1">Eingelöst (Seite)</p>
+                <p className="text-studio-w2 text-[12px] m-0 mt-1">{copy.kpiRedeemed}</p>
               </Card>
             </div>
           )}
 
           {customers.length === 0 ? (
-            <EmptyState title="Keine Kunden" description="Lege Kunden an, um Coin-Konten zu sehen." />
+            <EmptyState title={copy.emptyTitle} description={copy.emptyDesc} />
           ) : (
             <Card padding="none">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[720px]">
                   <thead>
                     <tr className="border-b border-elaya-border">
-                      {['Kunde', 'E-Mail', 'Quelle', 'Guthaben', 'Gutgeschrieben', 'Eingelöst', ''].map((h) => (
+                      {headers.map((h) => (
                         <th
                           key={h || 'go'}
                           className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider"
@@ -116,9 +121,7 @@ const StudioElaycoins = () => {
                       const open = expandedId === c.id
                       return (
                         <Fragment key={c.id}>
-                          <tr
-                            className="border-b border-elaya-border last:border-0 hover:bg-studio-bg-4"
-                          >
+                          <tr className="border-b border-elaya-border last:border-0 hover:bg-studio-bg-4">
                             <td className="px-5 py-3">
                               <button
                                 type="button"
@@ -134,7 +137,7 @@ const StudioElaycoins = () => {
                             <td className="px-5 py-3 text-studio-w2 text-[12px]">{c.email}</td>
                             <td className="px-5 py-3">
                               <Badge variant="source" value={c.akquise_quelle}>
-                                {SOURCE_LABELS[c.akquise_quelle] ?? c.akquise_quelle}
+                                {copy.sources[c.akquise_quelle] ?? c.akquise_quelle}
                               </Badge>
                             </td>
                             <td className="px-5 py-3 text-studio-gold-2 text-[14px] font-bold tabular-nums">
@@ -150,7 +153,7 @@ const StudioElaycoins = () => {
                               <button
                                 type="button"
                                 className="bg-transparent border-0 p-0 cursor-pointer text-studio-w3 hover:text-studio-white"
-                                title="Letzte Transaktionen"
+                                title={copy.txTitle}
                                 onClick={() => setExpandedId(open ? null : c.id)}
                               >
                                 <ChevronRight
@@ -170,7 +173,7 @@ const StudioElaycoins = () => {
                                       className="flex justify-between gap-3 text-[12px]"
                                     >
                                       <span className="text-studio-w2 truncate">
-                                        {fmtDate(tx.datum)} · {tx.label || tx.situationKey || '—'}
+                                        {fmtDate(tx.datum, language)} · {tx.label || tx.situationKey || '—'}
                                         {tx.herkunft_studio_name
                                           ? ` · ${tx.herkunft_studio_name}`
                                           : ''}
@@ -201,10 +204,7 @@ const StudioElaycoins = () => {
             </Card>
           )}
 
-          <p className="text-studio-w4 text-[11px] mt-4 m-0">
-            Studios vergeben Coins über Behandlungen und Termine. Manuelle Korrekturen nur durch Plattform-Admin.
-            Stripe-Auszahlung der Shop-Provision folgt, sobald die Kontodaten vorliegen.
-          </p>
+          <p className="text-studio-w4 text-[11px] mt-4 m-0">{copy.footerHint}</p>
         </div>
       )}
     </div>

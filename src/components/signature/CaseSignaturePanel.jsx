@@ -5,6 +5,7 @@ import { getCaseMerkblatt, submitCaseSignature, fetchCaseSignatureImage } from '
 import { getApiErrorMessage } from '../../lib/apiError'
 import { Card, Button, Spinner, Modal } from '../ui'
 import SignatureCanvas from './SignatureCanvas'
+import useContent from '../../i18n/useContent'
 
 const fmtDateTime = (iso) =>
   iso
@@ -18,6 +19,8 @@ const fmtDateTime = (iso) =>
     : '—'
 
 const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
+  const { t, components, language } = useContent()
+  const copy = components.signature
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -29,7 +32,8 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
     let cancelled = false
     ;(async () => {
       try {
-        const res = await getCaseMerkblatt(caseId, { locale: 'de' })
+        const locale = (language || 'de').startsWith('en') ? 'en' : 'de'
+        const res = await getCaseMerkblatt(caseId, { locale })
         if (!cancelled) setMerkblatt(res.data.data)
       } catch (err) {
         if (!cancelled) toast.error(getApiErrorMessage(err))
@@ -40,11 +44,11 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
     return () => {
       cancelled = true
     }
-  }, [caseId])
+  }, [caseId, language])
 
   const handleSubmit = async () => {
     if (!sigData) {
-      toast.error('Bitte unterschreiben.')
+      toast.error(copy.needSignature)
       return
     }
     setSubmitting(true)
@@ -54,7 +58,7 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
         bestaetigung_text: true,
         unterschrift_data: sigData,
       })
-      toast.success('Unterschrift gespeichert.')
+      toast.success(copy.saved)
       await onSaved?.(res.data.data)
       onClose()
     } catch (err) {
@@ -68,12 +72,13 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
   const sections = merkblatt?.sections ?? []
   const caseInfo = merkblatt?.case
   const customer = merkblatt?.customer
+  const stepLabels = [copy.stepLeaflet, copy.stepSignature]
 
   return (
-    <Modal title="Nachsorge & Unterschrift" onClose={onClose} width="max-w-2xl" scrollResetKey={step}>
+    <Modal title={copy.wizardTitle} onClose={onClose} width="max-w-2xl" scrollResetKey={step}>
       <div className="flex flex-col gap-5">
         <div className="flex gap-1.5">
-          {['Merkblatt', 'Unterschrift'].map((label, i) => (
+          {stepLabels.map((label, i) => (
             <span
               key={label}
               className={`text-[10px] px-2.5 py-1 rounded-full border ${
@@ -97,9 +102,9 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
           <div className="flex flex-col gap-4">
             <div>
               <p className="text-studio-teal-2 text-[10px] font-mono tracking-widest m-0 mb-1">TC_08</p>
-              <h3 className="text-studio-white text-[18px] font-bold m-0">Nachsorgehinweise</h3>
+              <h3 className="text-studio-white text-[18px] font-bold m-0">{copy.leafletHeading}</h3>
               <p className="text-studio-w3 text-[12px] mt-1 mb-0">
-                Bitte lies die folgenden Hinweise sorgfältig durch.
+                {copy.leafletIntro}
               </p>
             </div>
 
@@ -144,10 +149,10 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
 
             <div className="flex justify-between gap-3 pt-2 border-t border-elaya-border">
               <Button size="sm" variant="secondary" onClick={onClose}>
-                Abbrechen
+                {copy.cancel}
               </Button>
               <Button size="sm" disabled={!merkblattRead} onClick={() => setStep(1)}>
-                Weiter →
+                {copy.continue}
               </Button>
             </div>
           </div>
@@ -155,14 +160,14 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
           <div className="flex flex-col gap-4">
             <div>
               <p className="text-studio-teal-2 text-[10px] font-mono tracking-widest m-0 mb-1">TC_09</p>
-              <h3 className="text-studio-white text-[18px] font-bold m-0">Bestätigung & Unterschrift</h3>
+              <h3 className="text-studio-white text-[18px] font-bold m-0">{copy.confirmHeading}</h3>
             </div>
 
             <div className="rounded-[12px] border border-elaya-border bg-studio-bg-4 p-4 flex flex-col gap-1">
               {[
-                ['Name', customer ? `${customer.vorname} ${customer.nachname}`.trim() : '—'],
-                ['Case', caseInfo?.bodyLabel || caseInfo?.tc_title || '—'],
-                ['Datum', new Date().toLocaleDateString('de-CH')],
+                [copy.labelName, customer ? `${customer.vorname} ${customer.nachname}`.trim() : '—'],
+                [copy.labelCase, caseInfo?.bodyLabel || caseInfo?.tc_title || '—'],
+                [copy.labelDate, new Date().toLocaleDateString('de-CH')],
               ].map(([k, v]) => (
                 <div
                   key={k}
@@ -189,10 +194,10 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
 
             <div className="flex justify-between gap-3 pt-2 border-t border-elaya-border">
               <Button size="sm" variant="secondary" onClick={() => setStep(0)}>
-                Zurück
+                {t('common.back')}
               </Button>
               <Button size="sm" loading={submitting} disabled={!sigData} onClick={handleSubmit}>
-                Unterschrift bestätigen
+                {copy.confirmBtn}
               </Button>
             </div>
           </div>
@@ -203,6 +208,8 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
 }
 
 const CaseSignaturePanel = ({ caseId, caseData, onUpdated }) => {
+  const { t, components } = useContent()
+  const copy = components.signature
   const [wizardOpen, setWizardOpen] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
@@ -254,57 +261,57 @@ const CaseSignaturePanel = ({ caseId, caseData, onUpdated }) => {
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <FileSignature size={14} className="text-studio-gold shrink-0" />
-            <h2 className="text-[13px] font-semibold text-studio-white m-0">Unterschrift & Merkblatt</h2>
+            <h2 className="text-[13px] font-semibold text-studio-white m-0">{copy.panelTitle}</h2>
           </div>
           {canSign && (
             <Button size="sm" variant="secondary" onClick={() => setWizardOpen(true)}>
               <Pencil size={12} />
-              {signed ? 'Erneut unterschreiben' : 'Unterschreiben'}
+              {signed ? copy.resign : copy.sign}
             </Button>
           )}
         </div>
 
         {!caseData?.anamnesis_complete ? (
           <div className="rounded-[10px] border border-elaya-warning/30 bg-elaya-warning/5 px-4 py-3">
-            <p className="text-elaya-warning text-[12px] font-semibold m-0">Anamnese zuerst</p>
+            <p className="text-elaya-warning text-[12px] font-semibold m-0">{copy.anamnesisFirstTitle}</p>
             <p className="text-studio-w3 text-[11px] mt-1 mb-0 leading-relaxed">
-              Die medizinische Anamnese muss vor der Unterschrift ausgefüllt sein.
+              {copy.anamnesisFirstDesc}
             </p>
           </div>
         ) : signed ? (
           <>
             <div className="rounded-[10px] border border-studio-teal-2/30 bg-studio-teal-2/10 px-3 py-2.5">
-              <p className="text-studio-teal-2 text-[13px] font-bold m-0">✅ Unterschrift vorhanden</p>
+              <p className="text-studio-teal-2 text-[13px] font-bold m-0">{copy.present}</p>
             </div>
             <p className="text-studio-w3 text-[11px] m-0">
-              Unterzeichnet: {fmtDateTime(caseData.unterschrift?.zeitstempel)}
+              {t('components.signature.signedAt', { date: fmtDateTime(caseData.unterschrift?.zeitstempel) })}
             </p>
             {caseData.unterschrift?.merkblatt_gelesen && (
-              <p className="text-studio-w3 text-[11px] m-0">Merkblatt gelesen: Ja</p>
+              <p className="text-studio-w3 text-[11px] m-0">{copy.leafletRead}</p>
             )}
             {previewUrl && (
               <button
                 type="button"
                 onClick={() => setLightboxOpen(true)}
                 className="self-start p-0 m-0 bg-transparent border-0 cursor-zoom-in group"
-                title="Klicken zum Vergrössern"
+                title={copy.clickToEnlarge}
               >
                 <img
                   src={previewUrl}
-                  alt="Unterschrift"
+                  alt={copy.alt}
                   className="block max-w-[240px] rounded-[8px] border border-elaya-border bg-white group-hover:border-studio-teal-2/50 transition-colors"
                 />
                 <span className="block text-studio-w4 text-[10px] mt-1.5 text-left">
-                  Klicken zum Vergrössern
+                  {copy.clickToEnlarge}
                 </span>
               </button>
             )}
           </>
         ) : (
           <div className="rounded-[10px] border border-elaya-warning/30 bg-elaya-warning/5 px-4 py-3">
-            <p className="text-elaya-warning text-[12px] font-semibold m-0">⚠ Ausstehend</p>
+            <p className="text-elaya-warning text-[12px] font-semibold m-0">{copy.pendingTitle}</p>
             <p className="text-studio-w3 text-[11px] mt-1 mb-0 leading-relaxed">
-              Nachsorgehinweise lesen und digital unterschreiben.
+              {copy.pendingDesc}
             </p>
           </div>
         )}
@@ -315,21 +322,21 @@ const CaseSignaturePanel = ({ caseId, caseData, onUpdated }) => {
       )}
 
       {lightboxOpen && previewUrl && (
-        <Modal title="Unterschrift" onClose={() => setLightboxOpen(false)} width="max-w-xl">
+        <Modal title={copy.lightboxTitle} onClose={() => setLightboxOpen(false)} width="max-w-xl">
           <div className="flex flex-col gap-3">
             <div className="rounded-[12px] border border-elaya-border bg-white p-4 flex items-center justify-center min-h-[160px]">
               <img
                 src={previewUrl}
-                alt="Unterschrift Vorschau"
+                alt={copy.previewAlt}
                 className="max-w-full max-h-[50vh] object-contain"
               />
             </div>
             <p className="text-studio-w3 text-[12px] m-0">
-              Unterzeichnet: {fmtDateTime(caseData.unterschrift?.zeitstempel)}
+              {t('components.signature.signedAt', { date: fmtDateTime(caseData.unterschrift?.zeitstempel) })}
             </p>
             <div className="flex justify-end pt-1">
               <Button size="sm" variant="secondary" onClick={() => setLightboxOpen(false)}>
-                Schliessen
+                {copy.close}
               </Button>
             </div>
           </div>

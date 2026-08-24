@@ -2,9 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Camera, X, Loader2 } from 'lucide-react'
 import { uploadStagingPhoto, deleteStagingPhoto, fetchPhotoBlobUrl } from '../../api/files'
 import { getApiErrorMessage } from '../../lib/apiError'
-import { caseForm } from '../../content'
-
-const photoUi = caseForm.ui.photos
+import useContent from '../../i18n/useContent'
 
 const PhotoUploadField = ({
   label,
@@ -15,6 +13,8 @@ const PhotoUploadField = ({
   onChange,
   disabled = false,
 }) => {
+  const { caseForm } = useContent()
+  const photoUi = caseForm.ui.photos
   const inputRef = useRef(null)
   const objectUrlRef = useRef('')
   const mountedRef = useRef(true)

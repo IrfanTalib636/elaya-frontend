@@ -5,57 +5,29 @@ import toast from 'react-hot-toast'
 import { listNachsorge, reviewNachsorge } from '../../api/nachsorge'
 import { fetchPhotoBlobUrl } from '../../api/files'
 import { Card, Button, Spinner, PageHeader, Modal, Pagination, Select } from '../../components/ui'
+import useContent from '../../i18n/useContent'
 
 // ── Constants ─────────────────────────────────────────────────────────────
-const TABLE_HEADERS = ['Datum', 'Kunde', 'Fall', 'Ampel', 'Titel', 'Tage n. Sitzung', 'Kontakt']
-
-const HEALING_STATUS_META = {
-  normal:      { label: 'Normal',     classes: 'bg-elaya-success/15 text-elaya-success' },
-  monitor:     { label: 'Beobachten', classes: 'bg-elaya-warning/15 text-elaya-warning' },
-  delayed:     { label: 'Verzögert',  classes: 'bg-elaya-warning/15 text-elaya-warning' },
-  conspicuous: { label: 'Auffällig',  classes: 'bg-elaya-error/15 text-elaya-error' },
+const HEALING_STATUS_CLASSES = {
+  normal:      'bg-elaya-success/15 text-elaya-success',
+  monitor:     'bg-elaya-warning/15 text-elaya-warning',
+  delayed:     'bg-elaya-warning/15 text-elaya-warning',
+  conspicuous: 'bg-elaya-error/15 text-elaya-error',
 }
 
-const HEALING_PHASE_LABEL = {
-  early: 'Tag 1–7 · Frühphase',
-  healing: 'Tag 8–21 · Heilungsphase',
-  consolidation: 'Tag >21 · Konsolidierung',
-  unknown: 'Zeitfenster unbekannt',
+const AMPEL_CLASSES = {
+  gruen:  'bg-elaya-success/15 text-elaya-success',
+  orange: 'bg-elaya-warning/15 text-elaya-warning',
+  rot:    'bg-elaya-error/15 text-elaya-error',
 }
 
-const HEALING_ACTION_LABEL = {
-  continue_aftercare: 'Nachsorge fortsetzen',
-  continue_monitoring: 'Weiter beobachten',
-  photo_again: 'Neues Foto empfehlen',
-  check_studio: 'Studio prüfen / Kontakt',
-}
-
-const SYMPTOM_FIELD_LABEL = {
-  erythema_level: 'Rötung',
-  swelling_level: 'Schwellung',
-  blistering_flag: 'Blasen',
-  crusting_level: 'Krusten',
-  pain_score: 'Schmerz',
-  itching_level: 'Juckreiz',
-  hyperpigmentation_level: 'Hyperpigmentierung',
-  hypopigmentation_level: 'Hypopigmentierung',
-  infection_suspected: 'Infektionsverdacht',
-  oozing: 'Nässen / offene Stelle',
-  warmth: 'Wärme',
-}
-
-const FILTERS = [
-  { value: 'alle',   label: 'Alle'   },
-  { value: 'rot',    label: 'Rot'    },
-  { value: 'orange', label: 'Orange' },
-  { value: 'gruen',  label: 'Grün'   },
+const FILTER_VALUES = ['alle', 'rot', 'orange', 'gruen']
+const HEALING_STATUS_VALUES = ['normal', 'monitor', 'delayed', 'conspicuous']
+const SYMPTOM_KEYS = [
+  'erythema_level', 'swelling_level', 'blistering_flag', 'crusting_level',
+  'pain_score', 'itching_level', 'hyperpigmentation_level', 'hypopigmentation_level',
+  'infection_suspected', 'oozing', 'warmth',
 ]
-
-const AMPEL_META = {
-  gruen:  { label: 'Grün',   classes: 'bg-elaya-success/15 text-elaya-success' },
-  orange: { label: 'Orange', classes: 'bg-elaya-warning/15 text-elaya-warning' },
-  rot:    { label: 'Rot',    classes: 'bg-elaya-error/15 text-elaya-error' },
-}
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 const fmtDate = (d) =>
@@ -63,16 +35,19 @@ const fmtDate = (d) =>
 
 // ── Sub-components ────────────────────────────────────────────────────────
 const AmpelBadge = ({ ampel }) => {
-  const meta = AMPEL_META[ampel]
-  if (!meta) return <span className="text-studio-w3 text-[11px]">—</span>
+  const { studioPages } = useContent()
+  const labels = studioPages.aftercare.ampel
+  const classes = AMPEL_CLASSES[ampel]
+  if (!classes) return <span className="text-studio-w3 text-[11px]">—</span>
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${meta.classes}`}>
-      {meta.label}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${classes}`}>
+      {labels[ampel] ?? ampel}
     </span>
   )
 }
 
 const CheckPhoto = ({ fileId }) => {
+  const { studioPages } = useContent()
   const [previewUrl, setPreviewUrl] = useState('')
 
   useEffect(() => {
@@ -108,7 +83,7 @@ const CheckPhoto = ({ fileId }) => {
   return (
     <div className="rounded-[12px] border border-elaya-border bg-studio-bg-4 overflow-hidden">
       {previewUrl ? (
-        <img src={previewUrl} alt="Nachsorge-Foto" className="w-full max-h-[40vh] object-contain mx-auto" />
+        <img src={previewUrl} alt={studioPages.aftercare.photoAlt} className="w-full max-h-[40vh] object-contain mx-auto" />
       ) : (
         <div className="py-10 flex justify-center"><Spinner /></div>
       )}
@@ -124,6 +99,8 @@ const DetailBlock = ({ label, children }) => (
 )
 
 const HealingReviewForm = ({ check, onSaved }) => {
+  const { t, studioPages } = useContent()
+  const copy = studioPages.aftercare
   const [notes, setNotes] = useState(check.studio_review_notes || '')
   const [status, setStatus] = useState(check.healing_status || 'normal')
   const [saving, setSaving] = useState(false)
@@ -144,9 +121,9 @@ const HealingReviewForm = ({ check, onSaved }) => {
       })
       const updated = res.data.data.check
       onSaved(updated)
-      toast.success('Studio-Review gespeichert')
+      toast.success(copy.reviewSaved)
     } catch (err) {
-      toast.error(err?.response?.data?.message ?? 'Review konnte nicht gespeichert werden.')
+      toast.error(err?.response?.data?.message ?? copy.reviewError)
     } finally {
       setSaving(false)
     }
@@ -154,41 +131,42 @@ const HealingReviewForm = ({ check, onSaved }) => {
 
   return (
     <div className="flex flex-col gap-3 pt-2 border-t border-elaya-border">
-      <DetailBlock label="Studio-Review (bestätigen oder korrigieren)">
+      <DetailBlock label={copy.reviewTitle}>
         {check.healing_needs_review && !check.healing_studio_reviewed_at && (
           <p className="text-elaya-warning text-[11px] m-0 mb-1">
-            Automatische Einschätzung — bitte prüfen.
+            {copy.autoAssessment}
           </p>
         )}
         {check.healing_studio_reviewed_at && (
           <p className="text-studio-w3 text-[11px] m-0 mb-1">
-            Zuletzt geprüft {fmtDate(check.healing_studio_reviewed_at)}
+            {t('studioPages.aftercare.lastReviewed', { date: fmtDate(check.healing_studio_reviewed_at) })}
             {check.healing_studio_reviewed_by ? ` · ${check.healing_studio_reviewed_by}` : ''}
             {check.healing_status_calculated && check.healing_status_calculated !== check.healing_status
-              ? ` · System: ${HEALING_STATUS_META[check.healing_status_calculated]?.label || check.healing_status_calculated}`
+              ? t('studioPages.aftercare.systemStatus', {
+                  status: copy.healingStatus[check.healing_status_calculated] || check.healing_status_calculated,
+                })
               : ''}
           </p>
         )}
         <Select
-          label="Heilungsstatus"
+          label={copy.healingStatusLabel}
           value={status}
           onChange={(e) => setStatus(e.target.value)}
         >
-          <option value="normal">Normal</option>
-          <option value="monitor">Beobachten</option>
-          <option value="delayed">Verzögert</option>
-          <option value="conspicuous">Auffällig</option>
+          {HEALING_STATUS_VALUES.map((v) => (
+            <option key={v} value={v}>{copy.healingStatus[v]}</option>
+          ))}
         </Select>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
-          placeholder="Interne Studio-Notiz…"
+          placeholder={copy.notesPlaceholder}
           className="w-full mt-2 px-3 py-2 rounded-[10px] border-[1.5px] border-elaya-border-strong bg-studio-bg-3 text-studio-w1 text-[12px] outline-none focus:border-studio-gold transition-colors placeholder:text-studio-w3 resize-none"
         />
         <div className="flex flex-wrap gap-2 mt-2">
           <Button size="sm" loading={saving} onClick={() => save(check.healing_status)}>
-            Einschätzung bestätigen
+            {copy.confirmAssessment}
           </Button>
           <Button
             size="sm"
@@ -196,7 +174,7 @@ const HealingReviewForm = ({ check, onSaved }) => {
             disabled={saving || !status || status === check.healing_status}
             onClick={() => save(status)}
           >
-            Korrigieren
+            {copy.correct}
           </Button>
         </div>
       </DetailBlock>
@@ -206,7 +184,14 @@ const HealingReviewForm = ({ check, onSaved }) => {
 
 // ── Page ──────────────────────────────────────────────────────────────────
 const Aftercare = () => {
+  const { t, studioPages } = useContent()
+  const copy = studioPages.aftercare
   const navigate = useNavigate()
+  const tableHeaders = [
+    copy.headers.date, copy.headers.customer, copy.headers.case, copy.headers.ampel,
+    copy.headers.title, copy.headers.daysAfter, copy.headers.contact,
+  ]
+  const filters = FILTER_VALUES.map((value) => ({ value, label: copy.filters[value] }))
 
   const [checks, setChecks] = useState([])
   const [pagination, setPagination] = useState(null)
@@ -222,7 +207,7 @@ const Aftercare = () => {
       setChecks(res.data.data.checks ?? [])
       setPagination(res.data.data.pagination)
     } catch {
-      toast.error('Nachsorge-Checks konnten nicht geladen werden.')
+      toast.error(copy.loadError)
     } finally {
       setLoading(false)
     }
@@ -235,13 +220,10 @@ const Aftercare = () => {
 
   return (
     <div className="p-6 max-w-[1100px]">
-      <PageHeader
-        title="Nachsorge"
-        subtitle="KI-Nachsorge-Checks deiner Kunden — Heilungsverlauf und Auffälligkeiten"
-      />
+      <PageHeader title={copy.title} subtitle={copy.subtitle} />
 
       <div className="flex gap-2 mb-4">
-        {FILTERS.map(({ value, label }) => (
+        {filters.map(({ value, label }) => (
           <button
             key={value}
             type="button"
@@ -266,9 +248,7 @@ const Aftercare = () => {
           <div className="py-10 text-center">
             <Heart size={32} className="text-studio-w4 mx-auto mb-3" />
             <p className="text-studio-w2 text-[13px] m-0">
-              {filter === 'alle'
-                ? 'Noch keine Nachsorge-Checks vorhanden.'
-                : 'Keine Nachsorge-Checks mit diesem Filter.'}
+              {filter === 'alle' ? copy.emptyAll : copy.emptyFilter}
             </p>
           </div>
         </Card>
@@ -278,7 +258,7 @@ const Aftercare = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-elaya-border">
-                  {TABLE_HEADERS.map((h) => (
+                  {tableHeaders.map((h) => (
                     <th key={h} className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -302,13 +282,13 @@ const Aftercare = () => {
                     <td className="px-5 py-3"><AmpelBadge ampel={c.ampel} /></td>
                     <td className="px-5 py-3 text-studio-white text-[12px] font-medium">{c.titel || '—'}</td>
                     <td className="px-5 py-3 text-studio-w1 text-[12px]">
-                      {c.tage_nach_sitzung != null ? `${c.tage_nach_sitzung} Tage` : '—'}
+                      {c.tage_nach_sitzung != null ? t('studioPages.aftercare.days', { count: c.tage_nach_sitzung }) : '—'}
                     </td>
                     <td className="px-5 py-3">
                       {c.studio_kontakt ? (
                         <span className="inline-flex items-center gap-1 text-elaya-error text-[11px] font-semibold">
                           <Phone size={11} />
-                          Kontakt empfohlen
+                          {copy.contactRecommended}
                         </span>
                       ) : (
                         <span className="text-studio-w3 text-[11px]">—</span>
@@ -324,18 +304,18 @@ const Aftercare = () => {
       )}
 
       {detail && (
-        <Modal title={detail.titel || 'Nachsorge-Check'} onClose={() => setDetail(null)} width="max-w-2xl">
+        <Modal title={detail.titel || copy.modalFallbackTitle} onClose={() => setDetail(null)} width="max-w-2xl">
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-3">
               <AmpelBadge ampel={detail.ampel} />
-              {detail.healing_status && HEALING_STATUS_META[detail.healing_status] && (
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${HEALING_STATUS_META[detail.healing_status].classes}`}>
-                  {HEALING_STATUS_META[detail.healing_status].label}
+              {detail.healing_status && HEALING_STATUS_CLASSES[detail.healing_status] && (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${HEALING_STATUS_CLASSES[detail.healing_status]}`}>
+                  {copy.healingStatus[detail.healing_status]}
                 </span>
               )}
               {detail.healing_phase && (
                 <span className="text-studio-w3 text-[12px]">
-                  {HEALING_PHASE_LABEL[detail.healing_phase] || detail.healing_phase}
+                  {copy.healingPhase[detail.healing_phase] || detail.healing_phase}
                 </span>
               )}
               {detail.customer_name && (
@@ -346,54 +326,54 @@ const Aftercare = () => {
               )}
               <span className="text-studio-w3 text-[12px]">{fmtDate(detail.erstellt_am)}</span>
               {detail.tage_nach_sitzung != null && (
-                <span className="text-studio-w3 text-[12px]">{detail.tage_nach_sitzung} Tage nach Sitzung</span>
+                <span className="text-studio-w3 text-[12px]">{t('studioPages.aftercare.daysAfterSession', { count: detail.tage_nach_sitzung })}</span>
               )}
               {detail.studio_kontakt && (
                 <span className="inline-flex items-center gap-1 text-elaya-error text-[11px] font-semibold">
                   <Phone size={11} />
-                  Studio-Kontakt empfohlen
+                  {copy.studioContactRecommended}
                 </span>
               )}
             </div>
 
             {detail.healing_customer_summary && (
-              <DetailBlock label="Kundentext (keine Diagnose)">
+              <DetailBlock label={copy.customerText}>
                 <p className="text-studio-w1 text-[13px] m-0 leading-relaxed">{detail.healing_customer_summary}</p>
               </DetailBlock>
             )}
             {detail.healing_recommended_action && (
-              <DetailBlock label="Empfohlene Aktion">
+              <DetailBlock label={copy.recommendedAction}>
                 <p className="text-studio-w1 text-[13px] m-0">
-                  {HEALING_ACTION_LABEL[detail.healing_recommended_action] || detail.healing_recommended_action}
-                  {detail.healing_progress_score != null ? ` · Progress-Score ${detail.healing_progress_score}` : ''}
+                  {copy.healingAction[detail.healing_recommended_action] || detail.healing_recommended_action}
+                  {detail.healing_progress_score != null ? t('studioPages.aftercare.progressScore', { score: detail.healing_progress_score }) : ''}
                 </p>
               </DetailBlock>
             )}
             {detail.progress_direction_self && (
-              <DetailBlock label="Verlauf (Kunde)">
+              <DetailBlock label={copy.courseCustomer}>
                 <p className="text-studio-w1 text-[13px] m-0">{detail.progress_direction_self}</p>
               </DetailBlock>
             )}
             {detail.zusammenfassung && (
-              <DetailBlock label="Zusammenfassung">
+              <DetailBlock label={copy.summary}>
                 <p className="text-studio-w1 text-[13px] m-0 leading-relaxed">{detail.zusammenfassung}</p>
               </DetailBlock>
             )}
             {detail.healing_red_flag && (
-              <DetailBlock label="Red flags">
+              <DetailBlock label={copy.redFlags}>
                 <p className="text-elaya-error text-[13px] m-0">
-                  {(detail.healing_red_flags || []).join(', ') || 'Ja'}
-                  {detail.healing_needs_review ? ' · Studio-Review empfohlen' : ''}
+                  {(detail.healing_red_flags || []).join(', ') || copy.yes}
+                  {detail.healing_needs_review ? copy.reviewRecommended : ''}
                 </p>
               </DetailBlock>
             )}
 
             {detail.healing_symptoms && (
-              <DetailBlock label="Strukturierte Symptome">
+              <DetailBlock label={copy.structuredSymptoms}>
                 <div className="flex flex-wrap gap-1.5">
                   {Object.entries(detail.healing_symptoms)
                     .filter(([key, value]) =>
-                      SYMPTOM_FIELD_LABEL[key]
+                      SYMPTOM_KEYS.includes(key)
                       && value
                       && value !== 'none'
                       && value !== false
@@ -402,14 +382,14 @@ const Aftercare = () => {
                     )
                     .map(([key, value]) => (
                       <span key={key} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] bg-studio-bg-4 border border-elaya-border text-studio-w1">
-                        {SYMPTOM_FIELD_LABEL[key]}: {String(value)}
+                        {copy.symptoms[key]}: {String(value)}
                       </span>
                     ))}
                 </div>
               </DetailBlock>
             )}
             {detail.symptome?.length > 0 && !detail.healing_symptoms && (
-              <DetailBlock label="Gemeldete Symptome">
+              <DetailBlock label={copy.reportedSymptoms}>
                 <div className="flex flex-wrap gap-1.5">
                   {detail.symptome.map((s) => (
                     <span key={s} className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] bg-studio-bg-4 border border-elaya-border text-studio-w1">
@@ -421,7 +401,7 @@ const Aftercare = () => {
             )}
 
             {detail.empfehlungen?.length > 0 && (
-              <DetailBlock label="Empfehlungen">
+              <DetailBlock label={copy.recommendations}>
                 <ul className="m-0 pl-4 flex flex-col gap-1">
                   {detail.empfehlungen.map((e) => (
                     <li key={e} className="text-studio-w1 text-[13px]">{e}</li>
@@ -431,13 +411,13 @@ const Aftercare = () => {
             )}
 
             {detail.foto_file_id && (
-              <DetailBlock label="Foto">
+              <DetailBlock label={copy.photo}>
                 <CheckPhoto fileId={detail.foto_file_id} />
               </DetailBlock>
             )}
 
             {detail.foto_befund && (
-              <DetailBlock label="Foto-Befund (KI)">
+              <DetailBlock label={copy.photoFindings}>
                 <p className="text-studio-w1 text-[13px] m-0 leading-relaxed">{detail.foto_befund}</p>
               </DetailBlock>
             )}
@@ -459,11 +439,11 @@ const Aftercare = () => {
             <div className="flex justify-end gap-2 pt-1">
               {detail.case_id && (
                 <Button size="sm" variant="secondary" onClick={() => navigate(`/studio/cases/${detail.case_id}`)}>
-                  Zum Fall
+                  {copy.toCase}
                 </Button>
               )}
               <Button size="sm" variant="ghost" onClick={() => setDetail(null)}>
-                Schliessen
+                {copy.close}
               </Button>
             </div>
           </div>

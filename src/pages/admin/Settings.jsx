@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Card, PageHeader, Spinner, Button } from '../../components/ui'
 import { getPlatformConfig, updatePlatformConfig } from '../../api/adminConfig'
@@ -7,29 +7,44 @@ import {
   buildSessionPredictionPayload,
   cloneSessionPrediction,
 } from '../../components/sessionPrediction/sessionPredictionFields'
+import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
+import useContent from '../../i18n/useContent'
 
 const AdminSettings = () => {
+  const { adminPages } = useContent()
+  const copy = adminPages.settings
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [values, setValues] = useState(null)
+  const [savedBaseline, setSavedBaseline] = useState(null)
   const [plausibility, setPlausibility] = useState(null)
 
-  const load = async () => {
-    setLoading(true)
+  const load = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true)
     try {
       const res = await getPlatformConfig()
-      setValues(cloneSessionPrediction(res.data.data.platform_config?.session_prediction))
+      const next = cloneSessionPrediction(res.data.data.platform_config?.session_prediction)
+      setValues(next)
+      setSavedBaseline(cloneSessionPrediction(next))
       setPlausibility(res.data.data.excel_plausibility || null)
     } catch {
-      toast.error('Sitzungsprognose konnte nicht geladen werden')
+      toast.error(copy.loadError)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
-  }
+  }, [copy.loadError])
 
   useEffect(() => {
     load()
-  }, [])
+  }, [load])
+
+  usePlatformConfigSocket({
+    enabled: true,
+    onSessionPredictionUpdated: () => {
+      toast(copy.updatedReload, { icon: '↻' })
+      load({ silent: true })
+    },
+  })
 
   const handleSave = async () => {
     setSaving(true)
@@ -37,11 +52,13 @@ const AdminSettings = () => {
       const res = await updatePlatformConfig({
         session_prediction: buildSessionPredictionPayload(values),
       })
-      setValues(cloneSessionPrediction(res.data.data.platform_config?.session_prediction))
+      const next = cloneSessionPrediction(res.data.data.platform_config?.session_prediction)
+      setValues(next)
+      setSavedBaseline(cloneSessionPrediction(next))
       setPlausibility(res.data.data.excel_plausibility || null)
-      toast.success('Sitzungsprognose gespeichert')
+      toast.success(copy.saved)
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Speichern fehlgeschlagen')
+      toast.error(err?.response?.data?.message || copy.saveFailed)
     } finally {
       setSaving(false)
     }
@@ -58,19 +75,24 @@ const AdminSettings = () => {
   return (
     <div className="p-6 max-w-[960px]">
       <PageHeader
-        title="Einstellungen"
-        subtitle="Sitzungsprognose — nur Admin darf diese Parameter ändern. Sie fliessen automatisch in Preis- und Sitzungsschätzung bei Case-Erstellung ein."
+        title={copy.title}
+        subtitle={copy.subtitle}
       />
 
       <Card className="flex flex-col gap-5">
         {values ? (
-          <SessionPredictionForm values={values} onChange={setValues} plausibility={plausibility} />
+          <SessionPredictionForm
+            values={values}
+            onChange={setValues}
+            plausibility={plausibility}
+            savedBaseline={savedBaseline}
+          />
         ) : (
-          <p className="text-admin-muted text-[13px] m-0">Keine Parameter geladen.</p>
+          <p className="text-admin-muted text-[13px] m-0">{copy.noParameters}</p>
         )}
         <div className="flex justify-end pt-2 border-t border-admin-line">
           <Button loading={saving} onClick={handleSave} disabled={!values}>
-            Speichern
+            {copy.save}
           </Button>
         </div>
       </Card>

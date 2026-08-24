@@ -2,6 +2,7 @@
  * Pipeline stage + status badges.
  * variant: pipeline | status | source | default
  */
+import useContent from '../../i18n/useContent'
 
 const PIPELINE_COLORS = {
   'Neu':                'bg-studio-w4 text-studio-w1',
@@ -29,11 +30,20 @@ const SOURCE_COLORS = {
 }
 
 const Badge = ({ children, variant = 'default', value, className = '' }) => {
+  const { t } = useContent()
   let colorClass = 'bg-studio-w4 text-studio-w1'
+  const raw = value ?? children
 
-  if (variant === 'pipeline')  colorClass = PIPELINE_COLORS[value ?? children] ?? colorClass
-  if (variant === 'status')    colorClass = STATUS_COLORS[value ?? children]   ?? colorClass
-  if (variant === 'source')    colorClass = SOURCE_COLORS[value ?? children]   ?? colorClass
+  if (variant === 'pipeline')  colorClass = PIPELINE_COLORS[raw] ?? colorClass
+  if (variant === 'status')    colorClass = STATUS_COLORS[raw]   ?? colorClass
+  if (variant === 'source')    colorClass = SOURCE_COLORS[raw]   ?? colorClass
+
+  let label = children
+  if (variant === 'status' && typeof raw === 'string') {
+    label = t(`components.badge.${raw}`, { defaultValue: children ?? raw })
+  } else if (variant === 'pipeline' && typeof raw === 'string') {
+    label = t(`pipeline.${raw}`, { defaultValue: children ?? raw })
+  }
 
   return (
     <span
@@ -43,7 +53,7 @@ const Badge = ({ children, variant = 'default', value, className = '' }) => {
         ${colorClass} ${className}
       `}
     >
-      {children}
+      {label}
     </span>
   )
 }

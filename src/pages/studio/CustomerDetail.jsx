@@ -11,46 +11,10 @@ import CaseForm from '../../components/forms/CaseForm'
 import CustomerAvatar from '../../components/CustomerAvatar'
 import MedicalAmpelDot from '../../components/medical/MedicalAmpelDot'
 import ActivityFeed from '../../components/activity/ActivityFeed'
-import { studioActivity as activityCopy } from '../../content'
+import useContent from '../../i18n/useContent'
+import { PIPELINE_VALUES } from '../../constants/pipeline'
 
-// ── Constants ─────────────────────────────────────────────────────────────
-const PIPELINE_STAGES = [
-  'Neu',
-  'Beratung geplant',
-  'Behandlung aktiv',
-  'Beratung erledigt',
-]
-
-const SOURCE_LABELS = {
-  studio_eigen:         'Studio',
-  plattform_vermittelt: 'Plattform',
-  studio_wechsel:       'Wechsel',
-}
-
-const FIRMA_GRUND_LABELS = {
-  registrierung:  'Registrierung',
-  studio_anlage:  'Im Studio angelegt',
-  studio_wechsel: 'Studio-Wechsel',
-}
-
-const CASE_TYPE_LABELS = { tattoo: 'Tattoo', pmu: 'PMU' }
-
-const CASE_TABLE_HEADERS = ['Ampel', 'Fall-ID', 'Bezeichnung', 'Status', 'Fortschritt', 'Letzte Sitzung', '']
-
-const APPT_TYPE_LABELS = {
-  beratung:  'Beratung',
-  treatment: 'Behandlung',
-  first:     'Erstbehandlung',
-}
-
-const APPT_STATUS_LABELS = {
-  gebucht:   'Gebucht',
-  storniert: 'Storniert',
-  cancelled: 'Abgesagt',
-  completed: 'Abgeschlossen',
-}
-
-const APPT_TABLE_HEADERS = ['Datum', 'Zeit', 'Fall', 'Art', 'Status']
+// ── Helpers (labels from useContent in page) ─────────────────────────────
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 const fmtDate = (d) =>
@@ -83,20 +47,20 @@ const SessionBar = ({ done = 0, total = 0 }) => {
   )
 }
 
-const StudioTimeline = ({ timeline = [] }) => {
+const StudioTimeline = ({ timeline = [], copy }) => {
   if (!timeline.length) return null
 
   return (
     <Card className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
         <ArrowLeftRight size={14} className="text-studio-gold-2 shrink-0" />
-        <h3 className="text-[13px] font-semibold text-studio-white m-0">Studio-Verlauf</h3>
+        <h3 className="text-[13px] font-semibold text-studio-white m-0">{copy.studioTimeline}</h3>
       </div>
 
       <ol className="m-0 p-0 list-none flex flex-col">
         {timeline.map((entry, index) => {
           const isLast = index === timeline.length - 1
-          const grundLabel = FIRMA_GRUND_LABELS[entry.grund] ?? entry.grund ?? '—'
+          const grundLabel = copy.firmaGrund[entry.grund] ?? entry.grund ?? '—'
 
           return (
             <li key={`${entry.firma_id}-${entry.von}`} className="relative flex gap-3 pb-4 last:pb-0">
@@ -118,14 +82,14 @@ const StudioTimeline = ({ timeline = [] }) => {
                   {entry.firma_name}
                   {entry.is_current ? (
                     <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-studio-gold-2">
-                      Aktuell
+                      {copy.current}
                     </span>
                   ) : null}
                 </p>
                 <p className="text-studio-w3 text-[11px] m-0 mt-0.5 tabular-nums">
                   {fmtShortDate(entry.von)}
                   {' – '}
-                  {entry.is_current ? 'heute' : fmtShortDate(entry.bis)}
+                  {entry.is_current ? copy.untilToday : fmtShortDate(entry.bis)}
                 </p>
                 <p className="text-studio-w2 text-[11px] m-0 mt-1">{grundLabel}</p>
               </div>
@@ -137,7 +101,7 @@ const StudioTimeline = ({ timeline = [] }) => {
   )
 }
 
-const ApptRow = ({ appt, onClick }) => {
+const ApptRow = ({ appt, onClick, copy }) => {
   const date = new Date(appt.date)
   const fmtD = date.toLocaleDateString('de-CH', { day: 'numeric', month: 'short', year: 'numeric' })
   const isPast = date < new Date()
@@ -150,15 +114,15 @@ const ApptRow = ({ appt, onClick }) => {
       <td className={`px-5 py-3 text-[12px] ${isPast ? 'text-studio-w2' : 'text-studio-white font-medium'}`}>{fmtD}</td>
       <td className="px-5 py-3 text-studio-w1 text-[12px] font-mono">{appt.time ?? '—'}</td>
       <td className="px-5 py-3 text-studio-gold-2 text-[12px] font-mono">{appt.case?.caseId ?? '—'}</td>
-      <td className="px-5 py-3 text-studio-w2 text-[12px]">{APPT_TYPE_LABELS[appt.type] ?? appt.type}</td>
+      <td className="px-5 py-3 text-studio-w2 text-[12px]">{copy.apptTypes[appt.type] ?? appt.type}</td>
       <td className="px-5 py-3">
-        <Badge variant="status" value={appt.status}>{APPT_STATUS_LABELS[appt.status] ?? appt.status}</Badge>
+        <Badge variant="status" value={appt.status}>{copy.apptStatuses[appt.status] ?? appt.status}</Badge>
       </td>
     </tr>
   )
 }
 
-const CaseRow = ({ c, onClick }) => (
+const CaseRow = ({ c, onClick, copy }) => (
   <tr
     className="border-b border-elaya-border last:border-0 hover:bg-studio-bg-4 cursor-pointer transition-colors"
     onClick={onClick}
@@ -174,10 +138,10 @@ const CaseRow = ({ c, onClick }) => (
     <td className="px-5 py-3 text-studio-gold-2 text-[12px] font-mono">{c.caseId}</td>
     <td className="px-5 py-3 text-studio-w1 text-[13px]">
       <span className="inline-flex items-center gap-2 flex-wrap">
-        {c.tc_title || CASE_TYPE_LABELS[c.type] || c.type}
+        {c.tc_title || copy.caseTypes[c.type] || c.type}
         {c.transferiert ? (
           <span className="text-[10px] font-semibold uppercase tracking-wide text-studio-gold-2 bg-studio-gold/10 px-1.5 py-0.5 rounded">
-            Transferiert
+            {copy.transferred}
           </span>
         ) : null}
       </span>
@@ -199,6 +163,18 @@ const CaseRow = ({ c, onClick }) => (
 const CustomerDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { t, studioPages, studioActivity: activityCopy } = useContent()
+  const copy = studioPages.customerDetail
+  const PIPELINE_STAGES = PIPELINE_VALUES
+  const CASE_TABLE_HEADERS = [
+    copy.caseHeaders.ampel, copy.caseHeaders.caseId, copy.caseHeaders.label,
+    copy.caseHeaders.status, copy.caseHeaders.progress, copy.caseHeaders.lastSession, '',
+  ]
+  const APPT_TABLE_HEADERS = [
+    copy.apptHeaders.date, copy.apptHeaders.time, copy.apptHeaders.case,
+    copy.apptHeaders.type, copy.apptHeaders.status,
+  ]
+
 
   const [customer, setCustomer]     = useState(null)
   const [appointments, setAppointments] = useState([])
@@ -228,7 +204,7 @@ const CustomerDetail = () => {
         const appts = apptRes.data.data.appointments ?? []
         setAppointments(appts.sort((a, b) => new Date(b.date) - new Date(a.date)))
       } catch {
-        toast.error('Kunde konnte nicht geladen werden.')
+        toast.error(copy.loadError)
         navigate('/studio/customers')
       } finally {
         setLoading(false)
@@ -242,9 +218,9 @@ const CustomerDetail = () => {
     try {
       await updateCustomer(id, { pipeline_stufe: pipeline })
       setCustomer((prev) => ({ ...prev, pipeline_stufe: pipeline }))
-      toast.success('Pipeline aktualisiert.')
+      toast.success(copy.pipelineUpdated)
     } catch {
-      toast.error('Fehler beim Speichern.')
+      toast.error(copy.saveError)
     } finally {
       setSavingPipeline(false)
     }
@@ -255,9 +231,9 @@ const CustomerDetail = () => {
     try {
       await updateCustomer(id, { notizen: notes })
       setCustomer((prev) => ({ ...prev, notizen: notes }))
-      toast.success('Notizen gespeichert.')
+      toast.success(copy.notesSaved)
     } catch {
-      toast.error('Fehler beim Speichern.')
+      toast.error(copy.saveError)
     } finally {
       setSavingNotes(false)
     }
@@ -278,7 +254,7 @@ const CustomerDetail = () => {
       })
     } catch (err) {
       setCreatingCase(false)
-      toast.error(getApiErrorMessage(err, 'Fehler beim Anlegen des Falls.'))
+      toast.error(getApiErrorMessage(err, copy.caseCreateError))
     }
   }
 
@@ -303,9 +279,9 @@ const CustomerDetail = () => {
       await updateCustomer(id, editForm)
       setCustomer((prev) => ({ ...prev, ...editForm }))
       setShowEditModal(false)
-      toast.success('Kundendaten aktualisiert.')
+      toast.success(copy.customerUpdated)
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Fehler beim Speichern.')
+      toast.error(err.response?.data?.message ?? copy.saveError)
     } finally {
       setSavingEdit(false)
     }
@@ -334,7 +310,7 @@ const CustomerDetail = () => {
         className="flex items-center gap-1.5 text-studio-w2 text-[12px] mb-5 hover:text-studio-white transition-colors cursor-pointer bg-transparent border-0"
       >
         <ArrowLeft size={13} />
-        Alle Kunden
+        {copy.backToCustomers}
       </button>
 
       <PageHeader title={fullName} subtitle={customer.email}>
@@ -346,7 +322,7 @@ const CustomerDetail = () => {
         />
         <Badge variant="pipeline" value={customer.pipeline_stufe}>{customer.pipeline_stufe}</Badge>
         <Badge variant="source"   value={customer.akquise_quelle}>
-          {SOURCE_LABELS[customer.akquise_quelle] ?? customer.akquise_quelle}
+          {copy.sources[customer.akquise_quelle] ?? customer.akquise_quelle}
         </Badge>
         <Button
           variant="secondary"
@@ -369,20 +345,20 @@ const CustomerDetail = () => {
       {customer.wechsel_status === 'transferiert_ein' && (
         <div className="mb-5 px-4 py-3 rounded-[12px] border border-studio-gold/30 bg-studio-gold/10">
           <p className="text-studio-gold-2 text-[13px] font-semibold m-0 mb-1">
-            Kunde per Studio-Wechsel übernommen
+            {copy.transferInTitle}
           </p>
           <p className="text-studio-w2 text-[12px] m-0 leading-relaxed">
-            Medizinische Akte und Elaycoins gehören dem Kunden und sind hier sichtbar
-            {customer.vorheriges_studio_name
-              ? ` · vorher: ${customer.vorheriges_studio_name}`
-              : ''}
-            {customer.transferiert_am
-              ? ` · seit ${fmtDate(customer.transferiert_am)}`
-              : ''}
-            . Übertragene Fälle sind als „Transferiert“ markiert.
+            {t('studioPages.customerDetail.transferInBody', {
+              prev: customer.vorheriges_studio_name
+                ? t('studioPages.customerDetail.transferInPrev', { name: customer.vorheriges_studio_name })
+                : '',
+              since: customer.transferiert_am
+                ? t('studioPages.customerDetail.transferInSince', { date: fmtDate(customer.transferiert_am) })
+                : '',
+            })}
           </p>
           <p className="text-studio-teal-2 text-[12px] font-mono font-semibold m-0 mt-2">
-            Elaycoins: {customer.elaycoins_balance ?? customer.elaycoins?.balance ?? 0}
+            {t('studioPages.customerDetail.elaycoins', { count: customer.elaycoins_balance ?? customer.elaycoins?.balance ?? 0 })}
           </p>
         </div>
       )}
@@ -390,10 +366,12 @@ const CustomerDetail = () => {
       {customer.wechsel_status === 'transferiert_aus' && (
         <div className="mb-5 px-4 py-3 rounded-[12px] border border-[#ff9a3c]/35 bg-[#ff9a3c]/10">
           <p className="text-[#ff9a3c] text-[13px] font-semibold m-0 mb-1">
-            Dieser Kunde hat zu {customer.aktuelle_firma_name || 'einem anderen Studio'} gewechselt
+            {t('studioPages.customerDetail.transferOutTitle', {
+              studio: customer.aktuelle_firma_name || copy.transferOutStudioFallback,
+            })}
           </p>
           <p className="text-studio-w2 text-[12px] m-0 leading-relaxed">
-            Nur Behandlungen aus eurem Studio bleiben sichtbar · Akte ist schreibgeschützt.
+            {copy.transferOutBody}
           </p>
         </div>
       )}
@@ -411,23 +389,26 @@ const CustomerDetail = () => {
                 <div>
                   <p className="text-studio-white text-[16px] font-bold m-0">{fullName}</p>
                   <p className="text-studio-w3 text-[12px] m-0 mt-0.5">
-                    Seit {fmtDate(customer.stufe_seit)} · Konto: {customer.user?.status ?? '—'}
+                    {t('studioPages.customerDetail.sinceAccount', {
+                      date: fmtDate(customer.stufe_seit),
+                      status: customer.user?.status ?? '—',
+                    })}
                   </p>
                 </div>
               </div>
               <Button size="sm" variant="secondary" onClick={openEdit} disabled={customer.read_only}>
                 <Pencil size={12} />
-                Bearbeiten
+                {copy.edit}
               </Button>
             </div>
 
             <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-              <InfoRow label="E-Mail"         value={customer.email} />
-              <InfoRow label="Telefon"        value={customer.telefon} />
-              <InfoRow label="Geburtsdatum"   value={fmtDate(customer.geburtsdatum)} />
-              <InfoRow label="Adresse"        value={address} />
-              <InfoRow label="Letzter Login"  value={fmtDate(customer.user?.last_login)} />
-              <InfoRow label="Konto-Status"   value={customer.user?.status} />
+              <InfoRow label={copy.labels.email}         value={customer.email} />
+              <InfoRow label={copy.labels.phone}        value={customer.telefon} />
+              <InfoRow label={copy.labels.birthDate}   value={fmtDate(customer.geburtsdatum)} />
+              <InfoRow label={copy.labels.address}        value={address} />
+              <InfoRow label={copy.labels.lastLogin}  value={fmtDate(customer.user?.last_login)} />
+              <InfoRow label={copy.labels.accountStatus}   value={customer.user?.status} />
             </div>
           </Card>
 
@@ -435,18 +416,18 @@ const CustomerDetail = () => {
           <Card padding="none">
             <div className="flex items-center justify-between px-5 py-4 border-b border-elaya-border">
               <h2 className="text-[14px] font-semibold text-studio-white m-0">
-                Fälle
+                {copy.casesTitle}
                 <span className="ml-2 text-studio-w3 text-[12px] font-normal">({caseCount})</span>
               </h2>
               <Button size="sm" variant="secondary" onClick={() => setShowCaseModal(true)} disabled={customer.read_only}>
                 <Plus size={13} />
-                Neuer Fall
+                {copy.newCase}
               </Button>
             </div>
 
             {caseCount === 0 ? (
               <div className="py-10 text-center">
-                <p className="text-studio-w2 text-[13px] m-0">Noch keine Fälle vorhanden.</p>
+                <p className="text-studio-w2 text-[13px] m-0">{copy.noCases}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -468,6 +449,7 @@ const CustomerDetail = () => {
                       <CaseRow
                         key={c._id}
                         c={c}
+                        copy={copy}
                         onClick={() => navigate(`/studio/cases/${c._id}`)}
                       />
                     ))}
@@ -480,7 +462,7 @@ const CustomerDetail = () => {
           <Card padding="none">
             <div className="flex items-center justify-between px-5 py-4 border-b border-elaya-border">
               <h2 className="text-[14px] font-semibold text-studio-white m-0">
-                Termine
+                {copy.appointmentsTitle}
                 <span className="ml-2 text-studio-w3 text-[12px] font-normal">({appointments.length})</span>
               </h2>
               <Button
@@ -489,13 +471,13 @@ const CustomerDetail = () => {
                 onClick={() => navigate('/studio/appointments')}
               >
                 <Calendar size={13} />
-                Kalender
+                {copy.calendar}
               </Button>
             </div>
 
             {appointments.length === 0 ? (
               <div className="py-10 text-center">
-                <p className="text-studio-w2 text-[13px] m-0">Noch keine Termine vorhanden.</p>
+                <p className="text-studio-w2 text-[13px] m-0">{copy.noAppointments}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -514,6 +496,7 @@ const CustomerDetail = () => {
                       <ApptRow
                         key={a.id ?? a._id}
                         appt={a}
+                        copy={copy}
                         onClick={() => {
                           const caseId = a.case?._id ?? a.case
                           if (caseId) navigate(`/studio/cases/${caseId}`)
@@ -531,11 +514,11 @@ const CustomerDetail = () => {
         {/* ── Right sidebar ── */}
         <div className="flex flex-col gap-5 w-[260px] shrink-0">
 
-          <StudioTimeline timeline={customer.firma_timeline} />
+          <StudioTimeline timeline={customer.firma_timeline} copy={copy} />
 
           {/* Pipeline stage */}
           <Card className="flex flex-col gap-4">
-            <h3 className="text-[13px] font-semibold text-studio-white m-0">Pipeline-Stufe</h3>
+            <h3 className="text-[13px] font-semibold text-studio-white m-0">{copy.pipelineStage}</h3>
             <div className="flex flex-col gap-1.5">
               {PIPELINE_STAGES.map((stage) => (
                 <button
@@ -549,7 +532,7 @@ const CustomerDetail = () => {
                     }`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${pipeline === stage ? 'bg-studio-gold' : 'bg-studio-w4'}`} />
-                  {stage}
+                  {t(`pipeline.${stage}`)}
                 </button>
               ))}
             </div>
@@ -561,18 +544,18 @@ const CustomerDetail = () => {
               onClick={savePipeline}
               className="w-full"
             >
-              Stufe speichern
+              {copy.saveStage}
             </Button>
           </Card>
 
           {/* Notes */}
           <Card className="flex flex-col gap-3">
-            <h3 className="text-[13px] font-semibold text-studio-white m-0">Interne Notizen</h3>
+            <h3 className="text-[13px] font-semibold text-studio-white m-0">{copy.notesTitle}</h3>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={5}
-              placeholder="Interne Anmerkungen…"
+              placeholder={copy.notesPlaceholder}
               className="w-full px-3 py-2.5 rounded-[10px] border-[1.5px] border-elaya-border-strong bg-studio-bg-3 text-studio-w1 text-[12px] outline-none focus:border-studio-gold transition-colors placeholder:text-studio-w3 resize-none"
             />
             <Button
@@ -583,7 +566,7 @@ const CustomerDetail = () => {
               onClick={saveNotes}
               className="w-full"
             >
-              Notizen speichern
+              {copy.saveNotes}
             </Button>
           </Card>
 
@@ -602,7 +585,7 @@ const CustomerDetail = () => {
 
       {showCaseModal && (
         <Modal
-          title="Neuen Fall anlegen"
+          title={copy.newCaseModal}
           onClose={() => {
             setShowCaseModal(false)
             setCaseFormStep(0)
@@ -624,27 +607,27 @@ const CustomerDetail = () => {
       )}
 
       {showEditModal && (
-        <Modal title="Kundendaten bearbeiten" onClose={() => setShowEditModal(false)} width="max-w-xl">
+        <Modal title={copy.editModal} onClose={() => setShowEditModal(false)} width="max-w-xl">
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Vorname *"  value={editForm.vorname}  onChange={(e) => setEditForm((p) => ({ ...p, vorname:  e.target.value }))} />
-              <Input label="Nachname *" value={editForm.nachname} onChange={(e) => setEditForm((p) => ({ ...p, nachname: e.target.value }))} />
+              <Input label={copy.editFields.firstName}  value={editForm.vorname}  onChange={(e) => setEditForm((p) => ({ ...p, vorname:  e.target.value }))} />
+              <Input label={copy.editFields.lastName} value={editForm.nachname} onChange={(e) => setEditForm((p) => ({ ...p, nachname: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Input label="E-Mail"  type="email" value={editForm.email}   onChange={(e) => setEditForm((p) => ({ ...p, email:   e.target.value }))} />
-              <Input label="Telefon" type="tel"   value={editForm.telefon} onChange={(e) => setEditForm((p) => ({ ...p, telefon: e.target.value }))} />
+              <Input label={copy.editFields.email}  type="email" value={editForm.email}   onChange={(e) => setEditForm((p) => ({ ...p, email:   e.target.value }))} />
+              <Input label={copy.editFields.phone} type="tel"   value={editForm.telefon} onChange={(e) => setEditForm((p) => ({ ...p, telefon: e.target.value }))} />
             </div>
             <Input
-              label="Geburtsdatum"
+              label={copy.editFields.birthDate}
               type="date"
               value={editForm.geburtsdatum}
               onChange={(e) => setEditForm((p) => ({ ...p, geburtsdatum: e.target.value }))}
             />
-            <Input label="Strasse" value={editForm.strasse} onChange={(e) => setEditForm((p) => ({ ...p, strasse: e.target.value }))} />
+            <Input label={copy.editFields.street} value={editForm.strasse} onChange={(e) => setEditForm((p) => ({ ...p, strasse: e.target.value }))} />
             <div className="grid grid-cols-3 gap-4">
-              <Input label="PLZ" value={editForm.plz}  onChange={(e) => setEditForm((p) => ({ ...p, plz:  e.target.value }))} />
-              <Input label="Ort" value={editForm.ort}  onChange={(e) => setEditForm((p) => ({ ...p, ort:  e.target.value }))} />
-              <Input label="Land" value={editForm.land} onChange={(e) => setEditForm((p) => ({ ...p, land: e.target.value }))} />
+              <Input label={copy.editFields.postalCode} value={editForm.plz}  onChange={(e) => setEditForm((p) => ({ ...p, plz:  e.target.value }))} />
+              <Input label={copy.editFields.city} value={editForm.ort}  onChange={(e) => setEditForm((p) => ({ ...p, ort:  e.target.value }))} />
+              <Input label={copy.editFields.country} value={editForm.land} onChange={(e) => setEditForm((p) => ({ ...p, land: e.target.value }))} />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="ghost" onClick={() => setShowEditModal(false)} disabled={savingEdit}>

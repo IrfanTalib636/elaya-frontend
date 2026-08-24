@@ -3,13 +3,7 @@ import toast from 'react-hot-toast'
 import { updateStudioFreigabe } from '../../api/anamnesis'
 import { getApiErrorMessage } from '../../lib/apiError'
 import { Button } from '../ui'
-
-const STATUS_LABEL = {
-  ausstehend: 'Ausstehend',
-  freigegeben: 'Freigegeben',
-  abgelehnt: 'Abgelehnt',
-  nicht_erforderlich: 'Nicht erforderlich',
-}
+import useContent from '../../i18n/useContent'
 
 /** Hide values that were accidentally saved from button labels */
 const isUiChromeText = (value = '') => {
@@ -21,11 +15,16 @@ const isUiChromeText = (value = '') => {
     v === '✅ jetzt freigeben' ||
     v === '❌ jetzt ablehnen' ||
     v === 'freigeben' ||
-    v === 'ablehnen'
+    v === 'ablehnen' ||
+    v === 'approve' ||
+    v === 'reject'
   )
 }
 
 const FreigabePanel = ({ caseId, freigabe, onUpdated }) => {
+  const { t, components } = useContent()
+  const copy = components.anamnesis
+  const fg = copy.freigabe
   const [mode, setMode] = useState(null) // null | 'freigeben' | 'ablehnen'
   const [text, setText] = useState('')
   const [saving, setSaving] = useState(false)
@@ -38,6 +37,7 @@ const FreigabePanel = ({ caseId, freigabe, onUpdated }) => {
   const isRejected = status === 'abgelehnt'
   const note = freigabe.notiz || freigabe.grund || ''
   const showNote = !isUiChromeText(note)
+  const statusLabel = fg.status[status] || status
 
   const closeForm = () => {
     setMode(null)
@@ -58,9 +58,9 @@ const FreigabePanel = ({ caseId, freigabe, onUpdated }) => {
       onUpdated?.(res.data.data?.anamnesis, {
         studio_freigabe: res.data.data?.studio_freigabe,
       })
-      toast.success(nextStatus === 'freigegeben' ? 'Freigabe erteilt' : 'Ablehnung gespeichert')
+      toast.success(nextStatus === 'freigegeben' ? fg.toastApproved : fg.toastRejected)
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Freigabe konnte nicht gespeichert werden.'))
+      toast.error(getApiErrorMessage(err, copy.freigabeSaveError))
     } finally {
       setSaving(false)
     }
@@ -77,10 +77,10 @@ const FreigabePanel = ({ caseId, freigabe, onUpdated }) => {
         }`}
       >
         <p className={`text-[13px] font-bold m-0 ${isApproved ? 'text-studio-teal-2' : 'text-studio-red'}`}>
-          {isApproved ? '✅ Medizinische Freigabe erteilt' : '❌ Freigabe abgelehnt'}
+          {isApproved ? fg.approvedTitle : fg.rejectedTitle}
         </p>
         <p className="text-[11px] text-studio-w3 m-0 mt-1">
-          Status: {STATUS_LABEL[status] || status}
+          {t('components.anamnesis.freigabe.statusLine', { status: statusLabel })}
           {freigabe.bearbeitet_von ? ` · ${freigabe.bearbeitet_von}` : ''}
           {freigabe.datum
             ? ` · ${new Date(freigabe.datum).toLocaleString('de-CH', {
@@ -94,7 +94,7 @@ const FreigabePanel = ({ caseId, freigabe, onUpdated }) => {
         </p>
         {showNote && (
           <p className="text-[11px] text-studio-w2 m-0 mt-1">
-            Notiz: {note}
+            {t('components.anamnesis.freigabe.note', { note })}
           </p>
         )}
       </div>
@@ -107,26 +107,28 @@ const FreigabePanel = ({ caseId, freigabe, onUpdated }) => {
       {!mode ? (
         <>
           <p className="text-studio-red text-[13px] font-bold m-0 mb-1">
-            🔴 Medizinische Freigabe erforderlich — Stufe 2
+            {fg.requiredTitle}
           </p>
           {(freigabe.ausloeser || []).length > 0 && (
             <p className="text-studio-w3 text-[11px] m-0 mb-3">
-              Auslöser: {(freigabe.ausloeser || []).join(', ')}
+              {t('components.anamnesis.freigabe.triggers', {
+                list: (freigabe.ausloeser || []).join(', '),
+              })}
             </p>
           )}
           <div className="flex gap-2">
             <Button type="button" size="sm" variant="secondary" onClick={() => setMode('freigeben')}>
-              ✅ Freigeben
+              {fg.approve}
             </Button>
             <Button type="button" size="sm" variant="secondary" onClick={() => setMode('ablehnen')}>
-              ❌ Ablehnen
+              {fg.reject}
             </Button>
           </div>
         </>
       ) : (
         <div className="flex flex-col gap-2">
           <p className="text-[12px] text-studio-w2 m-0">
-            {mode === 'freigeben' ? 'Optionale Notiz zur Freigabe:' : 'Ablehnungsgrund (optional):'}
+            {mode === 'freigeben' ? fg.approveNoteLabel : fg.rejectNoteLabel}
           </p>
           <textarea
             value={text}
@@ -135,16 +137,16 @@ const FreigabePanel = ({ caseId, freigabe, onUpdated }) => {
             className="w-full px-3 py-2 rounded-[8px] border border-elaya-border bg-studio-bg-3 text-studio-white text-[12px] outline-none resize-y"
             placeholder={
               mode === 'freigeben'
-                ? 'z.B. Rücksprache mit Arzt erfolgt'
-                : 'z.B. Bitte zuerst Rücksprache mit Arzt halten'
+                ? copy.freigabeNotePh
+                : copy.ablehnungNotePh
             }
           />
           <div className="flex gap-2">
             <Button type="button" size="sm" variant="secondary" onClick={closeForm} disabled={saving}>
-              Abbrechen
+              {fg.cancel}
             </Button>
             <Button type="button" size="sm" onClick={confirm} disabled={saving}>
-              {mode === 'freigeben' ? 'Bestätigen' : 'Ablehnung speichern'}
+              {mode === 'freigeben' ? copy.confirm : copy.saveRejection}
             </Button>
           </div>
         </div>

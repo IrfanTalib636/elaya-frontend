@@ -8,6 +8,7 @@ import { getAppointment } from '../../api/appointments'
 import { uploadSessionProgressPhoto } from '../../api/files'
 import { analyzeVerblassung } from '../../api/verblassung'
 import { Card, Button, Input, Select, Spinner, PageHeader } from '../../components/ui'
+import useContent from '../../i18n/useContent'
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const toDateInput = (iso) => {
@@ -137,6 +138,8 @@ const Toggle = ({ label, checked, onChange, hint }) => (
 
 // ── Page ──────────────────────────────────────────────────────────────────
 const NewSession = () => {
+  const { t, studioPages } = useContent()
+  const copy = studioPages.newSession
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const caseId = searchParams.get('case_id')
@@ -164,7 +167,7 @@ const NewSession = () => {
 
   useEffect(() => {
     if (!caseId) {
-      toast.error('Kein Fall ausgewählt.')
+      toast.error(copy.noCase)
       navigate('/studio/customers')
       return
     }
@@ -173,7 +176,7 @@ const NewSession = () => {
         const res = await getCase(caseId)
         setCaseData(res.data.data.case)
       } catch {
-        toast.error('Fall konnte nicht geladen werden.')
+        toast.error(copy.caseLoadError)
         navigate(-1)
         return
       } finally {
@@ -186,7 +189,7 @@ const NewSession = () => {
         const appt = apptRes.data.data.appointment
         const linkedCase = appointmentCaseId(appt)
         if (linkedCase && linkedCase !== String(caseId)) {
-          toast.error('Dieser Termin gehört nicht zu diesem Fall.')
+          toast.error(copy.apptWrongCase)
           return
         }
         setLinkedAppointment(appt)
@@ -199,7 +202,7 @@ const NewSession = () => {
           raum_name: appt.raum_name || prev.raum_name,
         }))
       } catch {
-        toast.error('Termin konnte nicht geladen werden. Bitte Datum und Uhrzeit prüfen.')
+        toast.error(copy.apptLoadError)
       }
     }
     load()
@@ -288,7 +291,7 @@ const NewSession = () => {
 
   const handleSave = async (isDraft) => {
     if (!form.treatment_date) {
-      toast.error('Behandlungsdatum ist erforderlich.')
+      toast.error(copy.dateRequired)
       return
     }
     isDraft ? setSavingDraft(true) : setSavingFinal(true)
@@ -299,33 +302,33 @@ const NewSession = () => {
       const wantsPhoto = !form.is_no_show && photoFile && sessionId
 
       if (wantsPhoto) {
-        const flowToast = toast.loading('Foto wird hochgeladen…')
+        const flowToast = toast.loading(copy.photoUploading)
         let uploaded = false
         try {
           await uploadSessionProgressPhoto(sessionId, photoFile)
           uploaded = true
         } catch {
-          toast.error('Sitzung gespeichert, aber das Foto konnte nicht hochgeladen werden.', { id: flowToast })
+          toast.error(copy.photoFailed, { id: flowToast })
         }
 
         if (uploaded && autoAnalyze && kiAvailable && !isDraft) {
-          toast.loading('KI analysiert…', { id: flowToast })
+          toast.loading(copy.aiAnalyzing, { id: flowToast })
           try {
             await analyzeVerblassung({ session_id: sessionId, persist: true })
-            toast.success('Sitzung abgeschlossen — KI-Verblassungsanalyse gespeichert.', { id: flowToast })
+            toast.success(copy.aiSaved, { id: flowToast })
           } catch {
-            toast.error('Sitzung gespeichert, aber die KI-Analyse ist fehlgeschlagen.', { id: flowToast })
+            toast.error(copy.aiFailed, { id: flowToast })
           }
         } else if (uploaded) {
-          toast.success(isDraft ? 'Entwurf mit Foto gespeichert.' : 'Sitzung erfolgreich abgeschlossen.', { id: flowToast })
+          toast.success(isDraft ? copy.draftWithPhoto : copy.sessionDone, { id: flowToast })
         }
       } else {
-        toast.success(isDraft ? 'Entwurf gespeichert.' : 'Sitzung erfolgreich abgeschlossen.')
+        toast.success(isDraft ? copy.draftSaved : copy.sessionDone)
       }
 
       navigate(sessionId ? `/studio/sessions/${sessionId}` : `/studio/cases/${caseId}`)
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Fehler beim Speichern.')
+      toast.error(err.response?.data?.message ?? copy.saveError)
     } finally {
       isDraft ? setSavingDraft(false) : setSavingFinal(false)
     }
@@ -339,7 +342,7 @@ const NewSession = () => {
     )
   }
 
-  const caseTitle   = caseData?.tc_title || caseData?.bodyLabel || 'Fall'
+  const caseTitle   = caseData?.tc_title || caseData?.bodyLabel || copy.caseFallback
 
   return (
     <div className="p-6 max-w-[860px]">
@@ -350,50 +353,52 @@ const NewSession = () => {
         className="flex items-center gap-1.5 text-studio-w2 text-[12px] mb-5 hover:text-studio-white transition-colors cursor-pointer bg-transparent border-0"
       >
         <ArrowLeft size={13} />
-        Zum Fall
+        {copy.backToCase}
       </button>
 
       <PageHeader
-        title={`Sitzung #${nextSession}`}
-        subtitle={`${caseTitle} · ${caseData?.caseId ?? ''}${linkedAppointment ? ' · vom Termin übernommen' : ''}`}
+        title={t('studioPages.newSession.title', { number: nextSession })}
+        subtitle={`${caseTitle} · ${caseData?.caseId ?? ''}${linkedAppointment ? copy.fromAppointment : ''}`}
       >
         <Button variant="ghost" onClick={() => navigate(`/studio/cases/${caseId}`)} disabled={saving}>
-          Abbrechen
+          {copy.cancel}
         </Button>
         <Button variant="secondary" loading={savingDraft} disabled={saving} onClick={() => handleSave(true)}>
-          Als Entwurf speichern
+          {copy.saveDraft}
         </Button>
         <Button loading={savingFinal} disabled={saving} onClick={() => handleSave(false)}>
-          Sitzung abschliessen
+          {copy.complete}
         </Button>
       </PageHeader>
 
       <div className="flex flex-col gap-5">
 
         {/* ── Section 1: General ── */}
-        <Section title="Allgemein">
+        <Section title={copy.general}>
           {linkedAppointment ? (
             <p className="text-studio-gold-2 text-[12px] m-0 -mt-1">
-              Datum, Uhrzeit und Fall stammen vom gebuchten Termin
-              {linkedAppointment.time ? ` (${toDateInput(linkedAppointment.date)} · ${toTimeInput(linkedAppointment)})` : ''}.
-              Laserparameter bitte ergänzen.
+              {t('studioPages.newSession.linkedApptHint', {
+                when: linkedAppointment.time
+                  ? ` (${toDateInput(linkedAppointment.date)} · ${toTimeInput(linkedAppointment)})`
+                  : '',
+              })}
             </p>
           ) : null}
           <div className="grid grid-cols-3 gap-4">
             <Input
-              label="Datum *"
+              label={copy.dateRequiredLabel}
               type="date"
               value={form.treatment_date}
               onChange={set('treatment_date')}
             />
             <Input
-              label="Uhrzeit"
+              label={copy.time}
               type="time"
               value={form.treatment_time}
               onChange={set('treatment_time')}
             />
             <Input
-              label="Dauer (Min.)"
+              label={copy.durationMin}
               type="number"
               min="0"
               value={form.dauer_minuten}
@@ -403,21 +408,21 @@ const NewSession = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Mitarbeiter"
+              label={copy.staff}
               value={form.mitarbeiter_name}
               onChange={set('mitarbeiter_name')}
-              placeholder="Dr. Muster"
+              placeholder={copy.staffPh}
             />
             <Input
-              label="Raum"
+              label={copy.room}
               value={form.raum_name}
               onChange={set('raum_name')}
-              placeholder="Raum 1"
+              placeholder={copy.roomPh}
             />
           </div>
           <Toggle
-            label="No-Show"
-            hint="Kunde ist zum Termin nicht erschienen"
+            label={copy.noShow}
+            hint={copy.noShowHint}
             checked={form.is_no_show}
             onChange={setVal('is_no_show')}
           />
@@ -425,55 +430,55 @@ const NewSession = () => {
 
         {/* ── Section 2: Laser (hidden on no-show) ── */}
         {!form.is_no_show && (
-          <Section title="Laser-Parameter">
+          <Section title={copy.laserParams}>
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Marke"  value={form.studio_laser_brand} onChange={set('studio_laser_brand')} placeholder="Fotona" />
-              <Input label="Modell" value={form.studio_laser_model} onChange={set('studio_laser_model')} placeholder="StarWalker MaQX" />
+              <Input label={copy.brand}  value={form.studio_laser_brand} onChange={set('studio_laser_brand')} placeholder="Fotona" />
+              <Input label={copy.model} value={form.studio_laser_model} onChange={set('studio_laser_model')} placeholder="StarWalker MaQX" />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Laser-Typ"         value={form.laser_typ}      onChange={set('laser_typ')}      placeholder="Nd:YAG" />
+              <Input label={copy.laserType}         value={form.laser_typ}      onChange={set('laser_typ')}      placeholder="Nd:YAG" />
               <Input
-                label="Wellenlängen (nm)"
+                label={copy.wavelengths}
                 value={form.wavelength_nm}
                 onChange={set('wavelength_nm')}
                 placeholder="1064, 532"
-                hint="Kommagetrennt"
+                hint={copy.wavelengthsHint}
               />
             </div>
             <div className="grid grid-cols-4 gap-4">
-              <Input label="Fluence J/cm²" type="number" min="0" step="0.1" value={form.fluence_j_cm2} onChange={set('fluence_j_cm2')} placeholder="3.5" />
-              <Input label="Spot (mm)"     type="number" min="0" step="0.1" value={form.spot_size_mm}  onChange={set('spot_size_mm')}  placeholder="6" />
-              <Input label="Frequenz (Hz)" type="number" min="0"            value={form.frequency_hz}  onChange={set('frequency_hz')}  placeholder="2" />
-              <Input label="Passes"        type="number" min="0"            value={form.pass_count}    onChange={set('pass_count')}    placeholder="3" />
+              <Input label={copy.fluence} type="number" min="0" step="0.1" value={form.fluence_j_cm2} onChange={set('fluence_j_cm2')} placeholder="3.5" />
+              <Input label={copy.spotMm}     type="number" min="0" step="0.1" value={form.spot_size_mm}  onChange={set('spot_size_mm')}  placeholder="6" />
+              <Input label={copy.freqHz} type="number" min="0"            value={form.frequency_hz}  onChange={set('frequency_hz')}  placeholder="2" />
+              <Input label={copy.passes}        type="number" min="0"            value={form.pass_count}    onChange={set('pass_count')}    placeholder="3" />
             </div>
-            <Toggle label="Kühlung verwendet" checked={form.cooling_used} onChange={setVal('cooling_used')} />
+            <Toggle label={copy.cooling} checked={form.cooling_used} onChange={setVal('cooling_used')} />
           </Section>
         )}
 
         {/* ── Section 3: Results (hidden on no-show) ── */}
         {!form.is_no_show && (
-          <Section title="Behandlungsergebnis">
-            <SliderField label="Verblassung (Studio-Schätzung)"  value={form.verblassung_prozent} onChange={setVerblassung} />
-            <SliderField label="Entfernung"   value={form.removal_pct}         onChange={setRemoval} />
-            <SliderField label="Schmerzskala" value={form.pain_score_0_10}     onChange={setPain} min={0} max={10} unit="/10" />
+          <Section title={copy.outcome}>
+            <SliderField label={copy.fadeStudio}  value={form.verblassung_prozent} onChange={setVerblassung} />
+            <SliderField label={copy.removal}   value={form.removal_pct}         onChange={setRemoval} />
+            <SliderField label={copy.painScale} value={form.pain_score_0_10}     onChange={setPain} min={0} max={10} unit="/10" />
             <Input
-              label="Endpoint-Reaktion"
+              label={copy.endpoint}
               value={form.endpoint_reaction}
               onChange={set('endpoint_reaction')}
-              placeholder="Frosting, Rötung, Schwellung…"
+              placeholder={copy.endpointPh}
             />
             <Toggle
-              label="Unerwünschtes Ereignis"
-              hint="Komplikation oder unerwartete Reaktion aufgetreten"
+              label={copy.adverse}
+              hint={copy.adverseHint}
               checked={form.adverse_event_flag}
               onChange={setVal('adverse_event_flag')}
             />
             {form.adverse_event_flag && (
               <Input
-                label="Art des Ereignisses"
+                label={copy.adverseType}
                 value={form.adverse_event_type}
                 onChange={set('adverse_event_type')}
-                placeholder="Blasenbildung, Hyperpigmentierung…"
+                placeholder={copy.adverseTypePh}
               />
             )}
           </Section>
@@ -481,15 +486,15 @@ const NewSession = () => {
 
         {/* ── Section 3b: Progress photo (hidden on no-show) ── */}
         {!form.is_no_show && (
-          <Section title="Fortschritts-Foto">
+          <Section title={copy.photoTitle}>
             {photoPreview ? (
               <div className="relative rounded-[12px] border border-elaya-border bg-studio-bg-4 overflow-hidden max-w-[280px]">
-                <img src={photoPreview} alt="Fortschritts-Foto" className="w-full aspect-square object-cover" />
+                <img src={photoPreview} alt={copy.photoAlt} className="w-full aspect-square object-cover" />
                 <button
                   type="button"
                   onClick={removePhoto}
                   className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center cursor-pointer border-0 hover:bg-black/80"
-                  aria-label="Foto entfernen"
+                  aria-label={copy.photoRemoveAria}
                 >
                   <X size={14} />
                 </button>
@@ -501,7 +506,7 @@ const NewSession = () => {
                 className="w-full max-w-[280px] flex flex-col items-center justify-center gap-2 py-8 cursor-pointer bg-studio-bg-4/50 border border-dashed border-elaya-border rounded-[12px] text-studio-w3 hover:text-studio-w2 transition-colors"
               >
                 <Camera size={24} strokeWidth={1.5} />
-                <span className="text-[11px]">Foto auswählen</span>
+                <span className="text-[11px]">{copy.photoSelect}</span>
               </button>
             )}
             <input
@@ -513,13 +518,13 @@ const NewSession = () => {
             />
             <p className="text-studio-w3 text-[11px] m-0">
               {kiAvailable
-                ? 'Aktuelles Foto der behandelten Stelle — Grundlage für die KI-Verblassungsanalyse im Vergleich zur vorherigen Sitzung.'
-                : 'Vorher-Foto der behandelten Stelle. Bitte immer vor der ersten Behandlung speichern — ab der zweiten Sitzung wird es für den Fortschrittsvergleich benötigt. Eine KI-Analyse gibt es bei der ersten Sitzung nicht.'}
+                ? copy.photoHintNext
+                : copy.photoHintFirst}
             </p>
             {photoFile && kiAvailable && (
               <Toggle
-                label="KI-Verblassungsanalyse automatisch starten"
-                hint="Vergleicht dieses Foto mit dem Foto der vorherigen Sitzung (nicht bei Entwürfen)"
+                label={copy.aiAuto}
+                hint={copy.aiAutoHint}
                 checked={autoAnalyze}
                 onChange={setAutoAnalyze}
               />
@@ -528,10 +533,10 @@ const NewSession = () => {
         )}
 
         {/* ── Section 4: Payment ── */}
-        <Section title="Zahlung">
+        <Section title={copy.payment}>
           <div className="grid grid-cols-3 gap-4">
             <Input
-              label="Betrag (CHF)"
+              label={copy.amountChf}
               type="number"
               min="0"
               step="0.01"
@@ -539,14 +544,14 @@ const NewSession = () => {
               onChange={set('zahlung_betragCHF')}
               placeholder="120.00"
             />
-            <Select label="Zahlungsart" value={form.zahlung_zahlungsart} onChange={set('zahlung_zahlungsart')}>
-              <option value="">— Auswählen —</option>
-              <option value="bar">Bar</option>
-              <option value="karte">Karte</option>
-              <option value="twint">TWINT</option>
+            <Select label={copy.paymentMethod} value={form.zahlung_zahlungsart} onChange={set('zahlung_zahlungsart')}>
+              <option value="">{copy.selectOption}</option>
+              <option value="bar">{copy.cash}</option>
+              <option value="karte">{copy.card}</option>
+              <option value="twint">{copy.twint}</option>
             </Select>
             <Input
-              label="Rabatt (CHF)"
+              label={copy.discountChf}
               type="number"
               min="0"
               step="0.01"
@@ -558,14 +563,14 @@ const NewSession = () => {
         </Section>
 
         {/* ── Section 5: Notes ── */}
-        <Section title="Notizen">
+        <Section title={copy.notes}>
           <div className="flex flex-col gap-1.5">
-            <label className="text-studio-white text-[12px] font-semibold">Besondere Hinweise</label>
+            <label className="text-studio-white text-[12px] font-semibold">{copy.specialNotes}</label>
             <textarea
               value={form.special_notes}
               onChange={(e) => setForm((p) => ({ ...p, special_notes: e.target.value }))}
               rows={3}
-              placeholder="Interne Anmerkungen zur Sitzung…"
+              placeholder={copy.notesPh}
               className="w-full px-3 py-2.5 rounded-[10px] border-[1.5px] border-elaya-border-strong bg-studio-bg-3 text-studio-w1 text-[12px] outline-none focus:border-studio-gold transition-colors placeholder:text-studio-w3 resize-none"
             />
           </div>
@@ -574,13 +579,13 @@ const NewSession = () => {
         {/* ── Bottom actions ── */}
         <div className="flex justify-end gap-3 pb-4">
           <Button variant="ghost" onClick={() => navigate(`/studio/cases/${caseId}`)} disabled={saving}>
-            Abbrechen
+            {copy.cancel}
           </Button>
           <Button variant="secondary" loading={savingDraft} disabled={saving} onClick={() => handleSave(true)}>
-            Als Entwurf speichern
+            {copy.saveDraft}
           </Button>
           <Button loading={savingFinal} disabled={saving} onClick={() => handleSave(false)}>
-            Sitzung abschliessen
+            {copy.complete}
           </Button>
         </div>
 

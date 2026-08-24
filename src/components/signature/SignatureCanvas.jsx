@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import useContent from '../../i18n/useContent'
 
 const DISPLAY_HEIGHT = 120
 const JPEG_QUALITY = 0.58
@@ -16,6 +17,8 @@ const emptyBounds = () => ({
 })
 
 const SignatureCanvas = ({ onChange, className = '' }) => {
+  const { components } = useContent()
+  const copy = components.signature
   const containerRef = useRef(null)
   const canvasRef = useRef(null)
   const drawing = useRef(false)
@@ -197,13 +200,13 @@ const SignatureCanvas = ({ onChange, className = '' }) => {
   return (
     <div className={className}>
       <div className="flex justify-between items-center mb-2">
-        <span className="text-studio-white text-[12px] font-semibold">Unterschrift *</span>
+        <span className="text-studio-white text-[12px] font-semibold">{copy.canvasLabel}</span>
         <button
           type="button"
           onClick={clear}
           className="text-[11px] text-studio-w4 underline bg-transparent border-0 cursor-pointer hover:text-studio-w2"
         >
-          Löschen
+          {copy.clear}
         </button>
       </div>
       <div
@@ -220,7 +223,7 @@ const SignatureCanvas = ({ onChange, className = '' }) => {
       </div>
       {!hasContent && (
         <p className="text-studio-w4 text-[11px] text-center mt-2 m-0">
-          Mit Finger oder Maus unterschreiben
+          {copy.hint}
         </p>
       )}
     </div>

@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../../components/ElayaLogo'
 import { registerStudio } from '../../api/auth'
-import { studioAuth, common, toast as toastMessages } from '../../content'
+import useContent from '../../i18n/useContent'
 import { getApiErrorMessage } from '../../lib/apiError'
 
 const INITIAL_FORM = {
@@ -34,6 +34,7 @@ const Input = ({ className = '', ...props }) => (
 
 const StudioRegister = () => {
   const navigate = useNavigate()
+  const { studioAuth, common, toast: toastMessages } = useContent()
   const [form, setForm] = useState(INITIAL_FORM)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

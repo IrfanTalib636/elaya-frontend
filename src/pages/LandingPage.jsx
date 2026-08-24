@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { Smartphone, Monitor, ArrowRight, Settings } from 'lucide-react'
 import ElayaLogo from '../components/ElayaLogo'
 import ThemeSwitcher from '../components/ThemeSwitcher'
-import { landing } from '../content'
+import useContent from '../i18n/useContent'
 import useAuthStore from '../store/authStore'
 import useAuthHydrated from '../hooks/useAuthHydrated'
 import { STUDIO_ROLES, ADMIN_ROLES } from '../constants/roles'
@@ -11,6 +11,7 @@ const LandingPage = () => {
   const navigate = useNavigate()
   const hydrated = useAuthHydrated()
   const { isAuthenticated, user, logout } = useAuthStore()
+  const { landing, t } = useContent()
 
   /** Same role → dashboard; other portal → logout then login page */
   const goToPortal = async (loginPath, dashboardPath, allowedRoles) => {
@@ -123,7 +124,9 @@ const LandingPage = () => {
 
       {/* Footer */}
       <footer className="text-center px-8 py-3 shrink-0">
-        <p className="text-studio-w4 text-[11px] m-0">{landing.footer}</p>
+        <p className="text-studio-w4 text-[11px] m-0">
+          {t('landing.footer', { year: new Date().getFullYear() })}
+        </p>
       </footer>
 
     </div>

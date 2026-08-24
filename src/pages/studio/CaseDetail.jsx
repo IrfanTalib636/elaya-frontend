@@ -12,6 +12,7 @@ import CaseAnamnesisPanel from '../../components/anamnesis/CaseAnamnesisPanel'
 import CaseSignaturePanel from '../../components/signature/CaseSignaturePanel'
 import MedicalAmpelDot from '../../components/medical/MedicalAmpelDot'
 import { Card, Badge, Button, Spinner, PageHeader, Modal, Input } from '../../components/ui'
+import useContent from '../../i18n/useContent'
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const CASE_TYPE_LABELS  = { tattoo: 'Tattoo', pmu: 'PMU' }
@@ -19,35 +20,10 @@ const TC_TYPE_LABELS    = { amateur: 'Amateur', cosmetic: 'Kosmetisch', professi
 const GOAL_LABELS       = { full_removal: 'Vollständige Entfernung', full: 'Vollständige Entfernung', partial_fade: 'Teilweises Aufhellen', lightening_for_coverup: 'Aufhellen für Cover-up' }
 const COVERUP_LABELS    = { none: 'Kein Cover-up', once: '1× überdeckt', multiple: 'Mehrfach überdeckt', unknown: 'Unbekannt' }
 
-const CASE_STATUSES = [
-  { value: 'draft',                    label: 'Entwurf'             },
-  { value: 'pending',                  label: 'Ausstehend'          },
-  { value: 'active',                   label: 'Aktiv'               },
-  { value: 'completed',                label: 'Abgeschlossen'       },
-  { value: 'loeschantrag_ausstehend',  label: 'Löschantrag pend.'  },
-]
-
-const SESSION_HEADERS = ['Nr.', 'Datum', 'Verbl. %', 'Entf. %', 'Zahlung', 'Status', '']
-const ZONE_HEADERS    = ['Zonen-ID', 'Körperstelle', 'Fläche cm²', 'Fortschritt', 'Sitzungen (est.)', '']
-
 const APPT_TYPE_LABELS = {
   beratung:  'Beratung',
   treatment: 'Behandlung',
   first:     'Erstbehandlung',
-}
-
-const ESTIMATE_REVIEW_LABELS = {
-  missing_size: 'Grösse unvollständig',
-  missing_colors: 'Farben fehlen',
-  missing_fitzpatrick: 'Hauttyp unklar',
-  missing_location: 'Körperstelle unklar',
-  missing_age: 'Tattoalter fehlt',
-  missing_intake_photo: 'Kein Initialfoto',
-  photo_full_visible: 'Tattoo nicht vollständig sichtbar',
-  photo_good_light: 'Beleuchtung unzureichend',
-  photo_focus: 'Foto unscharf',
-  photo_distance: 'Abstand ungeeignet',
-  photo_no_filter: 'Filter verdächtig',
 }
 
 const CANCELLED_APPT = new Set(['storniert', 'cancelled', 'completed'])
@@ -113,7 +89,7 @@ const SessionProgressBar = ({ done = 0, total = 0 }) => {
   )
 }
 
-const PendingAppointmentRow = ({ appt, disabled, onRecord }) => (
+const PendingAppointmentRow = ({ appt, disabled, onRecord, copy, t }) => (
   <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-elaya-border last:border-0">
     <div className="min-w-0">
       <p className="text-studio-white text-[13px] font-medium m-0">
@@ -121,9 +97,9 @@ const PendingAppointmentRow = ({ appt, disabled, onRecord }) => (
         {appt.time ? ` · ${fmtTime(appt.time)}` : ''}
       </p>
       <p className="text-studio-w3 text-[11px] m-0 mt-0.5">
-        {APPT_TYPE_LABELS[appt.type] ?? appt.type}
-        {appt.dauer_minuten != null ? ` · ${appt.dauer_minuten} Min.` : ''}
-        {appt.status === 'gebucht' ? ' · Gebucht' : ''}
+        {copy.apptTypes[appt.type] ?? appt.type}
+        {appt.dauer_minuten != null ? ` · ${t('studioPages.caseDetail.minutes', { count: appt.dauer_minuten })}` : ''}
+        {appt.status === 'gebucht' ? ` · ${copy.booked}` : ''}
       </p>
     </div>
     <Button
@@ -132,13 +108,13 @@ const PendingAppointmentRow = ({ appt, disabled, onRecord }) => (
       disabled={disabled}
     >
       <ClipboardList size={13} />
-      Sitzung dokumentieren
+      {copy.documentSession}
     </Button>
   </div>
 )
 
-const SessionRow = ({ s, onClick }) => {
-  const statusLabel = s.is_no_show ? 'No-show' : s.is_draft ? 'Entwurf' : 'Abgeschlossen'
+const SessionRow = ({ s, onClick, copy, t }) => {
+  const statusLabel = s.is_no_show ? copy.sessionStatus.noShow : s.is_draft ? copy.sessionStatus.draft : copy.sessionStatus.completed
   const statusColor = s.is_no_show
     ? 'bg-elaya-error/15 text-elaya-error'
     : s.is_draft
@@ -154,7 +130,7 @@ const SessionRow = ({ s, onClick }) => {
       <td className="px-5 py-3 text-studio-w1 text-[12px]">{fmtDate(s.treatment_date)}</td>
       <td className="px-5 py-3 text-studio-w1 text-[12px]">
         {s.comparison_eligible === false
-          ? `${pct(s.lightening_internal_pct ?? s.verblassung_prozent)} intern`
+          ? t('studioPages.caseDetail.internalFade', { pct: pct(s.lightening_internal_pct ?? s.verblassung_prozent) })
           : pct(s.verblassung_prozent)}
       </td>
       <td className="px-5 py-3 text-studio-w1 text-[12px]">
@@ -191,25 +167,28 @@ const ZoneRow = ({ z }) => (
 )
 
 // ── Estimate confirmation ─────────────────────────────────────────────────
-const ESTIMATE_STATUS_META = {
-  offen: {
-    label: 'KI-Schätzung — noch nicht bestätigt',
-    classes: 'bg-elaya-warning/15 text-elaya-warning',
-  },
-  bestaetigt: {
-    label: 'Vom Studio bestätigt',
-    classes: 'bg-elaya-success/15 text-elaya-success',
-  },
-  angepasst: {
-    label: 'Vom Studio angepasst',
-    classes: 'bg-studio-blue/15 text-studio-blue',
-  },
+const ESTIMATE_STATUS_CLASSES = {
+  offen: 'bg-elaya-warning/15 text-elaya-warning',
+  bestaetigt: 'bg-elaya-success/15 text-elaya-success',
+  angepasst: 'bg-studio-blue/15 text-studio-blue',
 }
 
 const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
+  const { t, studioPages } = useContent()
+  const copy = studioPages.caseDetail
+  const ep = copy.estimatePanel
   const confirmation = caseData.estimate_confirmation ?? { status: 'offen' }
   const status = confirmation.status ?? 'offen'
-  const meta = ESTIMATE_STATUS_META[status] ?? ESTIMATE_STATUS_META.offen
+  const statusLabel =
+    status === 'bestaetigt'
+      ? ep.statusBestaetigt
+      : status === 'angepasst'
+        ? ep.statusAngepasst
+        : ep.statusOffen
+  const statusClasses = ESTIMATE_STATUS_CLASSES[status] ?? ESTIMATE_STATUS_CLASSES.offen
+
+  const triggerLabel = (id) =>
+    t(`studioPages.caseDetail.reviewTriggers.${id}`, { defaultValue: id })
 
   const [saving, setSaving] = useState(false)
   const [notiz, setNotiz] = useState('')
@@ -229,14 +208,14 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
       onUpdated(d)
       toast.success(
         d.chat_notified
-          ? `${successMessage} — Kunde wurde im Chat benachrichtigt`
+          ? t('studioPages.caseDetail.estimatePanel.toastChatNotified', { message: successMessage })
           : successMessage
       )
       setNotiz('')
       setAdjustOpen(false)
       return true
     } catch (err) {
-      toast.error(err?.response?.data?.message ?? 'Speichern fehlgeschlagen.')
+      toast.error(err?.response?.data?.message ?? copy.estimateSaveFailed)
       return false
     } finally {
       setSaving(false)
@@ -246,10 +225,10 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
   const confirmEstimate = () =>
     submit(
       { status: 'bestaetigt', ...(notiz.trim() ? { notiz: notiz.trim() } : {}) },
-      'Bestätigung gespeichert'
+      ep.toastConfirmed
     )
 
-  const reopenEstimate = () => submit({ status: 'offen' }, 'Schätzung neu geöffnet')
+  const reopenEstimate = () => submit({ status: 'offen' }, ep.toastReopened)
 
   const openAdjust = () => {
     setAdjustForm({
@@ -266,7 +245,7 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
     const min = parseInt(adjustForm.sessionsMin, 10)
     const max = parseInt(adjustForm.sessionsMax, 10)
     if (Number.isNaN(price) || Number.isNaN(min) || Number.isNaN(max)) {
-      toast.error('Preis und Sitzungsbereich sind erforderlich.')
+      toast.error(t('studioPages.caseDetail.estimateRequired'))
       return
     }
     submit(
@@ -277,7 +256,7 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
         sessionsMax: max,
         ...(adjustForm.notiz.trim() ? { notiz: adjustForm.notiz.trim() } : {}),
       },
-      'Anpassung gespeichert'
+      ep.toastAdjusted
     )
   }
 
@@ -297,15 +276,20 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
   const totalMin = displayPrice > 0 && displayMin != null ? displayPrice * displayMin : null
   const totalMax = displayPrice > 0 && displayMax != null ? displayPrice * displayMax : null
 
+  const sessionsLabel = (min, max) =>
+    min != null && max != null
+      ? t('studioPages.caseDetail.estimatePanel.sessionsValue', { min, max })
+      : null
+
   return (
     <>
       <Card className="flex flex-col gap-3">
         <h3 className="text-[13px] font-semibold text-studio-white m-0">
-          KI-Kalkulation &amp; Bestätigung
+          {ep.title}
         </h3>
 
-        <span className={`inline-flex self-start items-center px-2 py-1 rounded-full text-[10px] font-semibold ${meta.classes}`}>
-          {meta.label}
+        <span className={`inline-flex self-start items-center px-2 py-1 rounded-full text-[10px] font-semibold ${statusClasses}`}>
+          {statusLabel}
         </span>
 
         {status !== 'offen' && (confirmation.datum || confirmation.bestaetigt_von) && (
@@ -315,61 +299,55 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
         )}
 
         <InfoRow
-          label="Kalkulierter Preis (System)"
+          label={ep.calculatedPrice}
           value={fmtCHF(caseData.calculated_pricePerSession ?? (!['bestaetigt', 'angepasst'].includes(status) ? caseData.pricePerSession : null))}
         />
         <InfoRow
-          label="Bestätigter Studio-Preis"
+          label={ep.confirmedPrice}
           value={
             ['bestaetigt', 'angepasst'].includes(status)
               ? fmtCHF(caseData.confirmed_pricePerSession ?? confirmation.pricePerSession ?? caseData.pricePerSession)
-              : 'Noch nicht bestätigt'
+              : ep.notConfirmed
           }
         />
         <InfoRow
-          label="Sitzungsbereich"
+          label={ep.sessionRange}
           value={
             ['bestaetigt', 'angepasst'].includes(status) && caseData.confirmed_sessionsMin != null
-              ? `${caseData.confirmed_sessionsMin}–${caseData.confirmed_sessionsMax} Sitzungen`
-              : caseData.sessionsMin != null
-                ? `${caseData.sessionsMin}–${caseData.sessionsMax} Sitzungen`
-                : null
+              ? sessionsLabel(caseData.confirmed_sessionsMin, caseData.confirmed_sessionsMax)
+              : sessionsLabel(caseData.sessionsMin, caseData.sessionsMax)
           }
         />
         {status !== 'offen' && caseData.calculated_sessionsMin != null && (
           <InfoRow
-            label="Kalkulierte Sitzungen"
-            value={`${caseData.calculated_sessionsMin}–${caseData.calculated_sessionsMax} Sitzungen`}
+            label={ep.calculatedSessions}
+            value={sessionsLabel(caseData.calculated_sessionsMin, caseData.calculated_sessionsMax)}
           />
         )}
         {totalMin != null && totalMax != null && (
           <InfoRow
-            label="Gesamtkosten (min–max)"
+            label={ep.totalCost}
             value={`${fmtCHF(totalMin)} – ${fmtCHF(totalMax)}`}
           />
         )}
-        {confirmation.notiz && <InfoRow label="Notiz" value={confirmation.notiz} />}
+        {confirmation.notiz && <InfoRow label={ep.note} value={confirmation.notiz} />}
 
         {status === 'offen' && caseData.estimate_needs_review && (
           <div className="rounded-[10px] border border-elaya-warning/40 bg-elaya-warning/10 px-3 py-2">
             <p className="text-elaya-warning text-[11px] font-semibold m-0 mb-1">
-              Studio-Review empfohlen
+              {ep.reviewTitle}
             </p>
             <p className="text-studio-w2 text-[11px] m-0 leading-relaxed">
-              Die Kalkulation lief mit unvollständigen oder unsicheren Angaben. Bitte bestätigen
-              oder anpassen.
+              {ep.reviewBody}
               {(caseData.estimate_review_triggers || []).length > 0
-                ? ` · ${(caseData.estimate_review_triggers || [])
-                    .map((id) => ESTIMATE_REVIEW_LABELS[id] || id)
-                    .join(', ')}`
+                ? ` · ${(caseData.estimate_review_triggers || []).map(triggerLabel).join(', ')}`
                 : ''}
             </p>
           </div>
         )}
 
         <p className="text-studio-w3 text-[11px] m-0">
-          Der kalkulierte Preis bleibt sichtbar. Nach Bestätigung oder Anpassung gilt der Studio-Preis
-          für den Kunden — beide Werte bleiben transparent.
+          {ep.transparency}
         </p>
 
         {!caseData.read_only && (
@@ -379,29 +357,29 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
                 value={notiz}
                 onChange={(e) => setNotiz(e.target.value)}
                 rows={2}
-                placeholder="Notiz an den Kunden (optional)…"
+                placeholder={copy.customerNotePlaceholder}
                 className="w-full px-3 py-2 rounded-[10px] border-[1.5px] border-elaya-border-strong bg-studio-bg-3 text-studio-w1 text-[12px] outline-none focus:border-studio-gold transition-colors placeholder:text-studio-w3 resize-none"
               />
               <Button size="sm" loading={saving} onClick={confirmEstimate} className="w-full">
-                Schätzung bestätigen
+                {ep.confirm}
               </Button>
               <Button size="sm" variant="secondary" disabled={saving} onClick={openAdjust} className="w-full">
-                Anpassen…
+                {ep.adjust}
               </Button>
             </div>
           ) : (
             <Button size="sm" variant="secondary" loading={saving} onClick={reopenEstimate} className="w-full">
-              Neu öffnen
+              {ep.reopen}
             </Button>
           )
         )}
       </Card>
 
       {adjustOpen && (
-        <Modal title="Schätzung anpassen" onClose={() => setAdjustOpen(false)}>
+        <Modal title={copy.adjustEstimateTitle} onClose={() => setAdjustOpen(false)}>
           <div className="flex flex-col gap-3">
             <Input
-              label="Preis pro Sitzung (CHF)"
+              label={ep.pricePerSession}
               type="number"
               min={0}
               step="0.01"
@@ -410,7 +388,7 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
             />
             <div className="grid grid-cols-2 gap-3">
               <Input
-                label="Sitzungen min."
+                label={ep.sessionsMin}
                 type="number"
                 min={1}
                 step="1"
@@ -418,7 +396,7 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
                 onChange={setAdjust('sessionsMin')}
               />
               <Input
-                label="Sitzungen max."
+                label={ep.sessionsMax}
                 type="number"
                 min={1}
                 step="1"
@@ -428,7 +406,7 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
             </div>
             <div className="flex flex-col gap-1.5">
               <label htmlFor="estimate-notiz" className="text-studio-white text-[12px] font-semibold">
-                Notiz an den Kunden (optional)
+                {ep.customerNoteLabel}
               </label>
               <textarea
                 id="estimate-notiz"
@@ -440,10 +418,10 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
             </div>
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="ghost" onClick={() => setAdjustOpen(false)} disabled={saving}>
-                Abbrechen
+                {ep.cancel}
               </Button>
               <Button loading={saving} onClick={submitAdjust}>
-                Anpassung speichern
+                {ep.saveAdjustment}
               </Button>
             </div>
           </div>
@@ -458,6 +436,23 @@ const CaseDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+  const { t, studioPages } = useContent()
+  const copy = studioPages.caseDetail
+  const CASE_STATUSES = [
+    { value: 'draft', label: copy.statuses.draft },
+    { value: 'pending', label: copy.statuses.pending },
+    { value: 'active', label: copy.statuses.active },
+    { value: 'completed', label: copy.statuses.completed },
+    { value: 'loeschantrag_ausstehend', label: copy.statuses.loeschantrag_ausstehend },
+  ]
+  const SESSION_HEADERS = [
+    copy.sessionHeaders.nr, copy.sessionHeaders.date, copy.sessionHeaders.fade,
+    copy.sessionHeaders.removal, copy.sessionHeaders.payment, copy.sessionHeaders.status, '',
+  ]
+  const ZONE_HEADERS = [
+    copy.zoneHeaders.id, copy.zoneHeaders.body, copy.zoneHeaders.area,
+    copy.zoneHeaders.progress, copy.zoneHeaders.sessionsEst, '',
+  ]
 
   const [caseData, setCaseData] = useState(null)
   const [sessions, setSessions] = useState([])
@@ -489,7 +484,7 @@ const CaseDetail = () => {
         setSessions(sessRes.data.data.sessions)
         setAppointments(apptRes.data.data.appointments ?? [])
       } catch {
-        toast.error('Fall konnte nicht geladen werden.')
+        toast.error(copy.loadError)
         navigate(-1)
       } finally {
         setLoading(false)
@@ -503,9 +498,9 @@ const CaseDetail = () => {
     try {
       await updateCase(id, { status })
       setCaseData((prev) => ({ ...prev, status }))
-      toast.success('Status aktualisiert.')
+      toast.success(copy.statusUpdated)
     } catch {
-      toast.error('Fehler beim Speichern.')
+      toast.error(copy.saveError)
     } finally {
       setSavingStatus(false)
     }
@@ -521,7 +516,7 @@ const CaseDetail = () => {
 
   if (!caseData) return null
 
-  const caseTitle = caseData.tc_title || CASE_TYPE_LABELS[caseData.type] || caseData.type
+  const caseTitle = caseData.tc_title || copy.caseTypes[caseData.type] || caseData.type
   const hasSessions = sessions.length > 0
   const recordedApptIds = new Set(
     sessions.map((s) => apptId(s.appointment)).filter(Boolean)
@@ -543,7 +538,7 @@ const CaseDetail = () => {
         className="flex items-center gap-1.5 text-studio-w2 text-[12px] mb-5 hover:text-studio-white transition-colors cursor-pointer bg-transparent border-0"
       >
         <ArrowLeft size={13} />
-        {custName ? `Zum Kunden · ${custName}` : 'Zurück'}
+        {custName ? t('studioPages.caseDetail.backToCustomer', { name: custName }) : copy.back}
       </button>
 
       <PageHeader title={caseTitle} subtitle={headerSubtitle}>
@@ -555,7 +550,7 @@ const CaseDetail = () => {
         />
         <Badge variant="status" value={caseData.status}>{caseData.status}</Badge>
         {caseData.transferiert ? (
-          <Badge variant="source" value="studio_wechsel">Transferiert</Badge>
+          <Badge variant="source" value="studio_wechsel">{copy.transferred}</Badge>
         ) : null}
         <Button
           size="sm"
@@ -566,21 +561,21 @@ const CaseDetail = () => {
           Elaya
         </Button>
         <Button size="sm" variant="secondary" onClick={() => navigate(`/studio/appointments?case_id=${id}&customer_id=${custId}&book=1`)} disabled={caseData.read_only}>
-          Termin buchen
+          {copy.bookAppointment}
         </Button>
         <Button size="sm" onClick={() => navigate(`/studio/sessions/new?case_id=${id}`)} disabled={caseData.read_only}>
           <Plus size={13} />
-          Neue Sitzung
+          {copy.newSession}
         </Button>
       </PageHeader>
 
       {caseData.transferiert && (
         <div className="mb-5 px-4 py-3 rounded-[12px] border border-studio-gold/30 bg-studio-gold/10">
           <p className="text-studio-gold-2 text-[13px] font-semibold m-0">
-            Fall von anderem Studio übernommen
+            {copy.transferBannerTitle}
           </p>
           <p className="text-studio-w2 text-[12px] m-0 mt-1">
-            Medizinische Historie gehört zum Kunden und ist nach dem Studio-Wechsel hier sichtbar.
+            {copy.transferBannerBody}
           </p>
         </div>
       )}
@@ -588,20 +583,20 @@ const CaseDetail = () => {
       {/* Stats bar */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         <StatChip
-          label="Sitzungen"
+          label={copy.stats.sessions}
           value={`${caseData.sessionsDone ?? 0} / ${caseData.sessions ?? 0}`}
         />
         <StatChip
-          label="Letzte Sitzung"
+          label={copy.stats.lastSession}
           value={fmtDate(caseData.lastSessionDate)}
         />
         <StatChip
-          label="Kalkulierter Preis"
+          label={copy.stats.calculatedPrice}
           value={fmtCHF(caseData.calculated_pricePerSession ?? caseData.pricePerSession)}
-          hint="System / KI"
+          hint={copy.stats.systemAi}
         />
         <StatChip
-          label="Bestätigter Preis"
+          label={copy.stats.confirmedPrice}
           value={
             ['bestaetigt', 'angepasst'].includes(caseData.estimate_confirmation?.status)
               ? fmtCHF(caseData.confirmed_pricePerSession ?? caseData.pricePerSession)
@@ -609,13 +604,13 @@ const CaseDetail = () => {
           }
           hint={
             ['bestaetigt', 'angepasst'].includes(caseData.estimate_confirmation?.status)
-              ? 'Studio'
-              : 'Noch offen'
+              ? copy.stats.studio
+              : copy.stats.stillOpen
           }
         />
         <StatChip
-          label="Ziel"
-          value={GOAL_LABELS[caseData.goal_target] ?? caseData.goal_target ?? '—'}
+          label={copy.stats.goal}
+          value={copy.goals[caseData.goal_target] ?? caseData.goal_target ?? '—'}
         />
       </div>
 
@@ -627,26 +622,26 @@ const CaseDetail = () => {
           {/* Tattoo intake */}
           <Card>
             <h2 className="text-[13px] font-semibold text-studio-white m-0 mb-4 pb-3 border-b border-elaya-border">
-              Tattoo-Angaben
+              {copy.tattooSection}
             </h2>
             <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-              <InfoRow label="Typ"            value={CASE_TYPE_LABELS[caseData.type] ?? caseData.type} />
-              <InfoRow label="Körperstelle"   value={caseData.bodyLabel} />
-              <InfoRow label="Tätowierungsart" value={TC_TYPE_LABELS[caseData.tc_type] ?? caseData.tc_type} />
-              <InfoRow label="Cover-up"        value={COVERUP_LABELS[caseData.tc_coverup] ?? caseData.tc_coverup} />
-              <InfoRow label="Größe"
+              <InfoRow label={copy.labels.type}            value={copy.caseTypes[caseData.type] ?? caseData.type} />
+              <InfoRow label={copy.labels.body}   value={caseData.bodyLabel} />
+              <InfoRow label={copy.labels.tattooType} value={copy.tcTypes[caseData.tc_type] ?? caseData.tc_type} />
+              <InfoRow label={copy.labels.coverup}        value={copy.coverup[caseData.tc_coverup] ?? caseData.tc_coverup} />
+              <InfoRow label={copy.labels.size}
                 value={
                   caseData.tc_size_length && caseData.tc_size_width
                     ? `${caseData.tc_size_length} × ${caseData.tc_size_width} cm`
                     : null
                 }
               />
-              <InfoRow label="Alter (Jahre)"  value={caseData.tc_age_years != null ? `${caseData.tc_age_years} J.` : null} />
-              <InfoRow label="Farben"
+              <InfoRow label={copy.labels.ageYears}  value={caseData.tc_age_years != null ? t('studioPages.caseDetail.labels.ageYearsValue', { years: caseData.tc_age_years }) : null} />
+              <InfoRow label={copy.labels.colors}
                 value={
                   Array.isArray(caseData.tc_colors_present) && caseData.tc_colors_present.length
                     ? caseData.tc_colors_present.join(', ')
-                    : caseData.tc_colors_present ? 'Ja' : 'Nein'
+                    : caseData.tc_colors_present ? copy.labels.yes : copy.labels.no
                 }
               />
               <InfoRow label="Fitzpatrick"    value={caseData.skin_fitzpatrick ? `Typ ${caseData.skin_fitzpatrick}` : null} />
@@ -704,7 +699,7 @@ const CaseDetail = () => {
           <Card padding="none">
             <div className="flex items-center justify-between px-5 py-4 border-b border-elaya-border">
               <h2 className="text-[14px] font-semibold text-studio-white m-0">
-                Sitzungsprotokoll
+                {copy.sessionsTitle}
                 <span className="ml-2 text-studio-w3 text-[12px] font-normal">({sessions.length})</span>
               </h2>
               <Button
@@ -714,19 +709,21 @@ const CaseDetail = () => {
                 disabled={caseData.read_only}
               >
                 <Plus size={13} />
-                Neue Sitzung
+                {copy.newSession}
               </Button>
             </div>
 
             {pendingAppointments.length > 0 && (
               <div className="border-b border-elaya-border bg-studio-gold/5">
                 <p className="px-5 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-studio-gold-2 m-0">
-                  Gebuchte Termine — Sitzung dokumentieren
+                  {copy.pendingApptsTitle}
                 </p>
                 {pendingAppointments.map((appt) => (
                   <PendingAppointmentRow
                     key={appt.id || appt._id}
                     appt={appt}
+                    copy={copy}
+                    t={t}
                     disabled={caseData.read_only}
                     onRecord={() =>
                       navigate(
@@ -742,8 +739,8 @@ const CaseDetail = () => {
               <div className="py-10 text-center">
                 <p className="text-studio-w2 text-[13px] m-0">
                   {pendingAppointments.length
-                    ? 'Noch keine Sitzung dokumentiert. Wähle oben «Sitzung dokumentieren», damit Datum, Uhrzeit und Fall übernommen werden.'
-                    : 'Noch keine Sitzungen aufgezeichnet.'}
+                    ? copy.emptySessionsPending
+                    : copy.emptySessions}
                 </p>
               </div>
             ) : (
@@ -763,6 +760,8 @@ const CaseDetail = () => {
                       <SessionRow
                         key={s.id}
                         s={s}
+                        copy={copy}
+                        t={t}
                         onClick={() => navigate(`/studio/sessions/${s.id}`)}
                       />
                     ))}
@@ -777,7 +776,7 @@ const CaseDetail = () => {
             <Card padding="none">
               <div className="px-5 py-4 border-b border-elaya-border">
                 <h2 className="text-[14px] font-semibold text-studio-white m-0">
-                  Zonen
+                  {copy.zonesTitle}
                   <span className="ml-2 text-studio-w3 text-[12px] font-normal">({caseData.zonen.length})</span>
                 </h2>
               </div>
@@ -808,7 +807,7 @@ const CaseDetail = () => {
 
           {/* Status */}
           <Card className="flex flex-col gap-4">
-            <h3 className="text-[13px] font-semibold text-studio-white m-0">Status</h3>
+            <h3 className="text-[13px] font-semibold text-studio-white m-0">{copy.statusTitle}</h3>
             <div className="flex flex-col gap-1.5">
               {CASE_STATUSES.map((s) => (
                 <button
@@ -834,7 +833,7 @@ const CaseDetail = () => {
               onClick={saveStatus}
               className="w-full"
             >
-              Status speichern
+              {copy.saveStatus}
             </Button>
           </Card>
 

@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { Input, Select, Button } from '../ui'
+import useContent from '../../i18n/useContent'
+
+const COUNTRY_VALUES = ['Schweiz', 'Deutschland', 'Österreich', 'Frankreich', 'Italien', 'Anderes']
 
 const INITIAL = {
   vorname: '', nachname: '', email: '', telefon: '',
@@ -7,6 +10,9 @@ const INITIAL = {
 }
 
 const CustomerForm = ({ onSubmit, loading, onCancel }) => {
+  const { components } = useContent()
+  const copy = components.customerForm
+
   const [form, setForm] = useState(INITIAL)
   const [errors, setErrors] = useState({})
 
@@ -14,10 +20,10 @@ const CustomerForm = ({ onSubmit, loading, onCancel }) => {
 
   const validate = () => {
     const errs = {}
-    if (!form.vorname.trim())  errs.vorname  = 'Pflichtfeld'
-    if (!form.nachname.trim()) errs.nachname = 'Pflichtfeld'
-    if (!form.email.trim())    errs.email    = 'Pflichtfeld'
-    if (!form.telefon.trim())  errs.telefon  = 'Pflichtfeld'
+    if (!form.vorname.trim())  errs.vorname  = copy.required
+    if (!form.nachname.trim()) errs.nachname = copy.required
+    if (!form.email.trim())    errs.email    = copy.required
+    if (!form.telefon.trim())  errs.telefon  = copy.required
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -32,7 +38,7 @@ const CustomerForm = ({ onSubmit, loading, onCancel }) => {
     <form onSubmit={handleSubmit} className="flex flex-col gap-4" translate="no">
       <div className="grid grid-cols-2 gap-4">
         <Input
-          label="Vorname"
+          label={copy.firstName}
           value={form.vorname}
           onChange={set('vorname')}
           error={errors.vorname}
@@ -40,7 +46,7 @@ const CustomerForm = ({ onSubmit, loading, onCancel }) => {
           autoFocus
         />
         <Input
-          label="Nachname"
+          label={copy.lastName}
           value={form.nachname}
           onChange={set('nachname')}
           error={errors.nachname}
@@ -49,7 +55,7 @@ const CustomerForm = ({ onSubmit, loading, onCancel }) => {
       </div>
 
       <Input
-        label="E-Mail"
+        label={copy.email}
         type="email"
         value={form.email}
         onChange={set('email')}
@@ -59,7 +65,7 @@ const CustomerForm = ({ onSubmit, loading, onCancel }) => {
 
       <div className="grid grid-cols-2 gap-4">
         <Input
-          label="Telefon"
+          label={copy.phone}
           type="tel"
           value={form.telefon}
           onChange={set('telefon')}
@@ -67,7 +73,7 @@ const CustomerForm = ({ onSubmit, loading, onCancel }) => {
           placeholder="+41 79 000 00 00"
         />
         <Input
-          label="Geburtsdatum"
+          label={copy.birthDate}
           type="date"
           value={form.geburtsdatum}
           onChange={set('geburtsdatum')}
@@ -75,7 +81,7 @@ const CustomerForm = ({ onSubmit, loading, onCancel }) => {
       </div>
 
       <Input
-        label="Strasse"
+        label={copy.street}
         value={form.strasse}
         onChange={set('strasse')}
         placeholder="Musterstrasse 1"
@@ -83,14 +89,14 @@ const CustomerForm = ({ onSubmit, loading, onCancel }) => {
 
       <div className="grid grid-cols-3 gap-4">
         <Input
-          label="PLZ"
+          label={copy.postalCode}
           value={form.plz}
           onChange={set('plz')}
           placeholder="8001"
         />
         <div className="col-span-2">
           <Input
-            label="Ort"
+            label={copy.city}
             value={form.ort}
             onChange={set('ort')}
             placeholder="Zürich"
@@ -98,28 +104,25 @@ const CustomerForm = ({ onSubmit, loading, onCancel }) => {
         </div>
       </div>
 
-      <Select label="Land" value={form.land} onChange={set('land')}>
-        <option>Schweiz</option>
-        <option>Deutschland</option>
-        <option>Österreich</option>
-        <option>Frankreich</option>
-        <option>Italien</option>
-        <option>Anderes</option>
+      <Select label={copy.country} value={form.land} onChange={set('land')}>
+        {COUNTRY_VALUES.map((c) => (
+          <option key={c} value={c}>{copy.countries[c] ?? c}</option>
+        ))}
       </Select>
 
       <Input
-        label="Notizen (intern)"
+        label={copy.notes}
         value={form.notizen}
         onChange={set('notizen')}
-        placeholder="Interne Anmerkungen…"
+        placeholder={copy.notesPh}
       />
 
       <div className="flex justify-end gap-2 pt-2 border-t border-elaya-border">
         <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>
-          Abbrechen
+          {copy.cancel}
         </Button>
         <Button type="submit" loading={loading}>
-          Kunden anlegen
+          {copy.submit}
         </Button>
       </div>
     </form>

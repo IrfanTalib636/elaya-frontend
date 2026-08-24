@@ -19,8 +19,9 @@ import {
   listAdminOrders,
   patchOrderCommission,
 } from '../../api/adminShop'
+import useContent from '../../i18n/useContent'
 
-const CATEGORIES = ['Nachsorge', 'Sonnenschutz', 'Reinigung', 'Zubehör', 'Sonstiges']
+const CATEGORY_IDS = ['Nachsorge', 'Sonnenschutz', 'Reinigung', 'Zubehör', 'Sonstiges']
 const emptyForm = {
   product_code: '',
   artikelnummer: '',
@@ -37,6 +38,8 @@ const fmt = (n) =>
   new Intl.NumberFormat('de-CH', { style: 'currency', currency: 'CHF' }).format(n || 0)
 
 const AdminShop = () => {
+  const { adminPages } = useContent()
+  const copy = adminPages.shop
   const [tab, setTab] = useState('products')
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
@@ -55,7 +58,7 @@ const AdminShop = () => {
       setProducts(res.data.data.products ?? [])
       setPagination(res.data.data.pagination)
     } catch {
-      toast.error('Produkte konnten nicht geladen werden')
+      toast.error(copy.productsLoadError)
     } finally {
       setLoading(false)
     }
@@ -68,7 +71,7 @@ const AdminShop = () => {
       setOrders(res.data.data.orders ?? [])
       setPagination(res.data.data.pagination)
     } catch {
-      toast.error('Bestellungen konnten nicht geladen werden')
+      toast.error(copy.ordersLoadError)
     } finally {
       setLoading(false)
     }
@@ -111,15 +114,15 @@ const AdminShop = () => {
       }
       if (editing) {
         await updateAdminProduct(editing.id, payload)
-        toast.success('Produkt aktualisiert')
+        toast.success(copy.productUpdated)
       } else {
         await createAdminProduct(payload)
-        toast.success('Produkt erstellt')
+        toast.success(copy.productCreated)
       }
       setModalOpen(false)
       loadProducts(page)
     } catch (e) {
-      toast.error(e?.response?.data?.message || 'Speichern fehlgeschlagen')
+      toast.error(e?.response?.data?.message || copy.saveFailed)
     } finally {
       setSaving(false)
     }
@@ -130,18 +133,18 @@ const AdminShop = () => {
       await updateAdminProduct(p.id, { aktiv: !p.aktiv })
       loadProducts(page)
     } catch {
-      toast.error('Status konnte nicht geändert werden')
+      toast.error(copy.statusError)
     }
   }
 
   const markCommission = async (order, status, { viaStripe = false } = {}) => {
     try {
       await patchOrderCommission(order.id, status, viaStripe ? { pay_via_stripe: true } : {})
-      toast.success(viaStripe ? 'Provision via Stripe Transfer ausgezahlt' : 'Provision aktualisiert')
+      toast.success(viaStripe ? copy.provisionStripe : copy.provisionUpdated)
       loadOrders(page)
     } catch (err) {
       toast.error(
-        err?.response?.data?.message || 'Provision konnte nicht aktualisiert werden'
+        err?.response?.data?.message || copy.provisionError
       )
     }
   }
@@ -149,11 +152,11 @@ const AdminShop = () => {
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader
-        title="ElayShop Admin"
-        subtitle="Produkte verwalten · Bestellungen · Provisionen (Stripe Testmodus)"
+        title={copy.title}
+        subtitle={copy.subtitle}
       >
         {tab === 'products' ? (
-          <Button onClick={openCreate}>+ Produkt</Button>
+          <Button onClick={openCreate}>+ {copy.newProduct}</Button>
         ) : null}
       </PageHeader>
 
@@ -172,7 +175,7 @@ const AdminShop = () => {
                 : 'border-admin-line text-admin-ivory/70'
             }`}
           >
-            {t === 'products' ? 'Produkte' : 'Bestellungen'}
+            {t === 'products' ? copy.tabProducts : copy.tabOrders}
           </button>
         ))}
       </div>
@@ -183,17 +186,17 @@ const AdminShop = () => {
         </div>
       ) : tab === 'products' ? (
         products.length === 0 ? (
-          <EmptyState title="Keine Produkte" description="Lege das erste Produkt an." />
+          <EmptyState title={copy.noProducts} description={copy.noProductsDesc} />
         ) : (
           <Card padding="none">
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="text-left text-admin-muted border-b border-admin-line">
-                  <th className="p-3">Name</th>
-                  <th className="p-3">Art.-Nr.</th>
-                  <th className="p-3">Preis</th>
-                  <th className="p-3">Lager</th>
-                  <th className="p-3">Status</th>
+                  <th className="p-3">{copy.headers.name}</th>
+                  <th className="p-3">{copy.headers.sku}</th>
+                  <th className="p-3">{copy.headers.price}</th>
+                  <th className="p-3">{copy.headers.stock}</th>
+                  <th className="p-3">{copy.headers.status}</th>
                   <th className="p-3" />
                 </tr>
               </thead>
@@ -206,15 +209,15 @@ const AdminShop = () => {
                     <td className="p-3">{p.lagerbestand ?? '∞'}</td>
                     <td className="p-3">
                       <Badge variant="status" value={p.aktiv ? 'aktiv' : 'gesperrt'}>
-                        {p.aktiv ? 'Aktiv' : 'Inaktiv'}
+                        {p.aktiv ? copy.active : copy.inactive}
                       </Badge>
                     </td>
                     <td className="p-3 text-right space-x-2">
                       <Button variant="secondary" onClick={() => openEdit(p)}>
-                        Bearbeiten
+                        {copy.edit}
                       </Button>
                       <Button variant="ghost" onClick={() => toggleActive(p)}>
-                        {p.aktiv ? 'Deaktivieren' : 'Aktivieren'}
+                        {p.aktiv ? copy.deactivate : copy.activate}
                       </Button>
                     </td>
                   </tr>
@@ -224,18 +227,18 @@ const AdminShop = () => {
           </Card>
         )
       ) : orders.length === 0 ? (
-        <EmptyState title="Keine Bestellungen" />
+        <EmptyState title={copy.noOrders} />
       ) : (
         <Card padding="none">
           <table className="w-full text-[13px]">
             <thead>
               <tr className="text-left text-admin-muted border-b border-admin-line">
-                <th className="p-3">Order</th>
-                <th className="p-3">Studio</th>
-                <th className="p-3">Kunde</th>
-                <th className="p-3">Umsatz</th>
-                <th className="p-3">Provision</th>
-                <th className="p-3">Auszahlung</th>
+                <th className="p-3">{copy.headers.order}</th>
+                <th className="p-3">{copy.headers.studio}</th>
+                <th className="p-3">{copy.headers.customer}</th>
+                <th className="p-3">{copy.headers.revenue}</th>
+                <th className="p-3">{copy.headers.provision}</th>
+                <th className="p-3">{copy.headers.payout}</th>
                 <th className="p-3" />
               </tr>
             </thead>
@@ -261,12 +264,12 @@ const AdminShop = () => {
                           variant="secondary"
                           onClick={() => markCommission(o, 'paid')}
                         >
-                          Manuell ausgezahlt
+                          {copy.markPaidManual}
                         </Button>
                         <Button
                           onClick={() => markCommission(o, 'paid', { viaStripe: true })}
                         >
-                          Via Stripe
+                          {copy.viaStripe}
                         </Button>
                       </>
                     ) : (
@@ -274,7 +277,7 @@ const AdminShop = () => {
                         variant="ghost"
                         onClick={() => markCommission(o, 'pending')}
                       >
-                        Zurücksetzen
+                        {copy.reset}
                       </Button>
                     )}
                   </td>
@@ -290,59 +293,59 @@ const AdminShop = () => {
       {modalOpen ? (
       <Modal
         onClose={() => setModalOpen(false)}
-        title={editing ? 'Produkt bearbeiten' : 'Neues Produkt'}
+        title={editing ? copy.editProduct : copy.newProduct}
       >
         <div className="space-y-3">
           <Input
-            label="Name"
+            label={copy.form.name}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
           <div className="grid grid-cols-2 gap-3">
             <Input
-              label="Product code"
+              label={copy.form.productCode}
               value={form.product_code}
               onChange={(e) => setForm({ ...form, product_code: e.target.value })}
               disabled={!!editing}
             />
             <Input
-              label="Artikelnummer"
+              label={copy.form.sku}
               value={form.artikelnummer}
               onChange={(e) => setForm({ ...form, artikelnummer: e.target.value })}
               disabled={!!editing}
             />
           </div>
           <Input
-            label="Beschreibung"
+            label={copy.form.description}
             value={form.beschreibung}
             onChange={(e) => setForm({ ...form, beschreibung: e.target.value })}
           />
           <div className="grid grid-cols-2 gap-3">
             <Input
-              label="Preis CHF"
+              label={copy.form.priceChf}
               type="number"
               value={form.preis_chf}
               onChange={(e) => setForm({ ...form, preis_chf: e.target.value })}
             />
             <Input
-              label="Lagerbestand"
+              label={copy.form.stock}
               type="number"
               value={form.lagerbestand}
               onChange={(e) => setForm({ ...form, lagerbestand: e.target.value })}
-              placeholder="leer = unbegrenzt"
+              placeholder={copy.form.stockPh}
             />
           </div>
           <Select
-            label="Kategorie"
+            label={copy.form.category}
             value={form.kategorie}
             onChange={(e) => setForm({ ...form, kategorie: e.target.value })}
           >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
+            {CATEGORY_IDS.map((c) => (
+              <option key={c} value={c}>{copy.categories[c] || c}</option>
             ))}
           </Select>
           <Input
-            label="Bild-URL"
+            label={copy.form.imageUrl}
             value={form.bild_url}
             onChange={(e) => setForm({ ...form, bild_url: e.target.value })}
           />
@@ -352,10 +355,10 @@ const AdminShop = () => {
               checked={form.aktiv}
               onChange={(e) => setForm({ ...form, aktiv: e.target.checked })}
             />
-            Aktiv
+            {copy.form.active}
           </label>
           <Button onClick={saveProduct} loading={saving} className="w-full">
-            Speichern
+            {copy.save}
           </Button>
         </div>
       </Modal>

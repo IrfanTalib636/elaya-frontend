@@ -5,17 +5,16 @@ import toast from 'react-hot-toast'
 import { listSessions } from '../../api/sessions'
 import { Card, Spinner, PageHeader, EmptyState, Pagination } from '../../components/ui'
 import { PAGE_SIZE, SEARCH_FETCH_LIMIT } from '../../constants/pagination'
+import useContent from '../../i18n/useContent'
 
-const DRAFT_FILTERS = [
-  { value: '',      label: 'Alle'          },
-  { value: 'false', label: 'Abgeschlossen' },
-  { value: 'true',  label: 'Entwürfe'      },
-]
-
-const TABLE_HEADERS = ['Nr.', 'Datum', 'Kunde', 'Fall', 'Verbl. %', 'Zahlung', 'Status', '']
-
-const fmtDate = (d) =>
-  d ? new Date(d).toLocaleDateString('de-CH', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
+const fmtDate = (d, language) =>
+  d
+    ? new Date(d).toLocaleDateString(language === 'en' ? 'en-GB' : 'de-CH', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '—'
 
 const chfFmt = new Intl.NumberFormat('de-CH', { style: 'currency', currency: 'CHF', maximumFractionDigits: 0 })
 const fmtCHF = (n) => chfFmt.format(n ?? 0)
@@ -26,14 +25,12 @@ const customerName = (c) => {
   return n || '—'
 }
 
-const sessionStatus = (s) => {
-  if (s.is_no_show) return { label: 'No-Show', className: 'text-elaya-error' }
-  if (s.is_draft)   return { label: 'Entwurf', className: 'text-studio-amber' }
-  return { label: 'Abgeschlossen', className: 'text-elaya-success' }
-}
+const SessionRow = ({ s, onClick, statusLabels, language }) => {
+  let st
+  if (s.is_no_show) st = { label: statusLabels.noShow, className: 'text-elaya-error' }
+  else if (s.is_draft) st = { label: statusLabels.draft, className: 'text-studio-amber' }
+  else st = { label: statusLabels.completed, className: 'text-elaya-success' }
 
-const SessionRow = ({ s, onClick }) => {
-  const st = sessionStatus(s)
   const caseLabel = s.case?.caseId ?? (typeof s.case === 'string' ? '—' : '—')
 
   return (
@@ -42,7 +39,7 @@ const SessionRow = ({ s, onClick }) => {
       onClick={onClick}
     >
       <td className="px-5 py-3 text-studio-w1 text-[12px] font-mono tabular-nums">{s.session_number ?? '—'}</td>
-      <td className="px-5 py-3 text-studio-white text-[12px]">{fmtDate(s.treatment_date)}</td>
+      <td className="px-5 py-3 text-studio-white text-[12px]">{fmtDate(s.treatment_date, language)}</td>
       <td className="px-5 py-3 text-studio-w1 text-[12px]">{customerName(s.customer)}</td>
       <td className="px-5 py-3 text-studio-gold-2 text-[12px] font-mono">{caseLabel}</td>
       <td className="px-5 py-3 text-studio-w2 text-[12px] tabular-nums">
@@ -59,6 +56,8 @@ const SessionRow = ({ s, onClick }) => {
 
 const StudioSessions = () => {
   const navigate = useNavigate()
+  const { t, language, studioPages } = useContent()
+  const copy = studioPages.sessions
 
   const [sessions, setSessions]     = useState([])
   const [pagination, setPagination] = useState(null)
@@ -68,6 +67,23 @@ const StudioSessions = () => {
   const [page, setPage] = useState(1)
 
   const isSearching = search.trim().length > 0
+
+  const draftFilters = [
+    { value: '',      label: copy.filters.all },
+    { value: 'false', label: copy.filters.completed },
+    { value: 'true',  label: copy.filters.drafts },
+  ]
+
+  const tableHeaders = [
+    copy.headers.nr,
+    copy.headers.date,
+    copy.headers.customer,
+    copy.headers.case,
+    copy.headers.fade,
+    copy.headers.payment,
+    copy.headers.status,
+    '',
+  ]
 
   const load = useCallback(async (draft, pageNum, searching) => {
     setLoading(true)
@@ -81,11 +97,11 @@ const StudioSessions = () => {
       setSessions(res.data.data.sessions ?? [])
       setPagination(res.data.data.pagination)
     } catch {
-      toast.error('Sitzungen konnten nicht geladen werden.')
+      toast.error(copy.loadError)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [copy.loadError])
 
   useEffect(() => { load(draftFilter, page, isSearching) }, [draftFilter, page, isSearching, load])
 
@@ -108,8 +124,8 @@ const StudioSessions = () => {
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader
-        title="Sitzungen"
-        subtitle={pagination ? `${pagination.total} Sitzungen gesamt` : ''}
+        title={copy.title}
+        subtitle={pagination ? t('studioPages.sessions.subtitle', { count: pagination.total }) : ''}
       />
 
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
@@ -119,13 +135,13 @@ const StudioSessions = () => {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Kunde, Fall-ID, Sitzungs-Nr…"
+            placeholder={copy.searchPlaceholder}
             className="w-full pl-8 pr-4 py-[9px] rounded-[10px] border-[1.5px] border-elaya-border-strong bg-studio-bg-3 text-studio-white text-[13px] outline-none focus:border-studio-gold transition-colors placeholder:text-studio-w3"
           />
         </div>
 
         <div className="flex gap-1.5 flex-wrap">
-          {DRAFT_FILTERS.map((f) => (
+          {draftFilters.map((f) => (
             <button
               key={f.value || 'all'}
               type="button"
@@ -147,8 +163,8 @@ const StudioSessions = () => {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
-          title="Keine Sitzungen gefunden"
-          description={search ? 'Versuche einen anderen Suchbegriff.' : 'Noch keine Sitzungen dokumentiert.'}
+          title={copy.emptyTitle}
+          description={search ? copy.emptySearch : copy.emptyHint}
         />
       ) : (
         <Card padding="none">
@@ -156,7 +172,7 @@ const StudioSessions = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-elaya-border">
-                  {TABLE_HEADERS.map((h) => (
+                  {tableHeaders.map((h) => (
                     <th key={h || 'action'} className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -168,6 +184,8 @@ const StudioSessions = () => {
                   <SessionRow
                     key={s.id}
                     s={s}
+                    language={language}
+                    statusLabels={copy.status}
                     onClick={() => navigate(`/studio/sessions/${s.id}`)}
                   />
                 ))}

@@ -11,13 +11,8 @@ import CrmTaskModal from '../../components/crm/CrmTaskModal'
 import CrmNoteModal from '../../components/crm/CrmNoteModal'
 import MedicalAmpelDot from '../../components/medical/MedicalAmpelDot'
 import { PIPELINE_STAGES } from '../../constants/pipeline'
-import { getStageAktion, fmtCrmDate, startOfDay } from '../../constants/crm'
-
-const SOURCE_LABELS = {
-  studio_eigen:         'Studio',
-  plattform_vermittelt: 'Plattform',
-  studio_wechsel:       'Wechsel',
-}
+import { getStageAktionKey, fmtCrmDate, startOfDay } from '../../constants/crm'
+import useContent from '../../i18n/useContent'
 
 const STAGE_HEADER_CLASS = {
   'Neu':               'border-studio-w3/30',
@@ -26,20 +21,20 @@ const STAGE_HEADER_CLASS = {
   'Beratung erledigt': 'border-studio-w3/20',
 }
 
-const QuickActions = ({ customer, onNote, onTask, onCopyTemplate }) => (
+const QuickActions = ({ customer, onNote, onTask, onCopyTemplate, labels }) => (
   <div className="flex gap-1 mt-2 pt-2 border-t border-elaya-border/60">
     <button
       type="button"
-      title="Nachricht kopieren"
+      title={labels.copyMessage}
       onClick={(e) => { e.stopPropagation(); onCopyTemplate(customer) }}
       className="flex-1 py-1 rounded-md border border-elaya-border bg-transparent text-studio-teal-2 text-[10px] cursor-pointer hover:bg-studio-bg-4"
     >
       <MessageSquare size={11} className="inline mr-0.5" />
-      Vorlage
+      {labels.template}
     </button>
     <button
       type="button"
-      title="Notiz"
+      title={labels.note}
       onClick={(e) => { e.stopPropagation(); onNote(customer) }}
       className="py-1 px-2 rounded-md border border-elaya-border bg-transparent text-studio-w2 text-[10px] cursor-pointer hover:bg-studio-bg-4"
     >
@@ -47,7 +42,7 @@ const QuickActions = ({ customer, onNote, onTask, onCopyTemplate }) => (
     </button>
     <button
       type="button"
-      title="Aufgabe"
+      title={labels.task}
       onClick={(e) => { e.stopPropagation(); onTask(customer) }}
       className="py-1 px-2 rounded-md border-0 bg-studio-gold/15 text-studio-gold text-[10px] cursor-pointer hover:bg-studio-gold/25"
     >
@@ -57,7 +52,10 @@ const QuickActions = ({ customer, onNote, onTask, onCopyTemplate }) => (
 )
 
 const CrmCard = ({ customer, onClick, onNote, onTask, onCopyTemplate }) => {
-  const aktion = customer.aktion || getStageAktion(customer.pipeline_stufe, customer.faelle_gesamt ?? customer.offene_faelle)
+  const { t, studioPages } = useContent()
+  const copy = studioPages.crm
+  const aktionKey = getStageAktionKey(customer.pipeline_stufe, customer.faelle_gesamt ?? customer.offene_faelle)
+  const aktion = customer.aktion || (aktionKey ? t(`crm.stageActions.${aktionKey}`) : '')
 
   return (
     <div className="rounded-[10px] border border-elaya-border bg-studio-bg-3 hover:border-elaya-border-strong transition-colors">
@@ -81,8 +79,10 @@ const CrmCard = ({ customer, onClick, onNote, onTask, onCopyTemplate }) => {
               <p className="text-studio-teal-2 text-[10px] m-0 mt-1 truncate">{aktion}</p>
             )}
             <p className="text-studio-w4 text-[10px] m-0 mt-1">
-              {customer.stufe_seit_tage === 0 ? 'Heute in Stufe' : `${customer.stufe_seit_tage} T. in Stufe`}
-              {customer.offene_faelle > 0 && ` · ${customer.offene_faelle} offen`}
+              {customer.stufe_seit_tage === 0
+                ? copy.todayInStage
+                : t('studioPages.crm.daysInStage', { count: customer.stufe_seit_tage })}
+              {customer.offene_faelle > 0 && ` · ${t('studioPages.crm.openCases', { count: customer.offene_faelle })}`}
             </p>
             {customer.naechste_aufgabe && (
               <p className="text-[10px] m-0 mt-1 truncate text-studio-w3">
@@ -94,13 +94,15 @@ const CrmCard = ({ customer, onClick, onNote, onTask, onCopyTemplate }) => {
         </div>
       </button>
       <div className="px-3 pb-3">
-        <QuickActions customer={customer} onNote={onNote} onTask={onTask} onCopyTemplate={onCopyTemplate} />
+        <QuickActions customer={customer} onNote={onNote} onTask={onTask} onCopyTemplate={onCopyTemplate} labels={copy} />
       </div>
     </div>
   )
 }
 
 const ListRow = ({ customer, onClick, onNote, onTask, onCopyTemplate }) => {
+  const { studioPages } = useContent()
+  const copy = studioPages.crm
   const heute = startOfDay()
   const next = customer.naechste_aufgabe
   const overdue = next && startOfDay(new Date(next.faellig_am)) < heute
@@ -145,7 +147,7 @@ const ListRow = ({ customer, onClick, onNote, onTask, onCopyTemplate }) => {
         <div className="flex gap-1 justify-end">
           <button
             type="button"
-            title="Vorlage kopieren"
+            title={copy.copyTemplate}
             onClick={() => onCopyTemplate(customer)}
             className="p-1.5 rounded-md border border-elaya-border bg-transparent text-studio-teal-2 cursor-pointer hover:bg-studio-bg-4"
           >
@@ -153,7 +155,7 @@ const ListRow = ({ customer, onClick, onNote, onTask, onCopyTemplate }) => {
           </button>
           <button
             type="button"
-            title="Notiz"
+            title={copy.note}
             onClick={() => onNote(customer)}
             className="p-1.5 rounded-md border border-elaya-border bg-transparent text-studio-w2 cursor-pointer hover:bg-studio-bg-4"
           >
@@ -161,7 +163,7 @@ const ListRow = ({ customer, onClick, onNote, onTask, onCopyTemplate }) => {
           </button>
           <button
             type="button"
-            title="Aufgabe"
+            title={copy.task}
             onClick={() => onTask(customer)}
             className="p-1.5 rounded-md border-0 bg-studio-gold/15 text-studio-gold cursor-pointer hover:bg-studio-gold/25"
           >
@@ -174,6 +176,8 @@ const ListRow = ({ customer, onClick, onNote, onTask, onCopyTemplate }) => {
 }
 
 const StudioCrm = () => {
+  const { t, language, studioPages } = useContent()
+  const copy = studioPages.crm
   const navigate = useNavigate()
 
   const [view, setView]           = useState('pipeline')
@@ -196,11 +200,11 @@ const StudioCrm = () => {
       setColumns(res.data.data.columns ?? [])
       setTotal(res.data.data.total ?? 0)
     } catch {
-      toast.error('Pipeline konnte nicht geladen werden.')
+      toast.error(copy.pipelineLoadError)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [copy.pipelineLoadError])
 
   const loadTasks = useCallback(async () => {
     setTasksLoading(true)
@@ -208,11 +212,11 @@ const StudioCrm = () => {
       const res = await getCrmTasks({ status: 'all' })
       setTasks(res.data.data.tasks ?? [])
     } catch {
-      toast.error('Aufgaben konnten nicht geladen werden.')
+      toast.error(copy.tasksLoadError)
     } finally {
       setTasksLoading(false)
     }
-  }, [])
+  }, [copy.tasksLoadError])
 
   useEffect(() => { loadPipeline() }, [loadPipeline])
 
@@ -282,13 +286,13 @@ const StudioCrm = () => {
       const res = await getCrmTemplate(customer.id)
       const text = res.data.data.template_text
       if (!text) {
-        toast.error('Keine Vorlage für diese Stufe.')
+        toast.error(copy.noTemplate)
         return
       }
       await navigator.clipboard.writeText(text)
-      toast.success('Nachricht in Zwischenablage kopiert.')
+      toast.success(copy.templateCopied)
     } catch {
-      toast.error('Vorlage konnte nicht geladen werden.')
+      toast.error(copy.templateError)
     }
   }
 
@@ -320,13 +324,13 @@ const StudioCrm = () => {
   return (
     <div className="p-6 max-w-[1400px]">
       <PageHeader
-        title="Lead-Pipeline"
-        subtitle={total ? `${total} Kunden · Stufen werden automatisch berechnet` : ''}
+        title={copy.title}
+        subtitle={total ? t('studioPages.crm.subtitle', { count: total }) : ''}
       >
         <div className="flex rounded-[10px] border border-elaya-border overflow-hidden">
-          {tabBtn('pipeline', 'Pipeline', LayoutGrid)}
-          {tabBtn('list', 'Liste', List)}
-          {tabBtn('tasks', 'Aufgaben', CheckSquare)}
+          {tabBtn('pipeline', copy.tabPipeline, LayoutGrid)}
+          {tabBtn('list', copy.tabList, List)}
+          {tabBtn('tasks', copy.tabTasks, CheckSquare)}
         </div>
       </PageHeader>
 
@@ -337,7 +341,7 @@ const StudioCrm = () => {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Name, E-Mail oder Telefon…"
+            placeholder={copy.searchPlaceholder}
             className="w-full pl-8 pr-4 py-[9px] rounded-[10px] border-[1.5px] border-elaya-border-strong bg-studio-bg-3 text-studio-white text-[13px] outline-none focus:border-studio-gold transition-colors placeholder:text-studio-w3"
           />
         </div>
@@ -354,12 +358,13 @@ const StudioCrm = () => {
         />
       ) : total === 0 ? (
         <EmptyState
-          title="Keine Kunden in der Pipeline"
-          description="Lege Kunden an — sie erscheinen automatisch in der passenden Stufe."
+          title={copy.emptyTitle}
+          description={copy.emptyDesc}
         />
       ) : view === 'pipeline' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
-          {PIPELINE_STAGES.map(({ value, label }) => {
+          {PIPELINE_STAGES.map(({ value }) => {
+            const label = t(`pipeline.${value}`)
             const col = columns.find((c) => c.stage === value) ?? { customers: [], total: 0 }
             const cards = filterColumn(col.customers ?? [])
             const expanded = columnExpanded[value]
@@ -376,7 +381,7 @@ const StudioCrm = () => {
                 </div>
                 <div className="flex flex-col gap-2">
                   {cards.length === 0 ? (
-                    <p className="text-studio-w4 text-[11px] m-0 py-4 text-center">Keine Kunden</p>
+                    <p className="text-studio-w4 text-[11px] m-0 py-4 text-center">{copy.noCustomers}</p>
                   ) : (
                     <>
                       {visibleCards.map((c) => (
@@ -395,7 +400,7 @@ const StudioCrm = () => {
                           onClick={() => setColumnExpanded((prev) => ({ ...prev, [value]: true }))}
                           className="py-2 text-[11px] font-semibold text-studio-gold-2 bg-transparent border border-elaya-border rounded-[8px] cursor-pointer hover:bg-studio-bg-4"
                         >
-                          + {cards.length - CRM_KANBAN_COLUMN_LIMIT} weitere anzeigen
+                          {t('studioPages.crm.showMore', { count: cards.length - CRM_KANBAN_COLUMN_LIMIT })}
                         </button>
                       )}
                     </>
@@ -408,13 +413,13 @@ const StudioCrm = () => {
       ) : (
         <Card padding="none">
           {filteredList.length === 0 ? (
-            <div className="py-12 text-center text-studio-w2 text-[13px]">Keine Treffer.</div>
+            <div className="py-12 text-center text-studio-w2 text-[13px]">{copy.noHits}</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-elaya-border">
-                    {['Name', 'E-Mail', 'Ampel', 'Stufe', 'In Stufe', 'Letzter Kontakt', 'Nächste Aufgabe', ''].map((h) => (
+                    {[copy.headers.name, copy.headers.email, copy.headers.ampel, copy.headers.stage, copy.headers.inStage, copy.headers.lastContact, copy.headers.nextTask, ''].map((h) => (
                       <th
                         key={h || 'actions'}
                         className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap"

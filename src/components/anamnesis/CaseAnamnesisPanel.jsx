@@ -6,6 +6,7 @@ import { AMPEL_LABELS } from '../../utils/anamnesisAmpel'
 import AnamnesisWizardModal from './AnamnesisWizardModal'
 import KlaerungPanel from './KlaerungPanel'
 import FreigabePanel from './FreigabePanel'
+import useContent from '../../i18n/useContent'
 
 const fmtDateTime = (iso) =>
   iso
@@ -27,17 +28,17 @@ const fmtDate = (iso) =>
       })
     : '—'
 
-const HISTORY_LABEL = {
-  submitted: 'Anamnese eingereicht',
-  confirmed_unchanged: 'Gesundheitszustand unverändert bestätigt',
-  updated: 'Medizinische Angaben aktualisiert',
-  anamnesis_submitted: 'Anamnese eingereicht',
-}
-
-const MedicalTimeline = ({ timeline }) => (
+const MedicalTimeline = ({ timeline }) => {
+  const { components } = useContent()
+  const copy = components.anamnesis
+  const labelFor = (typ) => {
+    if (typ === 'confirmed_unchanged') return copy.unchangedConfirmed
+    return copy.history?.[typ]
+  }
+  return (
   <div>
     <p className="text-[10px] font-semibold uppercase tracking-wider text-studio-w3 m-0 mb-2">
-      Medizinischer Verlauf
+      {copy.medicalTimeline}
     </p>
     <ul className="m-0 p-0 list-none flex flex-col gap-2">
       {timeline.map((entry, i) => (
@@ -46,13 +47,13 @@ const MedicalTimeline = ({ timeline }) => (
           className="rounded-[10px] border border-elaya-border bg-studio-bg-4 px-3 py-2.5"
         >
           <p className="text-[11px] text-studio-white font-semibold m-0">
-            {HISTORY_LABEL[entry.typ] || entry.details || entry.typ}
+            {labelFor(entry.typ) || entry.details || entry.typ}
           </p>
           <p className="text-[10px] text-studio-w3 m-0 mt-0.5">
             {fmtDateTime(entry.zeitstempel)}
             {entry.case_label ? ` · ${entry.case_label}` : ''}
             {entry.bestaetigung?.hat_unterschrift || entry.hat_unterschrift
-              ? ' · Unterschrift vorhanden'
+              ? copy.signaturePresent
               : ''}
           </p>
           {(entry.aenderungen || []).length > 0 ? (
@@ -68,7 +69,7 @@ const MedicalTimeline = ({ timeline }) => (
           entry.bestaetigung.unterschrift_data !== '[stored]' ? (
             <img
               src={entry.bestaetigung.unterschrift_data}
-              alt="Unterschrift"
+              alt={copy.signatureAlt}
               className="mt-2 max-h-16 rounded-[6px] bg-white"
             />
           ) : null}
@@ -76,9 +77,12 @@ const MedicalTimeline = ({ timeline }) => (
       ))}
     </ul>
   </div>
-)
+  )
+}
 
 const CaseAnamnesisPanel = ({ caseId, onCaseFlagsChange }) => {
+  const { t, components } = useContent()
+  const copy = components.anamnesis
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -154,20 +158,20 @@ const CaseAnamnesisPanel = ({ caseId, onCaseFlagsChange }) => {
           <div className="flex items-center gap-2 min-w-0">
             <ClipboardList size={14} className="text-studio-gold shrink-0" />
             <h2 className="text-[13px] font-semibold text-studio-white m-0 uppercase tracking-wide">
-              Medizinische Anamnese
+              {copy.title}
             </h2>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {data?.filled && filledAt ? (
               <span className="inline-flex items-center gap-1 text-[11px] text-elaya-success">
                 <CheckCircle2 size={13} />
-                Ausgefüllt am {fmtDate(filledAt)}
+                {t('components.anamnesis.filledOn', { date: fmtDate(filledAt) })}
               </span>
             ) : null}
             {!loading && (
               <Button size="sm" variant="secondary" onClick={() => setWizardOpen(true)}>
                 <Pencil size={12} />
-                {data?.filled ? 'Bearbeiten' : 'Ausfüllen'}
+                {data?.filled ? copy.edit : copy.fill}
               </Button>
             )}
           </div>
@@ -176,15 +180,15 @@ const CaseAnamnesisPanel = ({ caseId, onCaseFlagsChange }) => {
         {loading ? (
           <div className="flex justify-center py-6"><Spinner size="sm" /></div>
         ) : error ? (
-          <p className="text-studio-w3 text-[12px] m-0">Anamnese konnte nicht geladen werden.</p>
+          <p className="text-studio-w3 text-[12px] m-0">{copy.loadError}</p>
         ) : !data?.filled ? (
           <>
             <div className="rounded-[10px] border border-elaya-warning/30 bg-elaya-warning/5 px-4 py-3">
-              <p className="text-elaya-warning text-[12px] font-semibold m-0">⚠ Ausstehend</p>
+              <p className="text-elaya-warning text-[12px] font-semibold m-0">{copy.pendingTitle}</p>
               <p className="text-studio-w3 text-[11px] mt-1 mb-0 leading-relaxed">
-                Die medizinische Anamnese wurde für diesen Case noch nicht ausgefüllt.
+                {copy.pendingDesc}
                 {data?.previous_anamnesis
-                  ? ' Der Kunde kann die letzte Anamnese bestätigen oder Änderungen angeben.'
+                  ? ` ${copy.customerCanConfirm}`
                   : ''}
               </p>
             </div>
@@ -202,7 +206,10 @@ const CaseAnamnesisPanel = ({ caseId, onCaseFlagsChange }) => {
                 <p className="text-[13px] font-bold m-0">{ampelMeta.emoji} {ampelMeta.label}</p>
                 {data.open_medical_flags_count > 0 && (
                   <p className="text-[10px] m-0 mt-1 opacity-80">
-                    {data.open_medical_flags_count} Flag{data.open_medical_flags_count === 1 ? '' : 's'} offen
+                    {t('components.anamnesis.flagsOpen', {
+                      count: data.open_medical_flags_count,
+                      suffix: data.open_medical_flags_count === 1 ? '' : 's',
+                    })}
                   </p>
                 )}
               </div>

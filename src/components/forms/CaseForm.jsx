@@ -228,6 +228,8 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
         return ''
       case 2:
         if (!form.skin_fitzpatrick_type) return v.fitzRequired
+        if (!form.skin_hyperpig_risk) return v.hyperpigRequired
+        if (!form.skin_keloid_risk) return v.keloidRequired
         if (!form.skin_sun_zone) return v.sunRequired
         return ''
       case 3:
@@ -745,18 +747,18 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
         </div>
       </div>
       <div>
-        <FieldLabel optional>{ui.skin.hyperpig}</FieldLabel>
+        <FieldLabel hint={ui.skin.hyperpigHint}>{ui.skin.hyperpig}</FieldLabel>
         <OptGrid>
           {RISK_LEVEL.map(([v, l]) => (
-            <Opt key={v} active={form.skin_hyperpig_risk === v} onClick={() => set('skin_hyperpig_risk', form.skin_hyperpig_risk === v ? '' : v)}>{l}</Opt>
+            <Opt key={v} active={form.skin_hyperpig_risk === v} onClick={() => set('skin_hyperpig_risk', v)}>{l}</Opt>
           ))}
         </OptGrid>
       </div>
       <div>
-        <FieldLabel optional>{ui.skin.keloid}</FieldLabel>
+        <FieldLabel hint={ui.skin.keloidHint}>{ui.skin.keloid}</FieldLabel>
         <OptGrid>
           {RISK_LEVEL.map(([v, l]) => (
-            <Opt key={v} active={form.skin_keloid_risk === v} onClick={() => set('skin_keloid_risk', form.skin_keloid_risk === v ? '' : v)}>{l}</Opt>
+            <Opt key={v} active={form.skin_keloid_risk === v} onClick={() => set('skin_keloid_risk', v)}>{l}</Opt>
           ))}
         </OptGrid>
       </div>

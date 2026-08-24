@@ -204,6 +204,8 @@ export const caseForm = {
       propertiesRequired: 'Please complete all properties.',
       sizeRequired: 'Please enter dimensions in cm.',
       fitzRequired: 'Please select Fitzpatrick type.',
+      hyperpigRequired: 'Please select a hyperpigmentation risk.',
+      keloidRequired: 'Please select a keloid / scarring risk.',
       sunRequired: 'Please select sun exposure.',
       lifestyleRequired: 'Please complete all required fields.',
       sleepRequired: 'Please enter sleep & stress info.',
@@ -304,10 +306,12 @@ export const caseForm = {
     skin: {
       fitzpatrick: 'Fitzpatrick skin type *',
       fitzHint: 'Natural skin tone without tan.',
-      hyperpig: 'Hyperpigmentation risk',
-      keloid: 'Keloid / scarring risk',
+      hyperpig: 'Hyperpigmentation risk *',
+      hyperpigHint: 'Does your skin tend to develop discoloration after injuries?',
+      keloid: 'Keloid / scarring risk *',
+      keloidHint: 'Does your skin tend to develop raised or excessive scars?',
       sunZone: 'Sun exposure zone *',
-      sunHint: 'How exposed is this area to the sun?',
+      sunHint: 'How much is this body area normally exposed to the sun?',
     },
 
     lifestyle: {

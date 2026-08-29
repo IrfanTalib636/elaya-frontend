@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { Card, PageHeader, Spinner, Select, Button, Badge } from '../../components/ui'
+import { Card, PageHeader, Spinner, Select, Badge } from '../../components/ui'
 import {
   listStudioFeatures,
   updateStudioConfigAdmin,
@@ -25,7 +25,7 @@ const AdminFeatures = () => {
   const [global, setGlobal] = useState({})
   const [savingId, setSavingId] = useState(null)
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const [c, s] = await Promise.all([getFeatureCatalog(), listStudioFeatures()])
@@ -38,11 +38,11 @@ const AdminFeatures = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [copy.loadError])
 
   useEffect(() => {
     load()
-  }, [])
+  }, [load])
 
   const setPlan = async (studio, plan) => {
     setSavingId(studio.studio_id)

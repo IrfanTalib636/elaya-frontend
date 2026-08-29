@@ -6,19 +6,23 @@ export const resolveHoursForDate = (weekly = {}, exceptions = [], iso) => {
   if (exception) {
     return {
       offen: exception.offen !== false,
-      von: exception.von || '10:00',
-      bis: exception.bis || '19:00',
+      von: exception.von,
+      bis: exception.bis,
       notiz: exception.notiz || '',
       source: 'exception',
     }
   }
 
   const date = new Date(`${key}T12:00:00`)
-  const weekday = weekly[JS_DAY_TO_KEY[date.getDay()]] ?? { offen: true, von: '10:00', bis: '19:00' }
+  const weekday = weekly[JS_DAY_TO_KEY[date.getDay()]]
+  // Hours always come from the studio; a missing weekday means closed.
+  if (!weekday) {
+    return { offen: false, von: undefined, bis: undefined, notiz: '', source: 'weekly' }
+  }
   return {
     offen: weekday.offen !== false,
-    von: weekday.von || '10:00',
-    bis: weekday.bis || '19:00',
+    von: weekday.von,
+    bis: weekday.bis,
     notiz: '',
     source: 'weekly',
   }

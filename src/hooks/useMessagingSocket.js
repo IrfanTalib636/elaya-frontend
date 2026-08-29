@@ -1,29 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { io } from 'socket.io-client'
-import { TOKEN_KEY } from '../lib/session'
-import { isJwtExpired } from '../lib/token'
-import { trySilentRefresh } from '../lib/refreshSession'
-import useAuthStore from '../store/authStore'
-import { SOCKET_ORIGIN } from '../lib/socketOrigin'
-
-async function resolveAccessToken() {
-  let token = localStorage.getItem(TOKEN_KEY) || useAuthStore.getState().accessToken
-  if (!token || isJwtExpired(token)) {
-    try {
-      token = await trySilentRefresh()
-      useAuthStore.getState().setAccessToken?.(token)
-      if (token) localStorage.setItem(TOKEN_KEY, token)
-    } catch {
-      token = localStorage.getItem(TOKEN_KEY)
-    }
-  }
-  return token
-}
+import { useCallback, useEffect } from 'react'
+import { secureTransport } from '../lib/socketConnection'
+import { useSocketBus } from '../socket/socketContext'
+import { useSocketEvent, useSocketStatus } from './useSocketEvent'
 
 /**
- * Authenticated Socket.io for studio ↔ customer live chat.
- * JWT in handshake.auth.token; conversation ACL enforced on server.
- * Uses WSS automatically when SOCKET_ORIGIN is https.
+ * Studio ↔ customer live chat over the shared dashboard socket. Conversation
+ * ACL is enforced server-side; WSS is used automatically when the origin is
+ * https.
  */
 export default function useMessagingSocket({
   conversationId,
@@ -33,95 +16,44 @@ export default function useMessagingSocket({
   onConversationUpdated,
   onError,
 } = {}) {
-  const socketRef = useRef(null)
-  const [connected, setConnected] = useState(false)
-  const secureTransport = SOCKET_ORIGIN.startsWith('https://')
+  const bus = useSocketBus()
+  const connected = useSocketStatus()
 
-  const onMessageRef = useRef(onMessage)
-  const onTypingRef = useRef(onTyping)
-  const onConvRef = useRef(onConversationUpdated)
-  const onErrorRef = useRef(onError)
-  onMessageRef.current = onMessage
-  onTypingRef.current = onTyping
-  onConvRef.current = onConversationUpdated
-  onErrorRef.current = onError
+  useSocketEvent('messaging:message', onMessage, { enabled })
+  useSocketEvent('messaging:typing', onTyping, { enabled })
 
+  useSocketEvent(
+    'messaging:conversation_updated',
+    useCallback((payload) => onConversationUpdated?.(payload?.conversation), [onConversationUpdated]),
+    { enabled }
+  )
+
+  useSocketEvent(
+    'messaging:error',
+    useCallback((payload) => onError?.(payload?.message || 'Chat error'), [onError]),
+    { enabled }
+  )
+
+  useSocketEvent('connect_error', onError, { enabled })
+
+  // Room membership follows the open conversation. The shared socket outlives
+  // this screen, so leaving on unmount is what stops the messages.
   useEffect(() => {
-    if (!enabled) return undefined
-    let cancelled = false
-    let socket = null
-
-    const connect = async () => {
-      const token = await resolveAccessToken()
-      if (!token || cancelled) return
-
-      socket = io(SOCKET_ORIGIN, {
-        path: '/socket.io',
-        auth: { token },
-        transports: ['websocket', 'polling'],
-        withCredentials: true,
-        reconnection: true,
-        reconnectionAttempts: 12,
-        reconnectionDelay: 800,
-      })
-      socketRef.current = socket
-
-      socket.on('connect', () => {
-        if (!cancelled) setConnected(true)
-      })
-      socket.on('disconnect', () => {
-        if (!cancelled) setConnected(false)
-      })
-      socket.on('connect_error', async (err) => {
-        if (/authoriz|token|jwt/i.test(err.message || '')) {
-          const fresh = await resolveAccessToken()
-          if (fresh && socket) {
-            socket.auth = { token: fresh }
-            socket.connect()
-          }
-        }
-        onErrorRef.current?.(err.message)
-      })
-
-      socket.on('messaging:message', (payload) => onMessageRef.current?.(payload))
-      socket.on('messaging:typing', (payload) => onTypingRef.current?.(payload))
-      socket.on('messaging:conversation_updated', (payload) => {
-        onConvRef.current?.(payload?.conversation)
-      })
-      socket.on('messaging:error', (payload) => {
-        onErrorRef.current?.(payload?.message || 'Chat error')
-      })
-    }
-
-    void connect()
-
+    if (!bus || !enabled || !connected || !conversationId) return undefined
+    bus.emit('messaging:join', { conversation_id: conversationId })
     return () => {
-      cancelled = true
-      setConnected(false)
-      socket?.removeAllListeners()
-      socket?.disconnect()
-      socketRef.current = null
+      bus.emit('messaging:leave', { conversation_id: conversationId })
     }
-  }, [enabled])
-
-  useEffect(() => {
-    const socket = socketRef.current
-    if (!socket || !connected || !conversationId) return undefined
-    socket.emit('messaging:join', { conversation_id: conversationId })
-    return () => {
-      socket.emit('messaging:leave', { conversation_id: conversationId })
-    }
-  }, [connected, conversationId])
+  }, [bus, enabled, connected, conversationId])
 
   const send = useCallback(
     (text, caseId) =>
       new Promise((resolve, reject) => {
-        const socket = socketRef.current
-        if (!socket || !conversationId || !connected) {
+        if (!bus || !conversationId || !connected) {
           reject(new Error('Socket not connected'))
           return
         }
-        socket.emit(
+        const sent = bus.emit(
           'messaging:send',
           { conversation_id: conversationId, text, case_id: caseId },
           (ack) => {
@@ -132,32 +64,31 @@ export default function useMessagingSocket({
             reject(new Error(typeof ack?.message === 'string' ? ack.message : 'Send failed'))
           }
         )
+        if (!sent) reject(new Error('Socket not connected'))
       }),
-    [connected, conversationId]
+    [bus, connected, conversationId]
   )
 
   const setTyping = useCallback(
     (isTyping) => {
-      const socket = socketRef.current
-      if (!socket || !conversationId || !connected) return
-      socket.emit('messaging:typing', {
+      if (!conversationId) return
+      bus?.emit('messaging:typing', {
         conversation_id: conversationId,
         is_typing: Boolean(isTyping),
       })
     },
-    [connected, conversationId]
+    [bus, conversationId]
   )
 
   const markRead = useCallback(
     (upToMessageId) => {
-      const socket = socketRef.current
-      if (!socket || !conversationId || !connected) return
-      socket.emit('messaging:read', {
+      if (!conversationId) return
+      bus?.emit('messaging:read', {
         conversation_id: conversationId,
         up_to_message_id: upToMessageId,
       })
     },
-    [connected, conversationId]
+    [bus, conversationId]
   )
 
   return { connected, secureTransport, send, setTyping, markRead }

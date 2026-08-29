@@ -21,6 +21,13 @@ const welcomeMessage = (welcomeText) => ({
   ts: Date.now(),
 })
 
+const userMessage = (text) => ({
+  id: createId(),
+  role: 'user',
+  text,
+  ts: Date.now(),
+})
+
 const loadStored = () => {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY)
@@ -182,8 +189,7 @@ export default function StudioElayaChat() {
     const message = (text ?? draft).trim()
     if (!message || sending) return
 
-    const userMsg = { id: createId(), role: 'user', text: message, ts: Date.now() }
-    const nextMessages = [...messages, userMsg]
+    const nextMessages = [...messages, userMessage(message)]
     setMessages(nextMessages)
     setDraft('')
     setSending(true)

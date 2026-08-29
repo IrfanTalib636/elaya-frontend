@@ -69,7 +69,7 @@ const SessionPredictionLiveCalculator = ({ values, savedBaseline = null }) => {
       }
     }, 280)
     return () => clearTimeout(timer)
-  }, [payloadPrediction, presetId])
+  }, [payloadPrediction, presetId, copy.previewFailed])
 
   const live = result?.live
   const baseline = result?.baseline

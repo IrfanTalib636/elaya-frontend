@@ -8,11 +8,10 @@ import { useTranslation } from 'react-i18next'
  */
 export function useContent() {
   const { i18n, t } = useTranslation()
+  const activeLanguage = i18n.resolvedLanguage || i18n.language
   const bundle = useMemo(
-    () =>
-      i18n.getResourceBundle(i18n.resolvedLanguage || i18n.language, 'translation') ||
-      {},
-    [i18n, i18n.language, i18n.resolvedLanguage]
+    () => i18n.getResourceBundle(activeLanguage, 'translation') || {},
+    [i18n, activeLanguage]
   )
   return { ...bundle, t, i18n, language: i18n.language }
 }

@@ -1,11 +1,12 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Users, Lock } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createAppointment } from '../../api/appointments'
 import { listCustomers } from '../../api/customers'
 import { listCases, getCase, getCasePricing, getCaseAvailability } from '../../api/cases'
 import { getPublicConfig } from '../../api/config'
-import { fmtDateDeLong } from '../../utils/time'
+import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
+import { fmtDateLong } from '../../utils/time'
 import { Button, Spinner, Modal, Input, Select } from '../ui'
 import useContent from '../../i18n/useContent'
 import {
@@ -19,17 +20,11 @@ import {
   normalizeGruppenConfig,
 } from '../../utils/groupBooking'
 
-const addDaysISO = (iso, n) => {
-  const d = new Date(`${iso}T12:00:00`)
-  d.setDate(d.getDate() + n)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-const bookingErrorMessage = (err, copy) => {
+const bookingErrorMessage = (err, copy, language) => {
   const msg = err.response?.data?.message
   const fruehestes = err.response?.data?.errors?.fruehestes ?? err.response?.data?.fruehestes
   if (fruehestes) {
-    return `${msg ?? copy.notAllowed} ${copy.earliest.replace('{{date}}', fmtDateDeLong(fruehestes))}`
+    return `${msg ?? copy.notAllowed} ${copy.earliest.replace('{{date}}', fmtDateLong(fruehestes, language))}`
   }
   return msg ?? copy.bookError
 }
@@ -41,7 +36,7 @@ const SIZE_BADGE = {
 }
 
 const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => {
-  const { t, components } = useContent()
+  const { t, components, language } = useContent()
   const copy = components.groupBooking
   const [customerId, setCustomerId] = useState('')
   const [customers, setCustomers] = useState([])
@@ -49,8 +44,9 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
   const [loadingCases, setLoadingCases] = useState(false)
   const [selectedIds, setSelectedIds] = useState([])
   const [date, setDate] = useState(defaultDate ?? '')
-  const [time, setTime] = useState(defaultTime ?? '09:00')
-  const [dauer, setDauer] = useState(90)
+  const [time, setTime] = useState(defaultTime ?? '')
+  /** Empty until the studio's configured group duration loads. */
+  const [dauer, setDauer] = useState('')
   const [saving, setSaving] = useState(false)
   const [config, setConfig] = useState(DEFAULT_GRUPPEN_CONFIG)
   const [hint, setHint] = useState('')
@@ -64,8 +60,12 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
 
     getPublicConfig()
       .then((r) => {
-        const gg = r.data?.data?.config?.gruppen_groessen
-        if (gg) setConfig(normalizeGruppenConfig(gg))
+        const cfg = r.data?.data?.config
+        if (cfg?.gruppen_groessen) setConfig(normalizeGruppenConfig(cfg.gruppen_groessen))
+        const groupDuration = cfg?.termin_einstellungen?.gruppen_dauer_minuten
+        if (groupDuration != null) {
+          setDauer((prev) => (prev === '' ? String(groupDuration) : prev))
+        }
       })
       .catch(() => {})
   }, [])
@@ -130,28 +130,25 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
   }, [customerId])
 
   // Strictest lockout across selected cases (max fruehestes)
-  useEffect(() => {
-    if (selectedIds.length < 2) {
-      setFruehestes(null)
-      return
-    }
+  const loadLockout = useCallback(
+    async ({ silent = false } = {}) => {
+      if (selectedIds.length < 2) {
+        setFruehestes(null)
+        return
+      }
 
-    let cancelled = false
-    setLoadingLockout(true)
+      if (!silent) setLoadingLockout(true)
 
-    const from = date || new Date().toISOString().slice(0, 10)
-    const to = addDaysISO(from, 120)
-
-    ;(async () => {
       try {
+        // Only `fruehestes` is used, which is range-independent — so no from/to,
+        // and the server skips building a calendar for each selected case.
         const results = await Promise.all(
           selectedIds.map((id) =>
-            getCaseAvailability(id, { from, to })
+            getCaseAvailability(id)
               .then((r) => r.data?.data?.fruehestes)
               .catch(() => null)
           )
         )
-        if (cancelled) return
         const dates = results.filter(Boolean).sort()
         const latest = dates.length ? dates[dates.length - 1] : null
         setFruehestes(latest)
@@ -159,17 +156,28 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
           setDate((prev) => (!prev || prev < latest ? latest : prev))
         }
       } catch {
-        if (!cancelled) setFruehestes(null)
+        if (!silent) setFruehestes(null)
       } finally {
-        if (!cancelled) setLoadingLockout(false)
+        if (!silent) setLoadingLockout(false)
       }
-    })()
+    },
+    // `date` is deliberately not a dependency: it is written here, and reading
+    // it would re-run this on every date change.
+    [selectedIds]
+  )
 
-    return () => {
-      cancelled = true
-    }
-    // Only when selection changes — avoid date loop
-  }, [selectedIds]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    void loadLockout()
+  }, [loadLockout])
+
+  // A booking or documented session elsewhere can push the strictest date out
+  // while this modal is open.
+  usePlatformConfigSocket({
+    enabled: selectedIds.length >= 2,
+    onAvailabilityChanged: () => {
+      void loadLockout({ silent: true })
+    },
+  })
 
   const selectedCases = useMemo(
     () => cases.filter((c) => selectedIds.includes(String(c.id ?? c._id))),
@@ -200,7 +208,7 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
       return
     }
     if (fruehestes && date < fruehestes) {
-      toast.error(t('components.groupBooking.tooEarly', { date: fmtDateDeLong(fruehestes) }))
+      toast.error(t('components.groupBooking.tooEarly', { date: fmtDateLong(fruehestes, language) }))
       return
     }
 
@@ -211,17 +219,18 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
         date,
         time,
         type: 'treatment',
-        dauer_minuten: Number(dauer) || 90,
+        // Omitted when blank so the studio's configured group duration applies.
+        ...(Number(dauer) > 0 ? { dauer_minuten: Number(dauer) } : {}),
         consultationOnly: false,
         gruppen_termin: true,
         gruppen_cases: selectedIds.slice(1),
-        gruppen_rabatt: config.gruppen_rabatt ?? 0.15,
+        gruppen_rabatt: config.gruppen_rabatt,
         gruppen_preis_total: pricing.gesamt,
       })
       toast.success(t('components.groupBooking.bookSuccess', { count: selectedIds.length }))
       onCreated()
     } catch (err) {
-      toast.error(bookingErrorMessage(err, copy))
+      toast.error(bookingErrorMessage(err, copy, language))
     } finally {
       setSaving(false)
     }
@@ -350,7 +359,7 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
                   {copy.lockoutTitle}
                 </p>
                 <p className="text-studio-white text-[12px] font-semibold m-0">
-                  {t('components.groupBooking.earliest', { date: fmtDateDeLong(fruehestes) })}
+                  {t('components.groupBooking.earliest', { date: fmtDateLong(fruehestes, language) })}
                 </p>
               </>
             ) : (

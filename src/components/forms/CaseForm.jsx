@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Plus, Trash2, Sparkles } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { ChevronLeft, ChevronRight, Plus, Trash2, Sparkles, CheckCircle2 } from 'lucide-react'
 import { Input, Select, Button, Spinner } from '../ui'
 import CaseWizardProgress from './CaseWizardProgress'
 import PhotoUploadField from './PhotoUploadField'
-import { previewCasePricing } from '../../api/cases'
+import { getCaseIntakePrefill, previewCasePricing } from '../../api/cases'
 import useContent from '../../i18n/useContent'
 import {
   INITIAL_CASE_FORM,
@@ -49,6 +49,50 @@ const OptGrid = ({ children }) => (
   <div className="flex flex-wrap gap-2">{children}</div>
 )
 
+/**
+ * An answer taken from an earlier case of the same customer. Left untouched it
+ * is reused for this case; "Change" reopens just this question.
+ */
+const PreviousAnswer = ({ label, hint, answer, onChange }) => {
+  const { caseForm } = useContent()
+  const copy = caseForm.ui.prefill
+  return (
+    <div>
+      <FieldLabel hint={hint}>{label}</FieldLabel>
+      <div className="flex items-center gap-3 rounded-[10px] border border-elaya-border bg-studio-bg-4 px-3 py-2">
+        <CheckCircle2 size={15} className="text-studio-teal-2 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="text-studio-w3 text-[10px] m-0">{copy.previousAnswer}</p>
+          <p className="text-studio-white text-[12px] font-semibold m-0 truncate">{answer}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onChange}
+          className="text-studio-gold-2 text-[12px] font-semibold bg-transparent border-0 cursor-pointer p-1 hover:underline shrink-0"
+        >
+          {copy.change}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** Explains that a step was pre-filled from the customer's earlier case. */
+const PrefillNotice = ({ sourceLabel }) => {
+  const { caseForm } = useContent()
+  const copy = caseForm.ui.prefill
+  return (
+    <div className="flex items-start gap-2 rounded-[12px] border border-studio-teal/30 bg-studio-teal/5 px-3 py-2.5">
+      <Sparkles size={14} className="text-studio-teal-2 shrink-0 mt-0.5" />
+      <p className="text-studio-w2 text-[11px] m-0 leading-snug">
+        {sourceLabel
+          ? copy.noticeWithSource.replace('{source}', sourceLabel)
+          : copy.notice}
+      </p>
+    </div>
+  )
+}
+
 const StepError = ({ message }) =>
   message ? (
     <div className="rounded-[10px] border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-300">
@@ -64,23 +108,52 @@ const newZone = () => ({
   koerperstelle: '',
   farben: [],
   dichte: '',
-  flaeche_cm2: null,
-  flaeche_template: '',
-  flaeche_modus: 'template',
-  flaeche_manuell: '',
+  laenge_cm: '',
+  breite_cm: '',
   foto_url: '',
 })
 
+/** Area is always derived from the measurements, as for a single-tattoo case. */
 const zoneFlaeche = (z) => {
-  if (z.flaeche_modus === 'manuell') return num(z.flaeche_manuell) ?? 0
-  const t = ZONE_FLAECHEN.find((x) => x.value === z.flaeche_template)
-  return t?.cm2 ?? 0
+  const length = num(z.laenge_cm) ?? 0
+  const width = num(z.breite_cm) ?? 0
+  if (!(length > 0) || !(width > 0)) return 0
+  return Math.round(length * width * 10) / 10
 }
 
 const zoneValid = (z) =>
-  !!(z.bezeichnung?.trim() && z.koerperstelle && z.farben?.length && z.dichte && zoneFlaeche(z) > 0)
+  !!(
+    z.bezeichnung?.trim() &&
+    z.koerperstelle &&
+    z.farben?.length &&
+    z.dichte &&
+    zoneFlaeche(z) > 0 &&
+    z.foto_url
+  )
 
 const PMU_PROGNOSIS_STEP = 4
+
+/**
+ * Person-level answers offered for reuse from the customer's earlier cases.
+ * Sun exposure is excluded on purpose: it describes the treated body area.
+ */
+const PREFILL_FIELDS = [
+  'skin_fitzpatrick_type',
+  'skin_hyperpig_risk',
+  'skin_keloid_risk',
+  'life_smoker',
+  'life_cig_per_day',
+  'life_alcohol',
+  'life_activity',
+  'life_sport_freq',
+  'life_sleep_hours',
+  'life_sleep_quality',
+  'life_stress',
+  'life_height_cm',
+  'life_weight_kg',
+  'life_hydration',
+  'life_nutrition',
+]
 
 const fmtCHF = (n) => (n != null && !Number.isNaN(Number(n))
   ? `CHF ${Number(n).toLocaleString('de-CH')}`
@@ -126,7 +199,6 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
   const LIFE_NUTRITION = caseForm.lifeNutrition
   const GOAL_TARGETS = caseForm.goalTargets
   const ZONE_DICHTE = caseForm.zoneDichte
-  const ZONE_FLAECHEN = caseForm.zoneFlaechen
   const PHOTO_STD_CHECKLIST = caseForm.photoChecklist
   const PMU_TYPES = caseForm.pmuTypes
   const PMU_SIDES = caseForm.pmuSides
@@ -150,6 +222,63 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
   const [pricingPreview, setPricingPreview] = useState(null)
   const [pricingLoading, setPricingLoading] = useState(false)
   const [pricingError, setPricingError] = useState('')
+  /** Answers taken from an earlier case of this customer, until changed here. */
+  const [carried, setCarried] = useState({})
+  const [revealed, setRevealed] = useState({})
+  const [prefillSource, setPrefillSource] = useState(null)
+
+  // Mirrors the latest form so the prefill effect can read it without
+  // depending on it, which would refetch on every keystroke.
+  const formRef = useRef(form)
+  useEffect(() => {
+    formRef.current = form
+  }, [form])
+
+  useEffect(() => {
+    if (!customerId) return undefined
+    let cancelled = false
+
+    getCaseIntakePrefill({ customer_id: customerId })
+      .then(({ data }) => {
+        const payload = data?.data
+        if (cancelled || !payload?.available) return
+        const fields = payload.fields || {}
+        const current = formRef.current
+        const patch = {}
+        const applied = {}
+
+        for (const key of PREFILL_FIELDS) {
+          const value = fields[key]
+          if (value == null || value === '') continue
+          // Never overwrite something already entered in this form.
+          if (current[key] !== '' && current[key] != null) continue
+          patch[key] = String(value)
+          applied[key] = true
+        }
+
+        if (Object.keys(patch).length === 0) return
+        setForm((p) => ({ ...p, ...patch }))
+        setCarried(applied)
+        setPrefillSource(payload.source || null)
+      })
+      // Prefill is a convenience — never block creating a case.
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [customerId])
+
+  /**
+   * A carried answer is only offered for reuse while it is still selectable in
+   * this step; tattoo and PMU intake share field names but not every vocabulary.
+   */
+  const isCarried = (field, options) =>
+    Boolean(carried[field]) &&
+    !revealed[field] &&
+    (!options || options.some(([v]) => v === form[field]))
+
+  const reveal = (field) => setRevealed((p) => ({ ...p, [field]: true }))
 
   const isPmu = form.type === 'pmu'
   const activeSteps = isPmu ? PMU_WIZARD_STEPS : WIZARD_STEPS
@@ -294,15 +423,13 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
     }
 
     const zonen = form.zonen_aktiv
-      ? form.zonen.map(({ _id, ...z }) => ({
+      ? form.zonen.map((z) => ({
           bezeichnung: z.bezeichnung.trim(),
           koerperstelle: z.koerperstelle,
           farben: z.farben,
           dichte: z.dichte,
-          flaeche_cm2: zoneFlaeche(z),
-          flaeche_template: z.flaeche_template || undefined,
-          flaeche_modus: z.flaeche_modus || undefined,
-          flaeche_manuell: num(z.flaeche_manuell),
+          laenge_cm: num(z.laenge_cm),
+          breite_cm: num(z.breite_cm),
           foto_url: z.foto_url || '',
         }))
       : []
@@ -588,6 +715,15 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
           <FieldLabel hint={ui.properties.zonesHint}>
             {ui.properties.zonesTitle}
           </FieldLabel>
+
+          {/* Keeps it visually clear that the zone cards below form one
+              tattoo, even though each is measured and priced separately. */}
+          <div className="border-l-[3px] border-studio-gold-2 pl-3">
+            <p className="text-studio-white text-[13px] font-bold m-0">
+              {ui.properties.zonesGroupTitle}
+            </p>
+            <p className="text-studio-w3 text-[11px] m-0">{ui.properties.zonesGroupHint}</p>
+          </div>
           {form.zonen.map((z, i) => (
             <div key={z._id} className={`rounded-[14px] border p-4 flex flex-col gap-3 transition-colors ${zoneValid(z) ? 'border-studio-teal/30 bg-studio-teal/5' : 'border-elaya-border bg-studio-bg-4'}`}>
               <div className="flex items-center justify-between">
@@ -631,27 +767,49 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
                   ))}
                 </OptGrid>
               </div>
-              <Select
-                label={ui.properties.area}
-                value={z.flaeche_modus === 'manuell' ? 'manuell' : z.flaeche_template}
-                onChange={(e) => {
-                  if (e.target.value === 'manuell') {
-                    setZone(z._id, { flaeche_modus: 'manuell', flaeche_template: '' })
-                  } else {
-                    const t = ZONE_FLAECHEN.find((x) => x.value === e.target.value)
-                    setZone(z._id, { flaeche_modus: 'template', flaeche_template: e.target.value, flaeche_cm2: t?.cm2 })
-                  }
-                }}
-              >
-                <option value="">{ui.choose}</option>
-                {ZONE_FLAECHEN.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label} (~{t.cm2} cm²)</option>
-                ))}
-                <option value="manuell">{ui.properties.customArea}</option>
-              </Select>
-              {z.flaeche_modus === 'manuell' && (
-                <Input type="number" min="0" label={ui.properties.areaCm2} value={z.flaeche_manuell} onChange={(e) => setZone(z._id, { flaeche_manuell: e.target.value })} />
-              )}
+              {/* Measured per zone; the area and, from it, the price and
+                  session range follow automatically. */}
+              <div>
+                <FieldLabel hint={ui.properties.zoneDimensionsHint}>
+                  {ui.properties.zoneDimensions}
+                </FieldLabel>
+                <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-2 items-end">
+                  <Input label={ui.properties.length} type="number" min="0" step="0.1" value={z.laenge_cm} onChange={(e) => setZone(z._id, { laenge_cm: e.target.value })} placeholder="10" />
+                  <span className="text-studio-w4 pb-2.5">×</span>
+                  <Input label={ui.properties.width} type="number" min="0" step="0.1" value={z.breite_cm} onChange={(e) => setZone(z._id, { breite_cm: e.target.value })} placeholder="5" />
+                  <span className="text-studio-gold-2 text-[13px] font-mono font-bold pb-2.5 whitespace-nowrap">
+                    {zoneFlaeche(z) > 0 ? `= ${zoneFlaeche(z)} cm²` : '= ?'}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <FieldLabel>{ui.properties.zonePhoto}</FieldLabel>
+                <PhotoUploadField
+                  slot="zone"
+                  customerId={customerId}
+                  fileId={z.foto_url}
+                  label={ui.properties.zonePhotoFor.replace(
+                    '{zone}',
+                    z.bezeichnung?.trim() || `${ui.properties.zone} ${i + 1}`
+                  )}
+                  onChange={(fileId) => setZone(z._id, { foto_url: fileId || '' })}
+                />
+                <p className="text-studio-w3 text-[11px] mt-2 mb-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4 leading-relaxed">
+                  {ui.properties.zonePhotoNotice}
+                </p>
+              </div>
+
+              {/* Each zone is estimated on its own, so the studio and customer
+                  see what this specific piece costs. */}
+              <div className="border-t border-elaya-border pt-3">
+                <span className="text-studio-w3 text-[11px]">{ui.properties.zoneEstimate}</span>
+                <p className="text-studio-w1 text-[12px] m-0 mt-1">
+                  {z.preis > 0
+                    ? `${z.preis} CHF · ${z.sitzungen_geschaetzt_min ?? 0}–${z.sitzungen_geschaetzt_max ?? 0} ${ui.properties.zoneEstimateSessions}`
+                    : ui.properties.zoneEstimatePending}
+                </p>
+              </div>
             </div>
           ))}
           {form.zonen.length < 8 && (
@@ -722,46 +880,77 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
     )
   }
 
+  /** Chip question that collapses to "previous answer + Change" when carried over. */
+  const renderChoiceField = (field, label, options, hint) => (
+    <div key={field}>
+      {isCarried(field, options) ? (
+        <PreviousAnswer
+          label={label}
+          hint={hint}
+          answer={labelFor(options, form[field])}
+          onChange={() => reveal(field)}
+        />
+      ) : (
+        <>
+          <FieldLabel hint={hint}>{label}</FieldLabel>
+          <OptGrid>
+            {options.map(([v, l]) => (
+              <Opt key={v} active={form[field] === v} onClick={() => set(field, v)}>{l}</Opt>
+            ))}
+          </OptGrid>
+        </>
+      )}
+    </div>
+  )
+
+  const stepHasCarried = (fields, optionsByField = {}) =>
+    fields.some((field) => isCarried(field, optionsByField[field]))
+
   // ── Step 2: Skin ────────────────────────────────────────────────────────
+  const SKIN_PREFILL = {
+    skin_fitzpatrick_type: FITZPATRICK.map((t) => [t.id, t.id]),
+    skin_hyperpig_risk: RISK_LEVEL,
+    skin_keloid_risk: RISK_LEVEL,
+  }
+
   const renderSkin = () => (
     <div className="flex flex-col gap-4">
-      <div>
-        <FieldLabel hint={ui.skin.fitzHint}>{ui.skin.fitzpatrick}</FieldLabel>
-        <div className="flex gap-1.5">
-          {FITZPATRICK.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => set('skin_fitzpatrick_type', t.id)}
-              title={t.desc}
-              className={`flex-1 h-12 rounded-[10px] border-2 cursor-pointer transition-all text-[10px] font-bold flex items-end justify-center pb-1
-                ${form.skin_fitzpatrick_type === t.id
-                  ? 'border-studio-gold-2 ring-4 ring-studio-gold/45 scale-105 shadow-[0_0_16px_rgba(74,154,255,0.45)]'
-                  : 'border-elaya-border opacity-80 hover:opacity-100'
-                }`}
-              style={{ background: t.color, color: 'rgba(255,255,255,0.85)' }}
-            >
-              {t.id}
-            </button>
-          ))}
+      {stepHasCarried(Object.keys(SKIN_PREFILL), SKIN_PREFILL) && (
+        <PrefillNotice sourceLabel={prefillSource?.caseId} />
+      )}
+      {isCarried('skin_fitzpatrick_type', SKIN_PREFILL.skin_fitzpatrick_type) ? (
+        <PreviousAnswer
+          label={ui.skin.fitzpatrick}
+          hint={ui.skin.fitzHint}
+          answer={form.skin_fitzpatrick_type}
+          onChange={() => reveal('skin_fitzpatrick_type')}
+        />
+      ) : (
+        <div>
+          <FieldLabel hint={ui.skin.fitzHint}>{ui.skin.fitzpatrick}</FieldLabel>
+          <div className="flex gap-1.5">
+            {FITZPATRICK.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => set('skin_fitzpatrick_type', t.id)}
+                title={t.desc}
+                className={`flex-1 h-12 rounded-[10px] border-2 cursor-pointer transition-all text-[10px] font-bold flex items-end justify-center pb-1
+                  ${form.skin_fitzpatrick_type === t.id
+                    ? 'border-studio-gold-2 ring-4 ring-studio-gold/45 scale-105 shadow-[0_0_16px_rgba(74,154,255,0.45)]'
+                    : 'border-elaya-border opacity-80 hover:opacity-100'
+                  }`}
+                style={{ background: t.color, color: 'rgba(255,255,255,0.85)' }}
+              >
+                {t.id}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-      <div>
-        <FieldLabel hint={ui.skin.hyperpigHint}>{ui.skin.hyperpig}</FieldLabel>
-        <OptGrid>
-          {RISK_LEVEL.map(([v, l]) => (
-            <Opt key={v} active={form.skin_hyperpig_risk === v} onClick={() => set('skin_hyperpig_risk', v)}>{l}</Opt>
-          ))}
-        </OptGrid>
-      </div>
-      <div>
-        <FieldLabel hint={ui.skin.keloidHint}>{ui.skin.keloid}</FieldLabel>
-        <OptGrid>
-          {RISK_LEVEL.map(([v, l]) => (
-            <Opt key={v} active={form.skin_keloid_risk === v} onClick={() => set('skin_keloid_risk', v)}>{l}</Opt>
-          ))}
-        </OptGrid>
-      </div>
+      )}
+      {renderChoiceField('skin_hyperpig_risk', ui.skin.hyperpig, RISK_LEVEL, ui.skin.hyperpigHint)}
+      {renderChoiceField('skin_keloid_risk', ui.skin.keloid, RISK_LEVEL, ui.skin.keloidHint)}
+      {/* Always asked: depends on where this tattoo sits. */}
       <div>
         <FieldLabel hint={ui.skin.sunHint}>{ui.skin.sunZone}</FieldLabel>
         <OptGrid>
@@ -774,49 +963,89 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
   )
 
   // ── Step 3: Lifestyle ───────────────────────────────────────────────────
-  const renderLifestyle = () => (
-    <div className="flex flex-col gap-4">
-      <div>
-        <FieldLabel hint={ui.lifestyle.smokingHint}>{ui.lifestyle.smoking}</FieldLabel>
-        <OptGrid>
-          {LIFE_SMOKER.map(([v, l]) => (
-            <Opt key={v} active={form.life_smoker === v} onClick={() => set('life_smoker', v)}>{l}</Opt>
-          ))}
-        </OptGrid>
-        {['daily_light', 'daily_heavy'].includes(form.life_smoker) && (
-          <div className="mt-2">
-            <Input type="number" label={ui.lifestyle.cigarettesPerDay} value={form.life_cig_per_day} onChange={(e) => set('life_cig_per_day', e.target.value)} />
+  const renderLifestyle = () => {
+    const choices = [
+      ['life_alcohol', ui.lifestyle.alcohol, LIFE_ALCOHOL],
+      ['life_activity', ui.lifestyle.activity, LIFE_ACTIVITY],
+      ['life_sport_freq', ui.lifestyle.sportFreq, LIFE_SPORT_FREQ],
+      ['life_sleep_hours', ui.lifestyle.sleepHours, LIFE_SLEEP_HOURS],
+      ['life_sleep_quality', ui.lifestyle.sleepQuality, LIFE_SLEEP_QUALITY],
+      ['life_stress', ui.lifestyle.stress, LIFE_STRESS],
+      ['life_hydration', ui.lifestyle.hydration, LIFE_HYDRATION],
+      ['life_nutrition', ui.lifestyle.nutrition, LIFE_NUTRITION],
+    ]
+    const optionsByField = Object.fromEntries(choices.map(([f, , o]) => [f, o]))
+    optionsByField.life_smoker = LIFE_SMOKER
+
+    const smokesDaily = ['daily_light', 'daily_heavy'].includes(form.life_smoker)
+    const smokerCarried = isCarried('life_smoker', LIFE_SMOKER)
+    // Height and weight sit in one row, so they collapse and expand together.
+    const bodyMassCarried =
+      isCarried('life_height_cm') && isCarried('life_weight_kg') &&
+      !!form.life_height_cm && !!form.life_weight_kg
+
+    const anyCarried =
+      stepHasCarried(Object.keys(optionsByField), optionsByField) || bodyMassCarried
+
+    return (
+      <div className="flex flex-col gap-4">
+        {anyCarried && <PrefillNotice sourceLabel={prefillSource?.caseId} />}
+
+        {smokerCarried ? (
+          <PreviousAnswer
+            label={ui.lifestyle.smoking}
+            hint={ui.lifestyle.smokingHint}
+            // Fold the cigarette count in so nothing is hidden behind the row.
+            answer={
+              smokesDaily && form.life_cig_per_day
+                ? `${labelFor(LIFE_SMOKER, form.life_smoker)} · ${ui.prefill.cigsPerDay.replace('{amount}', form.life_cig_per_day)}`
+                : labelFor(LIFE_SMOKER, form.life_smoker)
+            }
+            onChange={() => reveal('life_smoker')}
+          />
+        ) : (
+          <div>
+            <FieldLabel hint={ui.lifestyle.smokingHint}>{ui.lifestyle.smoking}</FieldLabel>
+            <OptGrid>
+              {LIFE_SMOKER.map(([v, l]) => (
+                <Opt key={v} active={form.life_smoker === v} onClick={() => set('life_smoker', v)}>{l}</Opt>
+              ))}
+            </OptGrid>
+            {smokesDaily && (
+              <div className="mt-2">
+                <Input type="number" label={ui.lifestyle.cigarettesPerDay} value={form.life_cig_per_day} onChange={(e) => set('life_cig_per_day', e.target.value)} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {choices.map(([field, label, opts]) => renderChoiceField(field, label, opts))}
+
+        {bodyMassCarried ? (
+          <div className="grid grid-cols-2 gap-3">
+            <PreviousAnswer
+              label={ui.lifestyle.height}
+              answer={`${form.life_height_cm} cm`}
+              onChange={() => reveal('life_height_cm')}
+            />
+            <PreviousAnswer
+              label={ui.lifestyle.weight}
+              answer={`${form.life_weight_kg} kg`}
+              onChange={() => reveal('life_weight_kg')}
+            />
+          </div>
+        ) : (
+          <div>
+            <FieldLabel>{ui.lifestyle.bodyMass}</FieldLabel>
+            <div className="grid grid-cols-2 gap-3">
+              <Input label={ui.lifestyle.height} type="number" value={form.life_height_cm} onChange={(e) => set('life_height_cm', e.target.value)} placeholder="172" />
+              <Input label={ui.lifestyle.weight} type="number" value={form.life_weight_kg} onChange={(e) => set('life_weight_kg', e.target.value)} placeholder="70" />
+            </div>
           </div>
         )}
       </div>
-      {[
-        ['life_alcohol', ui.lifestyle.alcohol, LIFE_ALCOHOL],
-        ['life_activity', ui.lifestyle.activity, LIFE_ACTIVITY],
-        ['life_sport_freq', ui.lifestyle.sportFreq, LIFE_SPORT_FREQ],
-        ['life_sleep_hours', ui.lifestyle.sleepHours, LIFE_SLEEP_HOURS],
-        ['life_sleep_quality', ui.lifestyle.sleepQuality, LIFE_SLEEP_QUALITY],
-        ['life_stress', ui.lifestyle.stress, LIFE_STRESS],
-        ['life_hydration', ui.lifestyle.hydration, LIFE_HYDRATION],
-        ['life_nutrition', ui.lifestyle.nutrition, LIFE_NUTRITION],
-      ].map(([field, label, opts]) => (
-        <div key={field}>
-          <FieldLabel>{label}</FieldLabel>
-          <OptGrid>
-            {opts.map(([v, l]) => (
-              <Opt key={v} active={form[field] === v} onClick={() => set(field, v)}>{l}</Opt>
-            ))}
-          </OptGrid>
-        </div>
-      ))}
-      <div>
-        <FieldLabel>{ui.lifestyle.bodyMass}</FieldLabel>
-        <div className="grid grid-cols-2 gap-3">
-          <Input label={ui.lifestyle.height} type="number" value={form.life_height_cm} onChange={(e) => set('life_height_cm', e.target.value)} placeholder="172" />
-          <Input label={ui.lifestyle.weight} type="number" value={form.life_weight_kg} onChange={(e) => set('life_weight_kg', e.target.value)} placeholder="70" />
-        </div>
-      </div>
-    </div>
-  )
+    )
+  }
 
   // ── Step 4: Goal ────────────────────────────────────────────────────────
   const renderGoal = () => (
@@ -1148,42 +1377,37 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
     </div>
   )
 
-  const renderPmuLifestyle = () => (
-    <div className="flex flex-col gap-4">
-      <div>
-        <FieldLabel hint={ui.pmu.smokingHint}>{ui.pmu.smoking}</FieldLabel>
-        <OptGrid>
-          {PMU_LIFE_SMOKER.map(([v, l]) => (
-            <Opt key={v} active={form.life_smoker === v} onClick={() => set('life_smoker', v)}>{l}</Opt>
-          ))}
-        </OptGrid>
+  const renderPmuLifestyle = () => {
+    // PMU offers a narrower vocabulary than the tattoo step for these answers,
+    // so anything carried over is only reused when still selectable here.
+    const optionsByField = {
+      life_smoker: PMU_LIFE_SMOKER,
+      life_alcohol: PMU_LIFE_ALCOHOL,
+      life_activity: PMU_LIFE_ACTIVITY,
+      life_hydration: PMU_LIFE_HYDRATION,
+    }
+
+    return (
+      <div className="flex flex-col gap-4">
+        {stepHasCarried(Object.keys(optionsByField), optionsByField) && (
+          <PrefillNotice sourceLabel={prefillSource?.caseId} />
+        )}
+        {renderChoiceField('life_smoker', ui.pmu.smoking, PMU_LIFE_SMOKER, ui.pmu.smokingHint)}
+        {renderChoiceField('life_alcohol', ui.pmu.alcohol, PMU_LIFE_ALCOHOL)}
+        {renderChoiceField('life_activity', ui.pmu.activity, PMU_LIFE_ACTIVITY)}
+        {renderChoiceField('life_hydration', ui.pmu.hydration, PMU_LIFE_HYDRATION)}
+        {/* Per-treatment commitment, never carried over. */}
+        <div>
+          <FieldLabel>{ui.pmu.aftercare}</FieldLabel>
+          <OptGrid>
+            {PMU_LIFE_AFTERCARE.map(([v, l]) => (
+              <Opt key={v} active={form.life_aftercare_commitment === v} onClick={() => set('life_aftercare_commitment', v)}>{l}</Opt>
+            ))}
+          </OptGrid>
+        </div>
       </div>
-      <FieldLabel>{ui.pmu.alcohol}</FieldLabel>
-      <OptGrid>
-        {PMU_LIFE_ALCOHOL.map(([v, l]) => (
-          <Opt key={v} active={form.life_alcohol === v} onClick={() => set('life_alcohol', v)}>{l}</Opt>
-        ))}
-      </OptGrid>
-      <FieldLabel>{ui.pmu.activity}</FieldLabel>
-      <OptGrid>
-        {PMU_LIFE_ACTIVITY.map(([v, l]) => (
-          <Opt key={v} active={form.life_activity === v} onClick={() => set('life_activity', v)}>{l}</Opt>
-        ))}
-      </OptGrid>
-      <FieldLabel>{ui.pmu.hydration}</FieldLabel>
-      <OptGrid>
-        {PMU_LIFE_HYDRATION.map(([v, l]) => (
-          <Opt key={v} active={form.life_hydration === v} onClick={() => set('life_hydration', v)}>{l}</Opt>
-        ))}
-      </OptGrid>
-      <FieldLabel>{ui.pmu.aftercare}</FieldLabel>
-      <OptGrid>
-        {PMU_LIFE_AFTERCARE.map(([v, l]) => (
-          <Opt key={v} active={form.life_aftercare_commitment === v} onClick={() => set('life_aftercare_commitment', v)}>{l}</Opt>
-        ))}
-      </OptGrid>
-    </div>
-  )
+    )
+  }
 
   const renderPmuPrognosis = () => (
     <div className="flex flex-col gap-4">

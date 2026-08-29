@@ -27,6 +27,8 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
   const [merkblatt, setMerkblatt] = useState(null)
   const [merkblattRead, setMerkblattRead] = useState(false)
   const [sigData, setSigData] = useState('')
+  const [anamneseConfirmed, setAnamneseConfirmed] = useState(false)
+  const [anamneseSigData, setAnamneseSigData] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -46,7 +48,20 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
     }
   }, [caseId, language])
 
+  const labels = merkblatt?.labels ?? {}
+  const caseInfo = merkblatt?.case
+  /**
+   * Tattoo cases need a second, separate signature confirming the medical
+   * anamnesis is truthful and complete.
+   */
+  const needsAnamneseSignature =
+    caseInfo?.type === 'tattoo' && !!labels.confirmation_anamnesis_extra
+
   const handleSubmit = async () => {
+    if (needsAnamneseSignature && (!anamneseConfirmed || !anamneseSigData)) {
+      toast.error(copy.needAnamneseSignature)
+      return
+    }
     if (!sigData) {
       toast.error(copy.needSignature)
       return
@@ -57,6 +72,13 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
         merkblatt_gelesen: true,
         bestaetigung_text: true,
         unterschrift_data: sigData,
+        ...(needsAnamneseSignature
+          ? {
+              anamnese_bestaetigt: true,
+              anamnese_bestaetigung_text: labels.confirmation_anamnesis_extra,
+              anamnese_unterschrift_data: anamneseSigData,
+            }
+          : {}),
       })
       toast.success(copy.saved)
       await onSaved?.(res.data.data)
@@ -68,11 +90,11 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
     }
   }
 
-  const labels = merkblatt?.labels ?? {}
   const sections = merkblatt?.sections ?? []
-  const caseInfo = merkblatt?.case
   const customer = merkblatt?.customer
-  const stepLabels = [copy.stepLeaflet, copy.stepSignature]
+  const stepLabels = needsAnamneseSignature
+    ? [copy.stepLeaflet, copy.stepSignature, copy.stepAnamnese]
+    : [copy.stepLeaflet, copy.stepSignature]
 
   return (
     <Modal title={copy.wizardTitle} onClose={onClose} width="max-w-2xl" scrollResetKey={step}>
@@ -156,7 +178,7 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
               </Button>
             </div>
           </div>
-        ) : (
+        ) : step === 1 ? (
           <div className="flex flex-col gap-4">
             <div>
               <p className="text-studio-teal-2 text-[10px] font-mono tracking-widest m-0 mb-1">TC_09</p>
@@ -181,13 +203,6 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
 
             <div className="rounded-[12px] border border-elaya-border bg-studio-bg-4/50 p-4 text-[12px] text-studio-w3 leading-relaxed">
               {labels.confirmation_text}
-              {caseInfo?.type === 'tattoo' && labels.confirmation_anamnesis_extra && (
-                <>
-                  <br />
-                  <br />
-                  {labels.confirmation_anamnesis_extra}
-                </>
-              )}
             </div>
 
             <SignatureCanvas onChange={setSigData} />
@@ -196,7 +211,63 @@ const SignatureWizardModal = ({ caseId, onClose, onSaved }) => {
               <Button size="sm" variant="secondary" onClick={() => setStep(0)}>
                 {t('common.back')}
               </Button>
-              <Button size="sm" loading={submitting} disabled={!sigData} onClick={handleSubmit}>
+              {needsAnamneseSignature ? (
+                <Button size="sm" disabled={!sigData} onClick={() => setStep(2)}>
+                  {copy.continue}
+                </Button>
+              ) : (
+                <Button size="sm" loading={submitting} disabled={!sigData} onClick={handleSubmit}>
+                  {copy.confirmBtn}
+                </Button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="text-studio-teal-2 text-[10px] font-mono tracking-widest m-0 mb-1">TC_09</p>
+              <h3 className="text-studio-white text-[18px] font-bold m-0">{copy.anamneseHeading}</h3>
+            </div>
+
+            <div className="rounded-[12px] border border-elaya-border bg-studio-bg-4/50 p-4 text-[12px] text-studio-w3 leading-relaxed">
+              {labels.confirmation_anamnesis_extra}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setAnamneseConfirmed((v) => !v)}
+              className={`flex items-start gap-3 rounded-[12px] border p-4 text-left cursor-pointer transition-colors ${
+                anamneseConfirmed
+                  ? 'border-studio-teal-2/30 bg-studio-teal-2/5'
+                  : 'border-elaya-border bg-studio-bg-4'
+              }`}
+            >
+              <span
+                className={`w-5 h-5 rounded-[5px] border-2 flex items-center justify-center shrink-0 text-[12px] ${
+                  anamneseConfirmed
+                    ? 'border-studio-teal-2 bg-studio-teal-2/20 text-studio-teal-2'
+                    : 'border-elaya-border-strong'
+                }`}
+              >
+                {anamneseConfirmed ? '✓' : ''}
+              </span>
+              <span className="text-[12px] text-studio-w2 leading-relaxed m-0">
+                {copy.anamneseCheckbox} *
+              </span>
+            </button>
+
+            <SignatureCanvas onChange={setAnamneseSigData} />
+
+            <div className="flex justify-between gap-3 pt-2 border-t border-elaya-border">
+              <Button size="sm" variant="secondary" onClick={() => setStep(1)}>
+                {t('common.back')}
+              </Button>
+              <Button
+                size="sm"
+                loading={submitting}
+                disabled={!anamneseConfirmed || !anamneseSigData}
+                onClick={handleSubmit}
+              >
                 {copy.confirmBtn}
               </Button>
             </div>
@@ -288,6 +359,13 @@ const CaseSignaturePanel = ({ caseId, caseData, onUpdated }) => {
             </p>
             {caseData.unterschrift?.merkblatt_gelesen && (
               <p className="text-studio-w3 text-[11px] m-0">{copy.leafletRead}</p>
+            )}
+            {caseData.unterschrift_anamnese?.zeitstempel && (
+              <p className="text-studio-w3 text-[11px] m-0">
+                {t('components.signature.anamneseSigned', {
+                  date: fmtDateTime(caseData.unterschrift_anamnese.zeitstempel),
+                })}
+              </p>
             )}
             {previewUrl && (
               <button

@@ -5,7 +5,8 @@ import toast from 'react-hot-toast'
 import { listStudioActivity } from '../../api/activity'
 import { Card, Spinner, EmptyState, Pagination } from '../ui'
 import useContent from '../../i18n/useContent'
-import { ActivityIcon, ActivityTag, fmtActivityWhen } from './activityMeta'
+import { ActivityIcon, ActivityTag } from './activityMeta'
+import { fmtActivityWhen } from './activityFormat'
 
 const CATEGORY_KEYS = [
   'all',

@@ -16,5 +16,8 @@ export const getCasePricing      = (id)             => api.get(`/cases/${id}/pri
 
 export const previewCasePricing  = (data)          => api.post('/cases/pricing/preview', data)
 
+/** Reusable skin/lifestyle answers from the customer's previous cases. */
+export const getCaseIntakePrefill = (params = {}) => api.get('/cases/intake/prefill', { params })
+
 export const updateEstimateConfirmation = (id, data) =>
   api.patch(`/cases/${id}/estimate-confirmation`, data)

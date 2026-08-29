@@ -1041,38 +1041,6 @@ const de: TranslationSchema = {
         "Sehr hoch"
       ]
     ],
-    "zoneFlaechen": [
-      {
-        "value": "xs",
-        "label": "Sehr klein",
-        "cm2": 3
-      },
-      {
-        "value": "sm",
-        "label": "Klein",
-        "cm2": 8
-      },
-      {
-        "value": "md",
-        "label": "Mittel",
-        "cm2": 13.5
-      },
-      {
-        "value": "lg",
-        "label": "Gross",
-        "cm2": 21
-      },
-      {
-        "value": "xl",
-        "label": "Sehr gross",
-        "cm2": 33
-      },
-      {
-        "value": "xxl",
-        "label": "Extra gross",
-        "cm2": 45
-      }
-    ],
     "photoChecklist": [
       {
         "key": "photo_full_visible",
@@ -1201,9 +1169,18 @@ const de: TranslationSchema = {
         "colors": "Farben *",
         "density": "Dichte *",
         "area": "Fläche *",
-        "customArea": "Eigene Angabe (cm²)",
         "areaCm2": "Fläche (cm²)",
         "addZone": "Weitere Zone",
+        "zoneDimensions": "Grösse dieser Zone *",
+        "zoneDimensionsHint": "Länge und Breite in cm — die Fläche wird automatisch berechnet.",
+        "zoneEstimate": "Schätzung dieser Zone",
+        "zoneEstimateSessions": "Sitzungen",
+        "zoneEstimatePending": "Wird nach dem Speichern berechnet.",
+        "zonePhoto": "Foto dieser Zone *",
+        "zonePhotoFor": "Foto für «{zone}»",
+        "zonePhotoNotice": "Fotografiere immer genau diese Fläche — aus demselben Winkel und mit demselben Bildausschnitt. Für jeden Nachsorge-Eintrag und jede weitere Sitzung muss dasselbe Motiv gleich fotografiert werden. Nur so lassen sich Heilungsverlauf und Verblassung korrekt dokumentieren und über die Zeit vergleichen. Die Nachsorge-Fotos macht die Kundin oder der Kunde selbst in der App und lädt sie direkt zur passenden Zone hoch. Die Verblassungs-Dokumentation übernimmt das Studio — ebenfalls immer pro Zone einzeln und im selben Bildausschnitt und Winkel wie dieses erste Foto.",
+        "zonesGroupTitle": "Zonen dieses Tattoos",
+        "zonesGroupHint": "Alle Zonen gehören zu einem grossen Tattoo. Jede Zone wird einzeln berechnet, fotografiert und dokumentiert.",
         "colorDensity": "Farbdichte",
         "saturation": "Farbsättigung",
         "shading": "Schattierung",
@@ -1212,6 +1189,13 @@ const de: TranslationSchema = {
         "dimensionsHint": "Mit Lineal messen — Studio misst exakt nach.",
         "length": "Länge",
         "width": "Breite"
+      },
+      "prefill": {
+        "previousAnswer": "Vorherige Antwort",
+        "change": "Ändern",
+        "cigsPerDay": "{amount} Zigaretten/Tag",
+        "notice": "Aus dem letzten Fall dieses Kunden übernommen. Bitte kurz prüfen und nur Geändertes anpassen.",
+        "noticeWithSource": "Aus Fall {source} dieses Kunden übernommen. Bitte kurz prüfen und nur Geändertes anpassen."
       },
       "skin": {
         "fitzpatrick": "Fitzpatrick-Hauttyp *",
@@ -1317,6 +1301,8 @@ const de: TranslationSchema = {
       "sessionPrediction": "Sitzungsprognose",
       "hours": "Öffnungszeiten",
       "groupBooking": "Gruppenbuchung",
+      "bookingRules": "Sperrfristen",
+      "locations": "Standorte",
       "rooms": "Räume",
       "staff": "Mitarbeiter",
       "stripe": "Stripe"
@@ -1428,7 +1414,47 @@ const de: TranslationSchema = {
       "mediumMax": "Mittleres Tattoo max. (cm²)",
       "maxPoints": "Max. Punkte pro Termin",
       "discount": "Gruppenrabatt (%)",
-      "discountHint": "Wird auf den kombinierten Sitzungspreis aller gewählten Cases angewendet."
+      "discountHint": "Wird auf den kombinierten Sitzungspreis aller gewählten Cases angewendet.",
+      "categorySmall": "Klein",
+      "categoryMedium": "Mittelgross",
+      "categoryLarge": "Gross",
+      "points_one": "{{count}} Punkt",
+      "points_other": "{{count}} Punkte",
+      "smallUpTo": "Klein bis (cm²)",
+      "mediumUpTo": "Mittelgross bis (cm²)",
+      "largeFrom": "Gross ab (cm²)",
+      "rangeUpTo": "bis {{max}} cm²",
+      "rangeBetween": "über {{min}} bis {{max}} cm²",
+      "rangeAbove": "über {{min}} cm²",
+      "largeNote": "Ein grosses Tattoo belegt das Punktelimit vollständig und muss deshalb immer allein gebucht werden — es kann kein weiterer Case zum selben Termin hinzugefügt werden.",
+      "boundaryHint": "Gleiche Grenze wie «Mittelgross bis» — eine Änderung verschiebt beide.",
+      "pointsFixedHint": "Die Punktwerte sind plattformweit festgelegt und nicht pro Studio änderbar."
+    },
+    "bookingRules": {
+      "title": "Sperrfristen & Termine",
+      "desc": "Medizinische Wartezeiten und Termin-Vorgaben für dieses Studio. Die Kunden-App liest diese Werte — eine Änderung gilt sofort für jede neue Buchung.",
+      "lockoutsTitle": "Sperrfristen",
+      "appointmentsTitle": "Termine",
+      "units": {
+        "days": "Tage",
+        "hours": "Std.",
+        "minutes": "Min."
+      },
+      "lockouts": {
+        "sameCase": "Gleicher Tattoo Case",
+        "crossCase": "Anderer Tattoo Case",
+        "uvModerate": "Mittlere UV-Exposition",
+        "uvIntense": "Intensive UV-Exposition",
+        "medShort": "Antibiotika / Antidepressiva",
+        "medRetinoids": "Retinoide"
+      },
+      "appointments": {
+        "treatmentDuration": "Dauer Behandlung",
+        "consultDuration": "Dauer Beratung",
+        "groupDuration": "Dauer Gruppentermin",
+        "horizon": "Buchbar im Voraus",
+        "leadTime": "Mindest-Vorlaufzeit"
+      }
     },
     "hours": {
       "title": "Öffnungszeiten",
@@ -1471,9 +1497,35 @@ const de: TranslationSchema = {
         "dateRequired": "Bitte ein Datum wählen."
       }
     },
+    "locations": {
+      "title": "Standorte",
+      "desc": "Filialen, die Kundinnen bei der Buchung wählen können. Ein Wechsel zwischen Standorten desselben Studios ist jederzeit und ohne Anfrage möglich.",
+      "empty": "Noch keine Standorte angelegt. Kundinnen buchen an der Studio-Adresse.",
+      "inactive": "Inaktiv",
+      "fallbackName": "Standort {{index}}",
+      "removeAria": "Standort entfernen",
+      "name": "Name",
+      "street": "Strasse",
+      "zip": "PLZ",
+      "city": "Ort",
+      "active": "Buchbar",
+      "inherit": "Vom Studio übernehmen",
+      "slotInterval": "Slot-Intervall",
+      "buffer": "Pufferzeit (Minuten)",
+      "inheritsHours": "Nutzt die Öffnungszeiten des Studios",
+      "slotOverride": "Eigenes Slot-Intervall: {{minutes}} Min.",
+      "addLocation": "Standort hinzufügen",
+      "toasts": {
+        "loadFailed": "Standorte konnten nicht geladen werden.",
+        "nameRequired": "Jeder Standort braucht einen Namen.",
+        "saved": "Standorte gespeichert."
+      }
+    },
     "rooms": {
       "title": "Räume & Geräte",
       "desc": "Behandlungsräume und Laser-Geräte für Kalender und Sitzungen.",
+      "location": "Standort",
+      "allLocations": "Alle Standorte",
       "empty": "Noch keine Räume angelegt.",
       "inactive": "Inaktiv",
       "colorAria": "Raumfarbe",
@@ -1506,6 +1558,8 @@ const de: TranslationSchema = {
       "role": "Rolle",
       "room": "Raum",
       "noRoom": "— Kein Raum —",
+      "location": "Standort",
+      "allLocations": "Alle Standorte",
       "active": "Aktiv",
       "addStaff": "Mitarbeiter hinzufügen",
       "roles": {
@@ -1811,12 +1865,16 @@ const de: TranslationSchema = {
       },
       "zonesTitle": "Zonen",
       "zoneHeaders": {
+        "photo": "Foto",
         "id": "Zonen-ID",
+        "name": "Bezeichnung",
         "body": "Körperstelle",
         "area": "Fläche cm²",
+        "price": "Preis/Sitzung",
         "progress": "Fortschritt",
-        "sessionsEst": "Sitzungen (est.)"
+        "sessionsEst": "Sitzungen (dok. / est.)"
       },
+      "zoneLogSession": "Sitzung für diese Zone dokumentieren",
       "statusTitle": "Status",
       "saveStatus": "Status speichern",
       "statuses": {
@@ -1975,6 +2033,8 @@ const de: TranslationSchema = {
       "selectCase": "Fall auswählen…",
       "availabilityLoadError": "Verfügbarkeit konnte nicht geladen werden.",
       "earliestPrefix": "Frühestens:",
+      "smartBooking": "Intelligente Buchung",
+      "lockoutsLoading": "Sperrfristen werden geladen…",
       "dateRequired": "Datum *",
       "timeRequired": "Uhrzeit *",
       "type": "Typ",
@@ -1999,6 +2059,7 @@ const de: TranslationSchema = {
       "contactRecommended": "Kontakt empfohlen",
       "studioContactRecommended": "Studio-Kontakt empfohlen",
       "modalFallbackTitle": "Nachsorge-Check",
+      "zone": "Zone",
       "toCase": "Zum Fall",
       "close": "Schliessen",
       "headers": {
@@ -2131,6 +2192,7 @@ const de: TranslationSchema = {
       "finalizeSuccess": "Sitzung erfolgreich abgeschlossen.",
       "finalizeError": "Fehler beim Finalisieren.",
       "title": "Sitzung #{{number}}",
+      "zone": "Zone",
       "finalize": "Sitzung abschliessen",
       "draftBadge": "Entwurf",
       "noShowBadge": "No-Show",
@@ -2263,6 +2325,11 @@ const de: TranslationSchema = {
       "linkedApptHint": "Datum, Uhrzeit und Fall stammen vom gebuchten Termin{{when}}. Laserparameter bitte ergänzen.",
       "linkedAppt": "Mit Termin verknüpft{{when}}.",
       "general": "Allgemein",
+      "zoneLabel": "Zone *",
+      "zonePlaceholder": "— Zone wählen —",
+      "zoneHint": "Jede Zone hat ihr eigenes Sitzungsprotokoll, ihre eigene Verblassungsanalyse und ihren eigenen Fortschritt.",
+      "zoneProgress": "Diese Zone: {{done}} Sitzung(en) dokumentiert · {{percent}}% Verblassung",
+      "zoneRequired": "Bitte die behandelte Zone wählen.",
       "dateRequiredLabel": "Datum *",
       "time": "Uhrzeit",
       "durationMin": "Dauer (Min.)",
@@ -2878,6 +2945,31 @@ const de: TranslationSchema = {
         "goal_full": "Vollständige Entfernung",
         "goal_partial": "Teilweise Aufhellung",
         "goal_lighten": "Aufhellung für Cover-up"
+      },
+      "live": {
+        "title": "Live-Preisberechnung",
+        "subtitle": "Zeigt sofort, wie sich jede Änderung auf den Endpreis auswirkt — dieselbe Berechnung wie beim Kunden.",
+        "previewFailed": "Vorschau fehlgeschlagen",
+        "exampleCase": "Beispiel-Fall",
+        "presets": {
+          "example_1": "Kleines schwarzes Tattoo (6 cm²)",
+          "example_2": "Mittleres farbiges Tattoo (40 cm²)",
+          "example_3": "Grosses Cover-up an der Hand (80 cm²)"
+        },
+        "chf": "CHF",
+        "saved": "Gespeichert",
+        "draft": "Neuer Wert",
+        "calculatedPrice": "Berechneter Preis",
+        "areaLabel": "Basispreis",
+        "roundedTo5": "Aufgerundet auf 5 CHF",
+        "minPriceApplied": "Mindestpreis / Sitzung angewendet",
+        "perSessionHint": "Preis pro Sitzung. Die Gesamtkosten ergeben sich aus dem Preis pro Sitzung × Anzahl der prognostizierten Sitzungen.",
+        "issues": {
+          "must_be_positive": "muss grösser als 0 sein, sonst kann kein Preis berechnet werden.",
+          "must_not_be_negative": "darf nicht negativ sein.",
+          "multiplier_must_be_positive": "ein Multiplikator von 0 oder weniger setzt jeden Preis auf 0. Bitte einen Wert grösser als 0 eintragen (kein Einfluss = 1).",
+          "multiplier_unusually_high": "dieser Multiplikator ist aussergewöhnlich hoch — bitte prüfen, ob das beabsichtigt ist."
+        }
       }
     },
     "sessionPrediction": {
@@ -3271,6 +3363,11 @@ const de: TranslationSchema = {
       "wizardTitle": "Nachsorge & Unterschrift",
       "stepLeaflet": "Merkblatt",
       "stepSignature": "Unterschrift",
+      "stepAnamnese": "Anamnese",
+      "anamneseHeading": "Bestätigung Anamnese & Unterschrift",
+      "anamneseCheckbox": "Ich bestätige, dass alle Angaben der medizinischen Anamnese wahrheitsgemäss und vollständig sind.",
+      "needAnamneseSignature": "Bitte bestätigen und unterschreiben.",
+      "anamneseSigned": "Anamnese bestätigt: {{date}}",
       "leafletHeading": "Nachsorgehinweise",
       "leafletIntro": "Bitte lies die folgenden Hinweise sorgfältig durch.",
       "cancel": "Abbrechen",
@@ -3302,7 +3399,20 @@ const de: TranslationSchema = {
       "lockedUntil": " · gesperrt bis {{until}}",
       "noLockouts": "Keine aktiven Sperrfristen",
       "nextWindow": "Nächstes freies Fenster ab {{from}}",
-      "book": "Termin buchen"
+      "book": "Termin buchen",
+      "reasonsTitle": "Warum nicht früher?",
+      "loading": "Sperrfristen werden geladen…",
+      "updated": "Sperrfristen aktualisiert",
+      "reasons": {
+        "uv": "UV-Exposition: {{days}} Tage",
+        "uvActive": "UV-Sperrfrist aktiv",
+        "med": "Medikament: {{days}} Tage",
+        "medActive": "Medikamenten-Sperrfrist aktiv",
+        "crossCase": "Cross-Case-Sperrfrist: {{days}} Tage wegen Tattoo Case «{{case}}»",
+        "crossCaseNoDays": "Cross-Case-Sperrfrist wegen Tattoo Case «{{case}}»",
+        "sameCase": "Sperrfrist dieses Cases: {{days}} Tage seit der letzten Behandlung",
+        "sameCaseNoDays": "Sperrfrist dieses Cases seit der letzten Behandlung"
+      }
     },
     "activityTags": {
       "BUCHUNG": "Buchung",

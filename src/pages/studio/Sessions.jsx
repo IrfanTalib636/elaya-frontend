@@ -41,7 +41,12 @@ const SessionRow = ({ s, onClick, statusLabels, language }) => {
       <td className="px-5 py-3 text-studio-w1 text-[12px] font-mono tabular-nums">{s.session_number ?? '—'}</td>
       <td className="px-5 py-3 text-studio-white text-[12px]">{fmtDate(s.treatment_date, language)}</td>
       <td className="px-5 py-3 text-studio-w1 text-[12px]">{customerName(s.customer)}</td>
-      <td className="px-5 py-3 text-studio-gold-2 text-[12px] font-mono">{caseLabel}</td>
+      <td className="px-5 py-3 text-studio-gold-2 text-[12px] font-mono">
+        {caseLabel}
+        {s.zonen_id ? (
+          <span className="block text-studio-w3 text-[10px]">{s.zonen_id}</span>
+        ) : null}
+      </td>
       <td className="px-5 py-3 text-studio-w2 text-[12px] tabular-nums">
         {s.verblassung_prozent != null ? `${s.verblassung_prozent}%` : '—'}
       </td>

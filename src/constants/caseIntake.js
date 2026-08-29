@@ -26,7 +26,6 @@ export const LIFE_HYDRATION = caseForm.lifeHydration
 export const LIFE_NUTRITION = caseForm.lifeNutrition
 export const GOAL_TARGETS = caseForm.goalTargets
 export const ZONE_DICHTE = caseForm.zoneDichte
-export const ZONE_FLAECHEN = caseForm.zoneFlaechen
 export const PHOTO_STD_CHECKLIST = caseForm.photoChecklist
 
 export const INITIAL_CASE_FORM = {

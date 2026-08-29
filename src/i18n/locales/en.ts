@@ -1039,38 +1039,6 @@ const en = {
         "Very high"
       ]
     ],
-    "zoneFlaechen": [
-      {
-        "value": "xs",
-        "label": "Very small",
-        "cm2": 3
-      },
-      {
-        "value": "sm",
-        "label": "Small",
-        "cm2": 8
-      },
-      {
-        "value": "md",
-        "label": "Medium",
-        "cm2": 13.5
-      },
-      {
-        "value": "lg",
-        "label": "Large",
-        "cm2": 21
-      },
-      {
-        "value": "xl",
-        "label": "Very large",
-        "cm2": 33
-      },
-      {
-        "value": "xxl",
-        "label": "Extra large",
-        "cm2": 45
-      }
-    ],
     "photoChecklist": [
       {
         "key": "photo_full_visible",
@@ -1199,9 +1167,18 @@ const en = {
         "colors": "Colors *",
         "density": "Density *",
         "area": "Area *",
-        "customArea": "Custom (cm²)",
         "areaCm2": "Area (cm²)",
         "addZone": "Add zone",
+        "zoneDimensions": "Size of this zone *",
+        "zoneDimensionsHint": "Length and width in cm — the area is calculated automatically.",
+        "zoneEstimate": "Estimate for this zone",
+        "zoneEstimateSessions": "sessions",
+        "zoneEstimatePending": "Calculated once saved.",
+        "zonePhoto": "Photo of this zone *",
+        "zonePhotoFor": "Photo for “{zone}”",
+        "zonePhotoNotice": "Always photograph exactly this area — from the same angle and with the same framing. Every aftercare entry and every following session must show the same area, photographed the same way. Only then can the healing process and the fading progress be documented correctly and compared over time. The customer takes the aftercare photos themselves in the app and uploads them directly to the matching zone. The fading documentation is done by the studio — also always per zone separately, using the same framing and angle as this first photo.",
+        "zonesGroupTitle": "Zones of this tattoo",
+        "zonesGroupHint": "All zones belong to one large tattoo. Each zone is priced, photographed and documented separately.",
         "colorDensity": "Color density",
         "saturation": "Saturation",
         "shading": "Shading",
@@ -1210,6 +1187,13 @@ const en = {
         "dimensionsHint": "Measure with ruler — studio confirms exactly.",
         "length": "Length",
         "width": "Width"
+      },
+      "prefill": {
+        "previousAnswer": "Previous answer",
+        "change": "Change",
+        "cigsPerDay": "{amount} cigarettes/day",
+        "notice": "Carried over from this customer's last case. Please review and change only what is different.",
+        "noticeWithSource": "Carried over from case {source} of this customer. Please review and change only what is different."
       },
       "skin": {
         "fitzpatrick": "Fitzpatrick skin type *",
@@ -1315,6 +1299,8 @@ const en = {
       "sessionPrediction": "Session prediction",
       "hours": "Opening hours",
       "groupBooking": "Group booking",
+      "bookingRules": "Blocking periods",
+      "locations": "Locations",
       "rooms": "Rooms",
       "staff": "Staff",
       "stripe": "Stripe"
@@ -1426,7 +1412,47 @@ const en = {
       "mediumMax": "Medium tattoo max (cm²)",
       "maxPoints": "Max points per appointment",
       "discount": "Group discount (%)",
-      "discountHint": "Applied to the combined session price of all selected cases."
+      "discountHint": "Applied to the combined session price of all selected cases.",
+      "categorySmall": "Small",
+      "categoryMedium": "Medium",
+      "categoryLarge": "Large",
+      "points_one": "{{count}} point",
+      "points_other": "{{count}} points",
+      "smallUpTo": "Small up to (cm²)",
+      "mediumUpTo": "Medium up to (cm²)",
+      "largeFrom": "Large from (cm²)",
+      "rangeUpTo": "up to {{max}} cm²",
+      "rangeBetween": "over {{min}} up to {{max}} cm²",
+      "rangeAbove": "over {{min}} cm²",
+      "largeNote": "A large tattoo takes up the full point limit, so it must always be booked on its own — no other case can be added to the same appointment.",
+      "boundaryHint": "Same boundary as “Medium up to” — changing one moves both.",
+      "pointsFixedHint": "Point values are fixed platform-wide and cannot be changed per studio."
+    },
+    "bookingRules": {
+      "title": "Blocking periods & appointments",
+      "desc": "Medical wait times and appointment defaults for this studio. The customer app reads these values, so a change takes effect for every new booking.",
+      "lockoutsTitle": "Blocking periods",
+      "appointmentsTitle": "Appointments",
+      "units": {
+        "days": "days",
+        "hours": "hours",
+        "minutes": "min"
+      },
+      "lockouts": {
+        "sameCase": "Same tattoo case",
+        "crossCase": "Other tattoo case",
+        "uvModerate": "Moderate UV exposure",
+        "uvIntense": "Intense UV exposure",
+        "medShort": "Antibiotics / antidepressants",
+        "medRetinoids": "Retinoids"
+      },
+      "appointments": {
+        "treatmentDuration": "Treatment duration",
+        "consultDuration": "Consultation duration",
+        "groupDuration": "Group appointment duration",
+        "horizon": "Bookable in advance",
+        "leadTime": "Minimum lead time"
+      }
     },
     "hours": {
       "title": "Opening hours",
@@ -1469,9 +1495,35 @@ const en = {
         "dateRequired": "Please select a date."
       }
     },
+    "locations": {
+      "title": "Locations",
+      "desc": "Branches customers can choose from when booking. Customers switch between them freely — no transfer request needed.",
+      "empty": "No locations yet. Customers book at the studio address.",
+      "inactive": "Inactive",
+      "fallbackName": "Location {{index}}",
+      "removeAria": "Remove location",
+      "name": "Name",
+      "street": "Street",
+      "zip": "ZIP",
+      "city": "City",
+      "active": "Bookable",
+      "inherit": "Inherit from studio",
+      "slotInterval": "Slot interval",
+      "buffer": "Buffer (minutes)",
+      "inheritsHours": "Uses the studio opening hours",
+      "slotOverride": "Own slot interval: {{minutes}} min",
+      "addLocation": "Add location",
+      "toasts": {
+        "loadFailed": "Could not load locations.",
+        "nameRequired": "Every location needs a name.",
+        "saved": "Locations saved."
+      }
+    },
     "rooms": {
       "title": "Rooms & equipment",
       "desc": "Treatment rooms and laser devices for calendar and sessions.",
+      "location": "Location",
+      "allLocations": "All locations",
       "empty": "No rooms created yet.",
       "inactive": "Inactive",
       "colorAria": "Room colour",
@@ -1504,6 +1556,8 @@ const en = {
       "role": "Role",
       "room": "Room",
       "noRoom": "— No room —",
+      "location": "Location",
+      "allLocations": "All locations",
       "active": "Active",
       "addStaff": "Add staff member",
       "roles": {
@@ -1809,12 +1863,16 @@ const en = {
       },
       "zonesTitle": "Zones",
       "zoneHeaders": {
+        "photo": "Photo",
         "id": "Zone ID",
+        "name": "Label",
         "body": "Body area",
         "area": "Area cm²",
+        "price": "Price/session",
         "progress": "Progress",
-        "sessionsEst": "Sessions (est.)"
+        "sessionsEst": "Sessions (logged / est.)"
       },
+      "zoneLogSession": "Log a session for this zone",
       "statusTitle": "Status",
       "saveStatus": "Save status",
       "statuses": {
@@ -1973,6 +2031,8 @@ const en = {
       "selectCase": "Select case…",
       "availabilityLoadError": "Could not load availability.",
       "earliestPrefix": "Earliest:",
+      "smartBooking": "Smart booking",
+      "lockoutsLoading": "Loading lockouts…",
       "dateRequired": "Date *",
       "timeRequired": "Time *",
       "type": "Type",
@@ -1997,6 +2057,7 @@ const en = {
       "contactRecommended": "Contact recommended",
       "studioContactRecommended": "Studio contact recommended",
       "modalFallbackTitle": "Aftercare check",
+      "zone": "Zone",
       "toCase": "Open case",
       "close": "Close",
       "headers": {
@@ -2129,6 +2190,7 @@ const en = {
       "finalizeSuccess": "Session completed successfully.",
       "finalizeError": "Could not finalize.",
       "title": "Session #{{number}}",
+      "zone": "Zone",
       "finalize": "Complete session",
       "draftBadge": "Draft",
       "noShowBadge": "No-show",
@@ -2261,6 +2323,11 @@ const en = {
       "linkedApptHint": "Date, time and case are taken from the booked appointment{{when}}. Please add laser parameters.",
       "linkedAppt": "Linked to appointment{{when}}.",
       "general": "General",
+      "zoneLabel": "Zone *",
+      "zonePlaceholder": "— Select zone —",
+      "zoneHint": "Every zone keeps its own session log, fading analysis and progress.",
+      "zoneProgress": "This zone: {{done}} session(s) logged · {{percent}}% fading",
+      "zoneRequired": "Please select the zone that was treated.",
       "dateRequiredLabel": "Date *",
       "time": "Time",
       "durationMin": "Duration (min)",
@@ -2876,6 +2943,31 @@ const en = {
         "goal_full": "Full removal",
         "goal_partial": "Partial lightening",
         "goal_lighten": "Lighten for cover-up"
+      },
+      "live": {
+        "title": "Live price calculation",
+        "subtitle": "Shows immediately how each change affects the final price — the same calculation the customer gets.",
+        "previewFailed": "Preview failed",
+        "exampleCase": "Example case",
+        "presets": {
+          "example_1": "Small black tattoo (6 cm²)",
+          "example_2": "Medium colour tattoo (40 cm²)",
+          "example_3": "Large cover-up on hand (80 cm²)"
+        },
+        "chf": "CHF",
+        "saved": "Saved",
+        "draft": "New value",
+        "calculatedPrice": "Calculated price",
+        "areaLabel": "Base price",
+        "roundedTo5": "Rounded up to CHF 5",
+        "minPriceApplied": "Minimum price / session applied",
+        "perSessionHint": "Price per session. The total is the price per session × the number of predicted sessions.",
+        "issues": {
+          "must_be_positive": "must be greater than 0, otherwise no price can be calculated.",
+          "must_not_be_negative": "must not be negative.",
+          "multiplier_must_be_positive": "a multiplier of 0 or less sets every price to 0. Please enter a value greater than 0 (no effect = 1).",
+          "multiplier_unusually_high": "this multiplier is unusually high — please check that it is intended."
+        }
       }
     },
     "sessionPrediction": {
@@ -3269,6 +3361,11 @@ const en = {
       "wizardTitle": "Aftercare & signature",
       "stepLeaflet": "Leaflet",
       "stepSignature": "Signature",
+      "stepAnamnese": "Anamnesis",
+      "anamneseHeading": "Anamnesis confirmation & signature",
+      "anamneseCheckbox": "I confirm that all medical anamnesis information is truthful and complete.",
+      "needAnamneseSignature": "Please confirm and sign.",
+      "anamneseSigned": "Anamnesis confirmed: {{date}}",
       "leafletHeading": "Aftercare notes",
       "leafletIntro": "Please read the following notes carefully.",
       "cancel": "Cancel",
@@ -3300,7 +3397,20 @@ const en = {
       "lockedUntil": " · locked until {{until}}",
       "noLockouts": "No active lockouts",
       "nextWindow": "Next free window from {{from}}",
-      "book": "Book appointment"
+      "book": "Book appointment",
+      "reasonsTitle": "Why not earlier?",
+      "loading": "Loading lockouts…",
+      "updated": "Lockouts updated",
+      "reasons": {
+        "uv": "UV exposure: {{days}} days",
+        "uvActive": "UV blocking period active",
+        "med": "Medication: {{days}} days",
+        "medActive": "Medication blocking period active",
+        "crossCase": "Cross-case blocking period: {{days}} days due to tattoo case “{{case}}”",
+        "crossCaseNoDays": "Cross-case blocking period due to tattoo case “{{case}}”",
+        "sameCase": "Blocking period for this case: {{days}} days since the last treatment",
+        "sameCaseNoDays": "Blocking period for this case since the last treatment"
+      }
     },
     "activityTags": {
       "BUCHUNG": "Booking",

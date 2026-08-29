@@ -33,7 +33,11 @@ const appointmentCaseId = (appt) => {
   return String(value)
 }
 
+const zoneLabel = (zone) =>
+  [zone.zonen_id, zone.bezeichnung || zone.koerperstelle].filter(Boolean).join(' · ')
+
 const INITIAL = {
+  zonen_id:            '',
   treatment_date:      '',
   treatment_time:      '',
   dauer_minuten:       '',
@@ -144,6 +148,7 @@ const NewSession = () => {
   const [searchParams] = useSearchParams()
   const caseId = searchParams.get('case_id')
   const appointmentId = searchParams.get('appointment_id')
+  const presetZoneId = searchParams.get('zonen_id')
 
   const [caseData, setCaseData] = useState(null)
   const [linkedAppointment, setLinkedAppointment] = useState(null)
@@ -162,8 +167,15 @@ const NewSession = () => {
   }, [photoPreview])
 
   const saving = savingDraft || savingFinal
-  const nextSession = (caseData?.sessionsDone ?? 0) + 1
+  const zones = caseData?.zonen_aktiv ? (caseData.zonen ?? []) : []
+  const selectedZone = zones.find((z) => z.zonen_id === form.zonen_id) ?? null
+  // Zones are treated as independent tattoos, so the session number and the
+  // availability of the AI comparison follow the selected zone, not the case.
+  const nextSession = zones.length
+    ? (selectedZone?.sitzungen_erledigt ?? 0) + 1
+    : (caseData?.sessionsDone ?? 0) + 1
   const kiAvailable = nextSession >= 2
+  const zoneMissing = zones.length > 0 && !form.zonen_id
 
   useEffect(() => {
     if (!caseId) {
@@ -174,7 +186,18 @@ const NewSession = () => {
     const load = async () => {
       try {
         const res = await getCase(caseId)
-        setCaseData(res.data.data.case)
+        const loaded = res.data.data.case
+        setCaseData(loaded)
+
+        // Preselect the zone when the studio arrived from a specific zone row,
+        // or when the case only has one zone to choose from.
+        const caseZones = loaded?.zonen_aktiv ? (loaded.zonen ?? []) : []
+        const preset =
+          caseZones.find((z) => z.zonen_id === presetZoneId) ??
+          (caseZones.length === 1 ? caseZones[0] : null)
+        if (preset) {
+          setForm((prev) => ({ ...prev, zonen_id: preset.zonen_id }))
+        }
       } catch {
         toast.error(copy.caseLoadError)
         navigate(-1)
@@ -206,7 +229,16 @@ const NewSession = () => {
       }
     }
     load()
-  }, [caseId, appointmentId, navigate])
+  }, [
+    caseId,
+    appointmentId,
+    presetZoneId,
+    navigate,
+    copy.caseLoadError,
+    copy.apptWrongCase,
+    copy.apptLoadError,
+    copy.noCase,
+  ])
 
   const set = useCallback(
     (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value })),
@@ -231,6 +263,7 @@ const NewSession = () => {
     return {
       case_id:             caseId,
       appointment_id:      appointmentId || undefined,
+      zonen_id:            form.zonen_id || undefined,
       treatment_date:      form.treatment_date,
       treatment_time:      form.treatment_time   || undefined,
       dauer_minuten:       form.dauer_minuten     ? Number(form.dauer_minuten)    : undefined,
@@ -292,6 +325,10 @@ const NewSession = () => {
   const handleSave = async (isDraft) => {
     if (!form.treatment_date) {
       toast.error(copy.dateRequired)
+      return
+    }
+    if (zoneMissing) {
+      toast.error(copy.zoneRequired)
       return
     }
     isDraft ? setSavingDraft(true) : setSavingFinal(true)
@@ -358,7 +395,7 @@ const NewSession = () => {
 
       <PageHeader
         title={t('studioPages.newSession.title', { number: nextSession })}
-        subtitle={`${caseTitle} · ${caseData?.caseId ?? ''}${linkedAppointment ? copy.fromAppointment : ''}`}
+        subtitle={`${caseTitle} · ${caseData?.caseId ?? ''}${selectedZone ? ` · ${zoneLabel(selectedZone)}` : ''}${linkedAppointment ? copy.fromAppointment : ''}`}
       >
         <Button variant="ghost" onClick={() => navigate(`/studio/cases/${caseId}`)} disabled={saving}>
           {copy.cancel}
@@ -383,6 +420,31 @@ const NewSession = () => {
                   : '',
               })}
             </p>
+          ) : null}
+          {zones.length ? (
+            <div className="flex flex-col gap-1.5">
+              <Select
+                label={copy.zoneLabel}
+                value={form.zonen_id}
+                onChange={set('zonen_id')}
+                hint={copy.zoneHint}
+              >
+                <option value="">{copy.zonePlaceholder}</option>
+                {zones.map((z) => (
+                  <option key={z.zonen_id} value={z.zonen_id}>
+                    {zoneLabel(z)}
+                  </option>
+                ))}
+              </Select>
+              {selectedZone ? (
+                <p className="text-studio-gold-2 text-[11px] m-0">
+                  {t('studioPages.newSession.zoneProgress', {
+                    done: selectedZone.sitzungen_erledigt ?? 0,
+                    percent: selectedZone.fortschritt_prozent ?? 0,
+                  })}
+                </p>
+              ) : null}
+            </div>
           ) : null}
           <div className="grid grid-cols-3 gap-4">
             <Input

@@ -6,7 +6,8 @@ import { listAppointments, createAppointment } from '../../api/appointments'
 import { listCustomers } from '../../api/customers'
 import { listCases, getCaseAvailability } from '../../api/cases'
 import { getStudioSettings, updateStudioSettings } from '../../api/studio'
-import { fmtDateDeLong } from '../../utils/time'
+import { fmtDateDeLong, fmtDateLong } from '../../utils/time'
+import { lockoutReasonText } from '../../utils/lockoutReason'
 import { resolveHoursForDate } from '../../utils/studioHours'
 import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
 import PreSessionCheck, { EMPTY_PRE_SESSION, preSessionToParams, preSessionToBody } from '../../components/case/PreSessionCheck'
@@ -23,18 +24,11 @@ const DAY_START = 7
 const DAY_END   = 21
 const HOURS     = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i)
 const DAYS_DE   = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-const MONTHS_DE = ['Jan', 'Feb', 'März', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
 
 const TYPE_STYLE = {
   beratung:  'border-studio-amber  bg-studio-amber/10  text-studio-amber',
   treatment: 'border-studio-gold-2 bg-studio-gold/10   text-studio-gold-2',
   first:     'border-elaya-success bg-elaya-success/10 text-elaya-success',
-}
-
-const TYPE_LABELS = {
-  beratung:  'Beratung',
-  treatment: 'Behandlung',
-  first:     'Erstbehandlung',
 }
 
 const EMPTY_FORM = {
@@ -43,7 +37,8 @@ const EMPTY_FORM = {
   date:          '',
   time:          '',
   type:          'treatment',
-  dauer_minuten: 60,
+  /** Filled from the studio's configured duration once availability loads. */
+  dauer_minuten: '',
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -72,15 +67,6 @@ const getWeekNum = (date) => {
   return Math.ceil((((d - yearStart) / 86400000) + 1) / 7)
 }
 
-const fmtWeekRange = (monday) => {
-  const sunday    = addDays(monday, 6)
-  const sameMonth = monday.getMonth() === sunday.getMonth()
-  if (sameMonth) {
-    return `${monday.getDate()}. – ${sunday.getDate()}. ${MONTHS_DE[sunday.getMonth()]} ${sunday.getFullYear()}`
-  }
-  return `${monday.getDate()}. ${MONTHS_DE[monday.getMonth()]} – ${sunday.getDate()}. ${MONTHS_DE[sunday.getMonth()]} ${sunday.getFullYear()}`
-}
-
 const toMinutes = (time) => {
   const [h = 0, m = 0] = (time ?? '00:00').split(':').map(Number)
   return h * 60 + m
@@ -92,12 +78,12 @@ const snapTime = (yPx) => {
   return `${String(Math.floor(clamped / 60)).padStart(2, '0')}:${String(clamped % 60).padStart(2, '0')}`
 }
 
-const bookingErrorMessage = (err, t) => {
+const bookingErrorMessage = (err, t, language) => {
   const msg = err.response?.data?.message
   const fruehestes = err.response?.data?.errors?.fruehestes ?? err.response?.data?.fruehestes
   if (fruehestes) {
     const base = msg ?? t('studioPages.appointments.bookNotAllowed')
-    return `${base} ${t('studioPages.appointments.earliest', { date: fmtDateDeLong(fruehestes) })}`
+    return `${base} ${t('studioPages.appointments.earliest', { date: fmtDateLong(fruehestes, language) })}`
   }
   return msg ?? t('studioPages.appointments.bookError')
 }
@@ -132,9 +118,10 @@ const CurrentTimeLine = () => {
 }
 
 // ── ApptBlock ──────────────────────────────────────────────────────────────
-const ApptBlock = memo(({ appt, onClick, typeLabels, groupLabel }) => {
+const ApptBlock = memo(({ appt, onClick, typeLabels, groupLabel, slotMinutes }) => {
   const startMin = toMinutes(appt.time)
-  const dur      = appt.dauer_minuten ?? 60
+  // Legacy rows without a duration occupy one slot of the studio's grid.
+  const dur      = appt.dauer_minuten ?? slotMinutes
   const top      = (startMin - DAY_START * 60) / 60 * HOUR_H
   const height   = Math.max(dur / 60 * HOUR_H, 24)
   const faded    = appt.status === 'storniert' || appt.status === 'cancelled'
@@ -201,7 +188,7 @@ const collapseGroupAppointments = (appointments) => {
 }
 
 // ── DayCol ─────────────────────────────────────────────────────────────────
-const DayCol = memo(({ dateISO, isToday, appointments, closed, onApptClick, onCellClick, typeLabels, groupLabel }) => {
+const DayCol = memo(({ dateISO, isToday, appointments, closed, onApptClick, onCellClick, typeLabels, groupLabel, slotMinutes }) => {
   const handleClick = useCallback((e) => {
     if (closed) return
     const rect = e.currentTarget.getBoundingClientRect()
@@ -230,7 +217,7 @@ const DayCol = memo(({ dateISO, isToday, appointments, closed, onApptClick, onCe
 
       <div className="absolute inset-0 pointer-events-none">
         {collapseGroupAppointments(appointments).map((a) => (
-          <ApptBlock key={a.gruppen_id || a.id || a._id} appt={a} onClick={onApptClick} typeLabels={typeLabels} groupLabel={groupLabel} />
+          <ApptBlock key={a.gruppen_id || a.id || a._id} appt={a} onClick={onApptClick} typeLabels={typeLabels} groupLabel={groupLabel} slotMinutes={slotMinutes} />
         ))}
       </div>
 
@@ -240,7 +227,7 @@ const DayCol = memo(({ dateISO, isToday, appointments, closed, onApptClick, onCe
 })
 
 // ── DayHeaders ─────────────────────────────────────────────────────────────
-const DayHeaders = memo(({ weekDays, todayISO, hoursByIso = {}, onDayClick, daysShort = DAYS_DE }) => (
+const DayHeaders = memo(({ weekDays, todayISO, hoursByIso = {}, onDayClick, daysShort = DAYS_DE, editDayTitle = '' }) => (
   <div className="flex shrink-0 border-b border-elaya-border bg-studio-bg">
     <div className="w-14 shrink-0" />
     {weekDays.map(({ date, iso }) => {
@@ -253,7 +240,7 @@ const DayHeaders = memo(({ weekDays, todayISO, hoursByIso = {}, onDayClick, days
           type="button"
           onClick={() => onDayClick?.(iso)}
           className="flex-1 flex flex-col items-center py-2.5 border-l border-elaya-border bg-transparent cursor-pointer hover:bg-studio-bg-4 transition-colors"
-          title={copy.editDayAvailability}
+          title={editDayTitle}
         >
           <span
             translate="no"
@@ -288,7 +275,7 @@ const NewApptModal = ({
   onClose,
   onCreated,
 }) => {
-  const { t, studioPages } = useContent()
+  const { t, studioPages, language } = useContent()
   const copy = studioPages.appointments
   const [form, setForm] = useState({
     ...EMPTY_FORM,
@@ -304,6 +291,24 @@ const NewApptModal = ({
   const [availability, setAvailability] = useState(null)
   const [loadingAvailability, setLoadingAvailability] = useState(false)
   const [preSession, setPreSession] = useState({ ...EMPTY_PRE_SESSION })
+  const autoDurationRef = useRef('')
+
+  /**
+   * Duration defaults to what the studio configured for this appointment type.
+   * A value the user typed is never overwritten.
+   */
+  useEffect(() => {
+    const cfg = availability?.termin_einstellungen
+    if (!cfg) return
+    const configured =
+      form.type === 'beratung' ? cfg.beratung_dauer_minuten : cfg.behandlung_dauer_minuten
+    if (configured == null) return
+    setForm((p) => {
+      if (p.dauer_minuten !== '' && p.dauer_minuten !== autoDurationRef.current) return p
+      autoDurationRef.current = String(configured)
+      return { ...p, dauer_minuten: String(configured) }
+    })
+  }, [availability?.termin_einstellungen, form.type])
 
   useEffect(() => {
     listCustomers({ limit: 100 })
@@ -323,32 +328,44 @@ const NewApptModal = ({
       .finally(() => setLoadingCases(false))
   }, [form.customer_id])
 
+  const loadAvailability = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!form.case_id || form.type === 'beratung') {
+        setAvailability(null)
+        return
+      }
+
+      if (!silent) setLoadingAvailability(true)
+
+      try {
+        // The modal reads only `termin_einstellungen`, `fruehestes` and
+        // `sperren`, none of which depend on a date range — so no from/to, and
+        // `form.date` is not a dependency. Otherwise every keystroke in the
+        // date field refetched a 120-day calendar payload.
+        const res = await getCaseAvailability(form.case_id, preSessionToParams(preSession))
+        setAvailability(res.data.data)
+      } catch {
+        // Keep the last known lockouts on a failed background refresh.
+        if (!silent) setAvailability(null)
+      } finally {
+        if (!silent) setLoadingAvailability(false)
+      }
+    },
+    [form.case_id, form.type, preSession]
+  )
+
   useEffect(() => {
-    if (!form.case_id || form.type === 'beratung') {
-      setAvailability(null)
-      return
-    }
+    void loadAvailability()
+  }, [loadAvailability])
 
-    let cancelled = false
-    setLoadingAvailability(true)
-
-    const from = form.date || toISO(new Date())
-    const toDate = addDays(new Date(`${from}T12:00:00`), 120)
-    const to = toISO(toDate)
-
-    getCaseAvailability(form.case_id, { from, to, ...preSessionToParams(preSession) })
-      .then((res) => {
-        if (!cancelled) setAvailability(res.data.data)
-      })
-      .catch(() => {
-        if (!cancelled) setAvailability(null)
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingAvailability(false)
-      })
-
-    return () => { cancelled = true }
-  }, [form.case_id, form.type, form.date, preSession])
+  // Another booking or a documented session can move this case's earliest date
+  // while the modal is open, which would otherwise leave a stale `min` date.
+  usePlatformConfigSocket({
+    enabled: Boolean(form.case_id) && form.type !== 'beratung',
+    onAvailabilityChanged: () => {
+      void loadAvailability({ silent: true })
+    },
+  })
 
   const set = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }))
   const onCustomerChange = (e) => {
@@ -382,7 +399,7 @@ const NewApptModal = ({
       form.type !== 'beratung' &&
       form.date < availability.fruehestes
     ) {
-      toast.error(t('studioPages.appointments.tooEarly', { date: fmtDateDeLong(availability.fruehestes) }))
+      toast.error(t('studioPages.appointments.tooEarly', { date: fmtDateLong(availability.fruehestes, language) }))
       return
     }
 
@@ -400,7 +417,7 @@ const NewApptModal = ({
       toast.success(copy.bookSuccess)
       onCreated()
     } catch (err) {
-      toast.error(bookingErrorMessage(err, t))
+      toast.error(bookingErrorMessage(err, t, language))
     } finally {
       setSaving(false)
     }
@@ -444,21 +461,24 @@ const NewApptModal = ({
 
             <div className="rounded-[10px] border border-elaya-border bg-studio-bg-4 px-3 py-2.5">
             {loadingAvailability ? (
-              <p className="text-studio-w3 text-[11px] m-0">Sperrfristen werden geladen…</p>
+              <p className="text-studio-w3 text-[11px] m-0">{copy.lockoutsLoading}</p>
             ) : availability ? (
               <>
                 <p className="text-studio-w3 text-[10px] uppercase tracking-wider m-0 mb-1">
-                  Intelligente Buchung
+                  {copy.smartBooking}
                 </p>
                 <p translate="no" className="text-studio-white text-[12px] font-semibold m-0">
-                  {copy.earliestPrefix} {fmtDateDeLong(availability.fruehestes)}
+                  {copy.earliestPrefix} {fmtDateLong(availability.fruehestes, language)}
                 </p>
                 {availability.sperren?.length > 0 && (
                   <ul className="mt-2 mb-0 pl-0 list-none flex flex-col gap-1">
                     {availability.sperren.slice(0, 3).map((s, i) => (
-                      <li key={i} className="flex gap-1.5 text-[10px] text-studio-w2 leading-snug">
+                      <li
+                        key={`${s.kategorie ?? s.typ}-${s.bis ?? s.von}-${i}`}
+                        className="flex gap-1.5 text-[10px] text-studio-w2 leading-snug"
+                      >
                         <Lock size={10} className="shrink-0 mt-0.5 text-elaya-warning" />
-                        <span>{s.grund}</span>
+                        <span>{lockoutReasonText(t, s)}</span>
                       </li>
                     ))}
                   </ul>
@@ -517,7 +537,7 @@ const AvailabilityDayModal = ({
   onClose,
   onSaved,
 }) => {
-  const { t, studioPages } = useContent()
+  const { studioPages } = useContent()
   const copy = studioPages.appointments
   const current = resolveHoursForDate(weekly, exceptions, dateISO)
   const [mode, setMode] = useState(current.source === 'exception' ? (current.offen ? 'open' : 'closed') : 'weekly')
@@ -636,6 +656,8 @@ const StudioAppointments = () => {
   const [modalDefaults, setModalDefaults] = useState({ customerId: '', caseId: '' })
   const [weeklyHours, setWeeklyHours] = useState({})
   const [exceptions, setExceptions] = useState([])
+  /** Slot length of this studio's grid — null until settings load. */
+  const [slotMinutes, setSlotMinutes] = useState(null)
   const [editDay, setEditDay] = useState(null)
 
   const canEditHours = useAuthStore((s) => s.user?.role === ROLES.STUDIO_ADMIN)
@@ -646,6 +668,12 @@ const StudioAppointments = () => {
 
   // Compute todayISO once per render (cheap, but avoids 7+ calls in DayHeaders)
   const todayISO = toISO(new Date())
+
+  /** Opening time of a given day, so prefills always match the studio's hours. */
+  const openingTimeFor = useCallback(
+    (iso) => resolveHoursForDate(weeklyHours, exceptions, iso).von ?? '',
+    [weeklyHours, exceptions]
+  )
 
   // Memoize weekDays to avoid 7 new Date objects per render
   const weekDays = useMemo(
@@ -674,19 +702,22 @@ const StudioAppointments = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { load(weekStart) }, [weekStart, load])
 
-  useEffect(() => {
+  const loadSchedule = useCallback(() => {
     getStudioSettings()
       .then((res) => {
         const settings = res.data.data.settings
         setWeeklyHours(settings.oeffnungszeiten ?? {})
         setExceptions(settings.oeffnungs_ausnahmen ?? [])
+        setSlotMinutes(settings.slot_interval_minuten ?? null)
       })
       .catch(() => {})
   }, [])
+
+  useEffect(() => { loadSchedule() }, [loadSchedule])
 
   usePlatformConfigSocket({
     enabled: true,
@@ -695,25 +726,22 @@ const StudioAppointments = () => {
       if (schedule?.weekly) {
         setWeeklyHours(schedule.weekly)
         setExceptions(schedule.exceptions ?? [])
+        if (schedule.slot_interval_minuten != null) {
+          setSlotMinutes(schedule.slot_interval_minuten)
+        }
         return
       }
-      getStudioSettings()
-        .then((res) => {
-          const settings = res.data.data.settings
-          setWeeklyHours(settings.oeffnungszeiten ?? {})
-          setExceptions(settings.oeffnungs_ausnahmen ?? [])
-        })
-        .catch(() => {})
+      loadSchedule()
     },
   })
 
   useEffect(() => {
     if (!urlBook) return
     setModalDefaults({ customerId: urlCustomerId, caseId: urlCaseId })
-    setPrefill({ date: todayISO, time: '09:00' })
+    setPrefill({ date: todayISO, time: openingTimeFor(todayISO) })
     setShowModal(true)
     setSearchParams({}, { replace: true })
-  }, [urlBook, urlCaseId, urlCustomerId, todayISO, setSearchParams])
+  }, [urlBook, urlCaseId, urlCustomerId, todayISO, openingTimeFor, setSearchParams])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -786,14 +814,14 @@ const StudioAppointments = () => {
               size="sm"
               variant="secondary"
               onClick={() => {
-                setPrefill({ date: todayISO, time: '09:00' })
+                setPrefill({ date: todayISO, time: openingTimeFor(todayISO) })
                 setShowGroupModal(true)
               }}
             >
               <Users size={14} />
               {copy.groupAppointment}
             </Button>
-            <Button size="sm" onClick={() => openModal(todayISO, '09:00')}>
+            <Button size="sm" onClick={() => openModal(todayISO, openingTimeFor(todayISO))}>
               <Plus size={14} />
               {copy.newAppointment}
             </Button>
@@ -828,6 +856,7 @@ const StudioAppointments = () => {
         hoursByIso={hoursByIso}
         onDayClick={setEditDay}
         daysShort={daysShort}
+        editDayTitle={copy.editDayAvailability}
       />
 
       {/* Scrollable time grid */}
@@ -866,6 +895,7 @@ const StudioAppointments = () => {
                 onCellClick={openModal}
                 typeLabels={typeLabels}
                 groupLabel={groupLabel}
+                slotMinutes={slotMinutes}
               />
             ))}
           </div>
@@ -886,7 +916,7 @@ const StudioAppointments = () => {
       {showGroupModal && (
         <GroupBookingModal
           defaultDate={prefill.date || todayISO}
-          defaultTime={prefill.time || '09:00'}
+          defaultTime={prefill.time || openingTimeFor(prefill.date || todayISO)}
           onClose={() => setShowGroupModal(false)}
           onCreated={() => { setShowGroupModal(false); load(weekStart) }}
         />

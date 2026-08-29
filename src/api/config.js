@@ -9,3 +9,6 @@ export const updateStudioConfig = (data) => api.patch('/config/studio', data)
 /** Live Sitzungsprognose calculator — draft params + sample case, no persist. */
 export const previewSessionPrediction = (data) =>
   api.post('/config/session-prediction/preview', data)
+
+/** Live price calculator — draft studio_pricing + sample case, no persist. */
+export const previewPricing = (data) => api.post('/config/pricing/preview', data)

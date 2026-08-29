@@ -42,17 +42,6 @@ const ICON_CLASS = {
   other: { Icon: CircleDot, className: 'text-studio-w2' },
 }
 
-export const fmtActivityWhen = (ts) => {
-  if (!ts) return ''
-  return new Date(ts).toLocaleString('de-CH', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
 export const ActivityTag = ({ tag }) => {
   const { components } = useContent()
   const key = tag || 'SONSTIGES'

@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import GuestRoute from './components/GuestRoute'
 import StudioShell from './components/StudioShell'
 import useTheme from './hooks/useTheme'
+import SocketProvider from './socket/SocketProvider'
 import { STUDIO_ROLES, ADMIN_ROLES } from './constants/roles'
 
 // ── Page chunks (each becomes a separate build chunk) ──────────────────────
@@ -155,7 +156,9 @@ const AppInner = () => {
 
 const App = () => (
   <BrowserRouter>
-    <AppInner />
+    <SocketProvider>
+      <AppInner />
+    </SocketProvider>
   </BrowserRouter>
 )
 

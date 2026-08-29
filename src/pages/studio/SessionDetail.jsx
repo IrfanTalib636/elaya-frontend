@@ -385,7 +385,7 @@ const SessionDetail = () => {
     } catch {
       toast.error(copy.loadError)
     }
-  }, [id])
+  }, [id, copy.loadError])
 
   useEffect(() => {
     const load = async () => {
@@ -400,7 +400,7 @@ const SessionDetail = () => {
       }
     }
     load()
-  }, [id, navigate])
+  }, [id, navigate, copy.loadError])
 
   if (loading) {
     return (
@@ -455,7 +455,7 @@ const SessionDetail = () => {
 
       <PageHeader
         title={t('studioPages.sessionDetail.title', { number: session.session_number })}
-        subtitle={`${fmtDate(session.treatment_date)}${session.treatment_time ? ` · ${session.treatment_time}` : ''}`}
+        subtitle={`${fmtDate(session.treatment_date)}${session.treatment_time ? ` · ${session.treatment_time}` : ''}${session.zonen_id ? ` · ${copy.zone} ${session.zonen_id}` : ''}`}
       >
         <Badge variant="status" value={statusValue}>{statusLabel}</Badge>
         {session.is_draft && (

@@ -211,7 +211,7 @@ const Aftercare = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [copy.loadError, setChecks])
 
   useEffect(() => { load(page) }, [page, load])
 
@@ -278,6 +278,9 @@ const Aftercare = () => {
                     </td>
                     <td className="px-5 py-3 text-studio-gold-2 text-[12px] font-mono">
                       {c.case_display_id || (c.case_id ? `…${String(c.case_id).slice(-6)}` : '—')}
+                      {c.zonen_id ? (
+                        <span className="block text-studio-w3 text-[10px]">{c.zonen_id}</span>
+                      ) : null}
                     </td>
                     <td className="px-5 py-3"><AmpelBadge ampel={c.ampel} /></td>
                     <td className="px-5 py-3 text-studio-white text-[12px] font-medium">{c.titel || '—'}</td>
@@ -323,6 +326,11 @@ const Aftercare = () => {
               )}
               {detail.case_display_id && (
                 <span className="text-studio-gold-2 text-[12px] font-mono">{detail.case_display_id}</span>
+              )}
+              {detail.zonen_id && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-studio-bg-4 text-studio-w1 text-[10px] font-semibold font-mono">
+                  {copy.zone} {detail.zonen_id}
+                </span>
               )}
               <span className="text-studio-w3 text-[12px]">{fmtDate(detail.erstellt_am)}</span>
               {detail.tage_nach_sitzung != null && (

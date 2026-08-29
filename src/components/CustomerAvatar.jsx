@@ -1,5 +1,5 @@
 /** First + last initial for customer avatars (ignores leading spaces). */
-export const customerInitials = (vorname, nachname) => {
+const customerInitials = (vorname, nachname) => {
   const first = vorname?.trim()?.[0] ?? ''
   const last = nachname?.trim()?.[0] ?? ''
   const initials = `${first}${last}`.toUpperCase()

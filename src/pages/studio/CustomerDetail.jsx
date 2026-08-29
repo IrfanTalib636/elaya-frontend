@@ -211,7 +211,7 @@ const CustomerDetail = () => {
       }
     }
     load()
-  }, [id, navigate])
+  }, [id, navigate, copy.loadError])
 
   const savePipeline = async () => {
     setSavingPipeline(true)

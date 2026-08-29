@@ -6,7 +6,7 @@ Customer experience is **mobile-only** (separate project); the landing page link
 **Stack:** React 19 · Vite 8 · React Router 7 · Tailwind CSS v4 · Zustand · Axios · React Hot Toast · Lucide React  
 **Design source:** `inkderm-prototype/` (colors, layout, nav structure)  
 **API:** Connects to [Elaya Backend API](../elaya-backend/README.md) at `/api/v1`  
-**Last updated:** 2026-08-19
+**Last updated:** 2026-08-29
 
 ---
 
@@ -141,6 +141,49 @@ Price, sessions, lightening, and healing calculate automatically, but the studio
 | **Verblassung on Session Detail** | ✅ Done | Internal estimate + studio % / notes; customer % only when comparison is eligible |
 | **Kunden-Chat / Elaya FAB** | ✅ Done | `/studio/chat`, `/studio/elaya` |
 
+### Studio-editable rules & multi-location settings (2026-08-29)
+
+Everything that used to be a constant in the code is now editable by the studio and read from the API. Two new Settings tabs cover it.
+
+| Area | Status | Notes |
+|---|---|---|
+| **Settings → Sperrfristen** (`BookingRulesTab`) | ✅ Done | Blocking periods (same-case, cross-case, UV moderate/intense, medication short/retinoids) and appointment defaults (treatment / consultation / group duration, booking horizon, minimum lead time) |
+| **Settings → Standorte** (`LocationsTab`) | ✅ Done | Add / remove branches — name, address, own slot interval (15/30/45/60 or inherit), own buffer, and a bookable (`aktiv`) toggle |
+| **Rooms + staff per location** | ✅ Done | `RoomsTab` / `StaffTab` gained a Location select (defaults to "All locations"), shown only once a location exists |
+| **Group booking — all three tiers** | ✅ Done | `GroupBookingTab` lists **Klein (1 pt) · Mittelgross (2 pt) · Gross (4 pt)** with the cm² range per tier, editable thresholds, max points, and group discount |
+| **Large is bookable alone** | ✅ Done | The Large note explains it always consumes the full point limit. "Large from" edits the *same* stored `mittelgross_max_cm2` threshold, so no unreachable gap can be configured |
+| **Point values read-only** | ✅ Done | 1 / 2 / 4 come from the server (`gruppen_punkte`) and are platform-wide — studios tune the cm² thresholds instead |
+| **Admin parity** | ✅ Done | `/admin` studio modal (`Studios.jsx`) gained the same Blocking periods, Appointments, and three-tier group sections for any studio |
+| **No hardcoded defaults left** | ✅ Done | 50/150/4/15% group defaults, `'09:00'` prefills, `60`-minute durations, and `'10:00'`/`'19:00'` opening hours all now come from the studio |
+
+### Zone-level case tracking (2026-08-29)
+
+| Area | Status | Notes |
+|---|---|---|
+| **Zone intake measured** | ✅ Done | `CaseForm` zones take **length × width in cm** with a live `= N cm²` readout; the area-template picker (`ZONE_FLAECHEN`) is gone |
+| **Zone name required** | ✅ Done | "Zone name" is no longer optional |
+| **Photo required per zone** | ✅ Done | Each zone card has its own `PhotoUploadField` (`slot="zone"`) plus the re-photography notice — same area, same angle, every time |
+| **Per-zone estimate** | ✅ Done | Each zone card shows its own price/session and session range once saved |
+| **Grouping** | ✅ Done | A shared header makes clear the zone cards form **one** tattoo, even though each is treated as its own case |
+| **Zone table on Case Detail** | ✅ Done | Photo thumbnail, zone ID, label, body area, cm² (+ L × W), price/session, progress, `sitzungen_erledigt / min–max`, and a **Log session** action |
+| **Per-zone session logging** | ✅ Done | `NewSession` has a required Zone select (deep-linkable via `?zonen_id=`), and session number + AI-comparison availability follow the **selected zone**, not the case |
+| **Zone on lists** | ✅ Done | `Sessions`, `SessionDetail`, and `Aftercare` all show which zone a record belongs to |
+| **Intake prefill** | ✅ Done | Creating a second case for a customer carries over the 15 person-level skin/lifestyle answers, each shown as "Previous answer" with a **Change** link; sun exposure is always re-asked |
+
+### Booking transparency & single socket connection (2026-08-29)
+
+| Area | Status | Notes |
+|---|---|---|
+| **One socket for the whole dashboard** | ✅ Done | `SocketProvider` + `useSocketEvent` replace per-hook `io()` calls — a studio user held up to 8 connections before, now exactly 1 |
+| **Lazy socket bundle** | ✅ Done | `socket.io-client` is dynamically imported on connect, so unauthenticated visitors don't download it |
+| **Localized blocking reasons** | ✅ Done | `lockoutReason.js` maps `kategorie` + `tage` + `case_name` onto i18n keys — the German-only `sperre.grund` is no longer rendered |
+| **"Why not earlier?"** | ✅ Done | `CaseAvailabilityPanel` lists every active blocking period; the earliest date is always the most restrictive one |
+| **Live availability refresh** | ✅ Done | Case panel, booking modal, and group modal subscribe to `studio:availability_changed` (debounced 300 ms) and refresh silently, keeping the last known date if a background refresh fails |
+| **Second signature** | ✅ Done | `CaseSignaturePanel` has a third step for tattoo cases — the customer confirms the medical anamnesis is truthful and complete and signs **again**, stored separately |
+| **Live price preview** | ✅ Done | `PricingLiveCalculator` on the Pricing tab and in the admin modal — base price → each multiplier → final price, updating as values are typed |
+
+**Live price preview:** debounces 280 ms and calls `POST /config/pricing/preview`, so the number shown is produced by the same engine that quotes customers. It shows **saved → draft** with the CHF delta, dims neutral (× 1) factors so the ones that actually move the price stand out, and flags settings that break the maths — a multiplier of `0` collapses every price it touches and is reported as an error.
+
 ### Changelog
 
 ```
@@ -177,6 +220,19 @@ Price, sessions, lightening, and healing calculate automatically, but the studio
 [2026-08-19] — Estimate confirmation on Case Detail (confirm/adjust AI price + session range)
 [2026-08-19] — Nachsorge review UI (`/studio/aftercare`) — confirm/correct healing status
 [2026-08-19] — Session Detail: lightening studio override; customers never see internal multipliers
+[2026-08-29] — Settings: new Sperrfristen tab (blocking periods + appointment defaults) and Standorte tab (branches)
+[2026-08-29] — Settings: group booking shows all three tiers (Klein 1 / Mittelgross 2 / Gross 4) with editable thresholds
+[2026-08-29] — Rooms + staff can be assigned to a location; admin studio modal gained the same rules sections
+[2026-08-29] — Zone intake: length × width per zone (area derived), required zone name, required per-zone photo + notice, per-zone estimate, group header
+[2026-08-29] — Case Detail zone table: photo thumbnail, dimensions, price/session, sessions done, log-session action
+[2026-08-29] — NewSession: required zone select (?zonen_id=), session number and KI availability per zone; zone shown on Sessions / SessionDetail / Aftercare
+[2026-08-29] — Intake prefill: carry person-level skin/lifestyle answers from the customer's last case with per-question Change
+[2026-08-29] — Second signature step: anamnesis truthfulness confirmed and signed separately
+[2026-08-29] — Single multiplexed Socket.io connection (SocketProvider + useSocketEvent); socket.io-client dynamically imported
+[2026-08-29] — Localized blocking-period reasons (lockoutReason.js) + live availability refresh on case panel and booking modals
+[2026-08-29] — PricingLiveCalculator: live base → multipliers → final price with saved/draft delta and config sanity warnings
+[2026-08-29] — Removed hardcoded '09:00' prefills, 60-min durations, '10:00'/'19:00' hours, and the zone area templates
+[2026-08-29] — Fix: caseForm.ui.prefill copy was missing from the i18n bundles, crashing the wizard when an answer was carried over
 ```
 
 ---
@@ -197,7 +253,7 @@ Price, sessions, lightening, and healing calculate automatically, but the studio
 | `/studio/cases` | Studio roles | All cases list |
 | `/studio/cases/:id` | Studio roles | Case detail |
 | `/studio/sessions` | Studio roles | All sessions list |
-| `/studio/sessions/new` | Studio roles | New session form |
+| `/studio/sessions/new` | Studio roles | New session form — `?case_id=` and `?zonen_id=` preselect case + zone |
 | `/studio/sessions/:id` | Studio roles | Session detail + Verblassung review |
 | `/studio/appointments` | Studio roles | Week-grid calendar + single / Gruppen-Termin booking |
 | `/studio/analytics` | Studio roles | Revenue KPIs + charts |
@@ -209,7 +265,7 @@ Price, sessions, lightening, and healing calculate automatically, but the studio
 | `/studio/shop` | Studio roles | ElayShop orders + shipping status |
 | `/studio/transfers` | Studio roles | Studio-Wechsel — inbound/outbound transfer queue (read-only) |
 | `/studio/elaycoins` | Studio roles | Customer coin balances (read-only) |
-| `/studio/settings` | Studio roles | Settings — theme, pricing, profile, hours, rooms, staff |
+| `/studio/settings` | Studio roles | Settings — theme, pricing (live preview), group booking, blocking periods, locations, profile, hours, rooms, staff |
 | `/admin/login` | Guest only | Admin login |
 | `/admin/forgot-password` | Guest only | Forgot password (admin) |
 | `/admin/reset-password` | Guest only | Reset password (admin) |
@@ -265,12 +321,17 @@ frontend/
 │   │   ├── medical/
 │   │   │   └── MedicalAmpelDot.jsx
 │   │   ├── case/
-│   │   │   ├── CaseAvailabilityPanel.jsx
+│   │   │   ├── CaseAvailabilityPanel.jsx # Earliest date + "why not earlier?" (live)
 │   │   │   ├── CaseIntakePhotos.jsx     # Read-only intake photo grid on case detail
 │   │   │   ├── CasePricingPanel.jsx
-│   │   │   └── PreSessionCheck.jsx
+│   │   │   └── PreSessionCheck/
+│   │   │       ├── PreSessionCheck.jsx      # UV / medication component
+│   │   │       └── preSessionCheckFields.js # EMPTY_PRE_SESSION + payload mappers
+│   │   ├── pricing/
+│   │   │   ├── PricingConfigForm.jsx    # Shared studio + admin pricing form
+│   │   │   └── PricingLiveCalculator.jsx # Live base → multipliers → final price
 │   │   ├── appointments/
-│   │   │   ├── GroupBookingModal.jsx    # Gruppen-Termin create (15% rabatt)
+│   │   │   ├── GroupBookingModal.jsx    # Gruppen-Termin create (discount from config)
 │   │   │   └── GroupDetailModal.jsx     # Calendar click — sibling cases + total
 │   │   ├── GuestRoute.jsx       # Blocks auth pages when logged in
 │   │   └── ProtectedRoute.jsx   # Requires auth + allowed role
@@ -286,7 +347,15 @@ frontend/
 │   ├── lib/
 │   │   ├── axios.js             # API client + token interceptor
 │   │   ├── apiError.js          # Normalized error messages
+│   │   ├── socketConnection.js  # Single multiplexed Socket.io manager (lazy import)
 │   │   └── authRedirect.js      # Role → dashboard path
+│   ├── socket/
+│   │   ├── SocketProvider.jsx   # Connects once when authenticated
+│   │   └── socketContext.js     # SocketContext + useSocketBus()
+│   ├── hooks/
+│   │   ├── useSocketEvent.js    # useSocketEvent(event, handler, { debounceMs }) + useSocketStatus
+│   │   ├── usePlatformConfigSocket.js # Config / schedule / availability events
+│   │   └── useMessagingSocket.js      # Live customer chat
 │   ├── pages/
 │   │   ├── LandingPage.jsx
 │   │   ├── NotFoundPage.jsx
@@ -300,17 +369,41 @@ frontend/
 │   │       ├── Login.jsx, ForgotPassword.jsx, ResetPassword.jsx
 │   │       └── Dashboard.jsx
 │   ├── utils/
-│   │   ├── groupBooking.js      # Size points + 15% group pricing helpers
-│   │   └── time.js
+│   │   ├── groupBooking.js      # Size points + group pricing helpers
+│   │   ├── lockoutReason.js     # Blocking period → localized reason key
+│   │   ├── studioHours.js       # Opening hours / exceptions (no fallback times)
+│   │   └── time.js              # fmtDateLong(iso, language), …
 │   ├── store/
 │   │   └── authStore.js         # Zustand — session persist (no Provider needed)
 │   ├── styles/                  # Tailwind tokens + component classes
 │   ├── App.jsx
 │   ├── main.jsx
 │   └── index.css
+├── scripts/
+│   ├── verifySocketMultiplexing.mjs # Asserts one listener per event, not per subscriber
+│   └── checkPrefillCopy.mjs         # Asserts the wizard's prefill copy exists in both locales
 ├── .env                         # Local env (not committed — use .env.example)
 ├── package.json
 └── README.md
+```
+
+### Real-time (single connection)
+
+`SocketProvider` wraps the app and opens **one** Socket.io connection once the user is authenticated. Components never call `io()` themselves; they subscribe by event name and the manager keeps exactly one socket-level listener per event, fanning out to every subscriber.
+
+```js
+import useSocketEvent, { useSocketStatus } from './hooks/useSocketEvent'
+
+// Bursty events can be collapsed — several bookings in a row cause one refresh.
+useSocketEvent('studio:availability_changed', () => refresh(), { debounceMs: 300 })
+
+const connected = useSocketStatus()   // separate, so event-only screens don't re-render on reconnect
+```
+
+`socket.io-client` (~40 kB) is dynamically imported inside `connect()`, so it stays out of the initial bundle for unauthenticated visitors. Verify the multiplexing with the backend running:
+
+```bash
+npx vite-node scripts/verifySocketMultiplexing.mjs
 ```
 
 ---
@@ -409,7 +502,7 @@ Opened from **Customer Detail** → **Fall anlegen**. Tattoo cases use **8 steps
 | Step | Code | UI | API |
 |---|---|---|---|
 | 1 | TC_01 / PMU_01 | Basics | included in final `POST /cases` |
-| 2 | TC_02 / PMU_02 | Properties / pretreatment | included in final `POST /cases` |
+| 2 | TC_02 / PMU_02 | Properties / pretreatment (or 2–8 measured zones) | zone photos via `POST /files/staging` |
 | 3 | TC_03 / PMU_03 | Skin / colors | included in final `POST /cases` |
 | 4 | TC_04 / PMU_04 | Lifestyle | included in final `POST /cases` |
 | 5 | TC_05 / PMU_05 | Goal / prognosis | included in final `POST /cases` |
@@ -418,6 +511,16 @@ Opened from **Customer Detail** → **Fall anlegen**. Tattoo cases use **8 steps
 | 8 | ✓ | Review → Fall anlegen | `POST /cases` |
 
 After save, **anamnese** (TC_07), **Merkblatt** (TC_08), and **signature** (TC_09) run on **Case Detail** — not inside the create wizard. Intake photos appear read-only via `CaseIntakePhotos`.
+
+### Zoned tattoos (step 2)
+
+A tattoo spread over several body areas is entered as 2–8 zones. Each zone is treated as its own case — own price, own sessions, own fading history — while a shared header keeps it visually one tattoo.
+
+Per zone the studio enters a **name**, body area, colors, density, and **length × width in cm**; the area is calculated automatically. Every zone needs **its own photo**, uploaded with `slot="zone"`, next to a notice explaining that the same area must be photographed from the same angle for every later aftercare entry and session — otherwise healing and fading cannot be compared. Price and session range appear per zone once the case is saved.
+
+### Intake prefill
+
+Opening the wizard for a customer who already has a case calls `GET /cases/intake/prefill` and carries over the 15 person-level skin and lifestyle answers. Carried answers collapse into a **"Previous answer"** row with a **Change** link, so the studio confirms at a glance and edits only what actually changed. Sun exposure is always re-asked because it describes the treated area, and each case still stores the answers valid at its own creation time. If the prefill call fails it is ignored — it never blocks case creation.
 
 ### Frontend API calls
 

@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeft, Plus, ChevronRight, AlertCircle, ClipboardList, Sparkles } from 'lucide-react'
+import {
+  ArrowLeft,
+  Plus,
+  ChevronRight,
+  AlertCircle,
+  ClipboardList,
+  Sparkles,
+  ImageOff,
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCase, updateCase, updateEstimateConfirmation } from '../../api/cases'
+import { fetchPhotoBlobUrl } from '../../api/files'
 import { listSessions } from '../../api/sessions'
 import { listAppointments } from '../../api/appointments'
 import CaseAvailabilityPanel from '../../components/case/CaseAvailabilityPanel'
@@ -15,17 +24,6 @@ import { Card, Badge, Button, Spinner, PageHeader, Modal, Input } from '../../co
 import useContent from '../../i18n/useContent'
 
 // ── Constants ─────────────────────────────────────────────────────────────
-const CASE_TYPE_LABELS  = { tattoo: 'Tattoo', pmu: 'PMU' }
-const TC_TYPE_LABELS    = { amateur: 'Amateur', cosmetic: 'Kosmetisch', professional: 'Professionell', coverup: 'Cover-up' }
-const GOAL_LABELS       = { full_removal: 'Vollständige Entfernung', full: 'Vollständige Entfernung', partial_fade: 'Teilweises Aufhellen', lightening_for_coverup: 'Aufhellen für Cover-up' }
-const COVERUP_LABELS    = { none: 'Kein Cover-up', once: '1× überdeckt', multiple: 'Mehrfach überdeckt', unknown: 'Unbekannt' }
-
-const APPT_TYPE_LABELS = {
-  beratung:  'Beratung',
-  treatment: 'Behandlung',
-  first:     'Erstbehandlung',
-}
-
 const CANCELLED_APPT = new Set(['storniert', 'cancelled', 'completed'])
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -149,19 +147,94 @@ const SessionRow = ({ s, onClick, copy, t }) => {
   )
 }
 
-const ZoneRow = ({ z }) => (
+/**
+ * Zone intake photo thumbnail. Images are private, so the bytes are fetched
+ * with the session's credentials and shown from a revocable object URL.
+ */
+const ZonePhotoThumb = ({ fileId, alt }) => {
+  const [url, setUrl] = useState('')
+
+  useEffect(() => {
+    if (!fileId) {
+      setUrl('')
+      return undefined
+    }
+
+    let objectUrl = ''
+    let cancelled = false
+
+    fetchPhotoBlobUrl(fileId)
+      .then((next) => {
+        if (cancelled) {
+          URL.revokeObjectURL(next)
+          return
+        }
+        objectUrl = next
+        setUrl(next)
+      })
+      .catch(() => setUrl(''))
+
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [fileId])
+
+  if (!url) {
+    return (
+      <div className="w-10 h-10 rounded-[6px] border border-elaya-border bg-studio-bg-4 flex items-center justify-center">
+        <ImageOff size={14} className="text-studio-w4" />
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={url}
+      alt={alt}
+      className="w-10 h-10 rounded-[6px] border border-elaya-border object-contain bg-studio-bg-4"
+    />
+  )
+}
+
+const ZoneRow = ({ z, onLogSession, logSessionLabel }) => (
   <tr className="border-b border-elaya-border last:border-0">
-    <td className="px-5 py-3 text-studio-gold-2 text-[12px] font-mono">{z.zonen_id}</td>
-    <td className="px-5 py-3 text-studio-w1 text-[12px]">{z.koerperstelle || z.bezeichnung || '—'}</td>
-    <td className="px-5 py-3 text-studio-w1 text-[12px]">{z.flaeche_cm2 != null ? `${z.flaeche_cm2} cm²` : '—'}</td>
-    <td className="px-5 py-3 text-studio-w1 text-[12px]">{pct(z.fortschritt_prozent)}</td>
-    <td className="px-5 py-3 text-studio-w1 text-[12px]">
-      {z.sitzungen_geschaetzt_min != null
-        ? `${z.sitzungen_geschaetzt_min}–${z.sitzungen_geschaetzt_max}`
-        : '—'}
+    {/* The reference shot for this zone — fading comparisons are made against it. */}
+    <td className="px-5 py-3">
+      <ZonePhotoThumb fileId={z.foto_url} alt={z.bezeichnung || z.zonen_id} />
     </td>
-    <td className="px-5 py-3 text-studio-w3">
-      <ChevronRight size={14} />
+    <td className="px-5 py-3 text-studio-gold-2 text-[12px] font-mono">{z.zonen_id}</td>
+    <td className="px-5 py-3 text-studio-w1 text-[12px]">{z.bezeichnung || '—'}</td>
+    <td className="px-5 py-3 text-studio-w1 text-[12px]">{z.koerperstelle || '—'}</td>
+    <td className="px-5 py-3 text-studio-w1 text-[12px]">
+      {z.flaeche_cm2 != null ? `${z.flaeche_cm2} cm²` : '—'}
+      {z.laenge_cm > 0 && z.breite_cm > 0 && (
+        <span className="text-studio-w4 ml-1 whitespace-nowrap">
+          ({z.laenge_cm}×{z.breite_cm})
+        </span>
+      )}
+    </td>
+    <td className="px-5 py-3 text-studio-w1 text-[12px] whitespace-nowrap">
+      {z.preis > 0 ? `${z.preis} CHF` : '—'}
+    </td>
+    <td className="px-5 py-3 text-studio-w1 text-[12px]">{pct(z.fortschritt_prozent)}</td>
+    <td className="px-5 py-3 text-studio-w1 text-[12px] whitespace-nowrap">
+      {/* Sessions already logged on this zone, against its own estimate. */}
+      <span className="text-studio-white font-semibold">{z.sitzungen_erledigt ?? 0}</span>
+      {z.sitzungen_geschaetzt_min > 0
+        ? ` / ${z.sitzungen_geschaetzt_min}–${z.sitzungen_geschaetzt_max}`
+        : ''}
+    </td>
+    <td className="px-5 py-3">
+      <button
+        type="button"
+        onClick={() => onLogSession(z.zonen_id)}
+        title={logSessionLabel}
+        aria-label={`${logSessionLabel} — ${z.bezeichnung || z.zonen_id}`}
+        className="flex items-center text-studio-w3 hover:text-studio-gold-2 transition-colors cursor-pointer bg-transparent border-0 p-0"
+      >
+        <ChevronRight size={14} />
+      </button>
     </td>
   </tr>
 )
@@ -450,7 +523,8 @@ const CaseDetail = () => {
     copy.sessionHeaders.removal, copy.sessionHeaders.payment, copy.sessionHeaders.status, '',
   ]
   const ZONE_HEADERS = [
-    copy.zoneHeaders.id, copy.zoneHeaders.body, copy.zoneHeaders.area,
+    copy.zoneHeaders.photo, copy.zoneHeaders.id, copy.zoneHeaders.name,
+    copy.zoneHeaders.body, copy.zoneHeaders.area, copy.zoneHeaders.price,
     copy.zoneHeaders.progress, copy.zoneHeaders.sessionsEst, '',
   ]
 
@@ -491,7 +565,7 @@ const CaseDetail = () => {
       }
     }
     load()
-  }, [id, navigate])
+  }, [id, navigate, copy.loadError])
 
   const saveStatus = async () => {
     setSavingStatus(true)
@@ -793,7 +867,14 @@ const CaseDetail = () => {
                   </thead>
                   <tbody>
                     {caseData.zonen.map((z) => (
-                      <ZoneRow key={z.id} z={z} />
+                      <ZoneRow
+                        key={z.id}
+                        z={z}
+                        logSessionLabel={copy.zoneLogSession}
+                        onLogSession={(zonenId) =>
+                          navigate(`/studio/sessions/new?case_id=${id}&zonen_id=${zonenId}`)
+                        }
+                      />
                     ))}
                   </tbody>
                 </table>

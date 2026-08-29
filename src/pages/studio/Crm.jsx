@@ -176,7 +176,7 @@ const ListRow = ({ customer, onClick, onNote, onTask, onCopyTemplate }) => {
 }
 
 const StudioCrm = () => {
-  const { t, language, studioPages } = useContent()
+  const { t, studioPages } = useContent()
   const copy = studioPages.crm
   const navigate = useNavigate()
 

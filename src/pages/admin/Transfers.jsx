@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Card, PageHeader, Spinner, Button, Badge, EmptyState, Modal, Input } from '../../components/ui'
 import {
@@ -18,7 +18,7 @@ const AdminTransfers = () => {
   const [ablehnungsgrund, setAblehnungsgrund] = useState('')
   const [acting, setActing] = useState(null)
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const res = await listStudioTransfers({ limit: 50 })
@@ -28,11 +28,11 @@ const AdminTransfers = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [copy.loadError])
 
   useEffect(() => {
     load()
-  }, [])
+  }, [load])
 
   const approve = async (id) => {
     setActing(id)

@@ -163,14 +163,6 @@ export const caseForm = {
     ['low', 'Low'], ['medium', 'Medium'], ['high', 'High'], ['very_high', 'Very high'],
   ],
 
-  zoneFlaechen: [
-    { value: 'xs', label: 'Very small', cm2: 3 },
-    { value: 'sm', label: 'Small', cm2: 8 },
-    { value: 'md', label: 'Medium', cm2: 13.5 },
-    { value: 'lg', label: 'Large', cm2: 21 },
-    { value: 'xl', label: 'Very large', cm2: 33 },
-    { value: 'xxl', label: 'Extra large', cm2: 45 },
-  ],
 
   photoChecklist: [
     { key: 'photo_full_visible', label: 'Full tattoo visible' },
@@ -290,9 +282,20 @@ export const caseForm = {
       colors: 'Colors *',
       density: 'Density *',
       area: 'Area *',
-      customArea: 'Custom (cm²)',
       areaCm2: 'Area (cm²)',
       addZone: 'Add zone',
+      zoneDimensions: 'Size of this zone *',
+      zoneDimensionsHint: 'Length and width in cm — the area is calculated automatically.',
+      zoneEstimate: 'Estimate for this zone',
+      zoneEstimateSessions: 'sessions',
+      zoneEstimatePending: 'Calculated once saved.',
+      zonePhoto: 'Photo of this zone *',
+      zonePhotoFor: 'Photo for “{zone}”',
+      zonePhotoNotice:
+        'Always photograph exactly this area — from the same angle and with the same framing. Every aftercare entry and every following session must show the same area, photographed the same way. Only then can the healing process and the fading progress be documented correctly and compared over time. The customer takes the aftercare photos themselves in the app and uploads them directly to the matching zone. The fading documentation is done by the studio — also always per zone separately, using the same framing and angle as this first photo.',
+      zonesGroupTitle: 'Zones of this tattoo',
+      zonesGroupHint:
+        'All zones belong to one large tattoo. Each zone is priced, photographed and documented separately.',
       colorDensity: 'Color density',
       saturation: 'Saturation',
       shading: 'Shading',
@@ -301,6 +304,17 @@ export const caseForm = {
       dimensionsHint: 'Measure with ruler — studio confirms exactly.',
       length: 'Length',
       width: 'Width',
+    },
+
+    // Answers carried over from an earlier case of this customer
+    prefill: {
+      previousAnswer: 'Previous answer',
+      change: 'Change',
+      cigsPerDay: '{amount} cigarettes/day',
+      notice:
+        "Carried over from this customer's last case. Please review and change only what is different.",
+      noticeWithSource:
+        'Carried over from case {source} of this customer. Please review and change only what is different.',
     },
 
     skin: {

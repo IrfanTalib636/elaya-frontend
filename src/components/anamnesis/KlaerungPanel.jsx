@@ -4,8 +4,6 @@ import { updateKlaerung } from '../../api/anamnesis'
 import { getApiErrorMessage } from '../../lib/apiError'
 import useContent from '../../i18n/useContent'
 
-const STATUS_VALUES = ['offen', 'in_klaerung', 'geklaert']
-
 const statusStyles = {
   offen: 'border-studio-red/40 bg-studio-red/5',
   in_klaerung: 'border-studio-gold/40 bg-studio-gold/5',
@@ -21,7 +19,7 @@ const fmtDate = (iso) =>
       })
     : ''
 
-const KlaerungItem = ({ caseId, flag, type, klaerung, onUpdated }) => {
+const KlaerungItem = ({ caseId, flag, klaerung, onUpdated }) => {
   const { components } = useContent()
   const copy = components.anamnesis
   const STATUS_OPTIONS = [
@@ -116,7 +114,6 @@ const KlaerungPanel = ({ caseId, roteFragen = [], orangeFragen = [], klaerung = 
               key={`rot-${f.frage_nr}`}
               caseId={caseId}
               flag={f}
-              type="rot"
               klaerung={klaerung}
               onUpdated={onUpdated}
             />
@@ -134,7 +131,6 @@ const KlaerungPanel = ({ caseId, roteFragen = [], orangeFragen = [], klaerung = 
               key={`orange-${f.frage_nr}`}
               caseId={caseId}
               flag={f}
-              type="orange"
               klaerung={klaerung}
               onUpdated={onUpdated}
             />

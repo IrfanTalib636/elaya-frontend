@@ -67,7 +67,7 @@ export default function StudioChatPage() {
     } finally {
       setLoadingInbox(false)
     }
-  }, [])
+  }, [copy.inboxLoadError])
 
   useEffect(() => {
     void loadInbox()
@@ -95,7 +95,7 @@ export default function StudioChatPage() {
     return () => {
       cancelled = true
     }
-  }, [customerIdParam, setSearchParams])
+  }, [customerIdParam, setSearchParams, copy.openError])
 
   const loadThread = useCallback(async (conversationId) => {
     if (!conversationId) return
@@ -114,7 +114,7 @@ export default function StudioChatPage() {
     } finally {
       setLoadingThread(false)
     }
-  }, [])
+  }, [copy.messagesLoadError])
 
   useEffect(() => {
     if (activeId) void loadThread(activeId)

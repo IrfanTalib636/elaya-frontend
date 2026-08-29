@@ -164,14 +164,6 @@ export const caseForm = {
     ['low', 'Niedrig'], ['medium', 'Mittel'], ['high', 'Hoch'], ['very_high', 'Sehr hoch'],
   ],
 
-  zoneFlaechen: [
-    { value: 'xs', label: 'Sehr klein', cm2: 3 },
-    { value: 'sm', label: 'Klein', cm2: 8 },
-    { value: 'md', label: 'Mittel', cm2: 13.5 },
-    { value: 'lg', label: 'Gross', cm2: 21 },
-    { value: 'xl', label: 'Sehr gross', cm2: 33 },
-    { value: 'xxl', label: 'Extra gross', cm2: 45 },
-  ],
 
   photoChecklist: [
     { key: 'photo_full_visible', label: 'Ganzes Tattoo sichtbar' },
@@ -291,9 +283,20 @@ export const caseForm = {
       colors: 'Farben *',
       density: 'Dichte *',
       area: 'Fläche *',
-      customArea: 'Eigene Angabe (cm²)',
       areaCm2: 'Fläche (cm²)',
       addZone: 'Weitere Zone',
+      zoneDimensions: 'Grösse dieser Zone *',
+      zoneDimensionsHint: 'Länge und Breite in cm — die Fläche wird automatisch berechnet.',
+      zoneEstimate: 'Schätzung dieser Zone',
+      zoneEstimateSessions: 'Sitzungen',
+      zoneEstimatePending: 'Wird nach dem Speichern berechnet.',
+      zonePhoto: 'Foto dieser Zone *',
+      zonePhotoFor: 'Foto für «{zone}»',
+      zonePhotoNotice:
+        'Fotografiere immer genau diese Fläche — aus demselben Winkel und mit demselben Bildausschnitt. Für jeden Nachsorge-Eintrag und jede weitere Sitzung muss dasselbe Motiv gleich fotografiert werden. Nur so lassen sich Heilungsverlauf und Verblassung korrekt dokumentieren und über die Zeit vergleichen. Die Nachsorge-Fotos macht die Kundin oder der Kunde selbst in der App und lädt sie direkt zur passenden Zone hoch. Die Verblassungs-Dokumentation übernimmt das Studio — ebenfalls immer pro Zone einzeln und im selben Bildausschnitt und Winkel wie dieses erste Foto.',
+      zonesGroupTitle: 'Zonen dieses Tattoos',
+      zonesGroupHint:
+        'Alle Zonen gehören zu einem grossen Tattoo. Jede Zone wird einzeln berechnet, fotografiert und dokumentiert.',
       colorDensity: 'Farbdichte',
       saturation: 'Farbsättigung',
       shading: 'Schattierung',
@@ -302,6 +305,17 @@ export const caseForm = {
       dimensionsHint: 'Mit Lineal messen — Studio misst exakt nach.',
       length: 'Länge',
       width: 'Breite',
+    },
+
+    // Antworten, die aus einem früheren Fall des Kunden übernommen wurden
+    prefill: {
+      previousAnswer: 'Vorherige Antwort',
+      change: 'Ändern',
+      cigsPerDay: '{amount} Zigaretten/Tag',
+      notice:
+        'Aus dem letzten Fall dieses Kunden übernommen. Bitte kurz prüfen und nur Geändertes anpassen.',
+      noticeWithSource:
+        'Aus Fall {source} dieses Kunden übernommen. Bitte kurz prüfen und nur Geändertes anpassen.',
     },
 
     skin: {

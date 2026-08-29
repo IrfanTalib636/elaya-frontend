@@ -21,11 +21,14 @@ export const formatTimeRange12 = (von, bis) =>
   `${formatTime12(von)} – ${formatTime12(bis)}`
 
 /** ISO date (YYYY-MM-DD) → e.g. "8. Oktober 2026" */
-export const fmtDateDeLong = (iso) => {
+export const fmtDateDeLong = (iso) => fmtDateLong(iso, 'de')
+
+/** Same, in the language the user is reading the dashboard in. */
+export const fmtDateLong = (iso, language = 'de') => {
   if (!iso) return '—'
-  const d = new Date(`${iso.split('T')[0]}T12:00:00`)
+  const d = new Date(`${String(iso).split('T')[0]}T12:00:00`)
   if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleDateString('de-CH', {
+  return d.toLocaleDateString(String(language).startsWith('en') ? 'en-GB' : 'de-CH', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

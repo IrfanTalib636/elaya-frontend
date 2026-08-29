@@ -62,7 +62,7 @@ const AdminShop = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [copy.productsLoadError])
 
   const loadOrders = useCallback(async (pageNum = 1) => {
     setLoading(true)
@@ -75,7 +75,7 @@ const AdminShop = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [copy.ordersLoadError])
 
   useEffect(() => {
     if (tab === 'products') loadProducts(page)

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Sun, Moon, Monitor, Check, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Activity, Layers } from 'lucide-react'
+import { Sun, Moon, Monitor, Check, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Activity, Layers, MapPin, ShieldAlert } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Card, PageHeader, Input, Button, Spinner, Select, Badge } from '../../components/ui'
 import LanguageToggle from '../../components/LanguageToggle'
@@ -36,6 +36,8 @@ const TAB_I18N = {
   sessions: 'sessionPrediction',
   hours: 'hours',
   group: 'groupBooking',
+  booking: 'bookingRules',
+  locations: 'locations',
   rooms: 'rooms',
   staff: 'staff',
   stripe: 'stripe',
@@ -48,6 +50,8 @@ const TABS = [
   { id: 'sessions',   icon: Activity },
   { id: 'hours',      icon: Clock },
   { id: 'group',      icon: Layers },
+  { id: 'booking',    icon: ShieldAlert },
+  { id: 'locations',  icon: MapPin },
   { id: 'rooms',      icon: Grid },
   { id: 'staff',      icon: Users },
   { id: 'stripe',     icon: CreditCard },
@@ -312,6 +316,7 @@ const PricingTab = () => {
           <PricingConfigForm
             values={pricing}
             defaults={config?.pricing_defaults}
+            savedPricing={pricingValuesFromConfig(config?.studio_pricing)}
             onChange={(key, value) => setPricing((prev) => ({ ...prev, [key]: value }))}
           />
         </>
@@ -960,6 +965,243 @@ const HoursExceptions = ({ canEdit }) => {
   )
 }
 
+// ── Locations tab ──────────────────────────────────────────────────────────
+const emptyStandort = () => ({
+  id: undefined,
+  name: '',
+  strasse: '',
+  plz: '',
+  ort: '',
+  aktiv: true,
+  pufferzeit_minuten: null,
+  slot_interval_minuten: null,
+})
+
+const LocationsTab = () => {
+  const { t } = useTranslation()
+  const canEdit = useCanEditSettings()
+  const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [standorte, setStandorte] = useState([])
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await getStudioSettings()
+      setStandorte(res.data.data.settings.standorte ?? [])
+    } catch {
+      toast.error(t('settingsPage.locations.toasts.loadFailed'))
+    } finally {
+      setLoading(false)
+    }
+  }, [t])
+
+  useEffect(() => { load() }, [load])
+
+  const updateStandort = (index, field, value) =>
+    setStandorte((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)))
+
+  const addStandort = () => setStandorte((prev) => [...prev, emptyStandort()])
+
+  const removeStandort = (index) =>
+    setStandorte((prev) => prev.filter((_, i) => i !== index))
+
+  const handleCancel = async () => {
+    try {
+      const res = await getStudioSettings()
+      setStandorte(res.data.data.settings.standorte ?? [])
+    } catch {
+      // keep current form on error
+    }
+    setIsEditing(false)
+  }
+
+  const handleSave = async () => {
+    if (standorte.some((s) => !s.name?.trim())) {
+      toast.error(t('settingsPage.locations.toasts.nameRequired'))
+      return
+    }
+    setSaving(true)
+    try {
+      const payload = standorte.map((s) => ({
+        ...(s.id ? { id: s.id } : {}),
+        name: s.name.trim(),
+        strasse: s.strasse ?? '',
+        plz: s.plz ?? '',
+        ort: s.ort ?? '',
+        aktiv: s.aktiv !== false,
+        pufferzeit_minuten:
+          s.pufferzeit_minuten === '' || s.pufferzeit_minuten == null
+            ? null
+            : Number(s.pufferzeit_minuten),
+        slot_interval_minuten:
+          s.slot_interval_minuten === '' || s.slot_interval_minuten == null
+            ? null
+            : Number(s.slot_interval_minuten),
+      }))
+      const res = await updateStudioSettings({ standorte: payload })
+      setStandorte(res.data.data.settings.standorte ?? [])
+      setIsEditing(false)
+      toast.success(t('settingsPage.locations.toasts.saved'))
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? t('settingsPage.shared.saveFailedFallback'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
+
+  return (
+    <Section
+      title={t('settingsPage.locations.title')}
+      desc={t('settingsPage.locations.desc')}
+      canEdit={canEdit}
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      saving={saving}
+      onCancel={handleCancel}
+      onSave={handleSave}
+    >
+      {!canEdit && <ReadOnlyHint />}
+
+      {standorte.length === 0 && (
+        <p className="text-studio-w3 text-[13px] m-0">{t('settingsPage.locations.empty')}</p>
+      )}
+
+      {!isEditing ? (
+        <div className="flex flex-col gap-3">
+          {standorte.map((standort) => (
+            <div
+              key={standort.id}
+              className="p-4 rounded-[12px] border border-elaya-border bg-studio-bg-4 flex flex-col gap-1.5"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-studio-white text-[13px] font-semibold">{standort.name}</span>
+                {standort.aktiv === false && (
+                  <Badge variant="status" value="gesperrt">
+                    {t('settingsPage.locations.inactive')}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-studio-w2 text-[12px] m-0">
+                {[standort.strasse, [standort.plz, standort.ort].filter(Boolean).join(' ')]
+                  .filter(Boolean)
+                  .join(', ') || t('settingsPage.shared.emptyValue')}
+              </p>
+              <p className="text-studio-w3 text-[11px] m-0">
+                {standort.slot_interval_minuten
+                  ? t('settingsPage.locations.slotOverride', {
+                      minutes: standort.slot_interval_minuten,
+                    })
+                  : t('settingsPage.locations.inheritsHours')}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col gap-4">
+            {standorte.map((standort, index) => (
+              <div
+                key={standort.id ?? `new-${index}`}
+                className="p-4 rounded-[12px] border border-elaya-border bg-studio-bg-4 flex flex-col gap-3"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-studio-white text-[13px] font-semibold">
+                    {standort.name || t('settingsPage.locations.fallbackName', { index: index + 1 })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeStandort(index)}
+                    className="p-1.5 rounded-[8px] text-studio-w2 hover:text-studio-red hover:bg-studio-red/10 border-0 bg-transparent cursor-pointer"
+                    aria-label={t('settingsPage.locations.removeAria')}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input
+                    label={t('settingsPage.locations.name')}
+                    value={standort.name}
+                    onChange={(e) => updateStandort(index, 'name', e.target.value)}
+                  />
+                  <Input
+                    label={t('settingsPage.locations.street')}
+                    value={standort.strasse ?? ''}
+                    onChange={(e) => updateStandort(index, 'strasse', e.target.value)}
+                  />
+                  <Input
+                    label={t('settingsPage.locations.zip')}
+                    value={standort.plz ?? ''}
+                    onChange={(e) => updateStandort(index, 'plz', e.target.value)}
+                  />
+                  <Input
+                    label={t('settingsPage.locations.city')}
+                    value={standort.ort ?? ''}
+                    onChange={(e) => updateStandort(index, 'ort', e.target.value)}
+                  />
+                  <Select
+                    label={t('settingsPage.locations.slotInterval')}
+                    value={standort.slot_interval_minuten ?? ''}
+                    onChange={(e) =>
+                      updateStandort(
+                        index,
+                        'slot_interval_minuten',
+                        e.target.value === '' ? null : Number(e.target.value)
+                      )
+                    }
+                  >
+                    <option value="">{t('settingsPage.locations.inherit')}</option>
+                    {[15, 30, 45, 60].map((minutes) => (
+                      <option key={minutes} value={minutes}>{`${minutes} min`}</option>
+                    ))}
+                  </Select>
+                  <Input
+                    label={t('settingsPage.locations.buffer')}
+                    type="number"
+                    min={0}
+                    max={120}
+                    value={standort.pufferzeit_minuten ?? ''}
+                    placeholder={t('settingsPage.locations.inherit')}
+                    onChange={(e) =>
+                      updateStandort(
+                        index,
+                        'pufferzeit_minuten',
+                        e.target.value === '' ? null : Number(e.target.value)
+                      )
+                    }
+                  />
+                  <div className="flex items-end gap-2 pb-1">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={standort.aktiv !== false}
+                        onChange={(e) => updateStandort(index, 'aktiv', e.target.checked)}
+                        className="accent-studio-gold"
+                      />
+                      <span className="text-studio-w2 text-[12px]">
+                        {t('settingsPage.locations.active')}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Button variant="secondary" size="sm" onClick={addStandort}>
+            <Plus size={14} />
+            {t('settingsPage.locations.addLocation')}
+          </Button>
+        </>
+      )}
+    </Section>
+  )
+}
+
 // ── Rooms tab ──────────────────────────────────────────────────────────────
 const emptyRoom = () => ({
   id: undefined,
@@ -968,6 +1210,7 @@ const emptyRoom = () => ({
   aktiv: true,
   laser_brand: '',
   laser_model: '',
+  standort_id: '',
 })
 
 const RoomsTab = () => {
@@ -977,12 +1220,14 @@ const RoomsTab = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [rooms, setRooms] = useState([])
+  const [standorte, setStandorte] = useState([])
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const res = await getStudioSettings()
       setRooms(res.data.data.settings.behandlungsraeume ?? [])
+      setStandorte(res.data.data.settings.standorte ?? [])
     } catch {
       toast.error(t('settingsPage.rooms.toasts.loadFailed'))
     } finally {
@@ -1017,14 +1262,17 @@ const RoomsTab = () => {
     }
     setSaving(true)
     try {
-      const payload = rooms.map(({ id, name, farbe, aktiv, laser_brand, laser_model }) => ({
-        ...(id ? { id } : {}),
-        name: name.trim(),
-        farbe: farbe || '#3B8BD4',
-        aktiv: aktiv !== false,
-        laser_brand: laser_brand ?? '',
-        laser_model: laser_model ?? '',
-      }))
+      const payload = rooms.map(
+        ({ id, name, farbe, aktiv, laser_brand, laser_model, standort_id }) => ({
+          ...(id ? { id } : {}),
+          name: name.trim(),
+          farbe: farbe || '#3B8BD4',
+          aktiv: aktiv !== false,
+          laser_brand: laser_brand ?? '',
+          laser_model: laser_model ?? '',
+          standort_id: standort_id ?? '',
+        })
+      )
       const res = await updateStudioSettings({ behandlungsraeume: payload })
       setRooms(res.data.data.settings.behandlungsraeume ?? [])
       setIsEditing(false)
@@ -1140,6 +1388,20 @@ const RoomsTab = () => {
                     onChange={(e) => updateRoom(index, 'laser_model', e.target.value)}
                     placeholder={t('settingsPage.rooms.laserModelPlaceholder')}
                   />
+                  {standorte.length > 0 && (
+                    <Select
+                      label={t('settingsPage.rooms.location')}
+                      value={room.standort_id ?? ''}
+                      onChange={(e) => updateRoom(index, 'standort_id', e.target.value)}
+                    >
+                      <option value="">{t('settingsPage.rooms.allLocations')}</option>
+                      {standorte
+                        .filter((s) => s.aktiv !== false)
+                        .map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                    </Select>
+                  )}
                 </div>
               </div>
             ))}
@@ -1164,6 +1426,7 @@ const emptyStaff = () => ({
   nachname: '',
   rolle: DEFAULT_STAFF_ROLE,
   raum_id: '',
+  standort_id: '',
   aktiv: true,
 })
 
@@ -1175,6 +1438,7 @@ const StaffTab = () => {
   const [saving, setSaving] = useState(false)
   const [staff, setStaff] = useState([])
   const [rooms, setRooms] = useState([])
+  const [standorte, setStandorte] = useState([])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -1183,6 +1447,7 @@ const StaffTab = () => {
       const settings = res.data.data.settings
       setStaff(settings.mitarbeiter ?? [])
       setRooms(settings.behandlungsraeume ?? [])
+      setStandorte(settings.standorte ?? [])
     } catch {
       toast.error(t('settingsPage.staff.toasts.loadFailed'))
     } finally {
@@ -1223,14 +1488,17 @@ const StaffTab = () => {
     }
     setSaving(true)
     try {
-      const payload = staff.map(({ id, vorname, nachname, rolle, raum_id, aktiv }) => ({
-        ...(id ? { id } : {}),
-        vorname: vorname.trim(),
-        nachname: nachname.trim(),
-        rolle: rolle || DEFAULT_STAFF_ROLE,
-        raum_id: raum_id ?? '',
-        aktiv: aktiv !== false,
-      }))
+      const payload = staff.map(
+        ({ id, vorname, nachname, rolle, raum_id, standort_id, aktiv }) => ({
+          ...(id ? { id } : {}),
+          vorname: vorname.trim(),
+          nachname: nachname.trim(),
+          rolle: rolle || DEFAULT_STAFF_ROLE,
+          raum_id: raum_id ?? '',
+          standort_id: standort_id ?? '',
+          aktiv: aktiv !== false,
+        })
+      )
       const res = await updateStudioSettings({ mitarbeiter: payload })
       setStaff(res.data.data.settings.mitarbeiter ?? [])
       setIsEditing(false)
@@ -1347,6 +1615,20 @@ const StaffTab = () => {
                       <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
                   </Select>
+                  {standorte.length > 0 && (
+                    <Select
+                      label={t('settingsPage.staff.location')}
+                      value={member.standort_id ?? ''}
+                      onChange={(e) => updateMember(index, 'standort_id', e.target.value)}
+                    >
+                      <option value="">{t('settingsPage.staff.allLocations')}</option>
+                      {standorte
+                        .filter((s) => s.aktiv !== false)
+                        .map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                    </Select>
+                  )}
                   <div className="flex items-end pb-1">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -1493,12 +1775,28 @@ const StripeTab = () => {
   )
 }
 
+// Placeholders only: `applyConfig` replaces these with server values on load,
+// so no group-booking number is ever hardcoded in the client.
 const EMPTY_GROUP = {
-  klein_max_cm2: 50,
-  mittelgross_max_cm2: 150,
-  max_punkte: 4,
-  gruppen_rabatt_pct: 15,
+  klein_max_cm2: '',
+  mittelgross_max_cm2: '',
+  max_punkte: '',
+  gruppen_rabatt_pct: '',
 }
+
+/**
+ * One size tier in the group-booking panel: name, its point cost and the area
+ * range it covers.
+ */
+const SizeCategoryHeader = ({ name, points, range }) => (
+  <div className="flex items-baseline justify-between gap-3">
+    <div className="flex items-baseline gap-2">
+      <span className="text-studio-white text-[12px] font-semibold">{name}</span>
+      <span className="text-studio-gold-2 text-[11px] font-medium whitespace-nowrap">{points}</span>
+    </div>
+    <span className="text-studio-w3 text-[11px] whitespace-nowrap">{range}</span>
+  </div>
+)
 
 const GroupBookingTab = () => {
   const { t } = useTranslation()
@@ -1508,13 +1806,21 @@ const GroupBookingTab = () => {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(EMPTY_GROUP)
 
+  // Points per tier come from the server too, so the labels below cannot drift
+  // from the values the booking validation actually applies.
+  const [punkte, setPunkte] = useState(null)
+
   const applyConfig = (cfg) => {
-    const gg = cfg?.gruppen_groessen ?? {}
+    // Fall back to the platform defaults the server ships, never to literals.
+    const defaults = cfg?.gruppen_groessen_defaults ?? {}
+    const gg = { ...defaults, ...(cfg?.gruppen_groessen ?? {}) }
+    setPunkte(cfg?.gruppen_punkte ?? null)
     setForm({
-      klein_max_cm2: gg.klein_max_cm2 ?? 50,
-      mittelgross_max_cm2: gg.mittelgross_max_cm2 ?? 150,
-      max_punkte: gg.max_punkte ?? 4,
-      gruppen_rabatt_pct: Math.round((gg.gruppen_rabatt ?? 0.15) * 100),
+      klein_max_cm2: gg.klein_max_cm2 ?? '',
+      mittelgross_max_cm2: gg.mittelgross_max_cm2 ?? '',
+      max_punkte: gg.max_punkte ?? '',
+      gruppen_rabatt_pct:
+        gg.gruppen_rabatt == null ? '' : Math.round(gg.gruppen_rabatt * 100),
     })
   }
 
@@ -1534,6 +1840,12 @@ const GroupBookingTab = () => {
 
   const setField = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))
 
+  /** "2 Punkte" for a tier, or nothing until the server has told us the value. */
+  const pointsLabel = (kategorie) => {
+    const value = punkte?.[kategorie]
+    return value == null ? '' : t('settingsPage.groupBooking.points', { count: value })
+  }
+
   const handleSave = async () => {
     setSaving(true)
     try {
@@ -1546,7 +1858,7 @@ const GroupBookingTab = () => {
           klein_max_cm2: klein,
           mittelgross_max_cm2: mittel,
           max_punkte: maxPts,
-          gruppen_rabatt: Number.isNaN(pct) ? 0.15 : pct / 100,
+          ...(Number.isNaN(pct) ? {} : { gruppen_rabatt: pct / 100 }),
         },
       })
       applyConfig(res.data.data.studio_config)
@@ -1573,21 +1885,258 @@ const GroupBookingTab = () => {
       onSave={handleSave}
     >
       {!canEdit && <ReadOnlyHint />}
-      {!isEditing ? (
-        <>
-          <InfoRow label={t('settingsPage.groupBooking.smallMax')} value={`${form.klein_max_cm2} cm²`} />
-          <InfoRow label={t('settingsPage.groupBooking.mediumMax')} value={`${form.mittelgross_max_cm2} cm²`} />
-          <InfoRow label={t('settingsPage.groupBooking.maxPoints')} value={String(form.max_punkte)} />
-          <InfoRow label={t('settingsPage.groupBooking.discount')} value={`${form.gruppen_rabatt_pct} %`} />
-        </>
-      ) : (
-        <div className="grid grid-cols-2 gap-3">
-          <Input label={t('settingsPage.groupBooking.smallMax')} type="number" min={1} value={form.klein_max_cm2} onChange={setField('klein_max_cm2')} />
-          <Input label={t('settingsPage.groupBooking.mediumMax')} type="number" min={1} value={form.mittelgross_max_cm2} onChange={setField('mittelgross_max_cm2')} />
-          <Input label={t('settingsPage.groupBooking.maxPoints')} type="number" min={1} max={16} value={form.max_punkte} onChange={setField('max_punkte')} />
-          <Input label={t('settingsPage.groupBooking.discount')} type="number" min={0} max={100} value={form.gruppen_rabatt_pct} onChange={setField('gruppen_rabatt_pct')} hint={t('settingsPage.groupBooking.discountHint')} />
+
+      {/* All three tiers are always listed, so it is obvious that a case can
+          only ever be small, medium or large — and what each costs in points. */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
+          <SizeCategoryHeader
+            name={t('settingsPage.groupBooking.categorySmall')}
+            points={pointsLabel('klein')}
+            range={t('settingsPage.groupBooking.rangeUpTo', { max: form.klein_max_cm2 })}
+          />
+          {isEditing ? (
+            <Input
+              label={t('settingsPage.groupBooking.smallUpTo')}
+              type="number"
+              min={1}
+              value={form.klein_max_cm2}
+              onChange={setField('klein_max_cm2')}
+            />
+          ) : (
+            <InfoRow
+              label={t('settingsPage.groupBooking.smallUpTo')}
+              value={`${form.klein_max_cm2} cm²`}
+            />
+          )}
         </div>
-      )}
+
+        <div className="flex flex-col gap-3">
+          <SizeCategoryHeader
+            name={t('settingsPage.groupBooking.categoryMedium')}
+            points={pointsLabel('mittelgross')}
+            range={t('settingsPage.groupBooking.rangeBetween', {
+              min: form.klein_max_cm2,
+              max: form.mittelgross_max_cm2,
+            })}
+          />
+          {isEditing ? (
+            <Input
+              label={t('settingsPage.groupBooking.mediumUpTo')}
+              type="number"
+              min={1}
+              value={form.mittelgross_max_cm2}
+              onChange={setField('mittelgross_max_cm2')}
+            />
+          ) : (
+            <InfoRow
+              label={t('settingsPage.groupBooking.mediumUpTo')}
+              value={`${form.mittelgross_max_cm2} cm²`}
+            />
+          )}
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <SizeCategoryHeader
+            name={t('settingsPage.groupBooking.categoryLarge')}
+            points={pointsLabel('gross')}
+            range={t('settingsPage.groupBooking.rangeAbove', { min: form.mittelgross_max_cm2 })}
+          />
+          {isEditing ? (
+            // Large starts exactly where medium ends, so this edits the same
+            // stored threshold. Keeping one value avoids an unreachable gap
+            // between the tiers.
+            <Input
+              label={t('settingsPage.groupBooking.largeFrom')}
+              type="number"
+              min={1}
+              value={form.mittelgross_max_cm2}
+              onChange={setField('mittelgross_max_cm2')}
+              hint={t('settingsPage.groupBooking.boundaryHint')}
+            />
+          ) : (
+            <InfoRow
+              label={t('settingsPage.groupBooking.largeFrom')}
+              value={`> ${form.mittelgross_max_cm2} cm²`}
+            />
+          )}
+          <p className="text-studio-w3 text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4">
+            {t('settingsPage.groupBooking.largeNote')}
+          </p>
+        </div>
+
+        <div className="border-t border-elaya-border pt-4">
+          {isEditing ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label={t('settingsPage.groupBooking.maxPoints')}
+                type="number"
+                min={1}
+                max={16}
+                value={form.max_punkte}
+                onChange={setField('max_punkte')}
+              />
+              <Input
+                label={t('settingsPage.groupBooking.discount')}
+                type="number"
+                min={0}
+                max={100}
+                value={form.gruppen_rabatt_pct}
+                onChange={setField('gruppen_rabatt_pct')}
+                hint={t('settingsPage.groupBooking.discountHint')}
+              />
+            </div>
+          ) : (
+            <>
+              <InfoRow
+                label={t('settingsPage.groupBooking.maxPoints')}
+                value={String(form.max_punkte)}
+              />
+              <InfoRow
+                label={t('settingsPage.groupBooking.discount')}
+                value={`${form.gruppen_rabatt_pct} %`}
+              />
+            </>
+          )}
+        </div>
+
+        <p className="text-studio-w3 text-[11px] m-0">
+          {t('settingsPage.groupBooking.pointsFixedHint')}
+        </p>
+      </div>
+    </Section>
+  )
+}
+
+/**
+ * Blocking periods and appointment settings. Every value here drives the
+ * customer booking flow, so nothing about wait times or durations is hardcoded
+ * in the apps.
+ */
+const SPERRFRIST_FIELDS = [
+  { key: 'same_case_tage',            i18n: 'sameCase' },
+  { key: 'cross_case_tage',           i18n: 'crossCase' },
+  { key: 'uv_mittel_tage',            i18n: 'uvModerate' },
+  { key: 'uv_intensiv_tage',          i18n: 'uvIntense' },
+  { key: 'medikament_kurz_tage',      i18n: 'medShort' },
+  { key: 'medikament_retinoide_tage', i18n: 'medRetinoids' },
+]
+
+const TERMIN_FIELDS = [
+  { key: 'behandlung_dauer_minuten', i18n: 'treatmentDuration',  unit: 'minutes' },
+  { key: 'beratung_dauer_minuten',   i18n: 'consultDuration',    unit: 'minutes' },
+  { key: 'gruppen_dauer_minuten',    i18n: 'groupDuration',      unit: 'minutes' },
+  { key: 'buchung_horizont_tage',    i18n: 'horizon',            unit: 'days', min: 1 },
+  { key: 'min_vorlaufzeit_stunden',  i18n: 'leadTime',           unit: 'hours' },
+]
+
+const BookingRulesTab = () => {
+  const { t } = useTranslation()
+  const canEdit = useCanEditSettings()
+  const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [sperren, setSperren] = useState({})
+  const [termine, setTermine] = useState({})
+
+  const applyConfig = (cfg) => {
+    // Defaults come from the server so the UI never invents a fallback.
+    setSperren({ ...(cfg?.sperrfristen_defaults ?? {}), ...(cfg?.sperrfristen ?? {}) })
+    setTermine({
+      ...(cfg?.termin_einstellungen_defaults ?? {}),
+      ...(cfg?.termin_einstellungen ?? {}),
+    })
+  }
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await getStudioConfig()
+      applyConfig(res.data.data.studio_config)
+    } catch {
+      toast.error(t('settings.loadFailed'))
+    } finally {
+      setLoading(false)
+    }
+  }, [t])
+
+  useEffect(() => { load() }, [load])
+
+  const toNumbers = (fields, values) =>
+    Object.fromEntries(
+      fields
+        .map(({ key }) => [key, Number(values[key])])
+        .filter(([, value]) => Number.isFinite(value))
+    )
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const res = await updateStudioConfig({
+        sperrfristen: toNumbers(SPERRFRIST_FIELDS, sperren),
+        termin_einstellungen: toNumbers(TERMIN_FIELDS, termine),
+      })
+      applyConfig(res.data.data.studio_config)
+      setIsEditing(false)
+      toast.success(t('settings.saved'))
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? t('settings.saveFailed'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
+
+  const unitLabel = (unit = 'days') => t(`settingsPage.bookingRules.units.${unit}`)
+
+  const renderFields = (fields, values, setValues, group) =>
+    isEditing ? (
+      <div className="grid grid-cols-2 gap-3">
+        {fields.map(({ key, i18n, unit, min }) => (
+          <Input
+            key={key}
+            label={t(`settingsPage.bookingRules.${group}.${i18n}`)}
+            type="number"
+            min={min ?? 0}
+            value={values[key] ?? ''}
+            hint={unitLabel(unit)}
+            onChange={(e) => setValues((prev) => ({ ...prev, [key]: e.target.value }))}
+          />
+        ))}
+      </div>
+    ) : (
+      <>
+        {fields.map(({ key, i18n, unit }) => (
+          <InfoRow
+            key={key}
+            label={t(`settingsPage.bookingRules.${group}.${i18n}`)}
+            value={`${values[key] ?? '—'} ${unitLabel(unit)}`}
+          />
+        ))}
+      </>
+    )
+
+  return (
+    <Section
+      title={t('settingsPage.bookingRules.title')}
+      desc={t('settingsPage.bookingRules.desc')}
+      canEdit={canEdit}
+      isEditing={isEditing}
+      onEdit={() => setIsEditing(true)}
+      saving={saving}
+      onCancel={() => { setIsEditing(false); load() }}
+      onSave={handleSave}
+    >
+      {!canEdit && <ReadOnlyHint />}
+      <h4 className="text-studio-white text-[13px] font-semibold m-0 mt-1">
+        {t('settingsPage.bookingRules.lockoutsTitle')}
+      </h4>
+      {renderFields(SPERRFRIST_FIELDS, sperren, setSperren, 'lockouts')}
+      <h4 className="text-studio-white text-[13px] font-semibold m-0 mt-3">
+        {t('settingsPage.bookingRules.appointmentsTitle')}
+      </h4>
+      {renderFields(TERMIN_FIELDS, termine, setTermine, 'appointments')}
     </Section>
   )
 }
@@ -1673,6 +2222,8 @@ const StudioSettings = () => {
           {activeTab === 'sessions' && <SessionPredictionTab />}
           {activeTab === 'hours'   && <HoursTab />}
           {activeTab === 'group'   && <GroupBookingTab />}
+          {activeTab === 'booking' && <BookingRulesTab />}
+          {activeTab === 'locations' && <LocationsTab />}
           {activeTab === 'rooms'   && <RoomsTab />}
           {activeTab === 'staff'   && <StaffTab />}
           {activeTab === 'stripe'  && <StripeTab />}

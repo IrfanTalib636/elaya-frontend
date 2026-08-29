@@ -132,7 +132,7 @@ const OrderDetailModal = ({ order, onClose }) => {
 }
 
 const StudioShop = () => {
-  const { t, studioPages } = useContent()
+  const { studioPages } = useContent()
   const copy = studioPages.shop
   const STATUS_OPTIONS = STATUS_VALUES.map((value) => ({ value, label: copy.status[value] }))
 
@@ -161,7 +161,7 @@ const StudioShop = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [copy.loadForbidden, copy.loadError])
 
   useEffect(() => {
     load(page, { background: page > 1 })

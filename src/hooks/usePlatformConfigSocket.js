@@ -1,84 +1,30 @@
-import { useEffect, useRef } from 'react'
-import { io } from 'socket.io-client'
-import { TOKEN_KEY } from '../lib/session'
-import { isJwtExpired } from '../lib/token'
-import { trySilentRefresh } from '../lib/refreshSession'
-import useAuthStore from '../store/authStore'
-import { SOCKET_ORIGIN } from '../lib/socketOrigin'
-
-async function resolveAccessToken() {
-  let token = localStorage.getItem(TOKEN_KEY) || useAuthStore.getState().accessToken
-  if (!token || isJwtExpired(token)) {
-    try {
-      token = await trySilentRefresh()
-      useAuthStore.getState().setAccessToken?.(token)
-      if (token) localStorage.setItem(TOKEN_KEY, token)
-    } catch {
-      token = localStorage.getItem(TOKEN_KEY)
-    }
-  }
-  return token
-}
+import { useSocketEvent } from './useSocketEvent'
 
 /**
- * Live platform + studio schedule events.
+ * Live platform + studio events, multiplexed over the shared dashboard socket.
  * - config:session_prediction_updated → room config:platform
  * - studio:schedule_updated → room availability:studio:{id}
+ * - studio:availability_changed → room availability:studio:{id}
+ *
+ * Availability is debounced: a booking, a cancellation and a documented session
+ * can land in quick succession, and each listening screen refetches on it.
  */
 export default function usePlatformConfigSocket({
   enabled = true,
   onSessionPredictionUpdated,
   onStudioScheduleUpdated,
+  onAvailabilityChanged,
 } = {}) {
-  const sessionHandlerRef = useRef(onSessionPredictionUpdated)
-  sessionHandlerRef.current = onSessionPredictionUpdated
-  const scheduleHandlerRef = useRef(onStudioScheduleUpdated)
-  scheduleHandlerRef.current = onStudioScheduleUpdated
+  useSocketEvent('config:session_prediction_updated', onSessionPredictionUpdated, {
+    enabled: enabled && Boolean(onSessionPredictionUpdated),
+  })
 
-  useEffect(() => {
-    if (!enabled) return undefined
-    let cancelled = false
-    let socket = null
+  useSocketEvent('studio:schedule_updated', onStudioScheduleUpdated, {
+    enabled: enabled && Boolean(onStudioScheduleUpdated),
+  })
 
-    const connect = async () => {
-      const token = await resolveAccessToken()
-      if (!token || cancelled) return
-
-      socket = io(SOCKET_ORIGIN, {
-        path: '/socket.io',
-        auth: { token },
-        transports: ['websocket', 'polling'],
-        withCredentials: true,
-        reconnection: true,
-        reconnectionAttempts: 12,
-        reconnectionDelay: 800,
-      })
-
-      socket.on('connect_error', async (err) => {
-        if (/authoriz|token|jwt/i.test(err.message || '')) {
-          const fresh = await resolveAccessToken()
-          if (fresh && socket) {
-            socket.auth = { token: fresh }
-            socket.connect()
-          }
-        }
-      })
-
-      socket.on('config:session_prediction_updated', (payload) => {
-        sessionHandlerRef.current?.(payload)
-      })
-
-      socket.on('studio:schedule_updated', (payload) => {
-        scheduleHandlerRef.current?.(payload)
-      })
-    }
-
-    void connect()
-
-    return () => {
-      cancelled = true
-      socket?.removeAllListeners()
-      socket?.disconnect()
-    }
-  }, [enabled])
+  useSocketEvent('studio:availability_changed', onAvailabilityChanged, {
+    enabled: enabled && Boolean(onAvailabilityChanged),
+    debounceMs: 300,
+  })
 }

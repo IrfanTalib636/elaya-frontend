@@ -1,40 +1,9 @@
-import useContent from '../../i18n/useContent'
+import useContent from '../../../i18n/useContent'
 
 const UV_VALUES = ['keine', 'leicht', 'mittel', 'intensiv']
 const MED_VALUES = ['keine', 'retinoide', 'antibiotika', 'antidepressiva']
 
 const REAL_MED_KEYS = new Set(['retinoide', 'antibiotika', 'antidepressiva'])
-
-export const EMPTY_PRE_SESSION = {
-  uv_exposition: 'keine',
-  medikamente: [],
-  medikament_datum: '',
-}
-
-export const preSessionToParams = (check = EMPTY_PRE_SESSION) => {
-  const params = {}
-  if (check.uv_exposition && check.uv_exposition !== 'keine') {
-    params.uv_exposition = check.uv_exposition
-  }
-  if (check.medikamente?.length) {
-    params.medikamente = check.medikamente.join(',')
-  }
-  if (check.medikament_datum) {
-    params.medikament_datum = check.medikament_datum
-  }
-  return params
-}
-
-export const preSessionToBody = (check = EMPTY_PRE_SESSION) => {
-  const body = {
-    uv_exposition: check.uv_exposition || 'keine',
-    medikamente: check.medikamente ?? [],
-  }
-  if (check.medikament_datum) {
-    body.medikament_datum = check.medikament_datum
-  }
-  return body
-}
 
 const Chip = ({ active, onClick, children }) => (
   <button

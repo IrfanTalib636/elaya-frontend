@@ -2172,7 +2172,9 @@ const StudioSettings = () => {
   }
 
   return (
-    <div className="p-6 max-w-[860px]">
+    // Pricing needs the extra width for its live calculator column; the other
+    // tabs stay narrow so form rows don't stretch into unreadable lines.
+    <div className={`p-6 ${activeTab === 'pricing' ? 'max-w-[1240px]' : 'max-w-[860px]'}`}>
       <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
 
       <div className="flex gap-6">

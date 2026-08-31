@@ -177,8 +177,8 @@ const StudioSessions = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-elaya-border">
-                  {tableHeaders.map((h) => (
-                    <th key={h || 'action'} className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap">
+                  {tableHeaders.map((h, i) => (
+                    <th key={`${h}-${i}`} className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
                   ))}

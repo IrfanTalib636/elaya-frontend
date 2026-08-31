@@ -484,8 +484,8 @@ const CustomerDetail = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-elaya-border">
-                      {APPT_TABLE_HEADERS.map((h) => (
-                        <th key={h} className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap">
+                      {APPT_TABLE_HEADERS.map((h, i) => (
+                        <th key={`${h}-${i}`} className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap">
                           {h}
                         </th>
                       ))}

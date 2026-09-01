@@ -223,7 +223,7 @@ const AdminStudios = () => {
           title={t('adminPages.studios.pricingModalTitle', {
             name: pricingStudio.firma ?? pricingStudio.studio_code ?? '',
           })}
-          width="max-w-2xl"
+          width="max-w-5xl"
         >
           {pricingLoading ? (
             <div className="flex justify-center py-12">

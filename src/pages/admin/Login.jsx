@@ -9,7 +9,7 @@ import { getApiErrorMessage } from '../../lib/apiError'
 
 const Field = ({ label, children }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-admin-ivory text-[11px] font-semibold tracking-wide">
+    <label className="text-studio-white text-[11px] font-semibold tracking-wide">
       {label}
     </label>
     {children}
@@ -19,9 +19,9 @@ const Field = ({ label, children }) => (
 const Input = ({ className = '', ...props }) => (
   <input
     {...props}
-    className={`w-full px-[14px] py-[10px] rounded-[8px] border-[1.5px] border-admin-line bg-admin-bg-card-2
-      text-admin-ivory text-[13px] outline-none focus:border-admin-emerald transition-colors
-      placeholder:text-admin-dim-2 font-sans ${className}`}
+    className={`w-full px-[14px] py-[10px] rounded-[8px] border-[1.5px] border-elaya-border bg-studio-bg-card-2
+      text-studio-white text-[13px] outline-none focus:border-studio-gold transition-colors
+      placeholder:text-studio-w2-2 font-sans ${className}`}
   />
 )
 
@@ -77,21 +77,21 @@ const AdminLogin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-admin-bg flex flex-col items-center justify-center font-admin px-4">
-      <div className="w-full max-w-[360px] bg-admin-bg-card border border-admin-line rounded-2xl p-8 flex flex-col gap-6">
+    <div className="min-h-screen bg-studio-bg flex flex-col items-center justify-center font-sans px-4">
+      <div className="w-full max-w-[360px] bg-studio-bg-card border border-elaya-border rounded-2xl p-8 flex flex-col gap-6">
         <div className="flex flex-col items-center gap-4">
           <ElayaLogo size="md" />
           <div className="text-center">
-            <h1 className="text-admin-ivory font-bold text-xl m-0 leading-tight tracking-wide">
+            <h1 className="text-studio-white font-bold text-xl m-0 leading-tight tracking-wide">
               {adminAuth.loginTitle}
             </h1>
-            <p className="text-admin-dim text-[12px] mt-1 m-0 tracking-widest uppercase">
+            <p className="text-studio-w2 text-[12px] mt-1 m-0 tracking-widest uppercase">
               {adminAuth.loginSubtitle}
             </p>
           </div>
         </div>
 
-        <div className="h-px bg-admin-line" />
+        <div className="h-px bg-elaya-border" />
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4" translate="no">
           <Field label={common.email}>
@@ -107,12 +107,12 @@ const AdminLogin = () => {
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-admin-ivory text-[11px] font-semibold tracking-wide">
+              <label className="text-studio-white text-[11px] font-semibold tracking-wide">
                 {common.password}
               </label>
               <Link
                 to="/admin/forgot-password"
-                className="text-admin-dim text-[11px] hover:text-admin-ivory transition-colors no-underline"
+                className="text-studio-w2 text-[11px] hover:text-studio-white transition-colors no-underline"
               >
                 {common.forgotPassword}
               </Link>
@@ -127,13 +127,13 @@ const AdminLogin = () => {
             />
           </div>
 
-          {error && <p className="text-admin-carmine text-[12px] m-0">{error}</p>}
+          {error && <p className="text-studio-red text-[12px] m-0">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-[11px] rounded-[12px] border border-admin-emerald font-bold text-[13px]
-              cursor-pointer transition-all bg-admin-emerald text-white hover:bg-admin-emerald-soft
+            className="w-full py-[11px] rounded-[12px] border border-studio-gold font-bold text-[13px]
+              cursor-pointer transition-all bg-studio-gold text-white hover:bg-studio-gold-soft
               disabled:opacity-60 disabled:cursor-not-allowed mt-1 font-sans tracking-wide"
           >
             {loading ? common.loading : common.login}
@@ -144,7 +144,7 @@ const AdminLogin = () => {
       <button
         type="button"
         onClick={() => navigate('/')}
-        className="mt-6 text-admin-dim text-[12px] bg-transparent border-0 cursor-pointer hover:text-admin-ivory transition-colors font-sans"
+        className="mt-6 text-studio-w2 text-[12px] bg-transparent border-0 cursor-pointer hover:text-studio-white transition-colors font-sans"
       >
         ← {common.back}
       </button>

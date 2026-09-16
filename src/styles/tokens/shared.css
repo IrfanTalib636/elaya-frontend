@@ -11,7 +11,7 @@
   /* Typography */
   --font-studio-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-studio-display: "Playfair Display", Georgia, serif;
-  --font-admin-serif: "Cormorant Garamond", Georgia, serif;
+  --font-admin-serif: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", monospace;
 
   /* Layout — Web sidebars (200px per client spec) */

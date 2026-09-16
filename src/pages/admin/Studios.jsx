@@ -18,6 +18,8 @@ import {
   buildStudioPricing,
 } from '../../components/pricing/pricingFields'
 import useContent from '../../i18n/useContent'
+import useAuthStore from '../../store/authStore'
+import { ROLES } from '../../constants/roles'
 
 /**
  * One group-booking size tier: its name, point cost and the area range it
@@ -71,6 +73,8 @@ const numericFields = (fields, values) =>
 const AdminStudios = () => {
   const { t, adminPages } = useContent()
   const copy = adminPages.studios
+  const role = useAuthStore((s) => s.user?.role)
+  const canEditPricing = role === ROLES.SUPER_ADMIN
   const [loading, setLoading] = useState(true)
   const [studios, setStudios] = useState([])
 
@@ -148,7 +152,7 @@ const AdminStudios = () => {
   }
 
   const savePricing = async () => {
-    if (!pricingStudio) return
+    if (!pricingStudio || !canEditPricing) return
     setPricingSaving(true)
     try {
       await updateStudioConfigAdmin(pricingStudio.id || pricingStudio._id, {
@@ -239,7 +243,7 @@ const AdminStudios = () => {
                 onChange={(key, value) =>
                   setPricingValues((prev) => ({ ...prev, [key]: value }))
                 }
-                disabled={pricingSaving}
+                disabled={!canEditPricing || pricingSaving}
               />
               <div className="space-y-2 pt-2 border-t border-elaya-border">
                 <p className="text-[13px] font-semibold m-0">{copy.groupTitle}</p>
@@ -380,7 +384,12 @@ const AdminStudios = () => {
                   ))}
                 </div>
               </div>
-              <Button onClick={savePricing} loading={pricingSaving} className="w-full">
+              <Button
+                onClick={savePricing}
+                loading={pricingSaving}
+                className="w-full"
+                disabled={!canEditPricing}
+              >
                 {copy.save}
               </Button>
             </div>

@@ -36,6 +36,7 @@ const StudioElaycoins      = lazy(() => import('./pages/studio/Elaycoins'))
 const StudioSettings       = lazy(() => import('./pages/studio/Settings'))
 const StudioChat           = lazy(() => import('./pages/studio/Chat'))
 const StudioElayaChat      = lazy(() => import('./pages/studio/ElayaChat'))
+const StudioPlatformChat   = lazy(() => import('./pages/studio/PlatformChat'))
 const StudioActivity       = lazy(() => import('./pages/studio/Activity'))
 
 const AdminLogin           = lazy(() => import('./pages/admin/Login'))
@@ -44,6 +45,14 @@ const AdminResetPassword   = lazy(() => import('./pages/admin/ResetPassword'))
 const AdminShell           = lazy(() => import('./components/AdminShell'))
 const AdminOverview        = lazy(() => import('./pages/admin/Overview'))
 const AdminStudios         = lazy(() => import('./pages/admin/Studios'))
+const AdminStudioChat      = lazy(() => import('./pages/admin/StudioChat'))
+const AdminCustomers       = lazy(() => import('./pages/admin/Customers'))
+const AdminCrm             = lazy(() => import('./pages/admin/Crm'))
+const AdminEngine          = lazy(() => import('./pages/admin/Engine'))
+const AdminMedical         = lazy(() => import('./pages/admin/Medical'))
+const AdminDocuments       = lazy(() => import('./pages/admin/Documents'))
+const AdminAdminChat       = lazy(() => import('./pages/admin/AdminChat'))
+const AdminAiTraining      = lazy(() => import('./pages/admin/AiTraining'))
 const AdminShop            = lazy(() => import('./pages/admin/Shop'))
 const AdminFinance         = lazy(() => import('./pages/admin/Finance'))
 const AdminElaycoins       = lazy(() => import('./pages/admin/Elaycoins'))
@@ -115,6 +124,7 @@ const AppInner = () => {
             <Route path="crm"           element={<StudioCrm />} />
             <Route path="activity"      element={<StudioActivity />} />
             <Route path="elaya"         element={<StudioElayaChat />} />
+            <Route path="platform-chat" element={<StudioPlatformChat />} />
             <Route path="chat"          element={<StudioChat />} />
             <Route path="shop"          element={<StudioShop />} />
             <Route path="transfers"     element={<StudioTransfers />} />
@@ -139,6 +149,14 @@ const AppInner = () => {
             <Route index element={<Navigate to="overview" replace />} />
             <Route path="overview" element={<AdminOverview />} />
             <Route path="studios" element={<AdminStudios />} />
+            <Route path="studio-chat" element={<AdminStudioChat />} />
+            <Route path="customers" element={<AdminCustomers />} />
+            <Route path="crm" element={<AdminCrm />} />
+            <Route path="engine" element={<AdminEngine />} />
+            <Route path="medical" element={<AdminMedical />} />
+            <Route path="documents" element={<AdminDocuments />} />
+            <Route path="admin-chat" element={<AdminAdminChat />} />
+            <Route path="ai-training" element={<AdminAiTraining />} />
             <Route path="shop" element={<AdminShop />} />
             <Route path="finance" element={<AdminFinance />} />
             <Route path="elaycoins" element={<AdminElaycoins />} />

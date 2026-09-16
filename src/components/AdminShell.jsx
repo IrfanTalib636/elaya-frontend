@@ -1,46 +1,110 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   Store,
-  Coins,
-  Wallet,
-  ToggleLeft,
-  ShoppingBag,
+  MessageSquare,
+  Users,
+  Target,
+  Microscope,
+  ShieldAlert,
+  FileText,
+  Bot,
   LogOut,
+  Search,
+  Lock,
+  ShoppingBag,
+  ToggleLeft,
   ArrowLeftRight,
   Settings,
+  Coins,
+  Wallet,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import useAuthStore from '../store/authStore'
 import useContent from '../i18n/useContent'
 import ElayaLogo from './ElayaLogo'
+import AdminNotificationBell from './admin/AdminNotificationBell'
 
 const ICONS = {
   overview: LayoutDashboard,
   studios: Store,
-  elaycoins: Coins,
-  finance: Wallet,
-  features: ToggleLeft,
+  studioChat: MessageSquare,
+  customers: Users,
+  crm: Target,
+  engine: Microscope,
+  medical: ShieldAlert,
+  documents: FileText,
+  adminChat: Bot,
   shop: ShoppingBag,
+  features: ToggleLeft,
   transfer: ArrowLeftRight,
   settings: Settings,
+  elaycoins: Coins,
+  finance: Wallet,
 }
 
-const NAV = [
+const PRIMARY_NAV = [
   { to: '/admin/overview', id: 'overview' },
   { to: '/admin/studios', id: 'studios' },
-  { to: '/admin/shop', id: 'shop' },
+  { to: '/admin/studio-chat', id: 'studioChat' },
+  { to: '/admin/customers', id: 'customers' },
+  { to: '/admin/crm', id: 'crm' },
+  { to: '/admin/engine', id: 'engine' },
+  { to: '/admin/medical', id: 'medical' },
+  { to: '/admin/documents', id: 'documents' },
+  { to: '/admin/admin-chat', id: 'adminChat' },
+]
+
+const TOOLS_NAV = [
   { to: '/admin/finance', id: 'finance' },
   { to: '/admin/elaycoins', id: 'elaycoins' },
+  { to: '/admin/shop', id: 'shop' },
   { to: '/admin/features', id: 'features' },
   { to: '/admin/transfers', id: 'transfer' },
   { to: '/admin/settings', id: 'settings' },
 ]
 
+const NavItem = ({ to, id, label }) => {
+  const Icon = ICONS[id] || LayoutDashboard
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `relative flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-colors w-full no-underline ${
+          isActive
+            ? 'bg-(--nav-active-bg) text-studio-gold-2'
+            : 'text-studio-w1 hover:text-studio-white hover:bg-studio-bg-4'
+        }`
+      }
+    >
+      <Icon size={15} className="shrink-0" />
+      <span className="truncate flex-1">{label}</span>
+    </NavLink>
+  )
+}
+
 const AdminShell = () => {
   const navigate = useNavigate()
-  const { logout } = useAuthStore()
+  const location = useLocation()
+  const { logout, user, profile } = useAuthStore()
   const { toast: toastMessages, adminNav, common } = useContent()
+  const [query, setQuery] = useState('')
+  const hideFab =
+    location.pathname.startsWith('/admin/admin-chat') ||
+    location.pathname.startsWith('/admin/studio-chat')
+
+  const labelFor = (id) => adminNav.items.find((i) => i.id === id)?.label || id
+
+  const displayName = useMemo(() => {
+    const fromProfile =
+      profile?.vorname ||
+      profile?.first_name ||
+      profile?.name ||
+      user?.name ||
+      user?.email?.split('@')[0]
+    return fromProfile || 'Admin'
+  }, [profile, user])
 
   const handleLogout = async () => {
     await logout()
@@ -48,55 +112,98 @@ const AdminShell = () => {
     navigate('/admin/login')
   }
 
-  const labelFor = (id) => adminNav.items.find((i) => i.id === id)?.label || id
+  const onSearch = (e) => {
+    e.preventDefault()
+    const q = query.trim()
+    if (!q) return
+    navigate(`/admin/customers?q=${encodeURIComponent(q)}`)
+  }
 
   return (
-    <div className="theme-admin min-h-screen bg-admin-bg font-admin flex">
-      <aside className="elaya-sidebar fixed left-0 top-0 z-50 flex h-screen w-admin-sidebar flex-col border-r border-admin-line bg-admin-bg-card px-3 py-5">
-        <div className="px-2 mb-6">
+    <div className="theme-studio theme-admin min-h-screen bg-studio-bg font-sans flex">
+      <aside
+        translate="no"
+        className="fixed left-0 top-0 z-50 flex h-screen w-studio-sidebar flex-col border-r border-elaya-border bg-studio-sidebar"
+      >
+        <div className="flex items-center h-[65px] border-b border-elaya-border shrink-0 px-5">
           <ElayaLogo size="sm" />
-          <p className="text-admin-muted text-[10px] mt-2 uppercase tracking-wider">
+        </div>
+
+        <div className="px-3 pt-4 pb-2">
+          <p className="text-studio-w3 text-[10px] uppercase tracking-[0.14em] m-0 px-1">
             {adminNav.sidebarTitle}
+          </p>
+          <p className="text-studio-w3 text-[10px] uppercase tracking-[0.12em] m-0 mt-0.5 px-1 opacity-70">
+            {adminNav.sidebarTag}
           </p>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-1">
-          {NAV.map((item) => {
-            const Icon = ICONS[item.id] || LayoutDashboard
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
-                    isActive
-                      ? 'bg-admin-emerald/15 text-admin-emerald'
-                      : 'text-admin-ivory/80 hover:bg-admin-bg-card-2 hover:text-admin-ivory'
-                  }`
-                }
-              >
-                <Icon size={16} />
-                {labelFor(item.id)}
-              </NavLink>
-            )
-          })}
+        <form onSubmit={onSearch} className="px-3 mb-2">
+          <label className="relative block">
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-studio-w3 pointer-events-none"
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={adminNav.searchPlaceholder}
+              className="w-full rounded-[10px] border border-elaya-border bg-studio-bg-4 py-2 pl-9 pr-3 text-[12px] text-studio-white placeholder:text-studio-w3 outline-none focus:border-studio-gold/50"
+            />
+          </label>
+        </form>
+
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
+          {PRIMARY_NAV.map((item) => (
+            <NavItem key={item.to} {...item} label={labelFor(item.id)} />
+          ))}
+
+          <p className="text-studio-w3 text-[10px] uppercase tracking-wider px-3 pt-4 pb-1 m-0">
+            {adminNav.toolsHeading}
+          </p>
+          {TOOLS_NAV.map((item) => (
+            <NavItem key={item.to} {...item} label={labelFor(item.id)} />
+          ))}
         </nav>
 
-        <div className="border-t border-admin-line pt-4 px-2">
+        <div className="border-t border-elaya-border px-3 py-4 flex flex-col gap-2 shrink-0">
+          <div className="flex items-center justify-between gap-2 px-1">
+            <p className="text-studio-w3 text-[10px] m-0 leading-snug">{adminNav.versionLabel}</p>
+            <span
+              className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] border border-elaya-border text-studio-amber"
+              title={adminNav.lockHint}
+            >
+              <Lock size={12} />
+            </span>
+          </div>
           <button
             type="button"
             onClick={handleLogout}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-admin-line bg-admin-bg-card-2 py-2 text-admin-ivory text-[13px] font-semibold cursor-pointer hover:border-admin-emerald transition-colors font-sans"
+            className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-elaya-border bg-studio-bg-4 py-2 text-studio-white text-[12px] font-semibold cursor-pointer hover:border-studio-gold/40 transition-colors"
           >
-            <LogOut size={14} />
+            <LogOut size={13} />
             {common.logout}
           </button>
         </div>
       </aside>
 
-      <main className="elaya-main min-h-screen flex-1 ml-admin-sidebar font-sans">
-        <Outlet />
+      <main className="min-h-screen flex-1 ml-studio-sidebar relative px-7 py-6">
+        <div className="absolute top-5 right-7 z-[70]">
+          <AdminNotificationBell />
+        </div>
+        <Outlet context={{ displayName }} />
       </main>
+
+      {!hideFab ? (
+        <NavLink
+          to="/admin/admin-chat"
+          aria-label={labelFor('adminChat')}
+          className="fixed bottom-6 right-6 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-studio-gold text-white shadow-lg shadow-studio-gold/30 no-underline hover:bg-studio-gold-2 transition-colors"
+        >
+          <MessageSquare size={22} />
+        </NavLink>
+      ) : null}
     </div>
   )
 }

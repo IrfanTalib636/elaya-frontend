@@ -10,6 +10,8 @@ const useAuthStore = create(
       profile: null,
       accessToken: null,
       isAuthenticated: false,
+      /** True once AuthSessionGate has a usable access token (post-refresh). */
+      sessionReady: false,
 
       login: async ({ email, password, allowedRoles }) => {
         const { data: loginRes } = await authApi.login({ email, password })
@@ -27,7 +29,7 @@ const useAuthStore = create(
             throw err
           }
 
-          set({ user, profile, accessToken, isAuthenticated: true })
+          set({ user, profile, accessToken, isAuthenticated: true, sessionReady: true })
           return { user, profile }
         } catch (err) {
           wipeLocalSession()
@@ -43,13 +45,21 @@ const useAuthStore = create(
       /** Clear client session without a server round-trip (used by axios on refresh failure). */
       clearLocalSession: () => {
         wipeLocalSession()
-        set({ user: null, profile: null, accessToken: null, isAuthenticated: false })
+        set({
+          user: null,
+          profile: null,
+          accessToken: null,
+          isAuthenticated: false,
+          sessionReady: false,
+        })
       },
 
       setAccessToken: (accessToken) => {
         localStorage.setItem(TOKEN_KEY, accessToken)
         set({ accessToken })
       },
+
+      setSessionReady: (sessionReady) => set({ sessionReady }),
 
       logout: async () => {
         try {

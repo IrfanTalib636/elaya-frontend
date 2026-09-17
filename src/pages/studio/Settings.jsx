@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Monitor, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Activity, Layers, MapPin, ShieldAlert } from 'lucide-react'
+import { Monitor, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Activity, Layers, MapPin, ShieldAlert, KeyRound } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Card, PageHeader, Input, Button, Spinner, Select, Badge } from '../../components/ui'
 import AppearanceSettings from '../../components/settings/AppearanceSettings'
 import PricingRulesPanel from '../../components/settings/PricingRulesPanel'
 import SessionPredictionPanel from '../../components/settings/SessionPredictionPanel'
+import TeamLoginsPanel from '../../components/settings/TeamLoginsPanel'
 import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
 import useAuthStore from '../../store/authStore'
 import { getStudioConfig } from '../../api/config'
@@ -17,6 +18,7 @@ import {
   startStudioStripeConnect,
   refreshStudioStripeConnect,
 } from '../../api/studio'
+import { listLasers } from '../../api/adminPhase4'
 import { ROLES } from '../../constants/roles'
 import { WEEKDAYS, MITARBEITER_ROLLEN } from '../../constants/studio'
 import { formatTimeRange12, fmtDateDeLong } from '../../utils/time'
@@ -32,6 +34,7 @@ const TAB_I18N = {
   locations: 'locations',
   rooms: 'rooms',
   staff: 'staff',
+  logins: 'logins',
   stripe: 'stripe',
 }
 
@@ -46,6 +49,7 @@ const TABS = [
   { id: 'locations',  icon: MapPin },
   { id: 'rooms',      icon: Grid },
   { id: 'staff',      icon: Users },
+  { id: 'logins',     icon: KeyRound },
   { id: 'stripe',     icon: CreditCard },
 ]
 
@@ -971,6 +975,7 @@ const emptyRoom = () => ({
   aktiv: true,
   laser_brand: '',
   laser_model: '',
+  laser_device_id: null,
   standort_id: '',
 })
 
@@ -982,13 +987,18 @@ const RoomsTab = () => {
   const [saving, setSaving] = useState(false)
   const [rooms, setRooms] = useState([])
   const [standorte, setStandorte] = useState([])
+  const [laserCatalog, setLaserCatalog] = useState([])
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await getStudioSettings()
-      setRooms(res.data.data.settings.behandlungsraeume ?? [])
-      setStandorte(res.data.data.settings.standorte ?? [])
+      const [settingsRes, lasersRes] = await Promise.all([
+        getStudioSettings(),
+        listLasers({ active_only: true }).catch(() => null),
+      ])
+      setRooms(settingsRes.data.data.settings.behandlungsraeume ?? [])
+      setStandorte(settingsRes.data.data.settings.standorte ?? [])
+      setLaserCatalog(lasersRes?.data?.data?.devices || [])
     } catch {
       toast.error(t('settingsPage.rooms.toasts.loadFailed'))
     } finally {
@@ -1024,13 +1034,14 @@ const RoomsTab = () => {
     setSaving(true)
     try {
       const payload = rooms.map(
-        ({ id, name, farbe, aktiv, laser_brand, laser_model, standort_id }) => ({
+        ({ id, name, farbe, aktiv, laser_brand, laser_model, laser_device_id, standort_id }) => ({
           ...(id ? { id } : {}),
           name: name.trim(),
           farbe: farbe || '#3B8BD4',
           aktiv: aktiv !== false,
           laser_brand: laser_brand ?? '',
           laser_model: laser_model ?? '',
+          laser_device_id: laser_device_id || null,
           standort_id: standort_id ?? '',
         })
       )
@@ -1137,17 +1148,53 @@ const RoomsTab = () => {
                       <span className="text-studio-w2 text-[12px]">{t('settingsPage.rooms.active')}</span>
                     </label>
                   </div>
+                  <Select
+                    label={t('settingsPage.rooms.laserCatalog', {
+                      defaultValue: 'Approved laser',
+                    })}
+                    value={room.laser_device_id || ''}
+                    disabled={!isEditing}
+                    onChange={(e) => {
+                      const id = e.target.value || null
+                      const device = laserCatalog.find((d) => d.id === id)
+                      setRooms((prev) =>
+                        prev.map((r, i) =>
+                          i === index
+                            ? {
+                                ...r,
+                                laser_device_id: id,
+                                laser_brand: device?.manufacturer || '',
+                                laser_model: device?.model || '',
+                              }
+                            : r
+                        )
+                      )
+                    }}
+                  >
+                    <option value="">
+                      {t('settingsPage.rooms.laserCatalogNone', {
+                        defaultValue: 'Custom / not listed',
+                      })}
+                    </option>
+                    {laserCatalog.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.label}
+                      </option>
+                    ))}
+                  </Select>
                   <Input
                     label={t('settingsPage.rooms.laserBrand')}
                     value={room.laser_brand ?? ''}
                     onChange={(e) => updateRoom(index, 'laser_brand', e.target.value)}
                     placeholder={t('settingsPage.rooms.laserBrandPlaceholder')}
+                    disabled={!isEditing || Boolean(room.laser_device_id)}
                   />
                   <Input
                     label={t('settingsPage.rooms.laserModel')}
                     value={room.laser_model ?? ''}
                     onChange={(e) => updateRoom(index, 'laser_model', e.target.value)}
                     placeholder={t('settingsPage.rooms.laserModelPlaceholder')}
+                    disabled={!isEditing || Boolean(room.laser_device_id)}
                   />
                   {standorte.length > 0 && (
                     <Select
@@ -1833,8 +1880,8 @@ const BookingRulesTab = () => {
   const handleSave = async () => {
     setSaving(true)
     try {
+      // Medical lockouts are platform-owned — studio may only save appointment timings.
       const res = await updateStudioConfig({
-        sperrfristen: toNumbers(SPERRFRIST_FIELDS, sperren),
         termin_einstellungen: toNumbers(TERMIN_FIELDS, termine),
       })
       applyConfig(res.data.data.studio_config)
@@ -1851,28 +1898,28 @@ const BookingRulesTab = () => {
 
   const unitLabel = (unit = 'days') => t(`settingsPage.bookingRules.units.${unit}`)
 
-  const renderFields = (fields, values, setValues, group) =>
+  const renderTerminFields = () =>
     isEditing ? (
       <div className="grid grid-cols-2 gap-3">
-        {fields.map(({ key, i18n, unit, min }) => (
+        {TERMIN_FIELDS.map(({ key, i18n, unit, min }) => (
           <Input
             key={key}
-            label={t(`settingsPage.bookingRules.${group}.${i18n}`)}
+            label={t(`settingsPage.bookingRules.appointments.${i18n}`)}
             type="number"
             min={min ?? 0}
-            value={values[key] ?? ''}
+            value={termine[key] ?? ''}
             hint={unitLabel(unit)}
-            onChange={(e) => setValues((prev) => ({ ...prev, [key]: e.target.value }))}
+            onChange={(e) => setTermine((prev) => ({ ...prev, [key]: e.target.value }))}
           />
         ))}
       </div>
     ) : (
       <>
-        {fields.map(({ key, i18n, unit }) => (
+        {TERMIN_FIELDS.map(({ key, i18n, unit }) => (
           <InfoRow
             key={key}
-            label={t(`settingsPage.bookingRules.${group}.${i18n}`)}
-            value={`${values[key] ?? '—'} ${unitLabel(unit)}`}
+            label={t(`settingsPage.bookingRules.appointments.${i18n}`)}
+            value={`${termine[key] ?? '—'} ${unitLabel(unit)}`}
           />
         ))}
       </>
@@ -1893,11 +1940,23 @@ const BookingRulesTab = () => {
       <h4 className="text-studio-white text-[13px] font-semibold m-0 mt-1">
         {t('settingsPage.bookingRules.lockoutsTitle')}
       </h4>
-      {renderFields(SPERRFRIST_FIELDS, sperren, setSperren, 'lockouts')}
+      <p className="text-studio-w2 text-[12px] m-0 mb-2">
+        {t('settingsPage.bookingRules.lockoutsReadOnlyHint', {
+          defaultValue:
+            'Medical lockout periods are set by Elaya platform admin and cannot be changed here.',
+        })}
+      </p>
+      {SPERRFRIST_FIELDS.map(({ key, i18n, unit }) => (
+        <InfoRow
+          key={key}
+          label={t(`settingsPage.bookingRules.lockouts.${i18n}`)}
+          value={`${sperren[key] ?? '—'} ${unitLabel(unit)}`}
+        />
+      ))}
       <h4 className="text-studio-white text-[13px] font-semibold m-0 mt-3">
         {t('settingsPage.bookingRules.appointmentsTitle')}
       </h4>
-      {renderFields(TERMIN_FIELDS, termine, setTermine, 'appointments')}
+      {renderTerminFields()}
     </Section>
   )
 }
@@ -1958,6 +2017,7 @@ const StudioSettings = () => {
           {activeTab === 'locations' && <LocationsTab />}
           {activeTab === 'rooms'   && <RoomsTab />}
           {activeTab === 'staff'   && <StaffTab />}
+          {activeTab === 'logins'  && <TeamLoginsPanel />}
           {activeTab === 'stripe'  && <StripeTab />}
         </div>
       </div>

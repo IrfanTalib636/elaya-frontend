@@ -16,6 +16,7 @@ export default function PricingRulesPanel({
   canEdit = false,
   loadPricing,
   savePricing,
+  saveLabel,
   coinWertLabel = null,
 }) {
   const { t } = useTranslation()
@@ -73,7 +74,11 @@ export default function PricingRulesPanel({
         setSavedPricing(pricing)
       }
       setIsEditing(false)
-      toast.success(t('settingsPage.pricing.toasts.saved'))
+      toast.success(
+        t('adminPages.settings.draftSaved', {
+          defaultValue: t('settingsPage.pricing.toasts.saved'),
+        })
+      )
     } catch (err) {
       toast.error(err?.response?.data?.message ?? t('settingsPage.shared.saveFailedFallback'))
     } finally {
@@ -139,7 +144,7 @@ export default function PricingRulesPanel({
             {t('settings.cancel')}
           </Button>
           <Button loading={saving} onClick={handleSave}>
-            {t('settings.save')}
+            {saveLabel || t('settings.save')}
           </Button>
         </div>
       ) : null}

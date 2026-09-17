@@ -45,14 +45,16 @@ const AdminResetPassword   = lazy(() => import('./pages/admin/ResetPassword'))
 const AdminShell           = lazy(() => import('./components/AdminShell'))
 const AdminOverview        = lazy(() => import('./pages/admin/Overview'))
 const AdminStudios         = lazy(() => import('./pages/admin/Studios'))
+const AdminStudioWorkspace = lazy(() => import('./pages/admin/StudioWorkspace'))
 const AdminStudioChat      = lazy(() => import('./pages/admin/StudioChat'))
 const AdminCustomers       = lazy(() => import('./pages/admin/Customers'))
 const AdminCrm             = lazy(() => import('./pages/admin/Crm'))
-const AdminEngine          = lazy(() => import('./pages/admin/Engine'))
 const AdminMedical         = lazy(() => import('./pages/admin/Medical'))
 const AdminDocuments       = lazy(() => import('./pages/admin/Documents'))
-const AdminAdminChat       = lazy(() => import('./pages/admin/AdminChat'))
 const AdminAiTraining      = lazy(() => import('./pages/admin/AiTraining'))
+const AdminLasers          = lazy(() => import('./pages/admin/Lasers'))
+const AdminUsers           = lazy(() => import('./pages/admin/Users'))
+const AdminStudioTeam      = lazy(() => import('./pages/admin/StudioTeam'))
 const AdminShop            = lazy(() => import('./pages/admin/Shop'))
 const AdminFinance         = lazy(() => import('./pages/admin/Finance'))
 const AdminElaycoins       = lazy(() => import('./pages/admin/Elaycoins'))
@@ -149,14 +151,18 @@ const AppInner = () => {
             <Route index element={<Navigate to="overview" replace />} />
             <Route path="overview" element={<AdminOverview />} />
             <Route path="studios" element={<AdminStudios />} />
+            <Route path="studios/:studioId/workspace" element={<AdminStudioWorkspace />} />
             <Route path="studio-chat" element={<AdminStudioChat />} />
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="crm" element={<AdminCrm />} />
-            <Route path="engine" element={<AdminEngine />} />
+            <Route path="engine" element={<Navigate to="/admin/settings" replace />} />
             <Route path="medical" element={<AdminMedical />} />
             <Route path="documents" element={<AdminDocuments />} />
-            <Route path="admin-chat" element={<AdminAdminChat />} />
+            <Route path="admin-chat" element={<Navigate to="/admin/studio-chat" replace />} />
             <Route path="ai-training" element={<AdminAiTraining />} />
+            <Route path="lasers" element={<AdminLasers />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="studio-team" element={<AdminStudioTeam />} />
             <Route path="shop" element={<AdminShop />} />
             <Route path="finance" element={<AdminFinance />} />
             <Route path="elaycoins" element={<AdminElaycoins />} />

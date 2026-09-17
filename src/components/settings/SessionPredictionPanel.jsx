@@ -17,6 +17,7 @@ export default function SessionPredictionPanel({
   canEdit = false,
   loadConfig,
   saveConfig,
+  saveLabel,
   showPlausibility = false,
 }) {
   const { t } = useTranslation()
@@ -67,7 +68,13 @@ export default function SessionPredictionPanel({
       setValues(next)
       setSavedBaseline(cloneSessionPrediction(next))
       if (data?.excel_plausibility) setPlausibility(data.excel_plausibility)
-      toast.success(t('settingsPage.sessions.toasts.saved', { defaultValue: t('settings.save') }))
+      toast.success(
+        t('adminPages.settings.draftSaved', {
+          defaultValue: t('settingsPage.sessions.toasts.saved', {
+            defaultValue: t('settings.save'),
+          }),
+        })
+      )
     } catch (err) {
       toast.error(err?.response?.data?.message || t('settingsPage.shared.saveFailedFallback'))
     } finally {
@@ -96,7 +103,7 @@ export default function SessionPredictionPanel({
         {canEdit
           ? t('settingsPage.sessions.adminEditHint', {
               defaultValue:
-                'Changes apply platform-wide. Studios see updated rules live after save.',
+                'Save a draft first, then publish with a reason. Studios only see published rules.',
             })
           : t('settingsPage.sessions.viewOnlyHint')}
       </p>
@@ -116,7 +123,7 @@ export default function SessionPredictionPanel({
       {canEdit ? (
         <div className="flex justify-end pt-2 border-t border-elaya-border">
           <Button loading={saving} onClick={handleSave} disabled={!values}>
-            {t('settings.save')}
+            {saveLabel || t('settings.save')}
           </Button>
         </div>
       ) : null}

@@ -4,7 +4,7 @@ import {
   Building2,
   Receipt,
   MessageSquare,
-  Microscope,
+  Settings,
   Coins,
   Wallet,
   Bot,
@@ -18,7 +18,7 @@ import useContent from '../../i18n/useContent'
 const QUICK_LINKS = [
   { id: 'studios', to: '/admin/studios', Icon: Building2 },
   { id: 'studioChat', to: '/admin/studio-chat', Icon: MessageSquare },
-  { id: 'engine', to: '/admin/engine', Icon: Microscope },
+  { id: 'settings', to: '/admin/settings', Icon: Settings },
   { id: 'elaycoins', to: '/admin/elaycoins', Icon: Coins },
   { id: 'finance', to: '/admin/finance', Icon: Wallet },
   { id: 'aiTraining', to: '/admin/ai-training', Icon: Bot },

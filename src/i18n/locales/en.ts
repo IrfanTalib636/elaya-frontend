@@ -180,15 +180,16 @@ const en = {
       { "id": "studioChat", "label": "Studio Chat" },
       { "id": "customers", "label": "Customers" },
       { "id": "crm", "label": "CRM & Leads" },
-      { "id": "engine", "label": "Engine" },
       { "id": "medical", "label": "Medical & Safety" },
       { "id": "documents", "label": "Digital documents" },
-      { "id": "adminChat", "label": "Elaya Admin Chat" },
       { "id": "transfer", "label": "Studio change" },
       { "id": "elaycoins", "label": "Elaycoins" },
       { "id": "finance", "label": "Finance" },
       { "id": "features", "label": "Features" },
-      { "id": "ai", "label": "Elaya AI" },
+      { "id": "lasers", "label": "Lasers" },
+      { "id": "ai", "label": "AI Training" },
+      { "id": "users", "label": "Admin users" },
+      { "id": "studioTeam", "label": "Studio team" },
       { "id": "shop", "label": "ElayShop" },
       { "id": "settings", "label": "Settings" }
     ]
@@ -1272,12 +1273,14 @@ const en = {
       "profile": "Studio profile",
       "prices": "Prices",
       "sessionPrediction": "Session prediction",
+      "medicalLockouts": "Medical lockouts",
       "hours": "Opening hours",
       "groupBooking": "Group booking",
       "bookingRules": "Blocking periods",
       "locations": "Locations",
       "rooms": "Rooms",
-      "staff": "Staff",
+      "staff": "Staff profiles",
+      "logins": "ELAYA logins",
       "stripe": "Stripe"
     },
     "readOnly": "View only — editing requires a studio admin.",
@@ -1408,8 +1411,9 @@ const en = {
     },
     "bookingRules": {
       "title": "Blocking periods & appointments",
-      "desc": "Medical wait times and appointment defaults for this studio. The customer app reads these values, so a change takes effect for every new booking.",
+      "desc": "Appointment defaults for this studio. Medical lockout periods are set by Elaya and apply to every new booking.",
       "lockoutsTitle": "Blocking periods",
+      "lockoutsReadOnlyHint": "Medical lockout periods are set by Elaya platform admin and cannot be changed here.",
       "appointmentsTitle": "Appointments",
       "units": {
         "days": "days",
@@ -1509,6 +1513,8 @@ const en = {
       "removeAria": "Remove room",
       "name": "Name",
       "active": "Active",
+      "laserCatalog": "Approved laser",
+      "laserCatalogNone": "Custom / not listed",
       "laserBrand": "Laser brand",
       "laserBrandPlaceholder": "e.g. Candela",
       "laserModel": "Laser model",
@@ -1961,6 +1967,8 @@ const en = {
       "bookNotAllowed": "Appointment not allowed.",
       "earliest": "Earliest: {{date}}.",
       "tooEarly": "Appointment too early. Earliest bookable from {{date}}.",
+      "staff": "Treatment staff",
+      "staffNone": "Not assigned",
       "requiredFields": "Case, date and time are required.",
       "modalTitle": "Book new appointment",
       "availabilitySaved": "Availability saved.",
@@ -2467,7 +2475,11 @@ const en = {
       "direction": {
         "eingehend": "Incoming",
         "ausgehend": "Outgoing"
-      }
+      },
+      "notifyLeftTitle": "Customer left studio",
+      "notifyLeftBody": "{name} has switched from your studio to {to}.",
+      "notifyJoinedTitle": "New customer joined",
+      "notifyJoinedBody": "{name} has joined your studio (from {from})."
     },
     "elaycoins": {
       "title": "Elaycoins",
@@ -2603,6 +2615,7 @@ const en = {
       "pricingSaved": "Prices saved",
       "saveFailed": "Save failed",
       "prices": "Prices",
+      "openWorkspace": "Open workspace",
       "activate": "Activate",
       "lock": "Lock",
       "pricingModalTitle": "Prices · {{name}}",
@@ -2614,15 +2627,73 @@ const en = {
       "groupMaxPoints": "Max points per appointment",
       "groupDiscount": "Group discount (%)"
     },
+    "studioWorkspace": {
+      "title": "Studio workspace",
+      "subtitle": "Support workspace — you stay logged in as Elaya Admin. Opening is audited.",
+      "backToStudios": "Back to studios",
+      "openChat": "Studio chat",
+      "openError": "Could not open studio workspace",
+      "loadError": "Could not load studio data",
+      "empty": "No records found",
+      "searchPlaceholder": "Search customers…",
+      "bannerTitle": "Admin support mode",
+      "bannerBody": "No studio impersonation. You remain Elaya Admin; this opening is recorded in the audit log.",
+      "kpiCode": "Studio code",
+      "kpiCustomers": "Customers",
+      "kpiCases": "Cases",
+      "kpiAppointments": "Upcoming appointments",
+      "tabs": {
+        "customers": "Customers",
+        "cases": "Cases",
+        "appointments": "Appointments"
+      },
+      "headers": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "pipeline": "Pipeline",
+        "cases": "Open cases",
+        "caseId": "Case",
+        "customer": "Customer",
+        "type": "Type",
+        "sessions": "Sessions",
+        "status": "Status",
+        "date": "Date",
+        "time": "Time"
+      }
+    },
     "settings": {
       "title": "Settings",
-      "subtitle": "Appearance, price calculation rules, and session prediction — same tools as studio; only super admin can edit the rules.",
+      "subtitle": "Appearance, price calculation, session prediction, and medical lockouts — only super admin can edit core rules.",
       "loadError": "Could not load settings",
       "updatedReload": "Session prediction was updated — reloading…",
       "saved": "Saved — studios & apps update live",
       "saveFailed": "Save failed",
       "noParameters": "No parameters loaded.",
-      "save": "Save"
+      "save": "Save",
+      "medicalLockoutsDesc": "Global medical lockout periods (same case, cross case, UV, medication). Studios can view these but cannot change them.",
+      "superAdminOnly": "Only Super Admin can edit",
+      "saveDraft": "Save draft",
+      "draftSaved": "Draft saved — publish to go live",
+      "draftPending": "Draft pending",
+      "draftDiscarded": "Draft discarded",
+      "discardDraft": "Discard draft",
+      "lifecycle": "Lifecycle",
+      "currentVersion": "Published v{{version}}",
+      "publish": "Publish",
+      "published": "Published as version {{version}}",
+      "publishReason": "Publish reason",
+      "publishReasonPlaceholder": "Why are these rules going live?",
+      "publishReasonRequired": "Publish reason is required",
+      "versionHistory": "Version history",
+      "noVersions": "No published versions yet.",
+      "live": "live",
+      "rollback": "Rollback",
+      "rollbackConfirm": "Rollback to v{{version}}? This publishes a new version.",
+      "rollbackReason": "Rollback reason",
+      "rollbackReasonRequired": "Rollback reason is required",
+      "rolledBack": "Rolled back to v{{from}} (now v{{version}})",
+      "confirmRollback": "Confirm rollback"
     },
     "overview": {
       "title": "Admin overview",
@@ -2644,9 +2715,9 @@ const en = {
           "title": "Studio Chat",
           "desc": "Messages with the studios"
         },
-        "engine": {
-          "title": "Prediction Engine",
-          "desc": "Session & Price Parameters"
+        "settings": {
+          "title": "Settings",
+          "desc": "Appearance, prices, prediction & lockouts"
         },
         "elaycoins": {
           "title": "Elaycoin rules",
@@ -2951,7 +3022,9 @@ const en = {
         "pending": "Pending",
         "genehmigt": "Approved",
         "abgelehnt": "Rejected"
-      }
+      },
+      "notifyRequestTitle": "Studio change request",
+      "notifyRequestBody": "{name} wants to switch from {from} to {to}."
     },
   },
   "components": {

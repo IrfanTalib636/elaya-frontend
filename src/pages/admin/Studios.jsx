@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Card,
@@ -71,6 +72,7 @@ const numericFields = (fields, values) =>
   )
 
 const AdminStudios = () => {
+  const navigate = useNavigate()
   const { t, adminPages } = useContent()
   const copy = adminPages.studios
   const role = useAuthStore((s) => s.user?.role)
@@ -203,7 +205,13 @@ const AdminStudios = () => {
                     {s.status}
                   </Badge>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap justify-end">
+                  <Button
+                    variant="secondary"
+                    onClick={() => navigate(`/admin/studios/${id}/workspace`)}
+                  >
+                    {copy.openWorkspace || 'Open workspace'}
+                  </Button>
                   <Button variant="ghost" onClick={() => openPricing(s)}>
                     {copy.prices}
                   </Button>
@@ -358,7 +366,7 @@ const AdminStudios = () => {
                       onChange={(e) =>
                         setSperrenForm((p) => ({ ...p, [key]: e.target.value }))
                       }
-                      disabled={pricingSaving}
+                      disabled={!canEditPricing || pricingSaving}
                     />
                   ))}
                 </div>
@@ -379,7 +387,7 @@ const AdminStudios = () => {
                       onChange={(e) =>
                         setTerminForm((p) => ({ ...p, [key]: e.target.value }))
                       }
-                      disabled={pricingSaving}
+                      disabled={!canEditPricing || pricingSaving}
                     />
                   ))}
                 </div>

@@ -8,6 +8,7 @@ import {
   markNotificationRead,
 } from '../api/notifications'
 import useContent from '../i18n/useContent'
+import useAuthStore from '../store/authStore'
 import { useSocketEvent } from './useSocketEvent'
 
 const customerName = (conversation) => {
@@ -23,13 +24,16 @@ const customerName = (conversation) => {
  */
 export default function useStudioNotifications({ enabled = true } = {}) {
   const navigate = useNavigate()
+  const studioId = useAuthStore((s) => s.user?.studio_id)
   const { studioPages } = useContent()
   const chatCopy = studioPages.chat
   const supportCopy = studioPages.platformChat
+  const transferCopy = studioPages.transfers
   const [unreadCount, setUnreadCount] = useState(0)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const seenMessageIds = useRef(new Set())
+  const seenTransferKeys = useRef(new Set())
 
   const refreshUnread = useCallback(async () => {
     if (!enabled) return
@@ -179,6 +183,78 @@ export default function useStudioNotifications({ enabled = true } = {}) {
     [enabled, openSupportChat, refreshUnread, supportCopy.newMessageTitle]
   )
 
+  const openTransfers = useCallback(() => {
+    navigate('/studio/transfers')
+  }, [navigate])
+
+  const notifyTransfer = useCallback(
+    ({ event, transfer }) => {
+      if (!enabled || event !== 'approved' || !transfer || !studioId) return
+      const tid = String(transfer.id || transfer._id || '')
+      const myId = String(studioId)
+      const fromId = String(transfer.von_firma_id || '')
+      const toId = String(transfer.zu_firma_id || '')
+      const role = myId === fromId ? 'left' : myId === toId ? 'joined' : null
+      if (!role) return
+
+      const dedupeKey = `${tid}:${role}`
+      if (tid && seenTransferKeys.current.has(dedupeKey)) return
+      if (tid) seenTransferKeys.current.add(dedupeKey)
+
+      const name = transfer.kunde_name || 'Customer'
+      const from = transfer.von_firma_name || '—'
+      const to = transfer.zu_firma_name || '—'
+      const title =
+        role === 'left'
+          ? transferCopy.notifyLeftTitle || 'Customer left studio'
+          : transferCopy.notifyJoinedTitle || 'New customer joined'
+      const body =
+        role === 'left'
+          ? (transferCopy.notifyLeftBody || '{name} has switched from your studio to {to}.')
+              .replace('{name}', name)
+              .replace('{to}', to)
+          : (transferCopy.notifyJoinedBody ||
+              '{name} has joined your studio (from {from}).')
+              .replace('{name}', name)
+              .replace('{from}', from)
+
+      void refreshUnread()
+
+      if (window.location.pathname.startsWith('/studio/transfers')) {
+        return
+      }
+
+      if (document.hidden && typeof Notification !== 'undefined') {
+        if (Notification.permission === 'granted') {
+          const n = new Notification(title, { body, tag: dedupeKey || title })
+          n.onclick = () => {
+            window.focus()
+            openTransfers()
+            n.close()
+          }
+        }
+      }
+
+      toast(
+        (t) => (
+          <button
+            type="button"
+            className="text-left w-full bg-transparent border-0 cursor-pointer p-0"
+            onClick={() => {
+              toast.dismiss(t.id)
+              openTransfers()
+            }}
+          >
+            <p className="m-0 text-[13px] font-semibold text-studio-white">{title}</p>
+            <p className="m-0 mt-1 text-[12px] text-studio-w2 line-clamp-2">{body}</p>
+          </button>
+        ),
+        { duration: 6000 }
+      )
+    },
+    [enabled, openTransfers, refreshUnread, studioId, transferCopy]
+  )
+
   useEffect(() => {
     if (!enabled) return undefined
     void refreshUnread()
@@ -210,6 +286,8 @@ export default function useStudioNotifications({ enabled = true } = {}) {
     ),
     { enabled }
   )
+
+  useSocketEvent('studio_transfer:updated', notifyTransfer, { enabled })
 
   const markRead = useCallback(async (notification) => {
     if (!notification?.id || !notification.unread) return
@@ -245,11 +323,18 @@ export default function useStudioNotifications({ enabled = true } = {}) {
         openSupportChat()
         return
       }
+      if (
+        notification.type === 'studio_transfer_left' ||
+        notification.type === 'studio_transfer_joined'
+      ) {
+        navigate('/studio/transfers')
+        return
+      }
       if (notification.type === 'chat') {
         openCustomerChat(notification.conversation_id, null)
       }
     },
-    [markRead, openCustomerChat, openSupportChat]
+    [markRead, navigate, openCustomerChat, openSupportChat]
   )
 
   return {

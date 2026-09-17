@@ -39,6 +39,8 @@ const EMPTY_FORM = {
   type:          'treatment',
   /** Filled from the studio's configured duration once availability loads. */
   dauer_minuten: '',
+  mitarbeiter_id: '',
+  mitarbeiter_name: '',
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -291,7 +293,18 @@ const NewApptModal = ({
   const [availability, setAvailability] = useState(null)
   const [loadingAvailability, setLoadingAvailability] = useState(false)
   const [preSession, setPreSession] = useState({ ...EMPTY_PRE_SESSION })
+  const [staffRoster, setStaffRoster] = useState([])
   const autoDurationRef = useRef('')
+
+  useEffect(() => {
+    void getStudioSettings()
+      .then((res) => {
+        setStaffRoster(
+          (res.data.data.settings.mitarbeiter || []).filter((m) => m.aktiv !== false)
+        )
+      })
+      .catch(() => {})
+  }, [])
 
   /**
    * Duration defaults to what the studio configured for this appointment type.
@@ -412,6 +425,8 @@ const NewApptModal = ({
         type:             form.type,
         dauer_minuten:    Number(form.dauer_minuten) || null,
         consultationOnly: form.type === 'beratung',
+        mitarbeiter_id:   form.mitarbeiter_id || undefined,
+        mitarbeiter_name: form.mitarbeiter_name || undefined,
         preSessionCheck:  form.type === 'beratung' ? undefined : preSessionToBody(preSession),
       })
       toast.success(copy.bookSuccess)
@@ -510,6 +525,29 @@ const NewApptModal = ({
           </Select>
           <Input label={copy.durationMin} type="number" min={15} step={15} value={form.dauer_minuten} onChange={set('dauer_minuten')} />
         </div>
+
+        <Select
+          label={t('studioPages.appointments.staff', { defaultValue: 'Treatment staff' })}
+          value={form.mitarbeiter_id}
+          onChange={(e) => {
+            const id = e.target.value
+            const m = staffRoster.find((s) => s.id === id)
+            setForm((p) => ({
+              ...p,
+              mitarbeiter_id: id,
+              mitarbeiter_name: m
+                ? `${m.vorname || ''} ${m.nachname || ''}`.trim()
+                : '',
+            }))
+          }}
+        >
+          <option value="">{t('studioPages.appointments.staffNone', { defaultValue: 'Not assigned' })}</option>
+          {staffRoster.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.vorname} {m.nachname}
+            </option>
+          ))}
+        </Select>
 
         {form.type === 'beratung' && (
           <p className="text-studio-w3 text-[11px] m-0">

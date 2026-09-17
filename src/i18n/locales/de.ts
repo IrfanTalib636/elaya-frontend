@@ -182,15 +182,16 @@ const de: TranslationSchema = {
       { "id": "studioChat", "label": "Studio-Chat" },
       { "id": "customers", "label": "Kunden" },
       { "id": "crm", "label": "CRM & Leads" },
-      { "id": "engine", "label": "Engine" },
       { "id": "medical", "label": "Medical & Safety" },
       { "id": "documents", "label": "Digitale Dokumente" },
-      { "id": "adminChat", "label": "Elaya Admin Chat" },
       { "id": "transfer", "label": "Studio-Wechsel" },
       { "id": "elaycoins", "label": "Elaycoins" },
       { "id": "finance", "label": "Finanzen" },
       { "id": "features", "label": "Features" },
-      { "id": "ai", "label": "Elaya KI" },
+      { "id": "lasers", "label": "Laser" },
+      { "id": "ai", "label": "KI Training" },
+      { "id": "users", "label": "Admin-Benutzer" },
+      { "id": "studioTeam", "label": "Studio-Team" },
       { "id": "shop", "label": "ElayShop" },
       { "id": "settings", "label": "Einstellungen" }
     ]
@@ -1274,12 +1275,14 @@ const de: TranslationSchema = {
       "profile": "Studio-Profil",
       "prices": "Preise",
       "sessionPrediction": "Sitzungsprognose",
+      "medicalLockouts": "Medizinische Sperren",
       "hours": "Öffnungszeiten",
       "groupBooking": "Gruppenbuchung",
       "bookingRules": "Sperrfristen",
       "locations": "Standorte",
       "rooms": "Räume",
-      "staff": "Mitarbeiter",
+      "staff": "Mitarbeiter-Profile",
+      "logins": "ELAYA-Logins",
       "stripe": "Stripe"
     },
     "readOnly": "Nur Anzeige — Bearbeitung erfordert Studio-Admin.",
@@ -1410,8 +1413,9 @@ const de: TranslationSchema = {
     },
     "bookingRules": {
       "title": "Sperrfristen & Termine",
-      "desc": "Medizinische Wartezeiten und Termin-Vorgaben für dieses Studio. Die Kunden-App liest diese Werte — eine Änderung gilt sofort für jede neue Buchung.",
+      "desc": "Termin-Vorgaben für dieses Studio. Medizinische Sperrfristen setzt Elaya — sie gelten für jede neue Buchung.",
       "lockoutsTitle": "Sperrfristen",
+      "lockoutsReadOnlyHint": "Medizinische Sperrfristen setzt der Elaya Platform Admin — hier nicht änderbar.",
       "appointmentsTitle": "Termine",
       "units": {
         "days": "Tage",
@@ -1511,6 +1515,8 @@ const de: TranslationSchema = {
       "removeAria": "Raum entfernen",
       "name": "Name",
       "active": "Aktiv",
+      "laserCatalog": "Freigegebener Laser",
+      "laserCatalogNone": "Individuell / nicht gelistet",
       "laserBrand": "Laser-Marke",
       "laserBrandPlaceholder": "z. B. Candela",
       "laserModel": "Laser-Modell",
@@ -1963,6 +1969,8 @@ const de: TranslationSchema = {
       "bookNotAllowed": "Termin nicht erlaubt.",
       "earliest": "Frühestens: {{date}}.",
       "tooEarly": "Termin zu früh. Frühestens buchbar ab {{date}}.",
+      "staff": "Behandelnde Person",
+      "staffNone": "Nicht zugewiesen",
       "requiredFields": "Fall, Datum und Uhrzeit sind Pflichtfelder.",
       "modalTitle": "Neuen Termin buchen",
       "availabilitySaved": "Verfügbarkeit gespeichert.",
@@ -2469,7 +2477,11 @@ const de: TranslationSchema = {
       "direction": {
         "eingehend": "Eingehend",
         "ausgehend": "Ausgehend"
-      }
+      },
+      "notifyLeftTitle": "Kunde hat Studio verlassen",
+      "notifyLeftBody": "{name} ist von deinem Studio zu {to} gewechselt.",
+      "notifyJoinedTitle": "Neuer Kunde beigetreten",
+      "notifyJoinedBody": "{name} ist deinem Studio beigetreten (von {from})."
     },
     "elaycoins": {
       "title": "Elaycoins",
@@ -2605,6 +2617,7 @@ const de: TranslationSchema = {
       "pricingSaved": "Preise gespeichert",
       "saveFailed": "Speichern fehlgeschlagen",
       "prices": "Preise",
+      "openWorkspace": "Workspace öffnen",
       "activate": "Aktivieren",
       "lock": "Sperren",
       "pricingModalTitle": "Preise · {{name}}",
@@ -2616,15 +2629,73 @@ const de: TranslationSchema = {
       "groupMaxPoints": "Max. Punkte pro Termin",
       "groupDiscount": "Gruppenrabatt (%)"
     },
+    "studioWorkspace": {
+      "title": "Studio-Workspace",
+      "subtitle": "Support-Workspace — du bleibst als Elaya Admin angemeldet. Das Öffnen wird protokolliert.",
+      "backToStudios": "Zurück zu Studios",
+      "openChat": "Studio-Chat",
+      "openError": "Workspace konnte nicht geöffnet werden",
+      "loadError": "Studio-Daten konnten nicht geladen werden",
+      "empty": "Keine Einträge",
+      "searchPlaceholder": "Kunden suchen…",
+      "bannerTitle": "Admin-Support-Modus",
+      "bannerBody": "Keine Studio-Impersonation. Du bleibst Elaya Admin; dieses Öffnen wird im Audit-Log erfasst.",
+      "kpiCode": "Studio-Code",
+      "kpiCustomers": "Kunden",
+      "kpiCases": "Fälle",
+      "kpiAppointments": "Kommende Termine",
+      "tabs": {
+        "customers": "Kunden",
+        "cases": "Fälle",
+        "appointments": "Termine"
+      },
+      "headers": {
+        "name": "Name",
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "pipeline": "Pipeline",
+        "cases": "Offene Fälle",
+        "caseId": "Fall",
+        "customer": "Kunde",
+        "type": "Typ",
+        "sessions": "Sitzungen",
+        "status": "Status",
+        "date": "Datum",
+        "time": "Zeit"
+      }
+    },
     "settings": {
       "title": "Einstellungen",
-      "subtitle": "Darstellung, Preisberechnung und Sitzungsprognose — dieselben Tools wie im Studio; nur Super-Admin darf die Regeln ändern.",
+      "subtitle": "Darstellung, Preisberechnung, Sitzungsprognose und medizinische Sperren — nur Super-Admin darf Kernregeln ändern.",
       "loadError": "Einstellungen konnten nicht geladen werden",
       "updatedReload": "Sitzungsprognose wurde aktualisiert — lade neu…",
       "saved": "Gespeichert — Studios & Apps werden live aktualisiert",
       "saveFailed": "Speichern fehlgeschlagen",
       "noParameters": "Keine Parameter geladen.",
-      "save": "Speichern"
+      "save": "Speichern",
+      "medicalLockoutsDesc": "Globale medizinische Sperrfristen (gleicher Case, anderer Case, UV, Medikamente). Studios sehen diese Werte, können sie aber nicht ändern.",
+      "superAdminOnly": "Nur Super-Admin darf bearbeiten",
+      "saveDraft": "Entwurf speichern",
+      "draftSaved": "Entwurf gespeichert — zum Aktivieren veröffentlichen",
+      "draftPending": "Entwurf offen",
+      "draftDiscarded": "Entwurf verworfen",
+      "discardDraft": "Entwurf verwerfen",
+      "lifecycle": "Lebenszyklus",
+      "currentVersion": "Veröffentlicht v{{version}}",
+      "publish": "Veröffentlichen",
+      "published": "Als Version {{version}} veröffentlicht",
+      "publishReason": "Grund der Veröffentlichung",
+      "publishReasonPlaceholder": "Warum gehen diese Regeln live?",
+      "publishReasonRequired": "Grund der Veröffentlichung ist erforderlich",
+      "versionHistory": "Versionsverlauf",
+      "noVersions": "Noch keine veröffentlichten Versionen.",
+      "live": "live",
+      "rollback": "Zurücksetzen",
+      "rollbackConfirm": "Auf v{{version}} zurücksetzen? Dies veröffentlicht eine neue Version.",
+      "rollbackReason": "Grund für das Zurücksetzen",
+      "rollbackReasonRequired": "Grund für das Zurücksetzen ist erforderlich",
+      "rolledBack": "Auf v{{from}} zurückgesetzt (jetzt v{{version}})",
+      "confirmRollback": "Zurücksetzen bestätigen"
     },
     "overview": {
       "title": "Admin Übersicht",
@@ -2646,9 +2717,9 @@ const de: TranslationSchema = {
           "title": "Studio-Chat",
           "desc": "Nachrichten mit den Studios"
         },
-        "engine": {
-          "title": "Prediction Engine",
-          "desc": "Session- & Preisparameter"
+        "settings": {
+          "title": "Einstellungen",
+          "desc": "Darstellung, Preise, Prognose & Sperren"
         },
         "elaycoins": {
           "title": "Elaycoin-Regeln",
@@ -2953,7 +3024,9 @@ const de: TranslationSchema = {
         "pending": "Ausstehend",
         "genehmigt": "Genehmigt",
         "abgelehnt": "Abgelehnt"
-      }
+      },
+      "notifyRequestTitle": "Studio-Wechsel-Anfrage",
+      "notifyRequestBody": "{name} möchte von {from} zu {to} wechseln."
     },
   },
   "components": {

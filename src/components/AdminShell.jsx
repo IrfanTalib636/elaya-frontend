@@ -6,10 +6,8 @@ import {
   MessageSquare,
   Users,
   Target,
-  Microscope,
   ShieldAlert,
   FileText,
-  Bot,
   LogOut,
   Search,
   Lock,
@@ -19,6 +17,10 @@ import {
   Settings,
   Coins,
   Wallet,
+  Zap,
+  UserCog,
+  Brain,
+  Contact,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import useAuthStore from '../store/authStore'
@@ -32,16 +34,18 @@ const ICONS = {
   studioChat: MessageSquare,
   customers: Users,
   crm: Target,
-  engine: Microscope,
   medical: ShieldAlert,
   documents: FileText,
-  adminChat: Bot,
   shop: ShoppingBag,
   features: ToggleLeft,
   transfer: ArrowLeftRight,
   settings: Settings,
   elaycoins: Coins,
   finance: Wallet,
+  lasers: Zap,
+  users: UserCog,
+  studioTeam: Contact,
+  ai: Brain,
 }
 
 const PRIMARY_NAV = [
@@ -50,10 +54,8 @@ const PRIMARY_NAV = [
   { to: '/admin/studio-chat', id: 'studioChat' },
   { to: '/admin/customers', id: 'customers' },
   { to: '/admin/crm', id: 'crm' },
-  { to: '/admin/engine', id: 'engine' },
   { to: '/admin/medical', id: 'medical' },
   { to: '/admin/documents', id: 'documents' },
-  { to: '/admin/admin-chat', id: 'adminChat' },
 ]
 
 const TOOLS_NAV = [
@@ -61,6 +63,10 @@ const TOOLS_NAV = [
   { to: '/admin/elaycoins', id: 'elaycoins' },
   { to: '/admin/shop', id: 'shop' },
   { to: '/admin/features', id: 'features' },
+  { to: '/admin/lasers', id: 'lasers' },
+  { to: '/admin/ai-training', id: 'ai' },
+  { to: '/admin/users', id: 'users' },
+  { to: '/admin/studio-team', id: 'studioTeam' },
   { to: '/admin/transfers', id: 'transfer' },
   { to: '/admin/settings', id: 'settings' },
 ]
@@ -90,9 +96,7 @@ const AdminShell = () => {
   const { logout, user, profile } = useAuthStore()
   const { toast: toastMessages, adminNav, common } = useContent()
   const [query, setQuery] = useState('')
-  const hideFab =
-    location.pathname.startsWith('/admin/admin-chat') ||
-    location.pathname.startsWith('/admin/studio-chat')
+  const hideFab = location.pathname.startsWith('/admin/studio-chat')
 
   const labelFor = (id) => adminNav.items.find((i) => i.id === id)?.label || id
 
@@ -197,8 +201,8 @@ const AdminShell = () => {
 
       {!hideFab ? (
         <NavLink
-          to="/admin/admin-chat"
-          aria-label={labelFor('adminChat')}
+          to="/admin/studio-chat"
+          aria-label={labelFor('studioChat')}
           className="fixed bottom-6 right-6 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-studio-gold text-white shadow-lg shadow-studio-gold/30 no-underline hover:bg-studio-gold-2 transition-colors"
         >
           <MessageSquare size={22} />

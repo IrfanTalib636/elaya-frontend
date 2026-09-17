@@ -17,16 +17,18 @@ const studioName = (conversation) => {
 }
 
 /**
- * Admin inbox: REST badge + live toasts for Support chat (studio → admin).
+ * Admin inbox: REST badge + live toasts for Support chat and studio transfers.
  */
 export default function useAdminNotifications({ enabled = true } = {}) {
   const navigate = useNavigate()
   const { adminPages } = useContent()
-  const copy = adminPages.studioChat
+  const chatCopy = adminPages.studioChat
+  const transferCopy = adminPages.transfers
   const [unreadCount, setUnreadCount] = useState(0)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const seenMessageIds = useRef(new Set())
+  const seenTransferIds = useRef(new Set())
 
   const refreshUnread = useCallback(async () => {
     if (!enabled) return
@@ -62,6 +64,40 @@ export default function useAdminNotifications({ enabled = true } = {}) {
     [navigate]
   )
 
+  const openTransfers = useCallback(() => {
+    navigate('/admin/transfers')
+  }, [navigate])
+
+  const showToast = useCallback((title, body, onClick) => {
+    if (document.hidden && typeof Notification !== 'undefined') {
+      if (Notification.permission === 'granted') {
+        const n = new Notification(title, { body, tag: title })
+        n.onclick = () => {
+          window.focus()
+          onClick?.()
+          n.close()
+        }
+      }
+    }
+
+    toast(
+      (t) => (
+        <button
+          type="button"
+          className="text-left w-full bg-transparent border-0 cursor-pointer p-0"
+          onClick={() => {
+            toast.dismiss(t.id)
+            onClick?.()
+          }}
+        >
+          <p className="m-0 text-[13px] font-semibold text-studio-white">{title}</p>
+          <p className="m-0 mt-1 text-[12px] text-studio-w2 line-clamp-2">{body}</p>
+        </button>
+      ),
+      { duration: 6000 }
+    )
+  }, [])
+
   const notifyIncoming = useCallback(
     ({ message, conversation, fromSocket = false }) => {
       if (!enabled || message?.sender_role !== 'studio') return
@@ -72,8 +108,8 @@ export default function useAdminNotifications({ enabled = true } = {}) {
 
       const name = studioName(conversation)
       const title = name
-        ? (copy.newMessageFrom || 'New message from {name}').replace('{name}', name)
-        : copy.newStudioMessage || 'New studio message'
+        ? (chatCopy.newMessageFrom || 'New message from {name}').replace('{name}', name)
+        : chatCopy.newStudioMessage || 'New studio message'
       const body = String(message?.text || '').trim() || title
       const studioId = conversation?.studio?.id || message?.studio_id
 
@@ -83,38 +119,48 @@ export default function useAdminNotifications({ enabled = true } = {}) {
         return
       }
 
-      if (document.hidden && typeof Notification !== 'undefined') {
-        if (Notification.permission === 'granted') {
-          const n = new Notification(title, {
-            body,
-            tag: studioId ? `platform-chat-${studioId}` : 'platform-chat',
-          })
-          n.onclick = () => {
-            window.focus()
-            openSupportChat(studioId)
-            n.close()
-          }
-        }
+      showToast(title, body, () => openSupportChat(studioId))
+    },
+    [
+      chatCopy.newMessageFrom,
+      chatCopy.newStudioMessage,
+      enabled,
+      openSupportChat,
+      refreshUnread,
+      showToast,
+    ]
+  )
+
+  const notifyTransfer = useCallback(
+    ({ event, transfer }) => {
+      if (!enabled || event !== 'requested' || !transfer) return
+      const id = transfer.id || transfer._id
+      if (id) {
+        if (seenTransferIds.current.has(String(id))) return
+        seenTransferIds.current.add(String(id))
       }
 
-      toast(
-        (t) => (
-          <button
-            type="button"
-            className="text-left w-full bg-transparent border-0 cursor-pointer p-0"
-            onClick={() => {
-              toast.dismiss(t.id)
-              openSupportChat(studioId)
-            }}
-          >
-            <p className="m-0 text-[13px] font-semibold text-studio-white">{title}</p>
-            <p className="m-0 mt-1 text-[12px] text-studio-w2 line-clamp-2">{body}</p>
-          </button>
-        ),
-        { duration: 6000 }
+      const name = transfer.kunde_name || transferCopy.customerFallback || 'Customer'
+      const from = transfer.von_firma_name || '—'
+      const to = transfer.zu_firma_name || '—'
+      const title = transferCopy.notifyRequestTitle || 'Studio change request'
+      const body = (
+        transferCopy.notifyRequestBody ||
+        '{name} wants to switch from {from} to {to}.'
       )
+        .replace('{name}', name)
+        .replace('{from}', from)
+        .replace('{to}', to)
+
+      void refreshUnread()
+
+      if (window.location.pathname.startsWith('/admin/transfers')) {
+        return
+      }
+
+      showToast(title, body, openTransfers)
     },
-    [copy.newMessageFrom, copy.newStudioMessage, enabled, openSupportChat, refreshUnread]
+    [enabled, openTransfers, refreshUnread, showToast, transferCopy]
   )
 
   useEffect(() => {
@@ -139,6 +185,8 @@ export default function useAdminNotifications({ enabled = true } = {}) {
     ),
     { enabled }
   )
+
+  useSocketEvent('studio_transfer:updated', notifyTransfer, { enabled })
 
   const markRead = useCallback(async (notification) => {
     if (!notification?.id || !notification.unread) return
@@ -172,9 +220,13 @@ export default function useAdminNotifications({ enabled = true } = {}) {
       await markRead(notification)
       if (notification.type === 'platform_chat') {
         openSupportChat(notification.studio_id)
+        return
+      }
+      if (notification.type === 'studio_transfer_requested') {
+        openTransfers()
       }
     },
-    [markRead, openSupportChat]
+    [markRead, openSupportChat, openTransfers]
   )
 
   return {

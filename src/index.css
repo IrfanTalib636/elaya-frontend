@@ -41,19 +41,20 @@
   --color-landing-bg: #0a1628;
   --color-landing-btn-dark: #0d1c35;
 
-  /* Admin Dashboard */
+  /* Admin Dashboard — same palette as Studio */
   --color-admin-emerald: #1e6fd9;
-  --color-admin-emerald-soft: #2a7de8;
+  --color-admin-emerald-soft: #4a9aff;
   --color-admin-carmine: #e05555;
   --color-admin-navy: #0a1628;
   --color-admin-bg: #0a1628;
   --color-admin-bg-card: #0d1c35;
   --color-admin-bg-card-2: #102040;
-  /* Night text — t1/t2/t3 */
+  /* Night text — same as studio */
   --color-admin-ivory: rgba(255, 255, 255, 0.92);
   --color-admin-dim: rgba(255, 255, 255, 0.50);
   --color-admin-dim-2: rgba(255, 255, 255, 0.26);
-  --color-admin-line: rgba(74, 154, 255, 0.12);
+  --color-admin-muted: rgba(255, 255, 255, 0.50);
+  --color-admin-line: rgba(74, 154, 255, 0.1);
 
   /* Shared border tokens (theme-aware) */
   --color-elaya-border: rgba(74, 154, 255, 0.1);
@@ -62,10 +63,10 @@
   /* Typography */
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Playfair Display", Georgia, serif;
-  --font-admin: "Cormorant Garamond", Georgia, serif;
+  --font-admin: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", monospace;
 
-  /* Layout widths — 200px per client spec */
+  /* Layout widths */
   --spacing-studio-sidebar: 200px;
   --spacing-admin-sidebar: 200px;
 

@@ -5,4 +5,9 @@ export const getSocketOrigin = (apiBaseUrl) => {
 }
 
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1'
-export const SOCKET_ORIGIN = getSocketOrigin(API_BASE)
+
+/** In dev, connect via the Vite proxy (same origin as the dashboard). */
+export const SOCKET_ORIGIN =
+  typeof window !== 'undefined' && import.meta.env.DEV
+    ? window.location.origin
+    : getSocketOrigin(API_BASE)

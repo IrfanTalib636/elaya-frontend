@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
-import { listShopOrders, patchShopOrderStatus } from '../../api/shop'
-import { Card, PageHeader, Spinner, Pagination, EmptyState, Modal } from '../../components/ui'
+import { listShopOrders, listShopCatalogProducts } from '../../api/shop'
+import { Card, PageHeader, Spinner, Pagination, EmptyState, Modal, Badge } from '../../components/ui'
 import { PAGE_SIZE } from '../../constants/pagination'
 import useContent from '../../i18n/useContent'
 
@@ -10,8 +10,6 @@ const fmtCHF = (n) => chfFmt.format(n ?? 0)
 
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'
-
-const STATUS_VALUES = ['bestellt', 'versendet', 'geliefert']
 
 const OrderDetailModal = ({ order, onClose }) => {
   const { t, studioPages } = useContent()
@@ -134,17 +132,17 @@ const OrderDetailModal = ({ order, onClose }) => {
 const StudioShop = () => {
   const { studioPages } = useContent()
   const copy = studioPages.shop
-  const STATUS_OPTIONS = STATUS_VALUES.map((value) => ({ value, label: copy.status[value] }))
 
+  const [tab, setTab] = useState('orders')
   const [orders, setOrders] = useState([])
+  const [products, setProducts] = useState([])
   const [summary, setSummary] = useState(null)
   const [pagination, setPagination] = useState(null)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
-  const [updatingId, setUpdatingId] = useState(null)
   const [detailOrder, setDetailOrder] = useState(null)
 
-  const load = useCallback(async (pageNum, { background = false } = {}) => {
+  const loadOrders = useCallback(async (pageNum, { background = false } = {}) => {
     if (!background) setLoading(true)
     try {
       const res = await listShopOrders({ page: pageNum, limit: PAGE_SIZE })
@@ -153,47 +151,33 @@ const StudioShop = () => {
       setPagination(res.data.data.pagination)
     } catch (err) {
       const status = err?.response?.status
-      toast.error(
-        status === 403
-          ? copy.loadForbidden
-          : copy.loadError
-      )
+      toast.error(status === 403 ? copy.loadForbidden : copy.loadError)
     } finally {
       setLoading(false)
     }
   }, [copy.loadForbidden, copy.loadError])
 
-  useEffect(() => {
-    load(page, { background: page > 1 })
-  }, [page, load])
-
-  const handleStatusChange = async (orderId, newStatus) => {
-    const previous = orders.find((o) => o.id === orderId)?.status
-    if (previous === newStatus) return
-
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-    )
-    setDetailOrder((prev) =>
-      prev?.id === orderId ? { ...prev, status: newStatus } : prev
-    )
-    setUpdatingId(orderId)
-
+  const loadProducts = useCallback(async (pageNum, { background = false } = {}) => {
+    if (!background) setLoading(true)
     try {
-      await patchShopOrderStatus(orderId, newStatus)
-      toast.success(copy.statusUpdated)
+      const res = await listShopCatalogProducts({ page: pageNum, limit: PAGE_SIZE })
+      setProducts(res.data.data.products ?? [])
+      setPagination(res.data.data.pagination ?? null)
     } catch {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status: previous } : o))
-      )
-      setDetailOrder((prev) =>
-        prev?.id === orderId ? { ...prev, status: previous } : prev
-      )
-      toast.error(copy.statusError)
+      toast.error(copy.productsLoadError || copy.loadError)
     } finally {
-      setUpdatingId(null)
+      setLoading(false)
     }
-  }
+  }, [copy.productsLoadError, copy.loadError])
+
+  useEffect(() => {
+    setPage(1)
+  }, [tab])
+
+  useEffect(() => {
+    if (tab === 'orders') loadOrders(page, { background: page > 1 })
+    else loadProducts(page, { background: page > 1 })
+  }, [tab, page, loadOrders, loadProducts])
 
   const commissionLabel = (status) => {
     if (status === 'paid') return { text: copy.commission.paid, cls: 'text-studio-teal-2' }
@@ -201,12 +185,88 @@ const StudioShop = () => {
     return { text: copy.commission.open, cls: 'text-studio-gold-2' }
   }
 
+  const tabs = [
+    { id: 'orders', label: copy.tabOrders || 'Orders' },
+    { id: 'products', label: copy.tabProducts || 'Products' },
+  ]
+
   return (
     <div className="p-6 max-w-[1200px]">
       <PageHeader title={copy.title} subtitle={copy.subtitle} />
 
-      {loading && orders.length === 0 && !pagination?.total ? (
+      <div className="mb-4 px-4 py-3 rounded-[12px] border border-elaya-border bg-studio-bg-4">
+        <p className="text-studio-w2 text-[12px] m-0 leading-relaxed">{copy.readOnlyHint}</p>
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-4">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={`px-3 py-1.5 rounded-[8px] text-[11px] font-semibold border cursor-pointer transition-colors ${
+              tab === t.id
+                ? 'bg-studio-gold/15 border-studio-gold text-studio-gold-2'
+                : 'bg-studio-bg-3 border-elaya-border text-studio-w2 hover:text-studio-white'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {loading && (tab === 'orders' ? orders : products).length === 0 ? (
         <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+      ) : tab === 'products' ? (
+        products.length === 0 ? (
+          <EmptyState title={copy.emptyProductsTitle} description={copy.emptyProductsDesc} />
+        ) : (
+          <Card padding="none" className={loading ? 'opacity-60 pointer-events-none' : ''}>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px]">
+                <thead>
+                  <tr className="border-b border-elaya-border">
+                    {[copy.productHeaders?.name, copy.productHeaders?.sku, copy.productHeaders?.price, copy.productHeaders?.stock, copy.productHeaders?.status].map((h) => (
+                      <th
+                        key={h}
+                        className="px-5 py-3 text-left text-[10px] font-semibold text-studio-w3 uppercase tracking-wider whitespace-nowrap"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((p) => (
+                    <tr key={p.id} className="border-b border-elaya-border last:border-0 hover:bg-studio-bg-4">
+                      <td className="px-5 py-3 text-studio-white text-[12px] font-medium">
+                        {p.name}
+                        {p.kategorie ? (
+                          <span className="block text-studio-w4 text-[10px] font-normal mt-0.5">{p.kategorie}</span>
+                        ) : null}
+                      </td>
+                      <td className="px-5 py-3 text-studio-w2 text-[12px] font-mono">
+                        {p.artikelnummer || p.product_code || '—'}
+                      </td>
+                      <td className="px-5 py-3 text-studio-teal-2 text-[12px] font-mono font-semibold">
+                        {fmtCHF(p.preis_chf)}
+                      </td>
+                      <td className="px-5 py-3 text-studio-w2 text-[12px]">
+                        {p.lagerbestand == null ? '∞' : p.lagerbestand}
+                      </td>
+                      <td className="px-5 py-3">
+                        <Badge variant="status" value={p.aktiv === false ? 'gesperrt' : 'aktiv'}>
+                          {p.aktiv === false ? copy.inactive : copy.active}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination pagination={pagination} onPageChange={setPage} />
+          </Card>
+        )
       ) : orders.length === 0 && !pagination?.total ? (
         <EmptyState title={copy.emptyTitle} description={copy.emptyDesc} />
       ) : (
@@ -289,17 +349,8 @@ const StudioShop = () => {
                           return <span className={c.cls}>{c.text}</span>
                         })()}
                       </td>
-                      <td className="px-5 py-3 min-w-[130px]">
-                        <select
-                          value={o.status}
-                          disabled={updatingId === o.id}
-                          onChange={(e) => handleStatusChange(o.id, e.target.value)}
-                          className="w-full px-2 py-1.5 rounded-[8px] border border-elaya-border bg-studio-bg-3 text-studio-w1 text-[11px] font-semibold cursor-pointer outline-none focus:border-studio-gold disabled:opacity-50"
-                        >
-                          {STATUS_OPTIONS.map((s) => (
-                            <option key={s.value} value={s.value}>{s.label}</option>
-                          ))}
-                        </select>
+                      <td className="px-5 py-3 text-studio-w1 text-[12px] font-semibold whitespace-nowrap">
+                        {copy.status[o.status] ?? o.status}
                       </td>
                     </tr>
                   )

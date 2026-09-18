@@ -1,46 +1,47 @@
 /*
- * Admin Dashboard theme
- * Source: inkderm-prototype/public/admin/index.html (:root CSS variables)
+ * Admin Dashboard theme — same visual language as Studio Dashboard.
+ * Prototype screens are functionality-only; colors/fonts match studio.
  */
 
 .theme-admin {
-  /* Brand accents */
-  --admin-emerald: #1e6fd9;
-  --admin-emerald-soft: #2a7de8;
-  --admin-carmine: #e05555;
-  --admin-navy: #0a1628;
+  /* Backgrounds — identical to studio */
+  --admin-bg: var(--studio-bg, #0a1628);
+  --admin-bg-card: var(--studio-bg-3, #0d1c35);
+  --admin-bg-card-2: var(--studio-bg-4, #102040);
+  --admin-navy: var(--studio-bg, #0a1628);
 
-  /* Backgrounds */
-  --admin-bg: #0a1628;
-  --admin-bg-card: #0d1c35;
-  --admin-bg-card-2: #102040;
+  /* Accents — studio blue gold */
+  --admin-emerald: var(--studio-gold, #1e6fd9);
+  --admin-emerald-soft: var(--studio-gold-2, #4a9aff);
+  --admin-carmine: var(--studio-red, #e05555);
 
-  /* Night text — t1/t2/t3 */
-  --admin-ivory: rgba(255, 255, 255, 0.92);
-  --admin-dim: rgba(255, 255, 255, 0.50);
-  --admin-dim-2: rgba(255, 255, 255, 0.26);
+  /* Text — studio night scale */
+  --admin-ivory: var(--studio-white, rgba(255, 255, 255, 0.92));
+  --admin-dim: var(--studio-w2, rgba(255, 255, 255, 0.50));
+  --admin-dim-2: var(--studio-w3, rgba(255, 255, 255, 0.26));
+  --admin-muted: var(--studio-w2, rgba(255, 255, 255, 0.50));
 
   /* Borders */
-  --admin-line: rgba(74, 154, 255, 0.12);
+  --admin-line: var(--studio-border, rgba(74, 154, 255, 0.08));
 
-  /* Mapped semantic aliases (use inside .theme-admin) */
+  /* Semantic aliases */
   --app-bg: var(--admin-bg);
   --app-bg-elevated: var(--admin-bg-card);
-  --app-sidebar: var(--admin-bg-card);
+  --app-sidebar: var(--studio-sidebar, #081220);
   --app-text: var(--admin-ivory);
   --app-text-muted: var(--admin-dim);
   --app-text-subtle: var(--admin-dim-2);
-  --app-accent: var(--admin-emerald);
-  --app-accent-secondary: var(--admin-emerald-soft);
+  --app-accent: var(--admin-emerald-soft);
+  --app-accent-secondary: var(--studio-teal-2, #50dda8);
   --app-border: var(--admin-line);
-  --app-font-sans: var(--font-admin-serif);
-  --app-font-display: var(--font-admin-serif);
+  --app-font-sans: var(--font-studio-sans);
+  --app-font-display: var(--font-studio-display);
 }
 
 .theme-admin {
   color: var(--admin-ivory);
   background-color: var(--admin-bg);
-  font-family: var(--font-admin-serif);
+  font-family: var(--font-studio-sans);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -48,5 +49,5 @@
 .theme-admin select,
 .theme-admin textarea,
 .theme-admin button {
-  font-family: var(--font-admin-serif);
+  font-family: var(--font-studio-sans);
 }

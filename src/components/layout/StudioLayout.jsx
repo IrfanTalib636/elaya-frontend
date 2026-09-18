@@ -4,10 +4,11 @@ import {
   LayoutDashboard, Users, Calendar, CalendarDays, BarChart2, Heart,
   ShoppingBag, Coins, Settings, LogOut, ChevronLeft, ChevronRight,
   FolderOpen, ClipboardList, ArrowLeftRight, MessageCircle, ListChecks,
-  History, Sparkles,
+  History, Sparkles, Headphones,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../ElayaLogo'
+import StudioNotificationBell from '../studio/StudioNotificationBell'
 import useAuthStore from '../../store/authStore'
 import useContent from '../../i18n/useContent'
 
@@ -62,8 +63,9 @@ const StudioLayout = ({ children }) => {
         { to: '/studio/aftercare',    icon: Heart,           label: studioNav.aftercare },
         { to: '/studio/crm',          icon: ListChecks,      label: studioNav.crm },
         { to: '/studio/activity',     icon: History,         label: studioNav.activity },
-        { to: '/studio/elaya',        icon: Sparkles,        label: studioNav.elayaChat },
-        { to: '/studio/chat',         icon: MessageCircle,   label: studioNav.chat },
+        { to: '/studio/elaya',         icon: Sparkles,        label: studioNav.elayaChat },
+        { to: '/studio/platform-chat', icon: Headphones,      label: studioNav.platformChat },
+        { to: '/studio/chat',          icon: MessageCircle,   label: studioNav.chat },
       ],
     },
     {
@@ -184,6 +186,9 @@ const StudioLayout = ({ children }) => {
 
       {/* ── Main content ── */}
       <main className={`flex-1 min-h-screen bg-studio-bg transition-[margin-left] duration-200 ease-in-out ${collapsed ? 'ml-14' : 'ml-studio-sidebar'}`}>
+        <div className="sticky top-0 z-40 flex justify-end px-4 py-2 border-b border-elaya-border/60 bg-studio-bg/90 backdrop-blur-sm">
+          <StudioNotificationBell />
+        </div>
         {children}
       </main>
     </div>

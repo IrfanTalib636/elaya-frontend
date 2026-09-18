@@ -3,12 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Lock, MessageCircle, Radio, Send, WifiOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import {
+  getConversation,
   getOrCreateConversation,
   listConversations,
   listMessages,
   markConversationRead,
   sendMessage as sendMessageRest,
 } from '../../api/messaging'
+import { markConversationNotificationsRead } from '../../api/notifications'
 import { getApiErrorMessage } from '../../lib/apiError'
 import useMessagingSocket from '../../hooks/useMessagingSocket'
 import { Card, EmptyState, PageHeader, Spinner } from '../../components/ui'
@@ -40,6 +42,7 @@ export default function StudioChatPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const customerIdParam = searchParams.get('customerId')
+  const conversationIdParam = searchParams.get('conversationId')
 
   const [conversations, setConversations] = useState([])
   const [loadingInbox, setLoadingInbox] = useState(true)
@@ -97,6 +100,31 @@ export default function StudioChatPage() {
     }
   }, [customerIdParam, setSearchParams, copy.openError])
 
+  // Deep-link from notification bell: ?conversationId=
+  useEffect(() => {
+    if (!conversationIdParam) return undefined
+    let cancelled = false
+    ;(async () => {
+      try {
+        setActiveId(conversationIdParam)
+        const res = await getConversation(conversationIdParam)
+        const conversation = res.data?.data?.conversation
+        if (cancelled || !conversation?.id) return
+        setConversations((prev) => {
+          if (prev.some((c) => c.id === conversation.id)) return prev
+          return [conversation, ...prev]
+        })
+        await markConversationNotificationsRead(conversationIdParam).catch(() => undefined)
+        setSearchParams({}, { replace: true })
+      } catch (err) {
+        toast.error(getApiErrorMessage(err, copy.openError))
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [conversationIdParam, setSearchParams, copy.openError])
+
   const loadThread = useCallback(async (conversationId) => {
     if (!conversationId) return
     setLoadingThread(true)
@@ -115,6 +143,32 @@ export default function StudioChatPage() {
       setLoadingThread(false)
     }
   }, [copy.messagesLoadError])
+
+  /** Pull the tail of the thread without clearing the pane (socket fallback). */
+  const syncLatestMessages = useCallback(async (conversationId) => {
+    if (!conversationId) return
+    try {
+      const res = await listMessages(conversationId, { limit: 30 })
+      const incoming = res.data?.data?.messages || []
+      setMessages((prev) => {
+        const merged = [...prev]
+        for (const message of incoming) {
+          if (!merged.some((m) => m.id === message.id)) merged.push(message)
+        }
+        return merged.sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        )
+      })
+      await markConversationRead(conversationId).catch(() => undefined)
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === conversationId ? { ...c, unread_studio: 0 } : c
+        )
+      )
+    } catch {
+      // Best-effort — realtime path may have already delivered the message.
+    }
+  }, [])
 
   useEffect(() => {
     if (activeId) void loadThread(activeId)
@@ -163,6 +217,12 @@ export default function StudioChatPage() {
         const others = prev.filter((c) => c.id !== conversation.id)
         return [conversation, ...others]
       })
+      if (
+        conversation.id === activeId &&
+        conversation.last_sender_role === 'customer'
+      ) {
+        void syncLatestMessages(conversation.id)
+      }
     },
   })
 

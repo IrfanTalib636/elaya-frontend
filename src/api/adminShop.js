@@ -17,4 +17,6 @@ export const patchOrderCommission = (id, commission_status, extras = {}) =>
 
 export const getShopFinance = (params) =>
   api.get('/admin/shop/finance', { params })
+export const getStudioShopFinance = (studioId, params) =>
+  api.get(`/admin/shop/finance/studios/${studioId}`, { params })
 export const getAdminShipping = () => api.get('/admin/shop/shipping')

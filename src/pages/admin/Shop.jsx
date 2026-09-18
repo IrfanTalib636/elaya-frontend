@@ -20,6 +20,8 @@ import {
   patchOrderCommission,
 } from '../../api/adminShop'
 import useContent from '../../i18n/useContent'
+import useAuthStore from '../../store/authStore'
+import { ROLES } from '../../constants/roles'
 
 const CATEGORY_IDS = ['Nachsorge', 'Sonnenschutz', 'Reinigung', 'Zubehör', 'Sonstiges']
 const emptyForm = {
@@ -40,6 +42,8 @@ const fmt = (n) =>
 const AdminShop = () => {
   const { adminPages } = useContent()
   const copy = adminPages.shop
+  const role = useAuthStore((s) => s.user?.role)
+  const canManage = role === ROLES.SUPER_ADMIN
   const [tab, setTab] = useState('products')
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
@@ -83,12 +87,14 @@ const AdminShop = () => {
   }, [tab, page, loadProducts, loadOrders])
 
   const openCreate = () => {
+    if (!canManage) return
     setEditing(null)
     setForm(emptyForm)
     setModalOpen(true)
   }
 
   const openEdit = (p) => {
+    if (!canManage) return
     setEditing(p)
     setForm({
       product_code: p.product_code || '',
@@ -129,6 +135,7 @@ const AdminShop = () => {
   }
 
   const toggleActive = async (p) => {
+    if (!canManage) return
     try {
       await updateAdminProduct(p.id, { aktiv: !p.aktiv })
       loadProducts(page)
@@ -138,27 +145,29 @@ const AdminShop = () => {
   }
 
   const markCommission = async (order, status, { viaStripe = false } = {}) => {
+    if (!canManage) return
     try {
       await patchOrderCommission(order.id, status, viaStripe ? { pay_via_stripe: true } : {})
       toast.success(viaStripe ? copy.provisionStripe : copy.provisionUpdated)
       loadOrders(page)
     } catch (err) {
-      toast.error(
-        err?.response?.data?.message || copy.provisionError
-      )
+      toast.error(err?.response?.data?.message || copy.provisionError)
     }
   }
 
   return (
     <div className="p-6 max-w-[1100px]">
-      <PageHeader
-        title={copy.title}
-        subtitle={copy.subtitle}
-      >
-        {tab === 'products' ? (
+      <PageHeader title={copy.title} subtitle={copy.subtitle}>
+        {tab === 'products' && canManage ? (
           <Button onClick={openCreate}>+ {copy.newProduct}</Button>
         ) : null}
       </PageHeader>
+
+      {!canManage ? (
+        <div className="mb-4 px-4 py-3 rounded-[12px] border border-elaya-border bg-studio-bg-4">
+          <p className="text-studio-w2 text-[12px] m-0">{copy.superAdminOnlyHint}</p>
+        </div>
+      ) : null}
 
       <div className="flex gap-2 mb-4">
         {['products', 'orders'].map((t) => (
@@ -197,7 +206,7 @@ const AdminShop = () => {
                   <th className="p-3">{copy.headers.price}</th>
                   <th className="p-3">{copy.headers.stock}</th>
                   <th className="p-3">{copy.headers.status}</th>
-                  <th className="p-3" />
+                  {canManage ? <th className="p-3" /> : null}
                 </tr>
               </thead>
               <tbody>
@@ -212,14 +221,16 @@ const AdminShop = () => {
                         {p.aktiv ? copy.active : copy.inactive}
                       </Badge>
                     </td>
-                    <td className="p-3 text-right space-x-2">
-                      <Button variant="secondary" onClick={() => openEdit(p)}>
-                        {copy.edit}
-                      </Button>
-                      <Button variant="ghost" onClick={() => toggleActive(p)}>
-                        {p.aktiv ? copy.deactivate : copy.activate}
-                      </Button>
-                    </td>
+                    {canManage ? (
+                      <td className="p-3 text-right space-x-2">
+                        <Button variant="secondary" onClick={() => openEdit(p)}>
+                          {copy.edit}
+                        </Button>
+                        <Button variant="ghost" onClick={() => toggleActive(p)}>
+                          {p.aktiv ? copy.deactivate : copy.activate}
+                        </Button>
+                      </td>
+                    ) : null}
                   </tr>
                 ))}
               </tbody>
@@ -239,7 +250,7 @@ const AdminShop = () => {
                 <th className="p-3">{copy.headers.revenue}</th>
                 <th className="p-3">{copy.headers.provision}</th>
                 <th className="p-3">{copy.headers.payout}</th>
-                <th className="p-3" />
+                {canManage ? <th className="p-3" /> : null}
               </tr>
             </thead>
             <tbody>
@@ -257,30 +268,24 @@ const AdminShop = () => {
                       {o.commission_status}
                     </Badge>
                   </td>
-                  <td className="p-3 text-right space-x-2">
-                    {o.commission_status !== 'paid' ? (
-                      <>
-                        <Button
-                          variant="secondary"
-                          onClick={() => markCommission(o, 'paid')}
-                        >
-                          {copy.markPaidManual}
+                  {canManage ? (
+                    <td className="p-3 text-right space-x-2">
+                      {o.commission_status !== 'paid' ? (
+                        <>
+                          <Button variant="secondary" onClick={() => markCommission(o, 'paid')}>
+                            {copy.markPaidManual}
+                          </Button>
+                          <Button onClick={() => markCommission(o, 'paid', { viaStripe: true })}>
+                            {copy.viaStripe}
+                          </Button>
+                        </>
+                      ) : (
+                        <Button variant="ghost" onClick={() => markCommission(o, 'pending')}>
+                          {copy.reset}
                         </Button>
-                        <Button
-                          onClick={() => markCommission(o, 'paid', { viaStripe: true })}
-                        >
-                          {copy.viaStripe}
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        onClick={() => markCommission(o, 'pending')}
-                      >
-                        {copy.reset}
-                      </Button>
-                    )}
-                  </td>
+                      )}
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>
@@ -290,78 +295,77 @@ const AdminShop = () => {
 
       <Pagination pagination={pagination} onPageChange={setPage} className="mt-4" />
 
-      {modalOpen ? (
-      <Modal
-        onClose={() => setModalOpen(false)}
-        title={editing ? copy.editProduct : copy.newProduct}
-      >
-        <div className="space-y-3">
-          <Input
-            label={copy.form.name}
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-          <div className="grid grid-cols-2 gap-3">
+      {modalOpen && canManage ? (
+        <Modal onClose={() => setModalOpen(false)} title={editing ? copy.editProduct : copy.newProduct}>
+          <div className="space-y-3">
             <Input
-              label={copy.form.productCode}
-              value={form.product_code}
-              onChange={(e) => setForm({ ...form, product_code: e.target.value })}
-              disabled={!!editing}
+              label={copy.form.name}
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label={copy.form.productCode}
+                value={form.product_code}
+                onChange={(e) => setForm({ ...form, product_code: e.target.value })}
+                disabled={!!editing}
+              />
+              <Input
+                label={copy.form.sku}
+                value={form.artikelnummer}
+                onChange={(e) => setForm({ ...form, artikelnummer: e.target.value })}
+                disabled={!!editing}
+              />
+            </div>
             <Input
-              label={copy.form.sku}
-              value={form.artikelnummer}
-              onChange={(e) => setForm({ ...form, artikelnummer: e.target.value })}
-              disabled={!!editing}
+              label={copy.form.description}
+              value={form.beschreibung}
+              onChange={(e) => setForm({ ...form, beschreibung: e.target.value })}
             />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label={copy.form.priceChf}
+                type="number"
+                value={form.preis_chf}
+                onChange={(e) => setForm({ ...form, preis_chf: e.target.value })}
+              />
+              <Input
+                label={copy.form.stock}
+                type="number"
+                value={form.lagerbestand}
+                onChange={(e) => setForm({ ...form, lagerbestand: e.target.value })}
+                placeholder={copy.form.stockPh}
+              />
+            </div>
+            <Select
+              label={copy.form.category}
+              value={form.kategorie}
+              onChange={(e) => setForm({ ...form, kategorie: e.target.value })}
+            >
+              {CATEGORY_IDS.map((c) => (
+                <option key={c} value={c}>
+                  {copy.categories[c] || c}
+                </option>
+              ))}
+            </Select>
+            <Input
+              label={copy.form.imageUrl}
+              value={form.bild_url}
+              onChange={(e) => setForm({ ...form, bild_url: e.target.value })}
+            />
+            <label className="flex items-center gap-2 text-[13px]">
+              <input
+                type="checkbox"
+                checked={form.aktiv}
+                onChange={(e) => setForm({ ...form, aktiv: e.target.checked })}
+              />
+              {copy.form.active}
+            </label>
+            <Button onClick={saveProduct} loading={saving} className="w-full">
+              {copy.save}
+            </Button>
           </div>
-          <Input
-            label={copy.form.description}
-            value={form.beschreibung}
-            onChange={(e) => setForm({ ...form, beschreibung: e.target.value })}
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label={copy.form.priceChf}
-              type="number"
-              value={form.preis_chf}
-              onChange={(e) => setForm({ ...form, preis_chf: e.target.value })}
-            />
-            <Input
-              label={copy.form.stock}
-              type="number"
-              value={form.lagerbestand}
-              onChange={(e) => setForm({ ...form, lagerbestand: e.target.value })}
-              placeholder={copy.form.stockPh}
-            />
-          </div>
-          <Select
-            label={copy.form.category}
-            value={form.kategorie}
-            onChange={(e) => setForm({ ...form, kategorie: e.target.value })}
-          >
-            {CATEGORY_IDS.map((c) => (
-              <option key={c} value={c}>{copy.categories[c] || c}</option>
-            ))}
-          </Select>
-          <Input
-            label={copy.form.imageUrl}
-            value={form.bild_url}
-            onChange={(e) => setForm({ ...form, bild_url: e.target.value })}
-          />
-          <label className="flex items-center gap-2 text-[13px]">
-            <input
-              type="checkbox"
-              checked={form.aktiv}
-              onChange={(e) => setForm({ ...form, aktiv: e.target.checked })}
-            />
-            {copy.form.active}
-          </label>
-          <Button onClick={saveProduct} loading={saving} className="w-full">
-            {copy.save}
-          </Button>
-        </div>
-      </Modal>
+        </Modal>
       ) : null}
     </div>
   )

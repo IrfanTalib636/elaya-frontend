@@ -10,4 +10,14 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
   ],
+  server: {
+    proxy: {
+      // Same-origin Socket.io in dev — avoids cross-port WebSocket/CORS issues.
+      '/socket.io': {
+        target: 'http://localhost:4000',
+        ws: true,
+        changeOrigin: true,
+      },
+    },
+  },
 })

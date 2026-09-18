@@ -5,10 +5,12 @@ import toast from 'react-hot-toast'
 import { getCase } from '../../api/cases'
 import { createSession } from '../../api/sessions'
 import { getAppointment } from '../../api/appointments'
+import { getStudioSettings } from '../../api/studio'
 import { uploadSessionProgressPhoto } from '../../api/files'
 import { analyzeVerblassung } from '../../api/verblassung'
 import { Card, Button, Input, Select, Spinner, PageHeader } from '../../components/ui'
 import useContent from '../../i18n/useContent'
+import useAuthStore from '../../store/authStore'
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const toDateInput = (iso) => {
@@ -41,6 +43,7 @@ const INITIAL = {
   treatment_date:      '',
   treatment_time:      '',
   dauer_minuten:       '',
+  mitarbeiter_id:      '',
   mitarbeiter_name:    '',
   raum_name:           '',
   is_no_show:          false,
@@ -149,10 +152,12 @@ const NewSession = () => {
   const caseId = searchParams.get('case_id')
   const appointmentId = searchParams.get('appointment_id')
   const presetZoneId = searchParams.get('zonen_id')
+  const authUser = useAuthStore((s) => s.user)
 
   const [caseData, setCaseData] = useState(null)
   const [linkedAppointment, setLinkedAppointment] = useState(null)
   const [loadingCase, setLoadingCase] = useState(true)
+  const [staffRoster, setStaffRoster] = useState([])
   const [form, setForm] = useState(INITIAL)
   const [savingDraft, setSavingDraft] = useState(false)
   const [savingFinal, setSavingFinal] = useState(false)
@@ -221,6 +226,7 @@ const NewSession = () => {
           treatment_date: toDateInput(appt.date),
           treatment_time: toTimeInput(appt),
           dauer_minuten: appt.dauer_minuten != null ? String(appt.dauer_minuten) : prev.dauer_minuten,
+          mitarbeiter_id: appt.mitarbeiter_id || prev.mitarbeiter_id,
           mitarbeiter_name: appt.mitarbeiter_name || prev.mitarbeiter_name,
           raum_name: appt.raum_name || prev.raum_name,
         }))
@@ -229,6 +235,12 @@ const NewSession = () => {
       }
     }
     load()
+    void getStudioSettings()
+      .then((res) => {
+        const list = (res.data.data.settings.mitarbeiter || []).filter((m) => m.aktiv !== false)
+        setStaffRoster(list)
+      })
+      .catch(() => {})
   }, [
     caseId,
     appointmentId,
@@ -267,6 +279,7 @@ const NewSession = () => {
       treatment_date:      form.treatment_date,
       treatment_time:      form.treatment_time   || undefined,
       dauer_minuten:       form.dauer_minuten     ? Number(form.dauer_minuten)    : undefined,
+      mitarbeiter_id:      form.mitarbeiter_id    || undefined,
       mitarbeiter_name:    form.mitarbeiter_name  || undefined,
       raum_name:           form.raum_name         || undefined,
       is_draft:            isDraft,
@@ -469,12 +482,29 @@ const NewSession = () => {
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label={copy.staff}
-              value={form.mitarbeiter_name}
-              onChange={set('mitarbeiter_name')}
-              placeholder={copy.staffPh}
-            />
+            <Select
+              label={copy.performedBy || copy.staff || 'Treatment performed by'}
+              value={form.mitarbeiter_id}
+              onChange={(e) => {
+                const id = e.target.value
+                const m = staffRoster.find((s) => s.id === id)
+                setForm((p) => ({
+                  ...p,
+                  mitarbeiter_id: id,
+                  mitarbeiter_name: m
+                    ? `${m.vorname || ''} ${m.nachname || ''}`.trim()
+                    : '',
+                }))
+              }}
+            >
+              <option value="">{copy.staffPh || 'Select staff profile…'}</option>
+              {staffRoster.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.vorname} {m.nachname}
+                  {m.rolle ? ` (${m.rolle})` : ''}
+                </option>
+              ))}
+            </Select>
             <Input
               label={copy.room}
               value={form.raum_name}
@@ -482,6 +512,12 @@ const NewSession = () => {
               placeholder={copy.roomPh}
             />
           </div>
+          <p className="m-0 text-[11px] text-studio-w3">
+            {copy.documentedBy || 'Documented by'}:{' '}
+            <span className="text-studio-white">
+              {authUser?.name || authUser?.email || '—'}
+            </span>
+          </p>
           <Toggle
             label={copy.noShow}
             hint={copy.noShowHint}

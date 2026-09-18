@@ -1,13 +1,16 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Sun, Moon, Monitor, Check, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Activity, Layers, MapPin, ShieldAlert } from 'lucide-react'
+import { Monitor, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Activity, Layers, MapPin, ShieldAlert, KeyRound } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Card, PageHeader, Input, Button, Spinner, Select, Badge } from '../../components/ui'
-import LanguageToggle from '../../components/LanguageToggle'
-import useTheme from '../../hooks/useTheme'
+import AppearanceSettings from '../../components/settings/AppearanceSettings'
+import PricingRulesPanel from '../../components/settings/PricingRulesPanel'
+import SessionPredictionPanel from '../../components/settings/SessionPredictionPanel'
+import TeamLoginsPanel from '../../components/settings/TeamLoginsPanel'
+import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
 import useAuthStore from '../../store/authStore'
-import { getStudioConfig, updateStudioConfig } from '../../api/config'
+import { getStudioConfig } from '../../api/config'
 import {
   getStudioSettings,
   updateStudioSettings,
@@ -15,16 +18,7 @@ import {
   startStudioStripeConnect,
   refreshStudioStripeConnect,
 } from '../../api/studio'
-import PricingConfigForm from '../../components/pricing/PricingConfigForm'
-import SessionPredictionForm from '../../components/sessionPrediction/SessionPredictionForm'
-import { cloneSessionPrediction } from '../../components/sessionPrediction/sessionPredictionFields'
-import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
-import {
-  PRICING_GROUPS,
-  PRICING_LABELS,
-  pricingValuesFromConfig,
-  buildStudioPricing,
-} from '../../components/pricing/pricingFields'
+import { listLasers } from '../../api/adminPhase4'
 import { ROLES } from '../../constants/roles'
 import { WEEKDAYS, MITARBEITER_ROLLEN } from '../../constants/studio'
 import { formatTimeRange12, fmtDateDeLong } from '../../utils/time'
@@ -40,6 +34,7 @@ const TAB_I18N = {
   locations: 'locations',
   rooms: 'rooms',
   staff: 'staff',
+  logins: 'logins',
   stripe: 'stripe',
 }
 
@@ -54,40 +49,9 @@ const TABS = [
   { id: 'locations',  icon: MapPin },
   { id: 'rooms',      icon: Grid },
   { id: 'staff',      icon: Users },
+  { id: 'logins',     icon: KeyRound },
   { id: 'stripe',     icon: CreditCard },
 ]
-
-const THEME_OPTION_META = [
-  { value: 'light',  icon: Sun,     labelKey: 'theme.light',  descKey: 'settingsPage.appearance.themeLightDesc' },
-  { value: 'dark',   icon: Moon,    labelKey: 'theme.dark',   descKey: 'settingsPage.appearance.themeDarkDesc' },
-  { value: 'system', icon: Monitor, labelKey: 'theme.system', descKey: 'settingsPage.appearance.themeSystemDesc' },
-]
-
-// ── Theme ──────────────────────────────────────────────────────────────────
-const ThemeOption = ({ value, icon: Icon, label, desc, active, onSelect }) => (
-  <button
-    type="button"
-    onClick={() => onSelect(value)}
-    className={`flex flex-col items-start gap-2 p-4 rounded-[12px] border cursor-pointer transition-all text-left w-full ${
-      active
-        ? 'border-studio-gold bg-studio-gold/10 text-studio-white'
-        : 'border-elaya-border bg-studio-bg-4 text-studio-w1 hover:border-elaya-border-strong hover:bg-studio-bg-5'
-    }`}
-  >
-    <div className="flex items-center justify-between w-full">
-      <Icon size={18} className={active ? 'text-studio-gold-2' : 'text-studio-w2'} />
-      {active && (
-        <span className="w-5 h-5 rounded-full bg-studio-gold flex items-center justify-center shrink-0">
-          <Check size={11} className="text-white" />
-        </span>
-      )}
-    </div>
-    <div>
-      <p className="text-[13px] font-semibold m-0">{label}</p>
-      <p className={`text-[11px] m-0 mt-0.5 ${active ? 'text-studio-w2' : 'text-studio-w3'}`}>{desc}</p>
-    </div>
-  </button>
-)
 
 // ── Shared layout ──────────────────────────────────────────────────────────
 const InfoRow = ({ label, value, children }) => {
@@ -163,241 +127,42 @@ const staffRoleLabel = (t, rolle) => {
 }
 
 // ── Pricing tab ────────────────────────────────────────────────────────────
-const BASE_PRICE_KEYS = ['basePricePerCm2', 'minPrice', 'pmuPrice']
-
 const PricingTab = () => {
   const { t } = useTranslation()
-  const canEdit = useCanEditSettings()
-  const [isEditing, setIsEditing] = useState(false)
-  const [config,   setConfig]   = useState(null)
-  const [loading,  setLoading]  = useState(true)
-  const [saving,   setSaving]   = useState(false)
-  const [coinWert, setCoinWert] = useState('')
-  const [pricing,  setPricing]  = useState(() => pricingValuesFromConfig())
 
-  const applyConfig = (cfg) => {
-    setConfig(cfg)
-    setCoinWert(cfg.coin_wert ?? cfg.platform_limits?.coinWert ?? '')
-    setPricing(pricingValuesFromConfig(cfg.studio_pricing))
-  }
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await getStudioConfig()
-      applyConfig(res.data.data.studio_config)
-    } catch {
-      toast.error(t('settingsPage.pricing.toasts.loadFailed'))
-    } finally {
-      setLoading(false)
+  const loadPricing = useCallback(async () => {
+    const res = await getStudioConfig()
+    const cfg = res.data.data.studio_config
+    // Effective rules = platform defaults (studio overrides are legacy / admin-only).
+    const pricing = {
+      ...(cfg.pricing_defaults || {}),
+      ...(cfg.studio_pricing || {}),
     }
-  }, [t])
-
-  useEffect(() => { load() }, [load])
-
-  const handleCancel = () => {
-    if (config) applyConfig(config)
-    setIsEditing(false)
-  }
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      const payload = {
-        // studio_pricing replaces the whole override set — always send every filled key.
-        studio_pricing: buildStudioPricing(pricing),
-      }
-
-      const coinVal = parseFloat(coinWert)
-      if (!Number.isNaN(coinVal)) payload.coin_wert = coinVal
-
-      const res = await updateStudioConfig(payload)
-      applyConfig(res.data.data.studio_config)
-      setIsEditing(false)
-      toast.success(t('settingsPage.pricing.toasts.saved'))
-    } catch (err) {
-      toast.error(err?.response?.data?.message ?? t('settingsPage.shared.saveFailedFallback'))
-    } finally {
-      setSaving(false)
+    return {
+      pricing,
+      pricing_defaults: cfg.pricing_defaults || {},
+      coin_wert: cfg.coin_wert,
     }
-  }
-
-  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
-
-  const limits = config?.platform_limits
-  const fmtPrice = (v) => (
-    v !== '' && v != null
-      ? t('settingsPage.pricing.priceWithCurrency', { value: v })
-      : t('settingsPage.pricing.platformDefault')
-  )
-
-  const overriddenMultipliers = PRICING_GROUPS
-    .flatMap((group) => group.fields)
-    .filter(({ key }) => !BASE_PRICE_KEYS.includes(key) && pricing[key] !== '')
+  }, [])
 
   return (
-    <Section
-      title={t('settingsPage.pricing.title')}
-      desc={t('settingsPage.pricing.desc')}
-      canEdit={canEdit}
-      isEditing={isEditing}
-      onEdit={() => setIsEditing(true)}
-      saving={saving}
-      onCancel={handleCancel}
-      onSave={handleSave}
-    >
-      {!canEdit && <ReadOnlyHint />}
-
-      {!isEditing ? (
-        <>
-          <InfoRow label={t('settingsPage.pricing.chfPerCoin')} value={fmtPrice(coinWert)} />
-          {limits && (
-            <p className="text-studio-w3 text-[11px] m-0 -mt-2">
-              {t('settingsPage.pricing.allowedRange', {
-                min: limits.minWert,
-                max: limits.maxWert,
-                default: limits.coinWert,
-              })}
-            </p>
-          )}
-          <div className="h-px bg-elaya-border" />
-          <InfoRow label={t('settingsPage.pricing.basePricePerCm2')} value={fmtPrice(pricing.basePricePerCm2)} />
-          <InfoRow label={t('settingsPage.pricing.minPricePerSession')} value={fmtPrice(pricing.minPrice)} />
-          <InfoRow label={t('settingsPage.pricing.pmuPrice')} value={fmtPrice(pricing.pmuPrice)} />
-          <div className="h-px bg-elaya-border" />
-          {overriddenMultipliers.length === 0 ? (
-            <p className="text-studio-w2 text-[12px] m-0">
-              {t('settingsPage.pricing.allMultipliersPlatformDefault')}
-            </p>
-          ) : (
-            <div>
-              <p className="text-[12px] font-semibold text-studio-w2 m-0 mb-1">
-                {t('settingsPage.pricing.adjustedMultipliers', { count: overriddenMultipliers.length })}
-              </p>
-              {overriddenMultipliers.map(({ key }) => (
-                <InfoRow
-                  key={key}
-                  label={PRICING_LABELS[key]}
-                  value={t('settingsPage.pricing.multiplierValue', { value: pricing[key] })}
-                />
-              ))}
-            </div>
-          )}
-          <p className="text-studio-w3 text-[11px] m-0">
-            {t('settingsPage.pricing.aiPricingHint')}
-          </p>
-        </>
-      ) : (
-        <>
-          <div>
-            <p className="text-[12px] font-semibold text-studio-w2 m-0 mb-3">{t('settingsPage.pricing.coinSectionTitle')}</p>
-            <Input
-              label={t('settingsPage.pricing.chfPerCoin')}
-              type="number"
-              min={limits?.minWert}
-              max={limits?.maxWert}
-              step="0.01"
-              value={coinWert}
-              onChange={(e) => setCoinWert(e.target.value)}
-            />
-            {limits && (
-              <p className="text-studio-w3 text-[11px] m-0 mt-1.5">
-                {t('settingsPage.pricing.allowedRange', {
-                  min: limits.minWert,
-                  max: limits.maxWert,
-                  default: limits.coinWert,
-                })}
-              </p>
-            )}
-          </div>
-
-          <div className="h-px bg-elaya-border" />
-
-          <PricingConfigForm
-            values={pricing}
-            defaults={config?.pricing_defaults}
-            savedPricing={pricingValuesFromConfig(config?.studio_pricing)}
-            onChange={(key, value) => setPricing((prev) => ({ ...prev, [key]: value }))}
-          />
-        </>
-      )}
-    </Section>
+    <PricingRulesPanel
+      canEdit={false}
+      loadPricing={loadPricing}
+      coinWertLabel={t('settingsPage.pricing.chfPerCoin')}
+    />
   )
 }
 
 const SessionPredictionTab = () => {
-  /**
-   * TEMP testing phase: studio may tweak parameters locally to see the live
-   * calculator effect. Changes are NOT saved — only Admin persists platform-wide.
-   * Set to false for production (view-only form).
-   */
-  const TEMP_STUDIO_WHAT_IF = true
-
-  const { t } = useTranslation()
-  const [loading, setLoading] = useState(true)
-  const [values, setValues] = useState(null)
-  const [savedBaseline, setSavedBaseline] = useState(null)
-
-  const load = useCallback(async ({ silent = false } = {}) => {
-    if (!silent) setLoading(true)
-    try {
-      const res = await getStudioConfig()
-      const next = cloneSessionPrediction(res.data.data.studio_config?.session_prediction)
-      setValues(next)
-      setSavedBaseline(cloneSessionPrediction(next))
-    } catch {
-      toast.error(t('settingsPage.sessions.toasts.loadFailed'))
-    } finally {
-      if (!silent) setLoading(false)
+  const loadConfig = useCallback(async () => {
+    const res = await getStudioConfig()
+    return {
+      session_prediction: res.data.data.studio_config?.session_prediction,
     }
-  }, [t])
+  }, [])
 
-  useEffect(() => {
-    load()
-  }, [load])
-
-  usePlatformConfigSocket({
-    enabled: true,
-    onSessionPredictionUpdated: () => {
-      toast(t('settingsPage.sessions.toasts.adminUpdated'), { icon: '↻' })
-      load({ silent: true })
-    },
-  })
-
-  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
-
-  return (
-    <Section
-      title={t('settingsPage.sessions.title')}
-      desc={t('settingsPage.sessions.desc')}
-    >
-      <p className="text-studio-w3 text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4">
-        {TEMP_STUDIO_WHAT_IF
-          ? t('settingsPage.sessions.testModeHint')
-          : t('settingsPage.sessions.viewOnlyHint')}
-      </p>
-      {values && Object.keys(values).length > 0 ? (
-        <SessionPredictionForm
-          values={values}
-          onChange={TEMP_STUDIO_WHAT_IF ? setValues : () => {}}
-          disabled={!TEMP_STUDIO_WHAT_IF}
-          savedBaseline={savedBaseline}
-        />
-      ) : (
-        <p className="text-studio-w2 text-[12px] m-0">{t('settingsPage.sessions.noParameters')}</p>
-      )}
-      {TEMP_STUDIO_WHAT_IF && (
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={() => setValues(cloneSessionPrediction(savedBaseline))}
-          disabled={!savedBaseline}
-        >
-          {t('settingsPage.sessions.resetToSaved')}
-        </Button>
-      )}
-    </Section>
-  )
+  return <SessionPredictionPanel canEdit={false} loadConfig={loadConfig} />
 }
 
 // ── Profile tab ────────────────────────────────────────────────────────────
@@ -1210,6 +975,7 @@ const emptyRoom = () => ({
   aktiv: true,
   laser_brand: '',
   laser_model: '',
+  laser_device_id: null,
   standort_id: '',
 })
 
@@ -1221,13 +987,18 @@ const RoomsTab = () => {
   const [saving, setSaving] = useState(false)
   const [rooms, setRooms] = useState([])
   const [standorte, setStandorte] = useState([])
+  const [laserCatalog, setLaserCatalog] = useState([])
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await getStudioSettings()
-      setRooms(res.data.data.settings.behandlungsraeume ?? [])
-      setStandorte(res.data.data.settings.standorte ?? [])
+      const [settingsRes, lasersRes] = await Promise.all([
+        getStudioSettings(),
+        listLasers({ active_only: true }).catch(() => null),
+      ])
+      setRooms(settingsRes.data.data.settings.behandlungsraeume ?? [])
+      setStandorte(settingsRes.data.data.settings.standorte ?? [])
+      setLaserCatalog(lasersRes?.data?.data?.devices || [])
     } catch {
       toast.error(t('settingsPage.rooms.toasts.loadFailed'))
     } finally {
@@ -1263,13 +1034,14 @@ const RoomsTab = () => {
     setSaving(true)
     try {
       const payload = rooms.map(
-        ({ id, name, farbe, aktiv, laser_brand, laser_model, standort_id }) => ({
+        ({ id, name, farbe, aktiv, laser_brand, laser_model, laser_device_id, standort_id }) => ({
           ...(id ? { id } : {}),
           name: name.trim(),
           farbe: farbe || '#3B8BD4',
           aktiv: aktiv !== false,
           laser_brand: laser_brand ?? '',
           laser_model: laser_model ?? '',
+          laser_device_id: laser_device_id || null,
           standort_id: standort_id ?? '',
         })
       )
@@ -1376,17 +1148,53 @@ const RoomsTab = () => {
                       <span className="text-studio-w2 text-[12px]">{t('settingsPage.rooms.active')}</span>
                     </label>
                   </div>
+                  <Select
+                    label={t('settingsPage.rooms.laserCatalog', {
+                      defaultValue: 'Approved laser',
+                    })}
+                    value={room.laser_device_id || ''}
+                    disabled={!isEditing}
+                    onChange={(e) => {
+                      const id = e.target.value || null
+                      const device = laserCatalog.find((d) => d.id === id)
+                      setRooms((prev) =>
+                        prev.map((r, i) =>
+                          i === index
+                            ? {
+                                ...r,
+                                laser_device_id: id,
+                                laser_brand: device?.manufacturer || '',
+                                laser_model: device?.model || '',
+                              }
+                            : r
+                        )
+                      )
+                    }}
+                  >
+                    <option value="">
+                      {t('settingsPage.rooms.laserCatalogNone', {
+                        defaultValue: 'Custom / not listed',
+                      })}
+                    </option>
+                    {laserCatalog.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.label}
+                      </option>
+                    ))}
+                  </Select>
                   <Input
                     label={t('settingsPage.rooms.laserBrand')}
                     value={room.laser_brand ?? ''}
                     onChange={(e) => updateRoom(index, 'laser_brand', e.target.value)}
                     placeholder={t('settingsPage.rooms.laserBrandPlaceholder')}
+                    disabled={!isEditing || Boolean(room.laser_device_id)}
                   />
                   <Input
                     label={t('settingsPage.rooms.laserModel')}
                     value={room.laser_model ?? ''}
                     onChange={(e) => updateRoom(index, 'laser_model', e.target.value)}
                     placeholder={t('settingsPage.rooms.laserModelPlaceholder')}
+                    disabled={!isEditing || Boolean(room.laser_device_id)}
                   />
                   {standorte.length > 0 && (
                     <Select
@@ -2072,8 +1880,8 @@ const BookingRulesTab = () => {
   const handleSave = async () => {
     setSaving(true)
     try {
+      // Medical lockouts are platform-owned — studio may only save appointment timings.
       const res = await updateStudioConfig({
-        sperrfristen: toNumbers(SPERRFRIST_FIELDS, sperren),
         termin_einstellungen: toNumbers(TERMIN_FIELDS, termine),
       })
       applyConfig(res.data.data.studio_config)
@@ -2090,28 +1898,28 @@ const BookingRulesTab = () => {
 
   const unitLabel = (unit = 'days') => t(`settingsPage.bookingRules.units.${unit}`)
 
-  const renderFields = (fields, values, setValues, group) =>
+  const renderTerminFields = () =>
     isEditing ? (
       <div className="grid grid-cols-2 gap-3">
-        {fields.map(({ key, i18n, unit, min }) => (
+        {TERMIN_FIELDS.map(({ key, i18n, unit, min }) => (
           <Input
             key={key}
-            label={t(`settingsPage.bookingRules.${group}.${i18n}`)}
+            label={t(`settingsPage.bookingRules.appointments.${i18n}`)}
             type="number"
             min={min ?? 0}
-            value={values[key] ?? ''}
+            value={termine[key] ?? ''}
             hint={unitLabel(unit)}
-            onChange={(e) => setValues((prev) => ({ ...prev, [key]: e.target.value }))}
+            onChange={(e) => setTermine((prev) => ({ ...prev, [key]: e.target.value }))}
           />
         ))}
       </div>
     ) : (
       <>
-        {fields.map(({ key, i18n, unit }) => (
+        {TERMIN_FIELDS.map(({ key, i18n, unit }) => (
           <InfoRow
             key={key}
-            label={t(`settingsPage.bookingRules.${group}.${i18n}`)}
-            value={`${values[key] ?? '—'} ${unitLabel(unit)}`}
+            label={t(`settingsPage.bookingRules.appointments.${i18n}`)}
+            value={`${termine[key] ?? '—'} ${unitLabel(unit)}`}
           />
         ))}
       </>
@@ -2132,11 +1940,23 @@ const BookingRulesTab = () => {
       <h4 className="text-studio-white text-[13px] font-semibold m-0 mt-1">
         {t('settingsPage.bookingRules.lockoutsTitle')}
       </h4>
-      {renderFields(SPERRFRIST_FIELDS, sperren, setSperren, 'lockouts')}
+      <p className="text-studio-w2 text-[12px] m-0 mb-2">
+        {t('settingsPage.bookingRules.lockoutsReadOnlyHint', {
+          defaultValue:
+            'Medical lockout periods are set by Elaya platform admin and cannot be changed here.',
+        })}
+      </p>
+      {SPERRFRIST_FIELDS.map(({ key, i18n, unit }) => (
+        <InfoRow
+          key={key}
+          label={t(`settingsPage.bookingRules.lockouts.${i18n}`)}
+          value={`${sperren[key] ?? '—'} ${unitLabel(unit)}`}
+        />
+      ))}
       <h4 className="text-studio-white text-[13px] font-semibold m-0 mt-3">
         {t('settingsPage.bookingRules.appointmentsTitle')}
       </h4>
-      {renderFields(TERMIN_FIELDS, termine, setTermine, 'appointments')}
+      {renderTerminFields()}
     </Section>
   )
 }
@@ -2148,16 +1968,6 @@ const StudioSettings = () => {
   const tabFromUrl = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState(
     TABS.some((tab) => tab.id === tabFromUrl) ? tabFromUrl : 'appearance'
-  )
-  const { preference, setPreference } = useTheme()
-
-  const themeOptions = useMemo(
-    () => THEME_OPTION_META.map((opt) => ({
-      ...opt,
-      label: t(opt.labelKey),
-      desc: t(opt.descKey),
-    })),
-    [t],
   )
 
   useEffect(() => {
@@ -2174,7 +1984,7 @@ const StudioSettings = () => {
   return (
     // Pricing needs the extra width for its live calculator column; the other
     // tabs stay narrow so form rows don't stretch into unreadable lines.
-    <div className={`p-6 ${activeTab === 'pricing' ? 'max-w-[1240px]' : 'max-w-[860px]'}`}>
+    <div className={`p-6 ${activeTab === 'pricing' || activeTab === 'sessions' ? 'max-w-[1240px]' : 'max-w-[860px]'}`}>
       <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
 
       <div className="flex gap-6">
@@ -2197,28 +2007,7 @@ const StudioSettings = () => {
         </nav>
 
         <div className="flex-1 flex flex-col gap-5">
-          {activeTab === 'appearance' && (
-            <Section title={t('theme.title')} desc={t('theme.desc')}>
-              <div className="grid grid-cols-3 gap-3">
-                {themeOptions.map((opt) => (
-                  <ThemeOption
-                    key={opt.value}
-                    value={opt.value}
-                    icon={opt.icon}
-                    label={opt.label}
-                    desc={opt.desc}
-                    active={preference === opt.value}
-                    onSelect={setPreference}
-                  />
-                ))}
-              </div>
-              <LanguageToggle />
-              <p className="text-studio-w4 text-[11px] m-0">
-                {t('settingsPage.appearance.deviceNote')}
-              </p>
-            </Section>
-          )}
-
+          {activeTab === 'appearance' && <AppearanceSettings />}
           {activeTab === 'profile' && <ProfileTab />}
           {activeTab === 'pricing' && <PricingTab />}
           {activeTab === 'sessions' && <SessionPredictionTab />}
@@ -2228,6 +2017,7 @@ const StudioSettings = () => {
           {activeTab === 'locations' && <LocationsTab />}
           {activeTab === 'rooms'   && <RoomsTab />}
           {activeTab === 'staff'   && <StaffTab />}
+          {activeTab === 'logins'  && <TeamLoginsPanel />}
           {activeTab === 'stripe'  && <StripeTab />}
         </div>
       </div>

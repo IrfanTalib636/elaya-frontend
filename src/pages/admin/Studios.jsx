@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Card,
@@ -18,6 +19,8 @@ import {
   buildStudioPricing,
 } from '../../components/pricing/pricingFields'
 import useContent from '../../i18n/useContent'
+import useAuthStore from '../../store/authStore'
+import { ROLES } from '../../constants/roles'
 
 /**
  * One group-booking size tier: its name, point cost and the area range it
@@ -69,8 +72,11 @@ const numericFields = (fields, values) =>
   )
 
 const AdminStudios = () => {
+  const navigate = useNavigate()
   const { t, adminPages } = useContent()
   const copy = adminPages.studios
+  const role = useAuthStore((s) => s.user?.role)
+  const canEditPricing = role === ROLES.SUPER_ADMIN
   const [loading, setLoading] = useState(true)
   const [studios, setStudios] = useState([])
 
@@ -148,7 +154,7 @@ const AdminStudios = () => {
   }
 
   const savePricing = async () => {
-    if (!pricingStudio) return
+    if (!pricingStudio || !canEditPricing) return
     setPricingSaving(true)
     try {
       await updateStudioConfigAdmin(pricingStudio.id || pricingStudio._id, {
@@ -199,7 +205,13 @@ const AdminStudios = () => {
                     {s.status}
                   </Badge>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap justify-end">
+                  <Button
+                    variant="secondary"
+                    onClick={() => navigate(`/admin/studios/${id}/workspace`)}
+                  >
+                    {copy.openWorkspace || 'Open workspace'}
+                  </Button>
                   <Button variant="ghost" onClick={() => openPricing(s)}>
                     {copy.prices}
                   </Button>
@@ -239,7 +251,7 @@ const AdminStudios = () => {
                 onChange={(key, value) =>
                   setPricingValues((prev) => ({ ...prev, [key]: value }))
                 }
-                disabled={pricingSaving}
+                disabled={!canEditPricing || pricingSaving}
               />
               <div className="space-y-2 pt-2 border-t border-elaya-border">
                 <p className="text-[13px] font-semibold m-0">{copy.groupTitle}</p>
@@ -354,7 +366,7 @@ const AdminStudios = () => {
                       onChange={(e) =>
                         setSperrenForm((p) => ({ ...p, [key]: e.target.value }))
                       }
-                      disabled={pricingSaving}
+                      disabled={!canEditPricing || pricingSaving}
                     />
                   ))}
                 </div>
@@ -375,12 +387,17 @@ const AdminStudios = () => {
                       onChange={(e) =>
                         setTerminForm((p) => ({ ...p, [key]: e.target.value }))
                       }
-                      disabled={pricingSaving}
+                      disabled={!canEditPricing || pricingSaving}
                     />
                   ))}
                 </div>
               </div>
-              <Button onClick={savePricing} loading={pricingSaving} className="w-full">
+              <Button
+                onClick={savePricing}
+                loading={pricingSaving}
+                className="w-full"
+                disabled={!canEditPricing}
+              >
                 {copy.save}
               </Button>
             </div>

@@ -11,12 +11,12 @@ export async function resolveAccessToken() {
     try {
       token = await trySilentRefresh()
       useAuthStore.getState().setAccessToken?.(token)
-      if (token) localStorage.setItem(TOKEN_KEY, token)
     } catch {
-      token = localStorage.getItem(TOKEN_KEY)
+      token = localStorage.getItem(TOKEN_KEY) || useAuthStore.getState().accessToken
+      if (token && isJwtExpired(token)) return null
     }
   }
-  return token
+  return token && !isJwtExpired(token) ? token : null
 }
 
 /**
@@ -38,20 +38,20 @@ export const createSocketConnection = () => {
   const statusListeners = new Set()
 
   let socket = null
-  let connected = false
-  let connecting = false
+  let connecting = null
   let closed = false
+  let watchdogTimer = null
 
-  const setConnected = (next) => {
-    if (connected === next) return
-    connected = next
-    for (const listener of statusListeners) listener(next)
+  const isLive = () => Boolean(socket?.connected)
+
+  const notifyStatus = () => {
+    const live = isLive()
+    for (const listener of statusListeners) listener(live)
   }
 
   const attach = (event) => {
     if (!socket || dispatchers.has(event)) return
     const dispatch = (payload) => {
-      // Copy first: a handler may unsubscribe itself while we iterate.
       for (const handler of [...(handlers.get(event) ?? [])]) {
         try {
           handler(payload)
@@ -71,53 +71,119 @@ export const createSocketConnection = () => {
     dispatchers.delete(event)
   }
 
+  const teardownSocket = () => {
+    for (const event of [...dispatchers.keys()]) detach(event)
+    socket?.removeAllListeners()
+    socket?.disconnect()
+    socket = null
+    notifyStatus()
+  }
+
+  const openSocket = async (token) => {
+    const { io } = await import('socket.io-client')
+    if (closed) return null
+
+    socket = io(SOCKET_ORIGIN, {
+      path: '/socket.io',
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 800,
+      reconnectionDelayMax: 5000,
+    })
+
+    socket.on('connect', () => notifyStatus())
+    socket.on('disconnect', () => notifyStatus())
+
+    socket.on('connect_error', async (err) => {
+      notifyStatus()
+      if (/authoriz|token|jwt/i.test(err?.message || '')) {
+        const fresh = await resolveAccessToken()
+        if (fresh && socket) {
+          socket.auth = { token: fresh }
+          socket.connect()
+        }
+      }
+      for (const handler of [...(handlers.get('connect_error') ?? [])]) {
+        handler(err?.message)
+      }
+    })
+
+    for (const event of handlers.keys()) attach(event)
+    return socket
+  }
+
   const connect = async () => {
-    if (socket || connecting) return
-    connecting = true
-    closed = false
+    if (closed) closed = false
 
-    try {
-      const token = await resolveAccessToken()
-      if (!token || closed) return
+    if (isLive()) return true
 
-      // Loaded on demand: socket.io-client is ~40 kB and nobody who is not
-      // signed in — a visitor on the landing page, for instance — should pay
-      // for it in the initial bundle.
-      const { io } = await import('socket.io-client')
-      if (closed) return
+    if (connecting) return connecting
 
-      socket = io(SOCKET_ORIGIN, {
-        path: '/socket.io',
-        auth: { token },
-        transports: ['websocket', 'polling'],
-        withCredentials: true,
-        reconnection: true,
-        reconnectionAttempts: 12,
-        reconnectionDelay: 800,
-      })
+    connecting = (async () => {
+      try {
+        const token = await resolveAccessToken()
+        if (!token || closed) return false
 
-      socket.on('connect', () => setConnected(true))
-      socket.on('disconnect', () => setConnected(false))
-
-      socket.on('connect_error', async (err) => {
-        setConnected(false)
-        if (/authoriz|token|jwt/i.test(err?.message || '')) {
-          const fresh = await resolveAccessToken()
-          if (fresh && socket) {
-            socket.auth = { token: fresh }
+        if (socket && !socket.connected) {
+          socket.auth = { token }
+          if (socket.active === false) {
+            teardownSocket()
+          } else {
             socket.connect()
+            return isLive()
           }
         }
-        for (const handler of [...(handlers.get('connect_error') ?? [])]) {
-          handler(err?.message)
-        }
-      })
 
-      // Subscriptions registered before the socket existed.
-      for (const event of handlers.keys()) attach(event)
-    } finally {
-      connecting = false
+        if (socket) return isLive()
+
+        await openSocket(token)
+        return isLive()
+      } finally {
+        connecting = null
+      }
+    })()
+
+    return connecting
+  }
+
+  /** Apply a freshly issued access token (e.g. after AuthSessionGate refresh). */
+  const reauth = async (token) => {
+    if (!token || isJwtExpired(token)) return
+    localStorage.setItem(TOKEN_KEY, token)
+    if (closed) closed = false
+
+    if (!socket) {
+      await connect()
+      return
     }
+
+    socket.auth = { token }
+    if (!isLive()) {
+      if (socket.active === false) {
+        teardownSocket()
+        await connect()
+        return
+      }
+      socket.connect()
+    }
+  }
+
+  /** Keep trying while the dashboard session is active. */
+  const startWatchdog = () => {
+    if (watchdogTimer) return
+    watchdogTimer = setInterval(() => {
+      if (closed) return
+      if (!isLive() && !connecting) void connect()
+    }, 4000)
+  }
+
+  const stopWatchdog = () => {
+    if (!watchdogTimer) return
+    clearInterval(watchdogTimer)
+    watchdogTimer = null
   }
 
   /**
@@ -140,7 +206,7 @@ export const createSocketConnection = () => {
   }
 
   const emit = (event, payload, ack) => {
-    if (!socket || !connected) return false
+    if (!isLive()) return false
     if (ack) socket.emit(event, payload, ack)
     else socket.emit(event, payload)
     return true
@@ -148,34 +214,31 @@ export const createSocketConnection = () => {
 
   const onStatusChange = (listener) => {
     statusListeners.add(listener)
+    listener(isLive())
     return () => statusListeners.delete(listener)
   }
 
-  /**
-   * Drops the transport but keeps the subscriber registry, because that belongs
-   * to whichever components are still mounted. Logging back in re-attaches the
-   * same subscriptions to a fresh socket, so this manager — and therefore the
-   * context value — can stay identity-stable for the life of the app.
-   */
   const disconnect = () => {
     closed = true
-    for (const event of [...dispatchers.keys()]) detach(event)
-    socket?.removeAllListeners()
-    socket?.disconnect()
-    socket = null
-    setConnected(false)
+    stopWatchdog()
+    teardownSocket()
   }
 
   return {
     connect,
     disconnect,
+    reauth,
+    startWatchdog,
+    stopWatchdog,
     subscribe,
     emit,
     onStatusChange,
-    isConnected: () => connected,
-    /** Test/debug only: how many events currently have subscribers. */
+    isConnected: isLive,
     stats: () => ({ events: handlers.size, socketListeners: dispatchers.size }),
   }
 }
 
-export const secureTransport = SOCKET_ORIGIN.startsWith('https://')
+export const secureTransport =
+  typeof window !== 'undefined'
+    ? window.location.protocol === 'https:'
+    : SOCKET_ORIGIN.startsWith('https://')

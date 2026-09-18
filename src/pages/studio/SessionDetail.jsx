@@ -482,7 +482,18 @@ const SessionDetail = () => {
               <InfoRow label={copy.time}      value={session.treatment_time} />
               <InfoRow label={copy.durationMin} value={session.dauer_minuten != null ? t('studioPages.sessionDetail.minutesShort', { count: session.dauer_minuten }) : null} />
               <InfoRow label={copy.sessionId}  value={session.session_id} />
-              <InfoRow label={copy.staff}  value={session.mitarbeiter_name} />
+              <InfoRow
+                label={copy.performedBy || copy.staff || 'Treatment performed by'}
+                value={session.mitarbeiter_name}
+              />
+              <InfoRow
+                label={copy.documentedBy || 'Documented by'}
+                value={
+                  session.documented_by_name ||
+                  session.documented_by_email ||
+                  '—'
+                }
+              />
               <InfoRow label={copy.room}         value={session.raum_name} />
             </div>
             {session.is_no_show && (

@@ -25,7 +25,10 @@ const en = {
     "sendResetLink": "Send reset link",
     "newPassword": "New password",
     "resetPassword": "Reset password",
-    "backToLogin": "Back to login"
+    "backToLogin": "Back to login",
+    "notifications": "Notifications",
+    "markAllRead": "Mark all read",
+    "noNotifications": "No notifications yet"
   },
   "toast": {
     "loginSuccess": "Logged in successfully",
@@ -97,6 +100,7 @@ const en = {
     "crm": "CRM",
     "chat": "Customer chat",
     "elayaChat": "Elaya Chat",
+    "platformChat": "Support chat",
     "activity": "History",
     "shop": "Avora Shop",
     "transfers": "Studio transfer",
@@ -165,57 +169,29 @@ const en = {
     "sidebarTitle": "Platform management",
     "sidebarTag": "Skin · Laser · Care",
     "contentPlaceholder": "Content coming soon",
+    "comingSoonBody": "This section is part of the platform admin prototype. We will wire it to live data next — tell me which screen to implement first.",
+    "searchPlaceholder": "Customer, Case, Studio…",
+    "toolsHeading": "Platform tools",
+    "versionLabel": "Elaya Admin v0.1",
+    "lockHint": "Super admin access",
     "items": [
-      {
-        "id": "overview",
-        "icon": "📊",
-        "label": "Overview"
-      },
-      {
-        "id": "studios",
-        "icon": "🏪",
-        "label": "Studios"
-      },
-      {
-        "id": "customers",
-        "icon": "👥",
-        "label": "Customers"
-      },
-      {
-        "id": "transfer",
-        "icon": "🔄",
-        "label": "Studio transfer"
-      },
-      {
-        "id": "elaycoins",
-        "icon": "🪙",
-        "label": "Elaycoins"
-      },
-      {
-        "id": "finance",
-        "icon": "💶",
-        "label": "Finance"
-      },
-      {
-        "id": "features",
-        "icon": "🎛️",
-        "label": "Features"
-      },
-      {
-        "id": "ai",
-        "icon": "🤖",
-        "label": "Elaya AI"
-      },
-      {
-        "id": "shop",
-        "icon": "🛍️",
-        "label": "ElayShop"
-      },
-      {
-        "id": "settings",
-        "icon": "⚙️",
-        "label": "Settings"
-      }
+      { "id": "overview", "label": "Overview" },
+      { "id": "studios", "label": "Studios" },
+      { "id": "studioChat", "label": "Studio Chat" },
+      { "id": "customers", "label": "Customers" },
+      { "id": "crm", "label": "CRM & Leads" },
+      { "id": "medical", "label": "Medical & Safety" },
+      { "id": "documents", "label": "Digital documents" },
+      { "id": "transfer", "label": "Studio change" },
+      { "id": "elaycoins", "label": "Elaycoins" },
+      { "id": "finance", "label": "Finance" },
+      { "id": "features", "label": "Features" },
+      { "id": "lasers", "label": "Lasers" },
+      { "id": "ai", "label": "AI Training" },
+      { "id": "users", "label": "Admin users" },
+      { "id": "studioTeam", "label": "Studio team" },
+      { "id": "shop", "label": "ElayShop" },
+      { "id": "settings", "label": "Settings" }
     ]
   },
   "caseForm": {
@@ -1297,12 +1273,14 @@ const en = {
       "profile": "Studio profile",
       "prices": "Prices",
       "sessionPrediction": "Session prediction",
+      "medicalLockouts": "Medical lockouts",
       "hours": "Opening hours",
       "groupBooking": "Group booking",
       "bookingRules": "Blocking periods",
       "locations": "Locations",
       "rooms": "Rooms",
-      "staff": "Staff",
+      "staff": "Staff profiles",
+      "logins": "ELAYA logins",
       "stripe": "Stripe"
     },
     "readOnly": "View only — editing requires a studio admin.",
@@ -1375,7 +1353,8 @@ const en = {
     },
     "pricing": {
       "title": "Prices & Elaycoin",
-      "desc": "Studio-specific price adjustments. Platform defaults apply when no value is set.",
+      "desc": "Platform price-calculation rules (view only). Only Elaya super admin can change these. The live calculator shows how factors affect price.",
+      "readOnlyHint": "View only — only Elaya super admin can change price calculation rules.",
       "coinSectionTitle": "Elaycoin value",
       "chfPerCoin": "CHF per coin",
       "platformDefault": "Platform default",
@@ -1398,11 +1377,13 @@ const en = {
       "desc": "Platform parameters for estimated session count. The live calculator shows immediately how factors affect min/max sessions.",
       "testModeHint": "Test mode: parameters may be changed locally to check the live calculator — only Elaya administration can save. After an admin save, this view updates live.",
       "viewOnlyHint": "Visible to the studio, not editable. On each new case creation, lifestyle, skin type, colours, cover-up and other factors flow automatically into min/max sessions. Admin updates appear live.",
+      "adminEditHint": "Changes apply platform-wide. Studios see updated rules live after save.",
       "noParameters": "No parameters configured.",
       "resetToSaved": "Reset to saved values",
       "toasts": {
         "loadFailed": "Could not load session prediction.",
-        "adminUpdated": "Session prediction was updated by admin"
+        "adminUpdated": "Session prediction was updated by admin",
+        "saved": "Session prediction saved"
       }
     },
     "groupBooking": {
@@ -1430,8 +1411,9 @@ const en = {
     },
     "bookingRules": {
       "title": "Blocking periods & appointments",
-      "desc": "Medical wait times and appointment defaults for this studio. The customer app reads these values, so a change takes effect for every new booking.",
+      "desc": "Appointment defaults for this studio. Medical lockout periods are set by Elaya and apply to every new booking.",
       "lockoutsTitle": "Blocking periods",
+      "lockoutsReadOnlyHint": "Medical lockout periods are set by Elaya platform admin and cannot be changed here.",
       "appointmentsTitle": "Appointments",
       "units": {
         "days": "days",
@@ -1531,6 +1513,8 @@ const en = {
       "removeAria": "Remove room",
       "name": "Name",
       "active": "Active",
+      "laserCatalog": "Approved laser",
+      "laserCatalogNone": "Custom / not listed",
       "laserBrand": "Laser brand",
       "laserBrandPlaceholder": "e.g. Candela",
       "laserModel": "Laser model",
@@ -1983,6 +1967,8 @@ const en = {
       "bookNotAllowed": "Appointment not allowed.",
       "earliest": "Earliest: {{date}}.",
       "tooEarly": "Appointment too early. Earliest bookable from {{date}}.",
+      "staff": "Treatment staff",
+      "staffNone": "Not assigned",
       "requiredFields": "Case, date and time are required.",
       "modalTitle": "Book new appointment",
       "availabilitySaved": "Availability saved.",
@@ -2155,7 +2141,24 @@ const en = {
       "liveChat": "Live chat",
       "writeFirst": "Write the first message.",
       "placeholder": "Write a message…",
-      "sendAria": "Send"
+      "sendAria": "Send",
+      "newMessageFrom": "New message from {name}",
+      "newCustomerMessage": "New customer message"
+    },
+    "platformChat": {
+      "title": "Support chat",
+      "subtitle": "Direct messages with Elaya Support",
+      "empty": "No messages yet — Elaya Support can reach you here.",
+      "inputPlaceholder": "Write a message to Support…",
+      "send": "Send",
+      "youLabel": "You",
+      "adminLabel": "Elaya Support",
+      "typing": "Elaya Support is typing…",
+      "live": "Live",
+      "offline": "Offline",
+      "openError": "Could not open Support chat",
+      "sendError": "Could not send message",
+      "newMessageTitle": "New message from Elaya Support"
     },
     "sessions": {
       "title": "Sessions",
@@ -2380,13 +2383,19 @@ const en = {
     },
     "shop": {
       "title": "ElayShop",
-      "subtitle": "Your customers' orders · shipping status & commission payout",
+      "subtitle": "View catalog · your customers' orders · your commission",
+      "readOnlyHint": "Products and commission rules are managed by Elaya. This screen is view-only — you can see the catalog, orders from your customers, and your commission.",
       "loadForbidden": "No permission — please sign out as studio and sign in again.",
       "loadError": "Could not load orders.",
-      "statusUpdated": "Status updated.",
-      "statusError": "Could not save status.",
+      "productsLoadError": "Could not load products.",
       "emptyTitle": "No shop orders",
-      "emptyDesc": "Orders appear here when customers shop in ElayShop. Dev: npm run seed:shop",
+      "emptyDesc": "Orders appear here when your customers shop in ElayShop.",
+      "emptyProductsTitle": "No products",
+      "emptyProductsDesc": "The platform catalog is empty. Elaya will publish products here.",
+      "tabOrders": "Orders",
+      "tabProducts": "Products",
+      "active": "Active",
+      "inactive": "Inactive",
       "kpiOrders": "Orders",
       "kpiRevenue": "Revenue",
       "kpiProvOpen": "Commission open",
@@ -2398,6 +2407,13 @@ const en = {
         "amount": "Amount",
         "prov": "Comm.",
         "payout": "Payout",
+        "status": "Status"
+      },
+      "productHeaders": {
+        "name": "Name",
+        "sku": "Item no.",
+        "price": "Price",
+        "stock": "Stock",
         "status": "Status"
       },
       "status": {
@@ -2426,7 +2442,7 @@ const en = {
       "payout": "Payout",
       "shippingAddress": "Shipping address",
       "showDetails": "Show details",
-      "footerHint": "Only shipping status is editable. Amount and commission are read-only. Tap product names for order details."
+      "footerHint": "View only. Product catalog and commission % are set by Elaya. Tap product names for order details."
     },
     "transfers": {
       "title": "Studio transfers",
@@ -2459,7 +2475,11 @@ const en = {
       "direction": {
         "eingehend": "Incoming",
         "ausgehend": "Outgoing"
-      }
+      },
+      "notifyLeftTitle": "Customer left studio",
+      "notifyLeftBody": "{name} has switched from your studio to {to}.",
+      "notifyJoinedTitle": "New customer joined",
+      "notifyJoinedBody": "{name} has joined your studio (from {from})."
     },
     "elaycoins": {
       "title": "Elaycoins",
@@ -2595,6 +2615,7 @@ const en = {
       "pricingSaved": "Prices saved",
       "saveFailed": "Save failed",
       "prices": "Prices",
+      "openWorkspace": "Open workspace",
       "activate": "Activate",
       "lock": "Lock",
       "pricingModalTitle": "Prices · {{name}}",
@@ -2606,19 +2627,111 @@ const en = {
       "groupMaxPoints": "Max points per appointment",
       "groupDiscount": "Group discount (%)"
     },
+    "studioWorkspace": {
+      "title": "Studio workspace",
+      "subtitle": "Support workspace — you stay logged in as Elaya Admin. Opening is audited.",
+      "backToStudios": "Back to studios",
+      "openChat": "Studio chat",
+      "openError": "Could not open studio workspace",
+      "loadError": "Could not load studio data",
+      "empty": "No records found",
+      "searchPlaceholder": "Search customers…",
+      "bannerTitle": "Admin support mode",
+      "bannerBody": "No studio impersonation. You remain Elaya Admin; this opening is recorded in the audit log.",
+      "kpiCode": "Studio code",
+      "kpiCustomers": "Customers",
+      "kpiCases": "Cases",
+      "kpiAppointments": "Upcoming appointments",
+      "tabs": {
+        "customers": "Customers",
+        "cases": "Cases",
+        "appointments": "Appointments"
+      },
+      "headers": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "pipeline": "Pipeline",
+        "cases": "Open cases",
+        "caseId": "Case",
+        "customer": "Customer",
+        "type": "Type",
+        "sessions": "Sessions",
+        "status": "Status",
+        "date": "Date",
+        "time": "Time"
+      }
+    },
     "settings": {
       "title": "Settings",
-      "subtitle": "Session prediction — change parameters and see the session range in the live calculator. Saving applies platform-wide (socket).",
-      "loadError": "Could not load session prediction",
+      "subtitle": "Appearance, price calculation, session prediction, and medical lockouts — only super admin can edit core rules.",
+      "loadError": "Could not load settings",
       "updatedReload": "Session prediction was updated — reloading…",
-      "saved": "Session prediction saved — studio & apps update live",
+      "saved": "Saved — studios & apps update live",
       "saveFailed": "Save failed",
       "noParameters": "No parameters loaded.",
-      "save": "Save"
+      "save": "Save",
+      "medicalLockoutsDesc": "Global medical lockout periods (same case, cross case, UV, medication). Studios can view these but cannot change them.",
+      "superAdminOnly": "Only Super Admin can edit",
+      "saveDraft": "Save draft",
+      "draftSaved": "Draft saved — publish to go live",
+      "draftPending": "Draft pending",
+      "draftDiscarded": "Draft discarded",
+      "discardDraft": "Discard draft",
+      "lifecycle": "Lifecycle",
+      "currentVersion": "Published v{{version}}",
+      "publish": "Publish",
+      "published": "Published as version {{version}}",
+      "publishReason": "Publish reason",
+      "publishReasonPlaceholder": "Why are these rules going live?",
+      "publishReasonRequired": "Publish reason is required",
+      "versionHistory": "Version history",
+      "noVersions": "No published versions yet.",
+      "live": "live",
+      "rollback": "Rollback",
+      "rollbackConfirm": "Rollback to v{{version}}? This publishes a new version.",
+      "rollbackReason": "Rollback reason",
+      "rollbackReasonRequired": "Rollback reason is required",
+      "rolledBack": "Rolled back to v{{from}} (now v{{version}})",
+      "confirmRollback": "Confirm rollback"
     },
     "overview": {
       "title": "Admin overview",
       "subtitle": "Platform KPIs · shop commission · Elaycoins (Stripe Connect pending)",
+      "welcome": "Welcome, {{name}} — Elaya Platform Admin",
+      "activeStudios": "Active Studios",
+      "outstandingInvoices": "Outstanding invoices",
+      "quickAccess": "Quick access",
+      "recentActivity": "Recent activity",
+      "activityEmpty": "No recent activity yet.",
+      "activityStudioOpened": "Studio activity",
+      "activityStudioListed": "Studio on platform",
+      "quick": {
+        "studios": {
+          "title": "Manage studios",
+          "desc": "Studio dashboard, locations & status"
+        },
+        "studioChat": {
+          "title": "Studio Chat",
+          "desc": "Messages with the studios"
+        },
+        "settings": {
+          "title": "Settings",
+          "desc": "Appearance, prices, prediction & lockouts"
+        },
+        "elaycoins": {
+          "title": "Elaycoin rules",
+          "desc": "Coin value, accounts & expiration"
+        },
+        "finance": {
+          "title": "Finances",
+          "desc": "Fees & Invoices"
+        },
+        "aiTraining": {
+          "title": "AI Training Center",
+          "desc": "AI calibration (vision)"
+        }
+      },
       "studios": "Studios",
       "shopRevenue": "Shop revenue",
       "provisionOpen": "Studio commission (open)",
@@ -2628,19 +2741,144 @@ const en = {
       "stripePending": "pending (keys pending)",
       "topStudios": "Top studios by shop revenue: {{list}}"
     },
+    "studioChat": {
+      "title": "Studio Chat",
+      "subtitle": "Messages between Elaya Support and studios",
+      "searchPlaceholder": "Search studio by name…",
+      "emptyStudios": "No studios found.",
+      "noMessagesYet": "No messages yet",
+      "selectStudio": "Select a studio on the left to start chatting.",
+      "threadEmpty": "No messages yet — say hello to this studio.",
+      "inputPlaceholder": "Write a reply to the studio…",
+      "send": "Send",
+      "youLabel": "Elaya Support",
+      "typing": "Studio is typing…",
+      "live": "Live",
+      "offline": "Offline",
+      "inboxLoadError": "Could not load studios",
+      "openError": "Could not open chat",
+      "sendError": "Could not send message",
+      "newMessageFrom": "New message from {name}",
+      "newStudioMessage": "New studio message"
+    },
+    "customers": {
+      "title": "Customers",
+      "subtitle": "{{count}} customers across all studios",
+      "loadError": "Could not load customers",
+      "searchPlaceholder": "Search name, email, phone…",
+      "emptyTitle": "No customers found",
+      "emptySearch": "Try a different search term.",
+      "emptyHint": "No customers are registered on the platform yet.",
+      "noStudio": "No studio",
+      "headers": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "studio": "Studio",
+        "pipeline": "Pipeline",
+        "cases": "Open cases"
+      }
+    },
+    "crm": {
+      "title": "CRM & Leads",
+      "subtitle": "Pipeline, leads and platform CRM",
+      "loadError": "Could not load CRM overview",
+      "manageStudios": "Manage studios",
+      "pipelineTitle": "Customer pipeline",
+      "pipeline": {
+        "app_downloaded": "Downloaded the app",
+        "case_created": "Case created",
+        "appointment_booked": "Appointment booked",
+        "first_session": "First session",
+        "active_treatment": "Active in treatment"
+      },
+      "registrationsTitle": "Studio registrations",
+      "activeStudios": "Active Studios",
+      "pendingApprovals": "Pending approvals",
+      "closedStudios": "Closed studios",
+      "onboardingTitle": "Studio onboarding (leads & contracts)",
+      "onboardingDesc": "A studio goes through lead → contract → onboarding → active. Only studios in ACTIVE status are bookable in the customer app. Website webhook / Stripe / e-signature can be wired later.",
+      "captureLead": "Manually capture lead",
+      "leadsEmpty": "No studio leads have been recorded yet.",
+      "leadNoContact": "No contact details",
+      "leadStatus": {
+        "lead": "Lead",
+        "contract": "Contract",
+        "onboarding": "Onboarding",
+        "active": "Active",
+        "rejected": "Rejected"
+      },
+      "leadFirma": "Studio name",
+      "leadContact": "Contact person",
+      "leadEmail": "Email",
+      "leadPhone": "Phone",
+      "leadCity": "City",
+      "leadNote": "Note",
+      "leadFirmaRequired": "Studio name is required",
+      "leadCreated": "Lead saved",
+      "leadCreateError": "Could not save lead",
+      "cancel": "Cancel",
+      "saveLead": "Save lead",
+      "attentionTitle": "Attention needed",
+      "attentionOk": "Everything is fine — nothing currently requires attention.",
+      "attentionPendingStudios": "{{count}} studio(s) awaiting approval",
+      "attentionOpenLeads": "{{count}} open studio lead(s)",
+      "activityTitle": "Recent activities (all studios)",
+      "activityFilters": {
+        "all": "All",
+        "customers": "Customers",
+        "studios": "Studios",
+        "cases": "Cases"
+      },
+      "activityEmpty": "No recent activity yet.",
+      "activityStudioUpdated": "Studio updated"
+    },
+    "medical": {
+      "title": "Medical & Safety",
+      "subtitle": "Medical flags, lockouts and safety configuration"
+    },
+    "documents": {
+      "title": "Digital documents",
+      "subtitle": "Platform templates, leaflets and signed documents"
+    },
+    "adminChat": {
+      "title": "Elaya Admin Chat",
+      "subtitle": "Platform assistant and internal admin messaging"
+    },
+    "aiTraining": {
+      "title": "AI Training Center",
+      "subtitle": "Vision / AI calibration for tattoo analysis"
+    },
     "finance": {
       "title": "Finance",
-      "subtitle": "Shop revenue & studio commissions ({{pct}}% default). Stripe Connect payout: pending.",
+      "subtitle": "Shop sales & studio commissions ({{pct}}% default). Stripe Connect payout: pending.",
+      "totalSales": "Total sales",
+      "studioCommission": "Studio commission",
       "revenue": "Revenue (goods value)",
       "elayaShare": "Elaya share",
       "provisionOpen": "Commission open",
       "provisionPaid": "Commission paid",
-      "empty": "No shop revenue yet",
+      "empty": "No shop sales yet",
+      "loadError": "Could not load finance",
+      "detailError": "Could not load studio sales",
+      "studiosTitle": "Sales by studio",
+      "studiosHint": "Click a studio to see which products were sold.",
+      "backToStudios": "Back to studios",
+      "studioDetailTitle": "Studio sales",
+      "studioDetailSubtitle": "{{code}} · Commission {{pct}}% on product sales",
+      "productsSoldTitle": "Products sold",
+      "productsSoldHint": "Products sold through this studio, with commission per product.",
+      "noProducts": "No products sold through this studio yet",
+      "openStudioDetail": "Open sales for",
       "headers": {
         "studio": "Studio",
         "orders": "Orders",
         "revenue": "Revenue",
+        "sales": "Sales",
         "provisionTotal": "Commission total",
+        "commission": "Commission",
+        "product": "Product",
+        "qty": "Qty",
         "open": "Open",
         "paid": "Paid out"
       }
@@ -2684,6 +2922,7 @@ const en = {
     "shop": {
       "title": "Shop (platform)",
       "subtitle": "Products, orders and studio commissions",
+      "superAdminOnlyHint": "Only super admin can add or edit products and mark commissions paid. This account is view-only.",
       "productsLoadError": "Could not load products",
       "ordersLoadError": "Could not load orders",
       "productCreated": "Product created",
@@ -2744,28 +2983,48 @@ const en = {
       }
     },
     "transfers": {
-      "title": "Studio transfers",
-      "subtitle": "Approve or reject requests",
-      "loadError": "Could not load transfers",
-      "approved": "Approved",
+      "title": "Studio change",
+      "subtitle": "Review customer requests to switch studios",
+      "info": "Change requests are generated when a customer requests a change in the app via \"My Studio → Change Studio\". They appear here for approval. After approval, the customer's studio updates in the app.",
+      "loadError": "Could not load transfer requests.",
+      "approved": "Studio change approved — customer moved to the new studio",
       "approveError": "Approval failed",
-      "rejected": "Rejected",
+      "rejected": "Transfer request rejected",
       "rejectError": "Rejection failed",
       "reasonRequired": "Please provide a rejection reason",
       "empty": "No requests",
+      "emptyOpen": "No open transfer requests.",
+      "emptyTitle": "No transfer requests",
+      "emptyHint": "Pending requests from the customer app appear here for Elaya approval.",
       "customerFallback": "Customer",
       "approve": "Approve",
       "reject": "Reject",
-      "rejectTitle": "Reject transfer",
+      "rejectTitle": "Reject studio change",
       "rejectReason": "Rejection reason",
       "rejectPh": "Reason for rejection",
       "cancel": "Cancel",
+      "filters": {
+        "open": "Open",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "all": "All"
+      },
+      "headers": {
+        "request": "Request",
+        "customer": "Customer",
+        "fromStudio": "From studio",
+        "toStudio": "To studio",
+        "status": "Status",
+        "actions": "Actions"
+      },
       "statuses": {
         "ausstehend": "Pending",
         "pending": "Pending",
         "genehmigt": "Approved",
         "abgelehnt": "Rejected"
-      }
+      },
+      "notifyRequestTitle": "Studio change request",
+      "notifyRequestBody": "{name} wants to switch from {from} to {to}."
     },
   },
   "components": {

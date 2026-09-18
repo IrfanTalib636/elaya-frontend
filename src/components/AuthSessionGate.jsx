@@ -12,30 +12,38 @@ import AuthBootLoader from './AuthBootLoader'
  */
 const AuthSessionGate = ({ children }) => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const setSessionReady = useAuthStore((s) => s.setSessionReady)
   const [verified, setVerified] = useState(false)
 
   useEffect(() => {
-    if (!isAuthenticated) return undefined
+    if (!isAuthenticated) {
+      setSessionReady(false)
+      return undefined
+    }
 
     let cancelled = false
 
     const ensureSession = async () => {
+      setSessionReady(false)
       const token = localStorage.getItem(TOKEN_KEY) || useAuthStore.getState().accessToken
 
       if (token && !isJwtExpired(token)) {
-        if (!cancelled) setVerified(true)
+        if (!cancelled) {
+          setSessionReady(true)
+          setVerified(true)
+        }
         return
       }
 
       try {
         const newToken = await trySilentRefresh()
         useAuthStore.getState().setAccessToken(newToken)
-        // Refresh cookie is shared — sync role so a customer token cannot keep studio UI open
         try {
           await useAuthStore.getState().refreshProfile()
         } catch {
           // ignore — ProtectedRoute still validates role on next render
         }
+        if (!cancelled) setSessionReady(true)
       } catch {
         useAuthStore.getState().clearLocalSession()
       }
@@ -43,10 +51,13 @@ const AuthSessionGate = ({ children }) => {
       if (!cancelled) setVerified(true)
     }
 
-    ensureSession()
+    void ensureSession()
 
-    return () => { cancelled = true }
-  }, [isAuthenticated])
+    return () => {
+      cancelled = true
+      setSessionReady(false)
+    }
+  }, [isAuthenticated, setSessionReady])
 
   if (!verified) return <AuthBootLoader />
 

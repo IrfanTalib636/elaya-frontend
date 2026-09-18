@@ -22,6 +22,7 @@ const AdminFeatures = () => {
   const [catalog, setCatalog] = useState([])
   const [studios, setStudios] = useState([])
   const [plans, setPlans] = useState({})
+  const [seatLimits, setSeatLimits] = useState({})
   const [global, setGlobal] = useState({})
   const [savingId, setSavingId] = useState(null)
 
@@ -31,6 +32,7 @@ const AdminFeatures = () => {
       const [c, s] = await Promise.all([getFeatureCatalog(), listStudioFeatures()])
       setCatalog(c.data.data.catalog || [])
       setPlans(c.data.data.subscription_plans || {})
+      setSeatLimits(c.data.data.subscription_seat_limits || {})
       setGlobal(c.data.data.feature_global || {})
       setStudios(s.data.data.studios || [])
     } catch {
@@ -96,6 +98,23 @@ const AdminFeatures = () => {
     }
   }
 
+  const saveSeatLimit = async (planKey, raw) => {
+    const trimmed = String(raw).trim()
+    const value = trimmed === '' || trimmed.toLowerCase() === 'unlimited' ? null : Number(trimmed)
+    if (value !== null && (!Number.isFinite(value) || value < 0)) {
+      toast.error('Enter a number or leave empty for unlimited')
+      return
+    }
+    const next = { ...seatLimits, [planKey]: value }
+    try {
+      await updatePlatformConfig({ subscription_seat_limits: next })
+      toast.success('Seat limits updated')
+      setSeatLimits(next)
+    } catch {
+      toast.error('Failed to update seat limits')
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center py-24">
@@ -134,6 +153,29 @@ const AdminFeatures = () => {
             ent: (plans.enterprise || []).length,
           })}
         </p>
+      </Card>
+
+      <Card className="mb-6">
+        <p className="font-semibold m-0 mb-3">Employee login seats (per plan)</p>
+        <p className="text-[11px] text-admin-muted m-0 mb-3">
+          Staff profiles stay unlimited. Empty / unlimited = no login cap. Defaults: basic 2,
+          professional 4, enterprise unlimited.
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          {PLANS.map((pl) => (
+            <label key={pl.value} className="text-[12px] text-admin-ivory/80 flex flex-col gap-1">
+              {pl.label}
+              <input
+                className="px-2 py-1.5 rounded border border-admin-line bg-transparent text-[13px]"
+                defaultValue={
+                  seatLimits[pl.value] == null ? '' : String(seatLimits[pl.value])
+                }
+                placeholder="unlimited"
+                onBlur={(e) => void saveSeatLimit(pl.value, e.target.value)}
+              />
+            </label>
+          ))}
+        </div>
       </Card>
 
       <div className="space-y-4">

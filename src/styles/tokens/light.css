@@ -36,6 +36,7 @@ html[data-theme="light"] {
   --color-admin-ivory: #0a1628;
   --color-admin-dim: #6b7a99;
   --color-admin-dim-2: #b0bdd4;
+  --color-admin-muted: #6b7a99;
 
   /* Admin border */
   --color-admin-line: rgba(30, 111, 217, 0.14);
@@ -82,6 +83,7 @@ html[data-theme="light"] .theme-admin {
   --admin-ivory: #0a1628;
   --admin-dim: #6b7a99;
   --admin-dim-2: #b0bdd4;
+  --admin-muted: #6b7a99;
 
   --admin-line: rgba(30, 111, 217, 0.14);
 }

@@ -4,6 +4,7 @@ import { PageHeader, Card, Button, Input, Spinner, Badge, Select } from '../../c
 import {
   listAdminUsers,
   inviteAdminUser,
+  resendAdminInvite,
   updateAdminUser,
 } from '../../api/adminPhase4'
 import { getApiErrorMessage } from '../../lib/apiError'
@@ -22,6 +23,7 @@ export default function AdminUsers() {
   const [catalog, setCatalog] = useState([])
   const [invite, setInvite] = useState(emptyInvite)
   const [saving, setSaving] = useState(false)
+  const [resendingId, setResendingId] = useState(null)
   const [tempPassword, setTempPassword] = useState(null)
 
   const load = useCallback(async () => {
@@ -53,6 +55,22 @@ export default function AdminUsers() {
     })
   }
 
+  const handleInviteResult = (res) => {
+    const data = res.data?.data || {}
+    const msg = res.data?.message || 'Admin invited'
+    if (data.invite_sent) {
+      toast.success(msg)
+    } else {
+      toast.error(
+        msg ||
+          'Admin saved but invite email failed — check server EMAIL_PROVIDER / SMTP, then use Resend invite'
+      )
+    }
+    if (data.temporary_password) {
+      setTempPassword(data.temporary_password)
+    }
+  }
+
   const handleInvite = async () => {
     if (!invite.email.trim()) {
       toast.error('Email is required')
@@ -67,16 +85,26 @@ export default function AdminUsers() {
         role: invite.role,
         permissions: invite.role === ROLES.ADMIN ? invite.permissions : [],
       })
-      toast.success('Admin invited')
-      if (res.data.data.temporary_password) {
-        setTempPassword(res.data.data.temporary_password)
-      }
+      handleInviteResult(res)
       setInvite(emptyInvite())
       await load()
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Invite failed'))
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleResend = async (user) => {
+    setResendingId(user.id)
+    try {
+      const res = await resendAdminInvite(user.id)
+      handleInviteResult(res)
+      await load()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Resend failed'))
+    } finally {
+      setResendingId(null)
     }
   }
 
@@ -117,6 +145,10 @@ export default function AdminUsers() {
 
       <Card className="flex flex-col gap-3">
         <h3 className="m-0 text-[14px] font-semibold text-studio-white">Invite admin</h3>
+        <p className="m-0 text-[12px] text-studio-w3">
+          If this email was already invited and never logged in, Send invite will resend the email
+          instead of failing.
+        </p>
         <div className="grid grid-cols-2 gap-3">
           <Input
             label="Email"
@@ -195,6 +227,16 @@ export default function AdminUsers() {
                 <Badge variant="status" value={u.status}>
                   {u.status}
                 </Badge>
+                {!u.last_login && u.status === 'aktiv' ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    loading={resendingId === u.id}
+                    onClick={() => void handleResend(u)}
+                  >
+                    Resend invite
+                  </Button>
+                ) : null}
                 {u.status === 'aktiv' ? (
                   <Button size="sm" variant="ghost" onClick={() => void setStatus(u, 'gesperrt')}>
                     Deactivate

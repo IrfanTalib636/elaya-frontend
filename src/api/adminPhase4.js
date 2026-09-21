@@ -13,5 +13,6 @@ export const updateAiConfig = (payload) => api.patch('/ai-config', payload)
 
 export const listAdminUsers = () => api.get('/admin/users')
 export const inviteAdminUser = (payload) => api.post('/admin/users/invite', payload)
+export const resendAdminInvite = (id) => api.post(`/admin/users/${id}/resend-invite`)
 export const updateAdminUser = (id, payload) => api.patch(`/admin/users/${id}`, payload)
 export const getAdminPermissionCatalog = () => api.get('/admin/users/permissions')

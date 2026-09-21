@@ -3075,6 +3075,88 @@ const en = {
       "title": "Medical & Safety",
       "subtitle": "Medical flags, lockouts and safety configuration"
     },
+    "medicalSafety": {
+      "activeVersion": "Active rule version",
+      "lastChanged": "Last changed on",
+      "by": "by",
+      "reasonLabel": "Reason",
+      "system": "System",
+      "initialReason": "Initial state",
+      "editRules": "Edit rules",
+      "draftActive": "Draft active — publish to go live",
+      "invalidRanges": "Some values are outside the allowed range",
+      "dateLocksTitle": "Date locks (blocking periods)",
+      "dateLocksHint": "The permitted setting range limits which values can be set in Admin. It protects against incorrect entries and is not information on the lockout itself.",
+      "conditionLocksTitle": "Condition locks",
+      "conditionLocksHint": "No fixed day count. Treatment is blocked until clearance or review is completed.",
+      "colRule": "Rule",
+      "colValue": "Value",
+      "colRange": "Allowed setting range",
+      "colDesc": "Description",
+      "colCondition": "Condition",
+      "conditionClearance": "Medical clearance required",
+      "conditionReview": "Medical review required",
+      "calcTitle": "Calculation rule",
+      "calc1": "All active locks are evaluated together.",
+      "calc2": "Any open condition lock fully blocks treatment (reason, no date).",
+      "calc3": "Otherwise the earliest bookable date is the latest end date of all active date locks.",
+      "excTitle": "Date-lock exceptions per studio",
+      "excHint": "Disables all Date Locks for one studio. Condition locks remain mandatory. Save draft and publish to apply.",
+      "excStudio": "Studio",
+      "excStatus": "Status",
+      "excEmpty": "No studios found.",
+      "excDisabled": "Date locks disabled",
+      "excActive": "Date locks active",
+      "excEnable": "Re-enable",
+      "excDisable": "Disable date locks",
+      "excReasonMin": "Reason must be at least 15 characters",
+      "excDisableWarn": "Date locks will no longer apply for this studio. Condition locks stay mandatory. Provide a reason (min. 15 characters).",
+      "excEnableConfirm": "Re-enable platform date locks for this studio?",
+      "rules": {
+        "sameCase": {
+          "label": "Same tattoo case",
+          "desc": "Lockout between two treatments of the same tattoo case. Calculated from the last treatment actually documented."
+        },
+        "crossCase": {
+          "label": "Different tattoo case",
+          "desc": "Lockout between treatments of different tattoo cases for the same customer."
+        },
+        "uvModerate": {
+          "label": "Moderate UV exposure",
+          "desc": "Lockout after moderate UV exposure (sun/tanning bed)."
+        },
+        "uvIntense": {
+          "label": "Intense UV exposure",
+          "desc": "Lockout after intense UV exposure (sun/tanning bed)."
+        },
+        "medAntibiotics": {
+          "label": "Antibiotics",
+          "desc": "Lockout from the date of the last intake. No additional recovery lock at booking."
+        },
+        "medRetinoids": {
+          "label": "Retinoids",
+          "desc": "Lockout after retinoid medication (e.g. isotretinoin). Calculated from the end of intake."
+        }
+      },
+      "conditions": {
+        "antidepressants": {
+          "label": "Antidepressants",
+          "desc": "No fixed daily lockout. Treatment blocked until a verified medical clearance is present."
+        },
+        "skin_acne_medication": {
+          "label": "Skin condition / acne medication",
+          "desc": "No fixed daily lockout. Treatment blocked until a verified medical clearance is present."
+        },
+        "other_unknown_medication": {
+          "label": "Other or unknown medication",
+          "desc": "No fixed daily lockout. Treatment blocked until a medical review has been completed."
+        },
+        "illness_not_recovered": {
+          "label": "Ill / not fully recovered",
+          "desc": "No fixed daily lockout. Treatment blocked until a medical review has been completed."
+        }
+      }
+    },
     "documents": {
       "title": "Digital documents",
       "subtitle": "Platform templates, leaflets and signed documents"

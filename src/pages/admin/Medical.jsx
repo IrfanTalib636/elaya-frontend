@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { PageHeader } from '../../components/ui'
 import MedicalLockoutsPanel from '../../components/settings/MedicalLockoutsPanel'
 import ConfigLifecycleBar from '../../components/settings/ConfigLifecycleBar'
@@ -8,7 +9,7 @@ import useContent from '../../i18n/useContent'
 import { useTranslation } from 'react-i18next'
 
 /**
- * Medical & Safety — Super Admin lockout / Sperrfristen control (prototype Medical page).
+ * Medical & Safety — Super Admin lockout / Sperrfristen control (prototype parity).
  */
 const AdminMedical = () => {
   const { t } = useTranslation()
@@ -16,6 +17,7 @@ const AdminMedical = () => {
   const copy = adminPages.medical || {}
   const role = useAuthStore((s) => s.user?.role)
   const canEditRules = role === ROLES.SUPER_ADMIN
+  const [editing, setEditing] = useState(false)
 
   const {
     lifecycleByDomain,
@@ -24,12 +26,21 @@ const AdminMedical = () => {
     saveMedical,
     handleLifecyclePublished,
     handleDraftDiscarded,
+    loadPlatformBundle,
   } = useAdminConfigDomain()
 
   const activeLifecycle = lifecycleByDomain.sperrfristen
+  const isEditing = editing || Boolean(activeLifecycle?.has_draft)
+
+  const refreshLifecycle = async () => {
+    const { lifecycle } = await loadPlatformBundle()
+    if (lifecycle?.sperrfristen) {
+      handleDraftDiscarded('sperrfristen', lifecycle.sperrfristen)
+    }
+  }
 
   return (
-    <div className="p-6 max-w-[860px]">
+    <div className="p-6 max-w-[1100px]">
       <PageHeader
         title={copy.title || 'Medical & Safety'}
         subtitle={
@@ -45,18 +56,30 @@ const AdminMedical = () => {
             canEdit={canEditRules}
             hasDraft={Boolean(activeLifecycle?.has_draft)}
             currentVersion={activeLifecycle?.current_version || 0}
-            onPublished={() => void handleLifecyclePublished('sperrfristen')}
-            onDraftDiscarded={(life) => handleDraftDiscarded('sperrfristen', life)}
+            onPublished={() => {
+              void handleLifecyclePublished('sperrfristen')
+              setEditing(false)
+            }}
+            onDraftDiscarded={(life) => {
+              handleDraftDiscarded('sperrfristen', life)
+              setEditing(false)
+            }}
           />
         ) : null}
+
         <MedicalLockoutsPanel
           key={`medical-${panelEpoch}`}
           canEdit={canEditRules}
+          editing={isEditing}
+          currentVersion={activeLifecycle?.current_version || 0}
+          hasDraft={Boolean(activeLifecycle?.has_draft)}
           loadConfig={loadMedical}
           saveConfig={canEditRules ? saveMedical : undefined}
           saveLabel={t('adminPages.settings.saveDraft', {
             defaultValue: 'Save draft',
           })}
+          onEnterEdit={() => setEditing(true)}
+          onRequestLifecycleRefresh={() => void refreshLifecycle()}
         />
       </div>
     </div>

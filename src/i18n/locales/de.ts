@@ -3077,6 +3077,88 @@ const de: TranslationSchema = {
       "title": "Medical & Safety",
       "subtitle": "Medizinische Flags, Sperren und Safety-Konfiguration"
     },
+    "medicalSafety": {
+      "activeVersion": "Aktive Regelversion",
+      "lastChanged": "Zuletzt geändert am",
+      "by": "von",
+      "reasonLabel": "Grund",
+      "system": "System",
+      "initialReason": "Initialer Stand",
+      "editRules": "Regeln bearbeiten",
+      "draftActive": "Entwurf aktiv — veröffentlichen, um live zu gehen",
+      "invalidRanges": "Einige Werte liegen ausserhalb des zulässigen Bereichs",
+      "dateLocksTitle": "Zeitliche Sperren (Date Locks)",
+      "dateLocksHint": "Der zulässige Einstellbereich begrenzt, welche Werte im Admin gesetzt werden können. Er schützt vor Fehleingaben und ist keine Angabe zur Sperrfrist selbst.",
+      "conditionLocksTitle": "Bedingte Sperren (Condition Locks)",
+      "conditionLocksHint": "Keine pauschale Tagesfrist. Behandlung ist gesperrt, bis Freigabe oder Prüfung erfolgt ist.",
+      "colRule": "Regel",
+      "colValue": "Wert",
+      "colRange": "Zulässiger Einstellbereich",
+      "colDesc": "Beschreibung",
+      "colCondition": "Bedingung",
+      "conditionClearance": "Ärztliche Freigabe erforderlich",
+      "conditionReview": "Ärztliche Prüfung erforderlich",
+      "calcTitle": "Berechnungsregel",
+      "calc1": "Alle aktiven Sperren werden gemeinsam geprüft.",
+      "calc2": "Jede offene Conditional Lock sperrt die Behandlung vollständig (Grund, kein Datum).",
+      "calc3": "Sonst ist das früheste Buchungsdatum das späteste Enddatum aller aktiven Date Locks.",
+      "excTitle": "Sperrfrist-Ausnahmen pro Studio",
+      "excHint": "Deaktiviert alle Date Locks für ein Studio. Condition Locks bleiben verpflichtend. Entwurf speichern und veröffentlichen, damit es gilt.",
+      "excStudio": "Studio",
+      "excStatus": "Status",
+      "excEmpty": "Keine Studios gefunden.",
+      "excDisabled": "Date Locks deaktiviert",
+      "excActive": "Date Locks aktiv",
+      "excEnable": "Wieder aktivieren",
+      "excDisable": "Date Locks deaktivieren",
+      "excReasonMin": "Grund muss mindestens 15 Zeichen haben",
+      "excDisableWarn": "Date Locks gelten für dieses Studio nicht mehr. Condition Locks bleiben verpflichtend. Bitte Grund angeben (min. 15 Zeichen).",
+      "excEnableConfirm": "Plattform-Date-Locks für dieses Studio wieder aktivieren?",
+      "rules": {
+        "sameCase": {
+          "label": "Gleicher Tattoo Case",
+          "desc": "Sperrfrist zwischen zwei Behandlungen desselben Tattoo Cases. Berechnet ab der tatsächlich dokumentierten letzten Behandlung."
+        },
+        "crossCase": {
+          "label": "Anderer Tattoo Case",
+          "desc": "Sperrfrist zwischen Behandlungen unterschiedlicher Tattoo Cases desselben Kunden."
+        },
+        "uvModerate": {
+          "label": "Mittlere UV-Exposition",
+          "desc": "Sperrfrist nach mittlerer UV-Exposition (Sonne/Solarium)."
+        },
+        "uvIntense": {
+          "label": "Intensive UV-Exposition",
+          "desc": "Sperrfrist nach intensiver UV-Exposition (Sonne/Solarium)."
+        },
+        "medAntibiotics": {
+          "label": "Antibiotika",
+          "desc": "Sperrfrist ab Datum der letzten Einnahme. Kein zusätzlicher Recovery-Lock beim Booking."
+        },
+        "medRetinoids": {
+          "label": "Retinoide",
+          "desc": "Sperrfrist nach Retinoid-Medikation (z. B. Isotretinoin). Berechnet ab Ende der Einnahme."
+        }
+      },
+      "conditions": {
+        "antidepressants": {
+          "label": "Antidepressiva",
+          "desc": "Keine pauschale Tagesfrist. Behandlung gesperrt bis geprüfte ärztliche Freigabe vorliegt."
+        },
+        "skin_acne_medication": {
+          "label": "Medikamente Hauterkrankung / Akne",
+          "desc": "Keine pauschale Tagesfrist. Behandlung gesperrt bis geprüfte ärztliche Freigabe vorliegt."
+        },
+        "other_unknown_medication": {
+          "label": "Andere oder unbekannte Medikamente",
+          "desc": "Keine pauschale Tagesfrist. Behandlung gesperrt bis ärztliche Prüfung erfolgt ist."
+        },
+        "illness_not_recovered": {
+          "label": "Krank / nicht vollständig genesen",
+          "desc": "Keine pauschale Tagesfrist. Behandlung gesperrt bis ärztliche Prüfung erfolgt ist."
+        }
+      }
+    },
     "documents": {
       "title": "Digitale Dokumente",
       "subtitle": "Vorlagen, Merkblätter und unterschriebene Dokumente"

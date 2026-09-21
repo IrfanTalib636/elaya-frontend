@@ -6,6 +6,7 @@ import {
   MessageSquare,
   Users,
   Target,
+  Microscope,
   ShieldAlert,
   FileText,
   LogOut,
@@ -34,6 +35,7 @@ const ICONS = {
   studioChat: MessageSquare,
   customers: Users,
   crm: Target,
+  engine: Microscope,
   medical: ShieldAlert,
   documents: FileText,
   shop: ShoppingBag,
@@ -54,6 +56,7 @@ const PRIMARY_NAV = [
   { to: '/admin/studio-chat', id: 'studioChat' },
   { to: '/admin/customers', id: 'customers' },
   { to: '/admin/crm', id: 'crm' },
+  { to: '/admin/engine', id: 'engine' },
   { to: '/admin/medical', id: 'medical' },
   { to: '/admin/documents', id: 'documents' },
 ]

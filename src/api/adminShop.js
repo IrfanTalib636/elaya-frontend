@@ -20,3 +20,5 @@ export const getShopFinance = (params) =>
 export const getStudioShopFinance = (studioId, params) =>
   api.get(`/admin/shop/finance/studios/${studioId}`, { params })
 export const getAdminShipping = () => api.get('/admin/shop/shipping')
+export const updateAdminShopCatalog = (payload) =>
+  api.patch('/admin/shop/shipping', payload)

@@ -107,6 +107,7 @@ const de: TranslationSchema = {
     "shop": "Avora Shop",
     "transfers": "Studio-Wechsel",
     "elaycoins": "Elaycoins",
+    "simulator": "Fall-Simulator",
     "settings": "Einstellungen"
   },
   "studioActivity": {
@@ -182,6 +183,7 @@ const de: TranslationSchema = {
       { "id": "studioChat", "label": "Studio-Chat" },
       { "id": "customers", "label": "Kunden" },
       { "id": "crm", "label": "CRM & Leads" },
+      { "id": "engine", "label": "Engine" },
       { "id": "medical", "label": "Medical & Safety" },
       { "id": "documents", "label": "Digitale Dokumente" },
       { "id": "transfer", "label": "Studio-Wechsel" },
@@ -2717,9 +2719,9 @@ const de: TranslationSchema = {
           "title": "Studio-Chat",
           "desc": "Nachrichten mit den Studios"
         },
-        "settings": {
-          "title": "Einstellungen",
-          "desc": "Darstellung, Preise, Prognose & Sperren"
+        "engine": {
+          "title": "Prediction Engine",
+          "desc": "Preise & Sitzungsprognose"
         },
         "elaycoins": {
           "title": "Elaycoin-Regeln",

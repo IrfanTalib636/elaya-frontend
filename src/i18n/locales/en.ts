@@ -105,6 +105,7 @@ const en = {
     "shop": "Avora Shop",
     "transfers": "Studio transfer",
     "elaycoins": "Elaycoins",
+    "simulator": "Case Simulator",
     "settings": "Settings"
   },
   "studioActivity": {
@@ -180,6 +181,7 @@ const en = {
       { "id": "studioChat", "label": "Studio Chat" },
       { "id": "customers", "label": "Customers" },
       { "id": "crm", "label": "CRM & Leads" },
+      { "id": "engine", "label": "Engine" },
       { "id": "medical", "label": "Medical & Safety" },
       { "id": "documents", "label": "Digital documents" },
       { "id": "transfer", "label": "Studio change" },
@@ -2715,9 +2717,9 @@ const en = {
           "title": "Studio Chat",
           "desc": "Messages with the studios"
         },
-        "settings": {
-          "title": "Settings",
-          "desc": "Appearance, prices, prediction & lockouts"
+        "engine": {
+          "title": "Prediction Engine",
+          "desc": "Prices & session forecast rules"
         },
         "elaycoins": {
           "title": "Elaycoin rules",

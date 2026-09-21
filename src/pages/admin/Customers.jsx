@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Search, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { listCustomers } from '../../api/customers'
@@ -17,6 +17,7 @@ import useContent from '../../i18n/useContent'
 const PAGE_SIZE = 50
 
 const AdminCustomers = () => {
+  const navigate = useNavigate()
   const { t, adminPages } = useContent()
   const copy = adminPages.customers
   const [searchParams, setSearchParams] = useSearchParams()
@@ -128,7 +129,8 @@ const AdminCustomers = () => {
                   {customers.map((c) => (
                     <tr
                       key={c._id || c.id}
-                      className="border-b border-elaya-border last:border-0 hover:bg-studio-bg-4 transition-colors"
+                      onClick={() => navigate(`/admin/customers/${c._id || c.id}`)}
+                      className="border-b border-elaya-border last:border-0 hover:bg-studio-bg-4 transition-colors cursor-pointer"
                     >
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2.5">

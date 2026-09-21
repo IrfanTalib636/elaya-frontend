@@ -18,6 +18,8 @@ import {
   updateAdminProduct,
   listAdminOrders,
   patchOrderCommission,
+  getAdminShipping,
+  updateAdminShopCatalog,
 } from '../../api/adminShop'
 import useContent from '../../i18n/useContent'
 import useAuthStore from '../../store/authStore'
@@ -34,6 +36,7 @@ const emptyForm = {
   bild_url: '',
   lagerbestand: '',
   aktiv: true,
+  rabatt_prozent: '',
 }
 
 const fmt = (n) =>
@@ -47,6 +50,10 @@ const AdminShop = () => {
   const [tab, setTab] = useState('products')
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
+  const [categories, setCategories] = useState(CATEGORY_IDS)
+  const [shippingRates, setShippingRates] = useState({})
+  const [newCategory, setNewCategory] = useState('')
+  const [catalogSaving, setCatalogSaving] = useState(false)
   const [pagination, setPagination] = useState(null)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
@@ -60,6 +67,9 @@ const AdminShop = () => {
     try {
       const res = await listAdminProducts({ page: pageNum, limit: 20 })
       setProducts(res.data.data.products ?? [])
+      if (Array.isArray(res.data.data.categories) && res.data.data.categories.length) {
+        setCategories(res.data.data.categories)
+      }
       setPagination(res.data.data.pagination)
     } catch {
       toast.error(copy.productsLoadError)
@@ -81,15 +91,33 @@ const AdminShop = () => {
     }
   }, [copy.ordersLoadError])
 
+  const loadCatalog = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await getAdminShipping()
+      const data = res.data.data || {}
+      setShippingRates(data.rates || {})
+      if (Array.isArray(data.categories) && data.categories.length) {
+        setCategories(data.categories)
+      }
+      setPagination(null)
+    } catch {
+      toast.error(copy.shippingLoadError || 'Could not load shop catalog settings')
+    } finally {
+      setLoading(false)
+    }
+  }, [copy.shippingLoadError])
+
   useEffect(() => {
     if (tab === 'products') loadProducts(page)
-    else loadOrders(page)
-  }, [tab, page, loadProducts, loadOrders])
+    else if (tab === 'orders') loadOrders(page)
+    else void loadCatalog()
+  }, [tab, page, loadProducts, loadOrders, loadCatalog])
 
   const openCreate = () => {
     if (!canManage) return
     setEditing(null)
-    setForm(emptyForm)
+    setForm({ ...emptyForm, kategorie: categories[0] || 'Sonstiges' })
     setModalOpen(true)
   }
 
@@ -102,10 +130,11 @@ const AdminShop = () => {
       name: p.name || '',
       beschreibung: p.beschreibung || '',
       preis_chf: String(p.preis_chf ?? ''),
-      kategorie: p.kategorie || 'Sonstiges',
+      kategorie: p.kategorie || categories[0] || 'Sonstiges',
       bild_url: p.bild_url || '',
       lagerbestand: p.lagerbestand == null ? '' : String(p.lagerbestand),
       aktiv: p.aktiv !== false,
+      rabatt_prozent: p.rabatt_prozent == null ? '' : String(p.rabatt_prozent),
     })
     setModalOpen(true)
   }
@@ -117,6 +146,8 @@ const AdminShop = () => {
         ...form,
         preis_chf: Number(form.preis_chf),
         lagerbestand: form.lagerbestand === '' ? null : Number(form.lagerbestand),
+        rabatt_prozent:
+          form.rabatt_prozent === '' ? undefined : Number(form.rabatt_prozent),
       }
       if (editing) {
         await updateAdminProduct(editing.id, payload)
@@ -155,6 +186,54 @@ const AdminShop = () => {
     }
   }
 
+  const saveCatalog = async (nextRates = shippingRates, nextCategories = categories) => {
+    if (!canManage) return
+    setCatalogSaving(true)
+    try {
+      const res = await updateAdminShopCatalog({
+        rates: nextRates,
+        categories: nextCategories,
+      })
+      setShippingRates(res.data.data.rates || nextRates)
+      setCategories(res.data.data.categories || nextCategories)
+      toast.success(copy.catalogSaved || 'Shop catalog saved')
+    } catch (e) {
+      toast.error(e?.response?.data?.message || copy.catalogSaveError || 'Could not save')
+    } finally {
+      setCatalogSaving(false)
+    }
+  }
+
+  const addCategory = () => {
+    const name = newCategory.trim()
+    if (!name) return
+    if (categories.includes(name)) {
+      toast.error(copy.categoryExists || 'Category already exists')
+      return
+    }
+    const next = [...categories, name]
+    setCategories(next)
+    setNewCategory('')
+    void saveCatalog(shippingRates, next)
+  }
+
+  const removeCategory = (name) => {
+    if (categories.length <= 1) {
+      toast.error(copy.categoryMin || 'At least one category is required')
+      return
+    }
+    const next = categories.filter((c) => c !== name)
+    setCategories(next)
+    void saveCatalog(shippingRates, next)
+  }
+
+  const tabs = [
+    { id: 'products', label: copy.tabProducts },
+    { id: 'categories', label: copy.tabCategories || 'Categories' },
+    { id: 'shipping', label: copy.tabShipping || 'Shipping' },
+    { id: 'orders', label: copy.tabOrders },
+  ]
+
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader title={copy.title} subtitle={copy.subtitle}>
@@ -169,22 +248,22 @@ const AdminShop = () => {
         </div>
       ) : null}
 
-      <div className="flex gap-2 mb-4">
-        {['products', 'orders'].map((t) => (
+      <div className="flex flex-wrap gap-2 mb-4">
+        {tabs.map((t) => (
           <button
-            key={t}
+            key={t.id}
             type="button"
             onClick={() => {
               setPage(1)
-              setTab(t)
+              setTab(t.id)
             }}
             className={`px-3 py-1.5 rounded-lg text-[13px] font-semibold border cursor-pointer ${
-              tab === t
+              tab === t.id
                 ? 'border-admin-emerald text-admin-emerald bg-admin-emerald/10'
                 : 'border-admin-line text-admin-ivory/70'
             }`}
           >
-            {t === 'products' ? copy.tabProducts : copy.tabOrders}
+            {t.label}
           </button>
         ))}
       </div>
@@ -193,6 +272,75 @@ const AdminShop = () => {
         <div className="flex justify-center py-16">
           <Spinner size="lg" />
         </div>
+      ) : tab === 'categories' ? (
+        <Card>
+          <p className="m-0 mb-3 text-[12px] text-studio-w2">
+            {copy.categoriesHint ||
+              'Manage product categories used in the catalog. Changes apply platform-wide.'}
+          </p>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {categories.map((c) => (
+              <span
+                key={c}
+                className="inline-flex items-center gap-2 rounded-[10px] border border-elaya-border bg-studio-bg-4 px-3 py-1.5 text-[12px]"
+              >
+                {copy.categories?.[c] || c}
+                {canManage ? (
+                  <button
+                    type="button"
+                    onClick={() => removeCategory(c)}
+                    className="bg-transparent border-0 text-studio-w3 cursor-pointer hover:text-red-400"
+                  >
+                    ×
+                  </button>
+                ) : null}
+              </span>
+            ))}
+          </div>
+          {canManage ? (
+            <div className="flex gap-2 items-end max-w-md">
+              <Input
+                label={copy.newCategory || 'New category'}
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+              />
+              <Button loading={catalogSaving} onClick={addCategory}>
+                {copy.addCategory || 'Add'}
+              </Button>
+            </div>
+          ) : null}
+        </Card>
+      ) : tab === 'shipping' ? (
+        <Card>
+          <p className="m-0 mb-3 text-[12px] text-studio-w2">
+            {copy.shippingHint ||
+              'Shipping rates (CHF) and free-shipping thresholds by country.'}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-[720px]">
+            {Object.keys(shippingRates).map((key) => (
+              <Input
+                key={key}
+                label={key}
+                type="number"
+                step="0.1"
+                value={String(shippingRates[key] ?? '')}
+                disabled={!canManage}
+                onChange={(e) =>
+                  setShippingRates((prev) => ({ ...prev, [key]: Number(e.target.value) }))
+                }
+              />
+            ))}
+          </div>
+          {canManage ? (
+            <Button
+              className="mt-4"
+              loading={catalogSaving}
+              onClick={() => void saveCatalog()}
+            >
+              {copy.saveShipping || 'Save shipping'}
+            </Button>
+          ) : null}
+        </Card>
       ) : tab === 'products' ? (
         products.length === 0 ? (
           <EmptyState title={copy.noProducts} description={copy.noProductsDesc} />
@@ -212,7 +360,18 @@ const AdminShop = () => {
               <tbody>
                 {products.map((p) => (
                   <tr key={p.id} className="border-b border-admin-line/60">
-                    <td className="p-3 font-medium">{p.name}</td>
+                    <td className="p-3 font-medium">
+                      <div className="flex items-center gap-2">
+                        {p.bild_url ? (
+                          <img
+                            src={p.bild_url}
+                            alt=""
+                            className="w-8 h-8 rounded object-cover border border-elaya-border"
+                          />
+                        ) : null}
+                        <span>{p.name}</span>
+                      </div>
+                    </td>
                     <td className="p-3 font-mono text-[12px]">{p.artikelnummer}</td>
                     <td className="p-3">{fmt(p.preis_chf)}</td>
                     <td className="p-3">{p.lagerbestand ?? '∞'}</td>
@@ -293,7 +452,9 @@ const AdminShop = () => {
         </Card>
       )}
 
-      <Pagination pagination={pagination} onPageChange={setPage} className="mt-4" />
+      {(tab === 'products' || tab === 'orders') && (
+        <Pagination pagination={pagination} onPageChange={setPage} className="mt-4" />
+      )}
 
       {modalOpen && canManage ? (
         <Modal onClose={() => setModalOpen(false)} title={editing ? copy.editProduct : copy.newProduct}>
@@ -337,22 +498,39 @@ const AdminShop = () => {
                 placeholder={copy.form.stockPh}
               />
             </div>
-            <Select
-              label={copy.form.category}
-              value={form.kategorie}
-              onChange={(e) => setForm({ ...form, kategorie: e.target.value })}
-            >
-              {CATEGORY_IDS.map((c) => (
-                <option key={c} value={c}>
-                  {copy.categories[c] || c}
-                </option>
-              ))}
-            </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <Select
+                label={copy.form.category}
+                value={form.kategorie}
+                onChange={(e) => setForm({ ...form, kategorie: e.target.value })}
+              >
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {copy.categories?.[c] || c}
+                  </option>
+                ))}
+              </Select>
+              <Input
+                label={copy.form.discount || 'Discount %'}
+                type="number"
+                value={form.rabatt_prozent}
+                onChange={(e) => setForm({ ...form, rabatt_prozent: e.target.value })}
+                placeholder="0"
+              />
+            </div>
             <Input
               label={copy.form.imageUrl}
               value={form.bild_url}
               onChange={(e) => setForm({ ...form, bild_url: e.target.value })}
+              placeholder="https://…"
             />
+            {form.bild_url ? (
+              <img
+                src={form.bild_url}
+                alt=""
+                className="w-24 h-24 rounded object-cover border border-elaya-border"
+              />
+            ) : null}
             <label className="flex items-center gap-2 text-[13px]">
               <input
                 type="checkbox"

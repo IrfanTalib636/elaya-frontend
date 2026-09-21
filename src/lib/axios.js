@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { TOKEN_KEY } from './session'
 import { trySilentRefresh } from './refreshSession'
+import { isStudioWorkspaceActive } from './adminWorkspaceSession'
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1'
 
@@ -10,12 +11,10 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Attach token from localStorage on every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEY)
   if (token) config.headers.Authorization = `Bearer ${token}`
 
-  // FormData must not use application/json — browser sets multipart boundary
   if (config.data instanceof FormData) {
     if (typeof config.headers?.delete === 'function') {
       config.headers.delete('Content-Type')
@@ -26,13 +25,8 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// ── Token auto-refresh ────────────────────────────────────────────────────
-// When a 401 is received, try once to refresh using the HttpOnly cookie.
-// If refresh succeeds, retry the original request with the new token.
-// If refresh fails, clear the session and redirect to login.
-
 let isRefreshing = false
-let queue = []           // pending requests waiting for refresh
+let queue = []
 
 const processQueue = (error, token = null) => {
   queue.forEach(({ resolve, reject }) => {
@@ -47,7 +41,16 @@ api.interceptors.response.use(
   async (err) => {
     const original = err.config
 
-    // Only attempt refresh on 401 and not on the refresh endpoint itself
+    // During admin→studio workspace, do not silent-refresh to an admin token
+    // (would drop acting-studio claims). Let the UI exit workspace instead.
+    if (
+      err.response?.status === 401 &&
+      isStudioWorkspaceActive() &&
+      !original.url?.includes('/auth/login')
+    ) {
+      return Promise.reject(err)
+    }
+
     if (
       err.response?.status === 401 &&
       !original._retry &&
@@ -55,7 +58,6 @@ api.interceptors.response.use(
       !original.url?.includes('/auth/login')
     ) {
       if (isRefreshing) {
-        // Queue this request until refresh completes
         return new Promise((resolve, reject) => {
           queue.push({ resolve, reject })
         }).then((token) => {
@@ -71,11 +73,10 @@ api.interceptors.response.use(
         const newToken = await trySilentRefresh()
         const { default: useAuthStore } = await import('../store/authStore')
         useAuthStore.getState().setAccessToken(newToken)
-        // Keep persisted role in sync — a Swagger/customer login can overwrite the shared refresh cookie
         try {
           await useAuthStore.getState().refreshProfile()
         } catch {
-          // Profile sync is best-effort; request retry still uses the new token
+          // Profile sync is best-effort
         }
         api.defaults.headers.common.Authorization = `Bearer ${newToken}`
         original.headers.Authorization = `Bearer ${newToken}`
@@ -85,7 +86,6 @@ api.interceptors.response.use(
         processQueue(refreshErr, null)
         const { default: useAuthStore } = await import('../store/authStore')
         useAuthStore.getState().clearLocalSession()
-        // Let ProtectedRoute redirect — avoid full-page reload loop with GuestRoute
         return Promise.reject(refreshErr)
       } finally {
         isRefreshing = false

@@ -2890,6 +2890,189 @@ const de: TranslationSchema = {
       "activityEmpty": "Noch keine Aktivität.",
       "activityStudioUpdated": "Studio aktualisiert"
     },
+    "engine": {
+      "title": "Prediction Engine",
+      "subtitle": "Zentrale Steuerung von Preisen und Sitzungsprognose. Nur Super Admin kann Rechenregeln ändern. Studios nutzen den Simulator nur lesend.",
+      "viewStudio": "Studio-Ansicht",
+      "viewAdmin": "Super Admin / Engine",
+      "studioHint": "Tattoo-Case-Simulator — rechnet live gegen die veröffentlichte Engine."
+    },
+    "engineSimulator": {
+      "previewFailed": "Live-Berechnung fehlgeschlagen",
+      "secLaser": "Laser",
+      "secTattoo": "Tattoo",
+      "secLifestyle": "Lifestyle",
+      "secHealing": "Healing & Response",
+      "laserDevice": "Laser",
+      "wavelengths": "Wellenlängen",
+      "laserProfile": "Laserprofil (Engine)",
+      "yourStudioLaser": "Dein Studio-Laser",
+      "strengths": "Stärken",
+      "weaknesses": "Schwächen / Limitationen",
+      "noLasers": "Keine Laser im Katalog",
+      "size": "Grösse",
+      "sizeLxb": "Länge × Breite",
+      "sizeDirect": "Direkt cm²",
+      "fitzpatrick": "Fitzpatrick",
+      "fitzType": "Typ {{type}}",
+      "bodyLocation": "Körperstelle",
+      "density": "Dichte",
+      "saturation": "Sättigung",
+      "coverup": "Cover-up",
+      "tattooAge": "Tattoo-Alter (Jahre)",
+      "tattooType": "Tattoo-Art",
+      "goal": "Behandlungsziel",
+      "scarRisk": "Narben-/Keloidrisiko",
+      "priorTreatment": "Vorbehandlung (Laser)",
+      "priorCount": "Bisherige Sitzungen",
+      "pmu": "PMU (Festpreis)",
+      "colorsTitle": "Farben",
+      "age": "Alter",
+      "height": "Grösse (cm)",
+      "weight": "Gewicht (kg)",
+      "smoker": "Rauchen",
+      "alcohol": "Alkohol",
+      "sleepQuality": "Schlafqualität",
+      "sleepHours": "Schlafstunden",
+      "stress": "Stress",
+      "activity": "Aktivität",
+      "sport": "Sport",
+      "hydration": "Hydration",
+      "nutrition": "Ernährung",
+      "aftercare": "Nachsorge-Commitment",
+      "healing": "Heilungsverlauf",
+      "lightening": "Hellungsrate",
+      "lighteningAuto": "Auto / unbekannt",
+      "resultTitle": "Live-Ergebnis",
+      "pricePerSession": "Preis / Sitzung",
+      "predictedSessions": "Prognostizierte Sitzungen",
+      "estimatedTotal": "Geschätzte Gesamtkosten",
+      "lifestyleIndex": "Lifestyle-Index",
+      "colorDifficulty": "Farb-Schwierigkeit",
+      "showDetails": "Berechnungsdetails anzeigen",
+      "sessionFactors": "Sitzungsfaktoren",
+      "lifestyleMult": "Lifestyle-Multiplikator",
+      "ampel": { "green": "Grün", "orange": "Orange", "red": "Rot" },
+      "difficulty": { "low": "Niedrig", "medium": "Mittel", "high": "Hoch" },
+      "colors": {
+        "black": "Schwarz",
+        "grey": "Grau",
+        "red": "Rot",
+        "orange": "Orange",
+        "blue": "Blau",
+        "green": "Grün",
+        "purple": "Lila",
+        "yellow": "Gelb",
+        "white": "Weiss",
+        "skin_tone": "Hautton"
+      },
+      "levels": {
+        "low": "Niedrig",
+        "medium": "Mittel",
+        "high": "Hoch",
+        "very_high": "Sehr hoch"
+      },
+      "locations": {
+        "arm": "Arm",
+        "leg": "Bein",
+        "chest": "Brust",
+        "back": "Rücken",
+        "shoulder": "Schulter",
+        "abdomen": "Bauch",
+        "hip": "Hüfte",
+        "neck": "Nacken",
+        "face": "Gesicht",
+        "hand": "Hand",
+        "foot": "Fuss",
+        "other": "Sonstiges"
+      },
+      "coverupOpts": {
+        "none": "Keins",
+        "once": "Einmal",
+        "multiple": "Mehrfach",
+        "unknown": "Unbekannt"
+      },
+      "tcTypes": {
+        "amateur": "Amateur",
+        "professional": "Professionell",
+        "cover_up": "Cover-up",
+        "unknown": "Unbekannt"
+      },
+      "goals": {
+        "full_removal": "Vollständige Entfernung",
+        "lightening": "Aufhellung",
+        "partial": "Teilweise"
+      },
+      "laserLevels": {
+        "basic": "Basic",
+        "standard": "Standard",
+        "advanced": "Advanced",
+        "elite": "Elite"
+      },
+      "smokerOpts": {
+        "never": "Nie",
+        "former": "Früher",
+        "occasional": "Gelegentlich",
+        "daily": "Täglich"
+      },
+      "alcoholOpts": {
+        "never": "Nie",
+        "rare": "Selten",
+        "weekly": "Wöchentlich",
+        "daily": "Täglich"
+      },
+      "sleepQualityOpts": {
+        "very_good": "Sehr gut",
+        "good": "Gut",
+        "fair": "Mittel",
+        "poor": "Schlecht",
+        "very_poor": "Sehr schlecht"
+      },
+      "sleepHoursOpts": {
+        "under_5": "< 5 Std",
+        "5-6": "5–6 Std",
+        "7-8": "7–8 Std",
+        "over_9": "> 9 Std"
+      },
+      "stressOpts": {
+        "low": "Niedrig",
+        "medium": "Mittel",
+        "high": "Hoch",
+        "very_high": "Sehr hoch"
+      },
+      "activityOpts": {
+        "sedentary": "Sitzend",
+        "light": "Leicht",
+        "moderate": "Moderat",
+        "high": "Hoch"
+      },
+      "sportOpts": {
+        "never": "Nie",
+        "1-2": "1–2× / Woche",
+        "3-4": "3–4× / Woche",
+        "daily": "Täglich"
+      },
+      "hydrationOpts": { "low": "Niedrig", "medium": "Mittel", "high": "Hoch" },
+      "nutritionOpts": {
+        "poor": "Schlecht",
+        "fair": "Mittel",
+        "good": "Gut",
+        "very_good": "Sehr gut"
+      },
+      "aftercareOpts": { "high": "Hoch", "medium": "Mittel", "low": "Niedrig" },
+      "healingOpts": {
+        "good": "Gut",
+        "average": "Durchschnitt",
+        "problematic": "Problematisch",
+        "unknown": "Unbekannt"
+      },
+      "lighteningOpts": {
+        "fast": "Schnell",
+        "expected": "Erwartet",
+        "slow": "Langsam",
+        "stagnant": "Stagnierend"
+      }
+    },
     "medical": {
       "title": "Medical & Safety",
       "subtitle": "Medizinische Flags, Sperren und Safety-Konfiguration"

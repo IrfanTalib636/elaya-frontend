@@ -190,6 +190,7 @@ export const adminNav = {
     { id: 'elaycoins', icon: '🪙', label: 'Elaycoins' },
     { id: 'finance', icon: '💶', label: 'Finance' },
     { id: 'features', icon: '🎛️', label: 'Packages & Features' },
+    { id: 'audit', icon: '📋', label: 'Audit log' },
     { id: 'ai', icon: '🤖', label: 'Elaya AI' },
     { id: 'shop', icon: '🛍️', label: 'ElayShop' },
     { id: 'settings', icon: '⚙️', label: 'Settings' },

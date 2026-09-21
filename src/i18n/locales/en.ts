@@ -189,6 +189,7 @@ const en = {
       { "id": "automations", "label": "Automations" },
       { "id": "finance", "label": "Finance" },
       { "id": "features", "label": "Packages & Features" },
+      { "id": "audit", "label": "Audit log" },
       { "id": "lasers", "label": "Lasers" },
       { "id": "ai", "label": "AI Training" },
       { "id": "users", "label": "Admin users" },
@@ -3340,6 +3341,25 @@ const en = {
         "open": "Open",
         "paid": "Paid out"
       }
+    },
+    "audit": {
+      "title": "Audit log",
+      "subtitle": "Append-only log of all admin actions. Read-only — never editable.",
+      "actionType": "Action type",
+      "allActions": "All actions",
+      "date": "Date",
+      "resetFilters": "Reset filters",
+      "loadError": "Could not load audit log",
+      "empty": "No admin actions logged yet",
+      "emptyFiltered": "No admin actions with these filters",
+      "showing": "Showing",
+      "entries": "entries",
+      "colTimestamp": "Timestamp",
+      "colAction": "Action",
+      "colTarget": "Target",
+      "colStudio": "Studio",
+      "colReason": "Reason",
+      "details": "Details"
     },
     "features": {
       "title": "Packages & Features",

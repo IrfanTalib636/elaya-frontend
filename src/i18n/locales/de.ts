@@ -191,6 +191,7 @@ const de: TranslationSchema = {
       { "id": "automations", "label": "Automatisierungen" },
       { "id": "finance", "label": "Finanzen" },
       { "id": "features", "label": "Pakete & Features" },
+      { "id": "audit", "label": "Audit-Log" },
       { "id": "lasers", "label": "Laser" },
       { "id": "ai", "label": "KI Training" },
       { "id": "users", "label": "Admin-Benutzer" },
@@ -3342,6 +3343,25 @@ const de: TranslationSchema = {
         "open": "Offen",
         "paid": "Ausgezahlt"
       }
+    },
+    "audit": {
+      "title": "Audit-Log",
+      "subtitle": "Append-only Protokoll aller Admin-Aktionen. Read-only — nie editierbar.",
+      "actionType": "Aktionstyp",
+      "allActions": "Alle Aktionen",
+      "date": "Datum",
+      "resetFilters": "Filter zurücksetzen",
+      "loadError": "Audit-Log konnte nicht geladen werden",
+      "empty": "Noch keine Admin-Aktionen protokolliert",
+      "emptyFiltered": "Keine Admin-Aktionen mit diesen Filtern",
+      "showing": "Anzeige",
+      "entries": "Einträge",
+      "colTimestamp": "Zeitstempel",
+      "colAction": "Aktion",
+      "colTarget": "Ziel",
+      "colStudio": "Studio",
+      "colReason": "Begründung",
+      "details": "Details"
     },
     "features": {
       "title": "Pakete & Features",

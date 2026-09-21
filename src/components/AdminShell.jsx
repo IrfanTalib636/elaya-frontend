@@ -23,6 +23,7 @@ import {
   UserCog,
   Brain,
   Contact,
+  ClipboardList,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import useAuthStore from '../store/authStore'
@@ -50,6 +51,7 @@ const ICONS = {
   users: UserCog,
   studioTeam: Contact,
   ai: Brain,
+  audit: ClipboardList,
 }
 
 const PRIMARY_NAV = [
@@ -69,6 +71,7 @@ const TOOLS_NAV = [
   { to: '/admin/automations', id: 'automations' },
   { to: '/admin/shop', id: 'shop' },
   { to: '/admin/features', id: 'features' },
+  { to: '/admin/audit', id: 'audit' },
   { to: '/admin/lasers', id: 'lasers' },
   { to: '/admin/ai-training', id: 'ai' },
   { to: '/admin/users', id: 'users' },

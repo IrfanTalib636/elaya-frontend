@@ -10,3 +10,6 @@ export const createAdminStudioLead = (body) =>
 
 export const updateAdminStudioLead = (id, body) =>
   api.patch(`/admin/crm/leads/${id}`, body)
+
+export const advanceAdminStudioLead = (id, body) =>
+  api.post(`/admin/crm/leads/${id}/advance`, body)

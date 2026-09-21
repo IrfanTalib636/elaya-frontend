@@ -1,16 +1,18 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Monitor, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Activity, Layers, MapPin, ShieldAlert, KeyRound } from 'lucide-react'
+import { Monitor, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Activity, Layers, MapPin, ShieldAlert, KeyRound, Coins, Bell } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Card, PageHeader, Input, Button, Spinner, Select, Badge } from '../../components/ui'
 import AppearanceSettings from '../../components/settings/AppearanceSettings'
 import PricingRulesPanel from '../../components/settings/PricingRulesPanel'
 import SessionPredictionPanel from '../../components/settings/SessionPredictionPanel'
 import TeamLoginsPanel from '../../components/settings/TeamLoginsPanel'
+import ElaycoinRulesTab from '../../components/settings/ElaycoinRulesTab'
+import AutomationsTab from '../../components/settings/AutomationsTab'
 import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
 import useAuthStore from '../../store/authStore'
-import { getStudioConfig } from '../../api/config'
+import { getStudioConfig, updateStudioConfig } from '../../api/config'
 import {
   getStudioSettings,
   updateStudioSettings,
@@ -31,6 +33,8 @@ const TAB_I18N = {
   hours: 'hours',
   group: 'groupBooking',
   booking: 'bookingRules',
+  elaycoins: 'elaycoinRules',
+  automations: 'automations',
   locations: 'locations',
   rooms: 'rooms',
   staff: 'staff',
@@ -46,6 +50,8 @@ const TABS = [
   { id: 'hours',      icon: Clock },
   { id: 'group',      icon: Layers },
   { id: 'booking',    icon: ShieldAlert },
+  { id: 'elaycoins',  icon: Coins },
+  { id: 'automations', icon: Bell },
   { id: 'locations',  icon: MapPin },
   { id: 'rooms',      icon: Grid },
   { id: 'staff',      icon: Users },
@@ -2014,6 +2020,8 @@ const StudioSettings = () => {
           {activeTab === 'hours'   && <HoursTab />}
           {activeTab === 'group'   && <GroupBookingTab />}
           {activeTab === 'booking' && <BookingRulesTab />}
+          {activeTab === 'elaycoins' && <ElaycoinRulesTab />}
+          {activeTab === 'automations' && <AutomationsTab />}
           {activeTab === 'locations' && <LocationsTab />}
           {activeTab === 'rooms'   && <RoomsTab />}
           {activeTab === 'staff'   && <StaffTab />}

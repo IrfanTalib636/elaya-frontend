@@ -4,11 +4,12 @@ import {
   LayoutDashboard, Users, Calendar, CalendarDays, BarChart2, Heart,
   ShoppingBag, Coins, Settings, LogOut, ChevronLeft, ChevronRight,
   FolderOpen, ClipboardList, ArrowLeftRight, MessageCircle, ListChecks,
-  History, Sparkles, Headphones,
+  History, Sparkles, Headphones, Microscope,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../ElayaLogo'
 import StudioNotificationBell from '../studio/StudioNotificationBell'
+import AdminStudioWorkspaceBanner from '../admin/AdminStudioWorkspaceBanner'
 import useAuthStore from '../../store/authStore'
 import useContent from '../../i18n/useContent'
 
@@ -47,6 +48,8 @@ const StudioLayout = ({ children }) => {
   const logout   = useAuthStore((s) => s.logout)
   const user     = useAuthStore((s) => s.user)
   const profile  = useAuthStore((s) => s.profile)
+  const studioWorkspace = useAuthStore((s) => s.studioWorkspace)
+  const exitStudioWorkspace = useAuthStore((s) => s.exitStudioWorkspace)
   const { common, toast: toastMessages, studioNav, t } = useContent()
 
   const NAV_SECTIONS = [
@@ -74,6 +77,7 @@ const StudioLayout = ({ children }) => {
         { to: '/studio/shop',      icon: ShoppingBag,   label: studioNav.shop },
         { to: '/studio/transfers', icon: ArrowLeftRight, label: studioNav.transfers },
         { to: '/studio/elaycoins', icon: Coins,         label: studioNav.elaycoins },
+        { to: '/studio/simulator', icon: Microscope,    label: studioNav.simulator || 'Case Simulator' },
         { to: '/studio/settings',  icon: Settings,      label: studioNav.settings },
       ],
     },
@@ -91,6 +95,12 @@ const StudioLayout = ({ children }) => {
     })
 
   const handleLogout = async () => {
+    if (studioWorkspace?.studioId) {
+      await exitStudioWorkspace()
+      toast.success(toastMessages.logoutSuccess)
+      navigate('/admin/studios')
+      return
+    }
     await logout()
     toast.success(toastMessages.logoutSuccess)
     navigate('/studio/login')
@@ -186,6 +196,7 @@ const StudioLayout = ({ children }) => {
 
       {/* ── Main content ── */}
       <main className={`flex-1 min-h-screen bg-studio-bg transition-[margin-left] duration-200 ease-in-out ${collapsed ? 'ml-14' : 'ml-studio-sidebar'}`}>
+        {studioWorkspace?.studioId ? <AdminStudioWorkspaceBanner /> : null}
         <div className="sticky top-0 z-40 flex justify-end px-4 py-2 border-b border-elaya-border/60 bg-studio-bg/90 backdrop-blur-sm">
           <StudioNotificationBell />
         </div>

@@ -38,6 +38,7 @@ const StudioChat           = lazy(() => import('./pages/studio/Chat'))
 const StudioElayaChat      = lazy(() => import('./pages/studio/ElayaChat'))
 const StudioPlatformChat   = lazy(() => import('./pages/studio/PlatformChat'))
 const StudioActivity       = lazy(() => import('./pages/studio/Activity'))
+const StudioSimulator      = lazy(() => import('./pages/studio/Simulator'))
 
 const AdminLogin           = lazy(() => import('./pages/admin/Login'))
 const AdminForgotPassword  = lazy(() => import('./pages/admin/ForgotPassword'))
@@ -48,7 +49,9 @@ const AdminStudios         = lazy(() => import('./pages/admin/Studios'))
 const AdminStudioWorkspace = lazy(() => import('./pages/admin/StudioWorkspace'))
 const AdminStudioChat      = lazy(() => import('./pages/admin/StudioChat'))
 const AdminCustomers       = lazy(() => import('./pages/admin/Customers'))
+const AdminCustomerDetail  = lazy(() => import('./pages/admin/CustomerDetail'))
 const AdminCrm             = lazy(() => import('./pages/admin/Crm'))
+const AdminEngine          = lazy(() => import('./pages/admin/Engine'))
 const AdminMedical         = lazy(() => import('./pages/admin/Medical'))
 const AdminDocuments       = lazy(() => import('./pages/admin/Documents'))
 const AdminAiTraining      = lazy(() => import('./pages/admin/AiTraining'))
@@ -58,7 +61,9 @@ const AdminStudioTeam      = lazy(() => import('./pages/admin/StudioTeam'))
 const AdminShop            = lazy(() => import('./pages/admin/Shop'))
 const AdminFinance         = lazy(() => import('./pages/admin/Finance'))
 const AdminElaycoins       = lazy(() => import('./pages/admin/Elaycoins'))
+const AdminAutomations     = lazy(() => import('./pages/admin/Automations'))
 const AdminFeatures        = lazy(() => import('./pages/admin/Features'))
+const AdminAuditLog        = lazy(() => import('./pages/admin/AuditLog'))
 const AdminTransfers       = lazy(() => import('./pages/admin/Transfers'))
 const AdminSettings        = lazy(() => import('./pages/admin/Settings'))
 
@@ -131,6 +136,7 @@ const AppInner = () => {
             <Route path="shop"          element={<StudioShop />} />
             <Route path="transfers"     element={<StudioTransfers />} />
             <Route path="elaycoins"     element={<StudioElaycoins />} />
+            <Route path="simulator"     element={<StudioSimulator />} />
             <Route path="settings"      element={<StudioSettings />} />
           </Route>
 
@@ -154,8 +160,9 @@ const AppInner = () => {
             <Route path="studios/:studioId/workspace" element={<AdminStudioWorkspace />} />
             <Route path="studio-chat" element={<AdminStudioChat />} />
             <Route path="customers" element={<AdminCustomers />} />
+            <Route path="customers/:customerId" element={<AdminCustomerDetail />} />
             <Route path="crm" element={<AdminCrm />} />
-            <Route path="engine" element={<Navigate to="/admin/settings" replace />} />
+            <Route path="engine" element={<AdminEngine />} />
             <Route path="medical" element={<AdminMedical />} />
             <Route path="documents" element={<AdminDocuments />} />
             <Route path="admin-chat" element={<Navigate to="/admin/studio-chat" replace />} />
@@ -166,7 +173,9 @@ const AppInner = () => {
             <Route path="shop" element={<AdminShop />} />
             <Route path="finance" element={<AdminFinance />} />
             <Route path="elaycoins" element={<AdminElaycoins />} />
+            <Route path="automations" element={<AdminAutomations />} />
             <Route path="features" element={<AdminFeatures />} />
+            <Route path="audit" element={<AdminAuditLog />} />
             <Route path="transfers" element={<AdminTransfers />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>

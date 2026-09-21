@@ -21,6 +21,7 @@ import {
 import useContent from '../../i18n/useContent'
 import useAuthStore from '../../store/authStore'
 import { ROLES } from '../../constants/roles'
+import { getApiErrorMessage } from '../../lib/apiError'
 
 /**
  * One group-booking size tier: its name, point cost and the area range it
@@ -76,9 +77,11 @@ const AdminStudios = () => {
   const { t, adminPages } = useContent()
   const copy = adminPages.studios
   const role = useAuthStore((s) => s.user?.role)
+  const enterStudioWorkspace = useAuthStore((s) => s.enterStudioWorkspace)
   const canEditPricing = role === ROLES.SUPER_ADMIN
   const [loading, setLoading] = useState(true)
   const [studios, setStudios] = useState([])
+  const [enteringId, setEnteringId] = useState(null)
 
   const [pricingStudio, setPricingStudio] = useState(null)
   const [pricingLoading, setPricingLoading] = useState(false)
@@ -109,6 +112,21 @@ const AdminStudios = () => {
   useEffect(() => {
     load()
   }, [load])
+
+  const openStudioDashboard = async (studioId) => {
+    setEnteringId(studioId)
+    try {
+      await enterStudioWorkspace(studioId)
+      toast.success(copy.workspaceEntered || 'Studio dashboard opened')
+      navigate('/studio/dashboard')
+    } catch (err) {
+      toast.error(
+        getApiErrorMessage(err, copy.workspaceEnterError || 'Could not open studio dashboard')
+      )
+    } finally {
+      setEnteringId(null)
+    }
+  }
 
   const setStatus = async (studio, status) => {
     try {
@@ -208,9 +226,16 @@ const AdminStudios = () => {
                 <div className="flex gap-2 flex-wrap justify-end">
                   <Button
                     variant="secondary"
-                    onClick={() => navigate(`/admin/studios/${id}/workspace`)}
+                    loading={enteringId === id}
+                    onClick={() => void openStudioDashboard(id)}
                   >
                     {copy.openWorkspace || 'Open workspace'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate(`/admin/studios/${id}/workspace`)}
+                  >
+                    {copy.openLists || 'Data lists'}
                   </Button>
                   <Button variant="ghost" onClick={() => openPricing(s)}>
                     {copy.prices}

@@ -6,6 +6,7 @@ import {
   MessageSquare,
   Users,
   Target,
+  Microscope,
   ShieldAlert,
   FileText,
   LogOut,
@@ -17,10 +18,12 @@ import {
   Settings,
   Coins,
   Wallet,
+  Bell,
   Zap,
   UserCog,
   Brain,
   Contact,
+  ClipboardList,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import useAuthStore from '../store/authStore'
@@ -34,6 +37,7 @@ const ICONS = {
   studioChat: MessageSquare,
   customers: Users,
   crm: Target,
+  engine: Microscope,
   medical: ShieldAlert,
   documents: FileText,
   shop: ShoppingBag,
@@ -41,11 +45,13 @@ const ICONS = {
   transfer: ArrowLeftRight,
   settings: Settings,
   elaycoins: Coins,
+  automations: Bell,
   finance: Wallet,
   lasers: Zap,
   users: UserCog,
   studioTeam: Contact,
   ai: Brain,
+  audit: ClipboardList,
 }
 
 const PRIMARY_NAV = [
@@ -54,6 +60,7 @@ const PRIMARY_NAV = [
   { to: '/admin/studio-chat', id: 'studioChat' },
   { to: '/admin/customers', id: 'customers' },
   { to: '/admin/crm', id: 'crm' },
+  { to: '/admin/engine', id: 'engine' },
   { to: '/admin/medical', id: 'medical' },
   { to: '/admin/documents', id: 'documents' },
 ]
@@ -61,8 +68,10 @@ const PRIMARY_NAV = [
 const TOOLS_NAV = [
   { to: '/admin/finance', id: 'finance' },
   { to: '/admin/elaycoins', id: 'elaycoins' },
+  { to: '/admin/automations', id: 'automations' },
   { to: '/admin/shop', id: 'shop' },
   { to: '/admin/features', id: 'features' },
+  { to: '/admin/audit', id: 'audit' },
   { to: '/admin/lasers', id: 'lasers' },
   { to: '/admin/ai-training', id: 'ai' },
   { to: '/admin/users', id: 'users' },

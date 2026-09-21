@@ -284,7 +284,11 @@ const AdminStudioWorkspace = () => {
                 </thead>
                 <tbody>
                   {rows.map((c) => (
-                    <tr key={c._id || c.id} className="border-b border-admin-line/50">
+                    <tr
+                      key={c._id || c.id}
+                      onClick={() => navigate(`/admin/customers/${c._id || c.id}`)}
+                      className="border-b border-admin-line/50 hover:bg-studio-bg-4 cursor-pointer"
+                    >
                       <td className="p-3 font-medium text-studio-white">
                         {customerLabel(c)}
                         {c.wechsel_status && c.wechsel_status !== 'aktuell' ? (
@@ -323,24 +327,38 @@ const AdminStudioWorkspace = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((c) => (
-                    <tr key={c.id || c._id} className="border-b border-admin-line/50">
-                      <td className="p-3 font-mono text-[12px] text-studio-gold-2">
-                        {c.caseId || c.id || '—'}
-                      </td>
-                      <td className="p-3">{customerLabel(c.customer)}</td>
-                      <td className="p-3 text-studio-w1">{c.type || c.bodyLabel || '—'}</td>
-                      <td className="p-3 tabular-nums">
-                        {c.sessionsDone ?? 0}
-                        {c.sessions ? `/${c.sessions}` : ''}
-                      </td>
-                      <td className="p-3">
-                        <Badge variant="status" value={c.status}>
-                          {c.status}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
+                  {rows.map((c) => {
+                    const custId =
+                      typeof c.customer === 'object'
+                        ? c.customer?._id || c.customer?.id
+                        : c.customer
+                    return (
+                      <tr
+                        key={c.id || c._id}
+                        onClick={() =>
+                          custId
+                            ? navigate(`/admin/customers/${custId}`)
+                            : undefined
+                        }
+                        className={`border-b border-admin-line/50 ${custId ? 'hover:bg-studio-bg-4 cursor-pointer' : ''}`}
+                      >
+                        <td className="p-3 font-mono text-[12px] text-studio-gold-2">
+                          {c.caseId || c.id || '—'}
+                        </td>
+                        <td className="p-3">{customerLabel(c.customer)}</td>
+                        <td className="p-3 text-studio-w1">{c.type || c.bodyLabel || '—'}</td>
+                        <td className="p-3 tabular-nums">
+                          {c.sessionsDone ?? 0}
+                          {c.sessions ? `/${c.sessions}` : ''}
+                        </td>
+                        <td className="p-3">
+                          <Badge variant="status" value={c.status}>
+                            {c.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             ) : null}
@@ -357,21 +375,35 @@ const AdminStudioWorkspace = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((a) => (
-                    <tr key={a.id || a._id} className="border-b border-admin-line/50">
-                      <td className="p-3">{fmtDate(a.date)}</td>
-                      <td className="p-3 tabular-nums">{a.time || '—'}</td>
-                      <td className="p-3">{customerLabel(a.customer)}</td>
-                      <td className="p-3 text-studio-w1">
-                        {a.consultationOnly ? 'beratung' : a.type || '—'}
-                      </td>
-                      <td className="p-3">
-                        <Badge variant="status" value={a.status}>
-                          {a.status}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
+                  {rows.map((a) => {
+                    const custId =
+                      typeof a.customer === 'object'
+                        ? a.customer?._id || a.customer?.id
+                        : a.customer
+                    return (
+                      <tr
+                        key={a.id || a._id}
+                        onClick={() =>
+                          custId
+                            ? navigate(`/admin/customers/${custId}`)
+                            : undefined
+                        }
+                        className={`border-b border-admin-line/50 ${custId ? 'hover:bg-studio-bg-4 cursor-pointer' : ''}`}
+                      >
+                        <td className="p-3">{fmtDate(a.date)}</td>
+                        <td className="p-3 tabular-nums">{a.time || '—'}</td>
+                        <td className="p-3">{customerLabel(a.customer)}</td>
+                        <td className="p-3 text-studio-w1">
+                          {a.consultationOnly ? 'beratung' : a.type || '—'}
+                        </td>
+                        <td className="p-3">
+                          <Badge variant="status" value={a.status}>
+                            {a.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             ) : null}

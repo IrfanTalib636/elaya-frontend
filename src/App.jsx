@@ -61,6 +61,7 @@ const AdminStudioTeam      = lazy(() => import('./pages/admin/StudioTeam'))
 const AdminShop            = lazy(() => import('./pages/admin/Shop'))
 const AdminFinance         = lazy(() => import('./pages/admin/Finance'))
 const AdminElaycoins       = lazy(() => import('./pages/admin/Elaycoins'))
+const AdminAutomations     = lazy(() => import('./pages/admin/Automations'))
 const AdminFeatures        = lazy(() => import('./pages/admin/Features'))
 const AdminTransfers       = lazy(() => import('./pages/admin/Transfers'))
 const AdminSettings        = lazy(() => import('./pages/admin/Settings'))
@@ -171,6 +172,7 @@ const AppInner = () => {
             <Route path="shop" element={<AdminShop />} />
             <Route path="finance" element={<AdminFinance />} />
             <Route path="elaycoins" element={<AdminElaycoins />} />
+            <Route path="automations" element={<AdminAutomations />} />
             <Route path="features" element={<AdminFeatures />} />
             <Route path="transfers" element={<AdminTransfers />} />
             <Route path="settings" element={<AdminSettings />} />

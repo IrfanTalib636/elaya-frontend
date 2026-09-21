@@ -18,6 +18,7 @@ import {
   Settings,
   Coins,
   Wallet,
+  Bell,
   Zap,
   UserCog,
   Brain,
@@ -43,6 +44,7 @@ const ICONS = {
   transfer: ArrowLeftRight,
   settings: Settings,
   elaycoins: Coins,
+  automations: Bell,
   finance: Wallet,
   lasers: Zap,
   users: UserCog,
@@ -64,6 +66,7 @@ const PRIMARY_NAV = [
 const TOOLS_NAV = [
   { to: '/admin/finance', id: 'finance' },
   { to: '/admin/elaycoins', id: 'elaycoins' },
+  { to: '/admin/automations', id: 'automations' },
   { to: '/admin/shop', id: 'shop' },
   { to: '/admin/features', id: 'features' },
   { to: '/admin/lasers', id: 'lasers' },

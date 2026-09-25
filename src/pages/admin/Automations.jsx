@@ -14,21 +14,85 @@ import useContent from '../../i18n/useContent'
 import useAuthStore from '../../store/authStore'
 import { ROLES } from '../../constants/roles'
 
+const TRIGGER_OPTIONS = [
+  { value: 'on_first_check', label: 'On first evaluation (welcome-style)' },
+  { value: 'no_case_after_days', label: 'No case after X days' },
+  { value: 'anamnesis_no_appointment', label: 'Anamnesis done, no appointment (X days)' },
+  { value: 'appointment_window_hours', label: 'Appointment window (hours before)' },
+  { value: 'days_after_session', label: 'Days after last session' },
+  { value: 'ready_next_no_booking', label: 'Ready for next session, no booking' },
+  { value: 'inactive_days', label: 'Inactive for X days' },
+  { value: 'seasonal_months', label: 'Seasonal (month range)' },
+]
+
 const emptyRuleForm = () => ({
   label_de: '',
   label_en: '',
   beschreibung_de: '',
   beschreibung_en: '',
+  message_de: '',
+  message_en: '',
   hat_tage_feld: false,
   tage_wert: 7,
   editierbar_studio: true,
+  trigger_type: 'no_case_after_days',
+  hours_min: 22,
+  hours_max: 26,
+  min_days: 1,
+  max_days: 2,
+  lock_days: 49,
+  from_month: 4,
+  to_month: 9,
+  cooldown_tage: 14,
 })
 
 const emptyKatForm = () => ({ label_de: '', label_en: '' })
 
+const buildTriggerFromForm = (f) => {
+  const type = f.trigger_type || 'on_first_check'
+  const base = {
+    type,
+    cooldown_tage: Math.max(0, parseInt(String(f.cooldown_tage), 10) || 14),
+  }
+  if (type === 'appointment_window_hours') {
+    return {
+      ...base,
+      hours_min: Number(f.hours_min) || 0,
+      hours_max: Number(f.hours_max) || 24,
+    }
+  }
+  if (type === 'days_after_session') {
+    return {
+      ...base,
+      min_days: Number(f.min_days) || 0,
+      max_days: Number(f.max_days) || Number(f.min_days) || 0,
+    }
+  }
+  if (type === 'ready_next_no_booking') {
+    return {
+      ...base,
+      lock_days: Number(f.lock_days) || 49,
+      extra_days_from_tage_wert: !!f.hat_tage_feld,
+      extra_days: f.hat_tage_feld ? 0 : 0,
+    }
+  }
+  if (type === 'seasonal_months') {
+    return {
+      ...base,
+      from_month: Number(f.from_month) || 4,
+      to_month: Number(f.to_month) || 9,
+    }
+  }
+  if (type === 'inactive_days' || type === 'no_case_after_days' || type === 'anamnesis_no_appointment') {
+    return { ...base, days: Number(f.tage_wert) || 7 }
+  }
+  return base
+}
+
 /**
  * Automations (Automatisierungen) — platform catalog of automatic customer messages.
  * Prototype parity: full admin CRUD; studios may only toggle aktiv + days when allowed.
+ * Runtime: declarative triggers + background scheduler + push.
  */
 const AdminAutomations = () => {
   const { i18n } = useTranslation()
@@ -142,15 +206,28 @@ const AdminAutomations = () => {
   const openEdit = (ruleId) => {
     const f = findRule(ruleId)
     if (!f) return
+    const t = f.rule.trigger || {}
     setEditRule(f.rule)
     setRuleForm({
+      ...emptyRuleForm(),
       label_de: f.rule.label_de || '',
       label_en: f.rule.label_en || '',
       beschreibung_de: f.rule.beschreibung_de || '',
       beschreibung_en: f.rule.beschreibung_en || '',
+      message_de: f.rule.message_de || '',
+      message_en: f.rule.message_en || '',
       hat_tage_feld: !!f.rule.hat_tage_feld,
       tage_wert: f.rule.tage_wert ?? 7,
       editierbar_studio: f.rule.editierbar_studio !== false,
+      trigger_type: t.type || 'on_first_check',
+      hours_min: t.hours_min ?? 22,
+      hours_max: t.hours_max ?? 26,
+      min_days: t.min_days ?? 1,
+      max_days: t.max_days ?? 2,
+      lock_days: t.lock_days ?? 49,
+      from_month: t.from_month ?? 4,
+      to_month: t.to_month ?? 9,
+      cooldown_tage: t.cooldown_tage ?? 14,
     })
   }
 
@@ -163,7 +240,7 @@ const AdminAutomations = () => {
       return
     }
     let tageWert = editRule.tage_wert
-    if (editRule.hat_tage_feld) {
+    if (editRule.hat_tage_feld || ruleForm.hat_tage_feld) {
       const mn = editRule.tage_min ?? 1
       const mx = editRule.tage_max ?? 365
       let v = parseInt(String(ruleForm.tage_wert), 10)
@@ -183,7 +260,10 @@ const AdminAutomations = () => {
       label_en: labelEn,
       beschreibung_de: ruleForm.beschreibung_de.trim(),
       beschreibung_en: ruleForm.beschreibung_en.trim(),
+      message_de: ruleForm.message_de.trim(),
+      message_en: ruleForm.message_en.trim(),
       tage_wert: tageWert,
+      trigger: buildTriggerFromForm(ruleForm),
     }))
     setEditRule(null)
     await persist(next)
@@ -210,10 +290,16 @@ const AdminAutomations = () => {
       toast.error(copy.labelsRequired || 'DE and EN labels are required')
       return
     }
+    const needsDays = [
+      'no_case_after_days',
+      'anamnesis_no_appointment',
+      'inactive_days',
+      'ready_next_no_booking',
+    ].includes(addRuleForm.trigger_type)
     let tageWert = null
     let tageMin = null
     let tageMax = null
-    if (addRuleForm.hat_tage_feld) {
+    if (addRuleForm.hat_tage_feld || needsDays) {
       let v = parseInt(String(addRuleForm.tage_wert), 10)
       if (Number.isNaN(v) || v < 1 || v > 365) {
         toast.error(copy.tageRangeNew || 'Days must be between 1 and 365')
@@ -230,12 +316,18 @@ const AdminAutomations = () => {
       label_en: labelEn,
       beschreibung_de: addRuleForm.beschreibung_de.trim(),
       beschreibung_en: addRuleForm.beschreibung_en.trim(),
+      message_de: addRuleForm.message_de.trim(),
+      message_en: addRuleForm.message_en.trim(),
       aktiv: true,
-      hat_tage_feld: !!addRuleForm.hat_tage_feld,
+      hat_tage_feld: !!(addRuleForm.hat_tage_feld || needsDays),
       tage_wert: tageWert,
       tage_min: tageMin,
       tage_max: tageMax,
       editierbar_studio: addRuleForm.editierbar_studio !== false,
+      trigger: buildTriggerFromForm({
+        ...addRuleForm,
+        hat_tage_feld: !!(addRuleForm.hat_tage_feld || needsDays),
+      }),
     }
     const next = {
       ...store,
@@ -316,8 +408,9 @@ const AdminAutomations = () => {
       <PageHeader
         title={copy.title || 'Automations'}
         subtitle={
+          copy.subtitleRuntime ||
           copy.subtitle ||
-          'Central management of automatic customer messages. Super Admin creates and edits rules; studios may only change rules marked as studio-editable.'
+          'Automatic customer messages. Active rules fire via background scheduler + push (even if the app is closed). New rules need a trigger type.'
         }
       />
 
@@ -539,9 +632,123 @@ const AdminAutomations = () => {
                 }
               />
             </label>
-            {editRule.hat_tage_feld ? (
+            <label className="flex flex-col gap-1.5">
+              <span className="text-studio-white text-[12px] font-semibold">
+                {copy.messageDe || 'Message text (DE)'}
+              </span>
+              <textarea
+                className={`${inputCls} min-h-[72px]`}
+                value={ruleForm.message_de}
+                onChange={(e) =>
+                  setRuleForm((f) => ({ ...f, message_de: e.target.value }))
+                }
+                placeholder="{{vorname}} supported"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-studio-white text-[12px] font-semibold">
+                {copy.messageEn || 'Message text (EN)'}
+              </span>
+              <textarea
+                className={`${inputCls} min-h-[72px]`}
+                value={ruleForm.message_en}
+                onChange={(e) =>
+                  setRuleForm((f) => ({ ...f, message_en: e.target.value }))
+                }
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-studio-white text-[12px] font-semibold">
+                {copy.trigger || 'Trigger'}
+              </span>
+              <select
+                className={inputCls}
+                value={ruleForm.trigger_type}
+                onChange={(e) =>
+                  setRuleForm((f) => ({ ...f, trigger_type: e.target.value }))
+                }
+              >
+                {TRIGGER_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Input
+              label={copy.cooldown || 'Cooldown (days)'}
+              type="number"
+              value={ruleForm.cooldown_tage}
+              onChange={(e) =>
+                setRuleForm((f) => ({ ...f, cooldown_tage: e.target.value }))
+              }
+            />
+            {ruleForm.trigger_type === 'appointment_window_hours' ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  label="Hours min"
+                  type="number"
+                  value={ruleForm.hours_min}
+                  onChange={(e) =>
+                    setRuleForm((f) => ({ ...f, hours_min: e.target.value }))
+                  }
+                />
+                <Input
+                  label="Hours max"
+                  type="number"
+                  value={ruleForm.hours_max}
+                  onChange={(e) =>
+                    setRuleForm((f) => ({ ...f, hours_max: e.target.value }))
+                  }
+                />
+              </div>
+            ) : null}
+            {ruleForm.trigger_type === 'days_after_session' ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  label="Min days"
+                  type="number"
+                  value={ruleForm.min_days}
+                  onChange={(e) =>
+                    setRuleForm((f) => ({ ...f, min_days: e.target.value }))
+                  }
+                />
+                <Input
+                  label="Max days"
+                  type="number"
+                  value={ruleForm.max_days}
+                  onChange={(e) =>
+                    setRuleForm((f) => ({ ...f, max_days: e.target.value }))
+                  }
+                />
+              </div>
+            ) : null}
+            {ruleForm.trigger_type === 'seasonal_months' ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  label="From month"
+                  type="number"
+                  value={ruleForm.from_month}
+                  onChange={(e) =>
+                    setRuleForm((f) => ({ ...f, from_month: e.target.value }))
+                  }
+                />
+                <Input
+                  label="To month"
+                  type="number"
+                  value={ruleForm.to_month}
+                  onChange={(e) =>
+                    setRuleForm((f) => ({ ...f, to_month: e.target.value }))
+                  }
+                />
+              </div>
+            ) : null}
+            {editRule.hat_tage_feld ||
+            ['no_case_after_days', 'anamnesis_no_appointment', 'inactive_days', 'ready_next_no_booking'].includes(
+              ruleForm.trigger_type
+            ) ? (
               <Input
-                label={`${copy.days || 'Days'} (${editRule.tage_min}–${editRule.tage_max})`}
+                label={`${copy.days || 'Days'} (${editRule.tage_min ?? 1}–${editRule.tage_max ?? 365})`}
                 type="number"
                 value={ruleForm.tage_wert}
                 onChange={(e) =>
@@ -602,6 +809,97 @@ const AdminAutomations = () => {
                 }
               />
             </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-studio-white text-[12px] font-semibold">
+                {copy.messageDe || 'Message text (DE)'}
+              </span>
+              <textarea
+                className={`${inputCls} min-h-[72px]`}
+                value={addRuleForm.message_de}
+                onChange={(e) =>
+                  setAddRuleForm((f) => ({ ...f, message_de: e.target.value }))
+                }
+                placeholder="Customer-facing text. {{vorname}} ok."
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-studio-white text-[12px] font-semibold">
+                {copy.messageEn || 'Message text (EN)'}
+              </span>
+              <textarea
+                className={`${inputCls} min-h-[72px]`}
+                value={addRuleForm.message_en}
+                onChange={(e) =>
+                  setAddRuleForm((f) => ({ ...f, message_en: e.target.value }))
+                }
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-studio-white text-[12px] font-semibold">
+                {copy.trigger || 'Trigger (required for auto-send)'}
+              </span>
+              <select
+                className={inputCls}
+                value={addRuleForm.trigger_type}
+                onChange={(e) =>
+                  setAddRuleForm((f) => ({ ...f, trigger_type: e.target.value }))
+                }
+              >
+                {TRIGGER_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Input
+              label={copy.cooldown || 'Cooldown (days)'}
+              type="number"
+              value={addRuleForm.cooldown_tage}
+              onChange={(e) =>
+                setAddRuleForm((f) => ({ ...f, cooldown_tage: e.target.value }))
+              }
+            />
+            {addRuleForm.trigger_type === 'appointment_window_hours' ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  label="Hours min"
+                  type="number"
+                  value={addRuleForm.hours_min}
+                  onChange={(e) =>
+                    setAddRuleForm((f) => ({ ...f, hours_min: e.target.value }))
+                  }
+                />
+                <Input
+                  label="Hours max"
+                  type="number"
+                  value={addRuleForm.hours_max}
+                  onChange={(e) =>
+                    setAddRuleForm((f) => ({ ...f, hours_max: e.target.value }))
+                  }
+                />
+              </div>
+            ) : null}
+            {addRuleForm.trigger_type === 'days_after_session' ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  label="Min days"
+                  type="number"
+                  value={addRuleForm.min_days}
+                  onChange={(e) =>
+                    setAddRuleForm((f) => ({ ...f, min_days: e.target.value }))
+                  }
+                />
+                <Input
+                  label="Max days"
+                  type="number"
+                  value={addRuleForm.max_days}
+                  onChange={(e) =>
+                    setAddRuleForm((f) => ({ ...f, max_days: e.target.value }))
+                  }
+                />
+              </div>
+            ) : null}
             <label className="flex flex-col gap-1.5">
               <span className="text-studio-white text-[12px] font-semibold">
                 {copy.hasDaysField || 'Days field?'}

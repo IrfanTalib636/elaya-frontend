@@ -15,8 +15,11 @@ import {
   approveStudioTransfer,
   rejectStudioTransfer,
 } from '../../api/studioTransfers'
+import { getApiErrorMessage } from '../../lib/apiError'
 import { PAGE_SIZE } from '../../constants/pagination'
 import useContent from '../../i18n/useContent'
+import useAuthStore from '../../store/authStore'
+import { isStudioWorkspaceActive } from '../../lib/adminWorkspaceSession'
 
 const STATUS_CLASS = {
   ausstehend: 'text-studio-gold-2',
@@ -36,6 +39,8 @@ const fmtDate = (d, language) =>
 const AdminTransfers = () => {
   const { t, language, adminPages } = useContent()
   const copy = adminPages.transfers
+  const exitStudioWorkspace = useAuthStore((s) => s.exitStudioWorkspace)
+  const studioWorkspace = useAuthStore((s) => s.studioWorkspace)
 
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState([])
@@ -45,6 +50,26 @@ const AdminTransfers = () => {
   const [rejectId, setRejectId] = useState(null)
   const [ablehnungsgrund, setAblehnungsgrund] = useState('')
   const [acting, setActing] = useState(null)
+
+  // If admin opened a studio dashboard (workspace JWT) then came back to
+  // /admin/transfers, restore the real admin token so Approve is allowed.
+  useEffect(() => {
+    if (!studioWorkspace?.studioId && !isStudioWorkspaceActive()) return undefined
+    let cancelled = false
+    ;(async () => {
+      try {
+        await exitStudioWorkspace()
+      } catch {
+        /* approve path still has backend fallback */
+      }
+      if (!cancelled) {
+        /* list will refresh via status/page deps after token restore */
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [studioWorkspace?.studioId, exitStudioWorkspace])
 
   const load = useCallback(
     async (pageNum, status, { background = false } = {}) => {
@@ -74,8 +99,8 @@ const AdminTransfers = () => {
       await approveStudioTransfer(id)
       toast.success(copy.approved)
       await load(page, statusFilter)
-    } catch {
-      toast.error(copy.approveError)
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, copy.approveError))
     } finally {
       setActing(null)
     }
@@ -95,8 +120,8 @@ const AdminTransfers = () => {
       setRejectId(null)
       setAblehnungsgrund('')
       await load(page, statusFilter)
-    } catch {
-      toast.error(copy.rejectError)
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, copy.rejectError))
     } finally {
       setActing(null)
     }

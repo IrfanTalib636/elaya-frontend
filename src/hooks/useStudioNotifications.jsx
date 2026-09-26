@@ -330,12 +330,73 @@ export default function useStudioNotifications({ enabled = true } = {}) {
         navigate('/studio/transfers')
         return
       }
+      if (notification.type === 'medical_clearance') {
+        const customerId =
+          notification.meta?.customer_id || notification.meta?.customerId
+        if (customerId) {
+          navigate(
+            `/studio/customers/${encodeURIComponent(customerId)}?focus=medical_clearance`
+          )
+        }
+        return
+      }
       if (notification.type === 'chat') {
         openCustomerChat(notification.conversation_id, null)
       }
     },
     [markRead, navigate, openCustomerChat, openSupportChat]
   )
+
+  const notifyMedicalClearance = useCallback(
+    (payload) => {
+      if (!enabled) return
+      const n = payload?.notification
+      if (!n || n.type !== 'medical_clearance') return
+      void refreshUnread()
+      void loadList()
+
+      const customerId = n.meta?.customer_id || n.meta?.customerId
+      const go = () => {
+        if (customerId) {
+          navigate(
+            `/studio/customers/${encodeURIComponent(customerId)}?focus=medical_clearance`
+          )
+        }
+      }
+
+      toast(
+        (t) => (
+          <button
+            type="button"
+            className="text-left w-full bg-transparent border-0 cursor-pointer p-0"
+            onClick={() => {
+              toast.dismiss(t.id)
+              go()
+            }}
+          >
+            <div className="font-semibold text-sm">{n.title}</div>
+            <div className="text-xs opacity-80 mt-0.5">{n.body}</div>
+          </button>
+        ),
+        { duration: 8000 }
+      )
+
+      if (document.hidden && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        const desktop = new Notification(n.title, {
+          body: n.body,
+          tag: customerId ? `clearance-${customerId}` : 'medical_clearance',
+        })
+        desktop.onclick = () => {
+          window.focus()
+          go()
+          desktop.close()
+        }
+      }
+    },
+    [enabled, loadList, navigate, refreshUnread]
+  )
+
+  useSocketEvent('notification:created', notifyMedicalClearance, { enabled })
 
   return {
     unreadCount,

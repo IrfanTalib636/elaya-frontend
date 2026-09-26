@@ -20,6 +20,7 @@ import CasePricingPanel from '../../components/case/CasePricingPanel'
 import CaseAnamnesisPanel from '../../components/anamnesis/CaseAnamnesisPanel'
 import CaseSignaturePanel from '../../components/signature/CaseSignaturePanel'
 import MedicalAmpelDot from '../../components/medical/MedicalAmpelDot'
+import MedicalClearancePanel from '../../components/medical/MedicalClearancePanel'
 import { Card, Badge, Button, Spinner, PageHeader, Modal, Input } from '../../components/ui'
 import useContent from '../../i18n/useContent'
 
@@ -529,6 +530,7 @@ const CaseDetail = () => {
   ]
 
   const [caseData, setCaseData] = useState(null)
+  const [medicalClearance, setMedicalClearance] = useState(null)
   const [sessions, setSessions] = useState([])
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -554,6 +556,7 @@ const CaseDetail = () => {
         ])
         const c = caseRes.data.data.case
         setCaseData(c)
+        setMedicalClearance(caseRes.data.data.medical_clearance || null)
         setStatus(c.status)
         setSessions(sessRes.data.data.sessions)
         setAppointments(apptRes.data.data.appointments ?? [])
@@ -734,6 +737,13 @@ const CaseDetail = () => {
           </Card>
 
           <CaseIntakePhotos caseData={caseData} />
+
+          <MedicalClearancePanel
+            customerId={customerId(caseData.customer)}
+            clearance={medicalClearance}
+            compact
+            onUpdated={setMedicalClearance}
+          />
 
           {/* Medical anamnesis */}
           <CaseAnamnesisPanel

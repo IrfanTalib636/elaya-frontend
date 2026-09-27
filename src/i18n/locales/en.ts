@@ -2922,7 +2922,51 @@ const en = {
       "subtitle": "Central control of pricing and session prediction. Only Super Admin can edit calculation rules. Studios use the simulator read-only.",
       "viewStudio": "Studio view",
       "viewAdmin": "Super Admin / Engine",
-      "studioHint": "Tattoo case simulator — computes live against the published engine."
+      "studioHint": "Tattoo case simulator — computes live against the published engine. To compare against unpublished draft rules, use the Impact preview under Super Admin / Engine → Versions & audit.",
+      "navSections": "Sections",
+      "sections": {
+        "how": "How ELAYA works",
+        "base": "Base & range",
+        "pricing": "Pricing",
+        "colors": "Colors & laser",
+        "fitzpatrick": "Fitzpatrick & skin",
+        "lifestyle": "Lifestyle",
+        "healing": "Healing & response",
+        "versions": "Versions & audit"
+      },
+      "sectionHints": {
+        "base": "Base session count, min/max range and the ± range around the predicted mid.",
+        "colors": "Colour and colour-count deltas, plus the laser-profile quality delta. Per-device colour matrices live in the Lasers catalog.",
+        "fitzpatrick": "Skin type, body location, density, saturation, cover-up, tattoo age, prior treatment, tattoo type and removal goal deltas.",
+        "lifestyle": "The 7-factor lifestyle composite, its score-to-multiplier thresholds, and the BMI floors that raise the composite score.",
+        "healing": "Healing history and lightening-rate deltas (once real sessions exist), plus aftercare-commitment extra max sessions."
+      },
+      "how": {
+        "title": "How does ELAYA work?",
+        "priceTitle": "Price calculation",
+        "priceText": "Price per session = MAX(minimum price, area cm² × base price per cm²), rounded up to CHF 5. Colours do NOT change the price — they only change the number of sessions, via the delta system below.",
+        "deltaTitle": "Session deltas",
+        "deltaText": "Every tattoo characteristic (skin type, body location, colours, density, age, cover-up, …) adds or removes sessions from the base value. With multiple colours: Color Impact = MAX(hardest colour delta, colour-count delta) — deltas are not simply summed.",
+        "lifestyleTitle": "Lifestyle composite",
+        "lifestyleText": "Seven lifestyle factors (each scored 1–5) are averaged into one composite score, which maps to a session-count multiplier via the Lifestyle thresholds table. A BMI of 30+/35+ floors the composite score at a configurable minimum.",
+        "aiTitle": "Link to the AI Training Center",
+        "aiText": "These engine values feed into the ELAYA AI Training Center. Changes are versioned and used for AI calibration."
+      },
+      "versionsHint": "Pricing and session prediction publish independently today — publishing one domain's draft does not affect the other's pending draft.",
+      "impact": {
+        "title": "Impact preview",
+        "sampleCase": "Sample case",
+        "sampleCaseName": "Medium colourful tattoo (40 cm²)",
+        "live": "Live",
+        "draft": "Draft",
+        "pricePerSession": "Price / session",
+        "sessions": "Predicted sessions",
+        "total": "Estimated total",
+        "hasDraft": "Pending draft — not yet published",
+        "noChanges": "No pending draft — showing published rules for both domains.",
+        "loadFailed": "Could not load impact preview",
+        "sharedInputsHint": "Same sample case as the pricing / session-prediction live calculators, so pricing and session-prediction drafts compare like-for-like."
+      }
     },
     "engineSimulator": {
       "previewFailed": "Could not run live calculation",
@@ -4101,7 +4145,13 @@ const en = {
         "low": "Low (+ max sessions)",
         "medium": "Medium",
         "high": "High"
-      }
+      },
+      "colorLaserMatrixHint": "Each laser device has its own colour-delta profile in the Lasers catalog. The deltas below are the platform default used when no per-device matrix applies.",
+      "colorLaserMatrixLink": "Manage lasers & colour matrix",
+      "bmiFloorsTitle": "BMI floors (minimum score)",
+      "bmiFloorsHint": "If BMI is at or above the threshold, the lifestyle composite score is floored at this minimum — it can only raise the score, never lower it.",
+      "bmiFloorMinBmi": "BMI ≥",
+      "bmiFloorMinScore": "Minimum score"
     },
     "anamnesis": {
       "unchangedConfirmed": "Health status confirmed unchanged",

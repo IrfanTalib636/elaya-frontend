@@ -1,9 +1,13 @@
+import { Link } from 'react-router-dom'
+import { ArrowUpRight } from 'lucide-react'
 import { Input } from '../ui'
 import {
   AFTERCARE_FIELDS,
+  DEFAULT_BMI_FLOORS,
   LIFESTYLE_SCORE_GROUPS,
   SESSION_BASE_FIELDS,
   TATTOO_DELTA_GROUPS,
+  TATTOO_GROUP_SECTION,
 } from './sessionPredictionFields'
 import SessionPredictionLiveCalculator from './SessionPredictionLiveCalculator'
 import useContent from '../../i18n/useContent'
@@ -57,6 +61,10 @@ const PlausibilityPanel = ({ report }) => {
  * Shared editor for platform Sitzungsprognose parameters.
  * Admin: editable. Studio: pass disabled.
  * Live calculator shows effect of current `values` immediately.
+ *
+ * `section` (optional) limits rendering to one Super Admin Engine nav section
+ * — 'base' | 'colors' | 'fitzpatrick' | 'lifestyle' | 'healing'. Omit (or pass
+ * a falsy value) to render the full form, as Studio-Einstellungen still does.
  */
 const SessionPredictionForm = ({
   values,
@@ -64,9 +72,12 @@ const SessionPredictionForm = ({
   disabled = false,
   plausibility = null,
   savedBaseline = null,
+  section = null,
 }) => {
   const { components } = useContent()
   const copy = components.sessionPrediction
+
+  const show = (id) => !section || section === id
 
   const setBase = (key, value) => onChange({ ...values, [key]: value })
 
@@ -90,143 +101,209 @@ const SessionPredictionForm = ({
     onChange({ ...values, lifestyle_bands: next })
   }
 
+  const setBmiFloor = (index, key, value) => {
+    const rows = values?.lifestyle_bmi_floors?.length
+      ? values.lifestyle_bmi_floors
+      : DEFAULT_BMI_FLOORS
+    const next = rows.map((row, i) => (i === index ? { ...row, [key]: value } : row))
+    onChange({ ...values, lifestyle_bmi_floors: next })
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4 text-studio-w3">
-        {copy.formulaHint}
-      </p>
+      {show('base') ? (
+        <>
+          <p className="text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4 text-studio-w3">
+            {copy.formulaHint}
+          </p>
 
-      {values ? (
-        <SessionPredictionLiveCalculator values={values} savedBaseline={savedBaseline} />
+          {values ? (
+            <SessionPredictionLiveCalculator values={values} savedBaseline={savedBaseline} />
+          ) : null}
+
+          <PlausibilityPanel report={plausibility} />
+
+          <div>
+            <p className="text-[12px] font-semibold m-0 mb-3">{copy.baseSection}</p>
+            <FieldGrid>
+              {SESSION_BASE_FIELDS.map(({ key, step, hintKey }) => (
+                <NumberField
+                  key={key}
+                  id={`sp-${key}`}
+                  label={copy.base[key]}
+                  step={step}
+                  hint={hintKey ? copy.baseHints[hintKey] : undefined}
+                  value={values?.[key]}
+                  onChange={(v) => setBase(key, v)}
+                  disabled={disabled}
+                />
+              ))}
+            </FieldGrid>
+          </div>
+        </>
       ) : null}
 
-      <PlausibilityPanel report={plausibility} />
-
-      <div>
-        <p className="text-[12px] font-semibold m-0 mb-3">{copy.baseSection}</p>
-        <FieldGrid>
-          {SESSION_BASE_FIELDS.map(({ key, step, hintKey }) => (
-            <NumberField
-              key={key}
-              id={`sp-${key}`}
-              label={copy.base[key]}
-              step={step}
-              hint={hintKey ? copy.baseHints[hintKey] : undefined}
-              value={values?.[key]}
-              onChange={(v) => setBase(key, v)}
-              disabled={disabled}
-            />
-          ))}
-        </FieldGrid>
-      </div>
-
-      {TATTOO_DELTA_GROUPS.map((group) => (
-        <div key={group.key}>
-          <div className="h-px bg-elaya-border mb-5" />
-          <p className="text-[12px] font-semibold m-0 mb-3">{copy.tattooGroupTitles[group.key]}</p>
-          <FieldGrid>
-            {group.fields.map(({ key }) => (
-              <NumberField
-                key={key}
-                id={`sp-delta-${group.key}-${key}`}
-                label={copy.tattooFields[group.key]?.[key] || key}
-                step="1"
-                value={values?.tattoo_deltas?.[group.key]?.[key]}
-                onChange={(v) => setMap('tattoo_deltas', group.key, key, v)}
-                disabled={disabled}
-              />
-            ))}
-          </FieldGrid>
+      {section === 'colors' ? (
+        <div className="rounded-[10px] border border-studio-gold/25 bg-studio-gold/5 px-3 py-2.5 flex items-start justify-between gap-3 flex-wrap">
+          <p className="text-[11px] text-studio-w1 m-0 max-w-[520px]">
+            {copy.colorLaserMatrixHint}
+          </p>
+          <Link
+            to="/admin/lasers"
+            className="inline-flex items-center gap-1 text-[12px] font-semibold text-studio-gold-2 whitespace-nowrap hover:underline"
+          >
+            {copy.colorLaserMatrixLink}
+            <ArrowUpRight size={13} />
+          </Link>
         </div>
-      ))}
+      ) : null}
 
-      <div>
-        <div className="h-px bg-elaya-border mb-5" />
-        <p className="text-[12px] font-semibold m-0 mb-1">{copy.lifestyleComposite}</p>
-        <p className="text-[11px] text-studio-w3 m-0 mb-3">
-          {copy.lifestyleCompositeHint}
-        </p>
-      </div>
+      {TATTOO_DELTA_GROUPS.filter((group) => show(TATTOO_GROUP_SECTION[group.key])).map(
+        (group, i) => (
+          <div key={group.key}>
+            {i > 0 || !section ? <div className="h-px bg-elaya-border mb-5" /> : null}
+            <p className="text-[12px] font-semibold m-0 mb-3">{copy.tattooGroupTitles[group.key]}</p>
+            <FieldGrid>
+              {group.fields.map(({ key }) => (
+                <NumberField
+                  key={key}
+                  id={`sp-delta-${group.key}-${key}`}
+                  label={copy.tattooFields[group.key]?.[key] || key}
+                  step="1"
+                  value={values?.tattoo_deltas?.[group.key]?.[key]}
+                  onChange={(v) => setMap('tattoo_deltas', group.key, key, v)}
+                  disabled={disabled}
+                />
+              ))}
+            </FieldGrid>
+          </div>
+        )
+      )}
 
-      {LIFESTYLE_SCORE_GROUPS.map((group) => (
-        <div key={group.key}>
-          <p className="text-[12px] font-semibold m-0 mb-3">{copy.lifestyleGroupTitles[group.key]}</p>
-          <FieldGrid>
-            {group.fields.map(({ key }) => (
-              <NumberField
-                key={key}
-                id={`sp-life-${group.key}-${key}`}
-                label={copy.lifestyleFields[group.key]?.[key] || key}
-                step="0.1"
-                value={values?.lifestyle_scores?.[group.key]?.[key]}
-                onChange={(v) => setMap('lifestyle_scores', group.key, key, v)}
-                disabled={disabled}
-              />
-            ))}
-          </FieldGrid>
-        </div>
-      ))}
+      {show('lifestyle') ? (
+        <>
+          <div>
+            {!section ? <div className="h-px bg-elaya-border mb-5" /> : null}
+            <p className="text-[12px] font-semibold m-0 mb-1">{copy.lifestyleComposite}</p>
+            <p className="text-[11px] text-studio-w3 m-0 mb-3">
+              {copy.lifestyleCompositeHint}
+            </p>
+          </div>
 
-      <div>
-        <div className="h-px bg-elaya-border mb-5" />
-        <p className="text-[12px] font-semibold m-0 mb-3">{copy.lifestyleMultipliers}</p>
-        <div className="flex flex-col gap-3">
-          {(values?.lifestyle_bands || []).map((band, index) => (
-            <div key={`band-${index}`} className="grid grid-cols-3 gap-3">
-              <NumberField
-                id={`sp-band-${index}-avg`}
-                label={copy.avgUpTo}
-                step="0.1"
-                value={band.max_avg}
-                onChange={(v) => setBand(index, 'max_avg', v)}
-                disabled={disabled}
-              />
-              <NumberField
-                id={`sp-band-${index}-score`}
-                label={copy.score}
-                step="1"
-                value={band.score}
-                onChange={(v) => setBand(index, 'score', v)}
-                disabled={disabled}
-              />
-              <NumberField
-                id={`sp-band-${index}-mult`}
-                label={copy.multiplier}
-                step="0.05"
-                value={band.multiplier}
-                onChange={(v) => setBand(index, 'multiplier', v)}
-                disabled={disabled}
-              />
+          {LIFESTYLE_SCORE_GROUPS.map((group) => (
+            <div key={group.key}>
+              <p className="text-[12px] font-semibold m-0 mb-3">{copy.lifestyleGroupTitles[group.key]}</p>
+              <FieldGrid>
+                {group.fields.map(({ key }) => (
+                  <NumberField
+                    key={key}
+                    id={`sp-life-${group.key}-${key}`}
+                    label={copy.lifestyleFields[group.key]?.[key] || key}
+                    step="0.1"
+                    value={values?.lifestyle_scores?.[group.key]?.[key]}
+                    onChange={(v) => setMap('lifestyle_scores', group.key, key, v)}
+                    disabled={disabled}
+                  />
+                ))}
+              </FieldGrid>
             </div>
           ))}
-        </div>
-      </div>
 
-      <div>
-        <div className="h-px bg-elaya-border mb-5" />
-        <p className="text-[12px] font-semibold m-0 mb-3">{copy.aftercareSection}</p>
-        <FieldGrid>
-          {AFTERCARE_FIELDS.map(({ key }) => (
-            <NumberField
-              key={key}
-              id={`sp-aftercare-${key}`}
-              label={copy.aftercareFields[key]}
-              step="1"
-              value={values?.aftercare_extra_max?.[key]}
-              onChange={(v) =>
-                onChange({
-                  ...values,
-                  aftercare_extra_max: {
-                    ...(values.aftercare_extra_max || {}),
-                    [key]: v,
-                  },
-                })
-              }
-              disabled={disabled}
-            />
-          ))}
-        </FieldGrid>
-      </div>
+          <div>
+            <div className="h-px bg-elaya-border mb-5" />
+            <p className="text-[12px] font-semibold m-0 mb-3">{copy.lifestyleMultipliers}</p>
+            <div className="flex flex-col gap-3">
+              {(values?.lifestyle_bands || []).map((band, index) => (
+                <div key={`band-${index}`} className="grid grid-cols-3 gap-3">
+                  <NumberField
+                    id={`sp-band-${index}-avg`}
+                    label={copy.avgUpTo}
+                    step="0.1"
+                    value={band.max_avg}
+                    onChange={(v) => setBand(index, 'max_avg', v)}
+                    disabled={disabled}
+                  />
+                  <NumberField
+                    id={`sp-band-${index}-score`}
+                    label={copy.score}
+                    step="1"
+                    value={band.score}
+                    onChange={(v) => setBand(index, 'score', v)}
+                    disabled={disabled}
+                  />
+                  <NumberField
+                    id={`sp-band-${index}-mult`}
+                    label={copy.multiplier}
+                    step="0.05"
+                    value={band.multiplier}
+                    onChange={(v) => setBand(index, 'multiplier', v)}
+                    disabled={disabled}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="h-px bg-elaya-border mb-5" />
+            <p className="text-[12px] font-semibold m-0 mb-1">{copy.bmiFloorsTitle}</p>
+            <p className="text-[11px] text-studio-w3 m-0 mb-3">{copy.bmiFloorsHint}</p>
+            <div className="flex flex-col gap-3">
+              {(values?.lifestyle_bmi_floors?.length
+                ? values.lifestyle_bmi_floors
+                : DEFAULT_BMI_FLOORS
+              ).map((row, index) => (
+                <div key={`bmi-floor-${index}`} className="grid grid-cols-2 gap-3 max-w-[360px]">
+                  <NumberField
+                    id={`sp-bmi-floor-${index}-min`}
+                    label={copy.bmiFloorMinBmi}
+                    step="0.5"
+                    value={row.min_bmi}
+                    onChange={(v) => setBmiFloor(index, 'min_bmi', v)}
+                    disabled={disabled}
+                  />
+                  <NumberField
+                    id={`sp-bmi-floor-${index}-score`}
+                    label={copy.bmiFloorMinScore}
+                    step="1"
+                    value={row.min_score}
+                    onChange={(v) => setBmiFloor(index, 'min_score', v)}
+                    disabled={disabled}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {show('healing') ? (
+        <div>
+          <div className="h-px bg-elaya-border mb-5" />
+          <p className="text-[12px] font-semibold m-0 mb-3">{copy.aftercareSection}</p>
+          <FieldGrid>
+            {AFTERCARE_FIELDS.map(({ key }) => (
+              <NumberField
+                key={key}
+                id={`sp-aftercare-${key}`}
+                label={copy.aftercareFields[key]}
+                step="1"
+                value={values?.aftercare_extra_max?.[key]}
+                onChange={(v) =>
+                  onChange({
+                    ...values,
+                    aftercare_extra_max: {
+                      ...(values.aftercare_extra_max || {}),
+                      [key]: v,
+                    },
+                  })
+                }
+                disabled={disabled}
+              />
+            ))}
+          </FieldGrid>
+        </div>
+      ) : null}
     </div>
   )
 }

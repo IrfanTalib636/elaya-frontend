@@ -2924,7 +2924,51 @@ const de: TranslationSchema = {
       "subtitle": "Zentrale Steuerung von Preisen und Sitzungsprognose. Nur Super Admin kann Rechenregeln ändern. Studios nutzen den Simulator nur lesend.",
       "viewStudio": "Studio-Ansicht",
       "viewAdmin": "Super Admin / Engine",
-      "studioHint": "Tattoo-Case-Simulator — rechnet live gegen die veröffentlichte Engine."
+      "studioHint": "Tattoo-Case-Simulator — rechnet live gegen die veröffentlichte Engine. Zum Vergleich mit unveröffentlichten Draft-Regeln: Impact-Vorschau unter Super Admin / Engine → Versionen & Audit.",
+      "navSections": "Bereiche",
+      "sections": {
+        "how": "Wie funktioniert ELAYA?",
+        "base": "Basis & Bereich",
+        "pricing": "Preise",
+        "colors": "Farben & Laser",
+        "fitzpatrick": "Fitzpatrick & Haut",
+        "lifestyle": "Lifestyle",
+        "healing": "Healing & Response",
+        "versions": "Versionen & Audit"
+      },
+      "sectionHints": {
+        "base": "Basis-Sitzungsanzahl, Min/Max-Bereich und die ± Spanne um die vorhergesagte Mitte.",
+        "colors": "Farb- und Farbanzahl-Deltas sowie das Laserprofil-Qualitätsdelta. Pro-Gerät-Farbmatrizen liegen im Laser-Katalog.",
+        "fitzpatrick": "Hauttyp-, Körperstelle-, Dichte-, Sättigung-, Cover-up-, Tattoo-Alter-, Vorbehandlung-, Tattoo-Art- und Ziel-Deltas.",
+        "lifestyle": "Der 7-Faktoren-Lifestyle-Composite-Score, seine Score-zu-Multiplikator-Schwellen und die BMI-Mindestwerte, die den Composite-Score anheben.",
+        "healing": "Healing- und Lightening-Rate-Deltas (sobald echte Sitzungen existieren) sowie Nachsorge-Bereitschaft (+ Max-Sitzungen)."
+      },
+      "how": {
+        "title": "Wie funktioniert ELAYA?",
+        "priceTitle": "Preisberechnung",
+        "priceText": "Preis pro Sitzung = MAX(Mindestpreis, Fläche cm² × Basispreis pro cm²), aufgerundet auf CHF 5. Farben ändern den Preis NICHT — sie beeinflussen nur die Sitzungsanzahl, über das Delta-System unten.",
+        "deltaTitle": "Sitzungs-Deltas",
+        "deltaText": "Jedes Tattoo-Merkmal (Hauttyp, Körperstelle, Farben, Dichte, Alter, Cover-up, …) addiert oder entfernt Sitzungen von der Basis. Bei mehreren Farben gilt: Color Impact = MAX(schwierigste Farbe, Farbanzahl-Delta) — Deltas werden nicht einfach addiert.",
+        "lifestyleTitle": "Lifestyle Composite",
+        "lifestyleText": "Sieben Lifestyle-Faktoren (je 1–5 bewertet) werden zu einem Composite Score gemittelt, der über die Lifestyle-Schwellentabelle auf einen Sitzungs-Multiplikator abgebildet wird. Ein BMI ≥30/35 hebt den Composite Score auf einen konfigurierbaren Mindestwert an.",
+        "aiTitle": "Verbindung zum AI Training Center",
+        "aiText": "Diese Engine-Werte fliessen in das ELAYA AI Training Center ein. Änderungen werden versioniert und für die KI-Kalibrierung verwendet."
+      },
+      "versionsHint": "Preise und Sitzungsprognose werden heute unabhängig veröffentlicht — das Veröffentlichen eines Bereichs beeinflusst den ausstehenden Draft des anderen nicht.",
+      "impact": {
+        "title": "Impact-Vorschau",
+        "sampleCase": "Beispiel-Case",
+        "sampleCaseName": "Mittelgrosses bunttes Tattoo (40 cm²)",
+        "live": "Live",
+        "draft": "Draft",
+        "pricePerSession": "Preis / Sitzung",
+        "sessions": "Prognostizierte Sitzungen",
+        "total": "Geschätzte Gesamtkosten",
+        "hasDraft": "Ausstehender Draft — noch nicht veröffentlicht",
+        "noChanges": "Kein ausstehender Draft — zeigt veröffentlichte Regeln für beide Bereiche.",
+        "loadFailed": "Impact-Vorschau konnte nicht geladen werden",
+        "sharedInputsHint": "Gleicher Beispiel-Case wie die Live-Rechner für Preise / Sitzungsprognose — so lassen sich Preis- und Sitzungsprognose-Drafts direkt vergleichen."
+      }
     },
     "engineSimulator": {
       "previewFailed": "Live-Berechnung fehlgeschlagen",
@@ -4103,7 +4147,13 @@ const de: TranslationSchema = {
         "low": "Niedrig (+ Max-Sitzungen)",
         "medium": "Mittel",
         "high": "Hoch"
-      }
+      },
+      "colorLaserMatrixHint": "Jedes Lasergerät hat sein eigenes Farb-Delta-Profil im Laser-Katalog. Die untenstehenden Deltas sind der Plattform-Standard, wenn keine Pro-Gerät-Matrix greift.",
+      "colorLaserMatrixLink": "Laser & Farbmatrix verwalten",
+      "bmiFloorsTitle": "BMI-Mindestwerte (Minimum-Score)",
+      "bmiFloorsHint": "Ist der BMI gleich oder über der Schwelle, wird der Lifestyle-Composite-Score auf diesen Mindestwert angehoben — er kann den Score nur erhöhen, nie senken.",
+      "bmiFloorMinBmi": "BMI ≥",
+      "bmiFloorMinScore": "Mindest-Score"
     },
     "anamnesis": {
       "unchangedConfirmed": "Gesundheitszustand unverändert bestätigt",

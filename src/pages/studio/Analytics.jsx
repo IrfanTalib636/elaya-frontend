@@ -1,5 +1,6 @@
-import { AlertCircle, BarChart2, Calendar, TrendingUp, Users } from 'lucide-react'
+import { AlertCircle, BarChart2, Calendar, Download, TrendingUp, Users } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
 import {
   Bar,
   BarChart,
@@ -12,8 +13,9 @@ import {
   XAxis, YAxis,
 } from 'recharts'
 import { getAnalyticsSummary } from '../../api/analytics'
+import { getEffectiveFeatures } from '../../api/config'
 import { PIPELINE_STAGES } from '../../constants/pipeline'
-import { Card, PageHeader, Spinner } from '../../components/ui'
+import { Card, PageHeader, Spinner, Button } from '../../components/ui'
 import useContent from '../../i18n/useContent'
 
 // ── Formatters ─────────────────────────────────────────────────────────────
@@ -90,6 +92,16 @@ const StudioAnalytics = () => {
   const [period, setPeriod] = useState('month')
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState(null)
+  const [exportEnabled, setExportEnabled] = useState(true)
+
+  useEffect(() => {
+    getEffectiveFeatures()
+      .then((res) => {
+        const features = res?.data?.data?.features || {}
+        setExportEnabled(features.export_rechte !== false)
+      })
+      .catch(() => setExportEnabled(true))
+  }, [])
 
   const load = useCallback(async (p) => {
     setLoading(true)
@@ -125,6 +137,35 @@ const StudioAnalytics = () => {
 
   const avgPerSession = stats.sessionsDone > 0 ? stats.revenue / stats.sessionsDone : 0
 
+  const exportCsv = () => {
+    if (!exportEnabled) {
+      toast.error(copy.exportDisabled || 'Export requires the export_rechte feature flag')
+      return
+    }
+    const rows = [
+      ['Month', 'Revenue (CHF)'],
+      ...chartData.map((row) => [row.label, row.revenue ?? 0]),
+      [],
+      ['Metric', 'Value'],
+      ['Total treatment revenue', stats.revenue],
+      ['Sessions done', stats.sessionsDone],
+      ['No-shows', stats.noShows],
+      ['Appointments total', stats.apptTotal],
+      ['Appointments cancelled', stats.apptCancelled],
+    ]
+    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `elaya-analytics-${period}.csv`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+    toast.success(copy.exportSuccess || 'CSV exported')
+  }
+
   const pieData = PIPELINE_STAGES.flatMap((s, i) => {
     const count = stats.pipeline[s.value] ?? 0
     return count > 0
@@ -135,21 +176,37 @@ const StudioAnalytics = () => {
   return (
     <div className="p-6 max-w-[1100px]">
       <PageHeader title={copy.title} subtitle={copy.subtitle}>
-        <div className="flex gap-1 bg-studio-bg-3 p-1 rounded-[10px] border border-elaya-border">
-          {PERIODS.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setPeriod(p.id)}
-              className={`px-3 py-1.5 rounded-[7px] text-[11px] font-semibold transition-colors cursor-pointer border-0 ${
-                period === p.id
-                  ? 'bg-studio-gold text-white'
-                  : 'bg-transparent text-studio-w2 hover:text-studio-white'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 bg-studio-bg-3 p-1 rounded-[10px] border border-elaya-border">
+            {PERIODS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setPeriod(p.id)}
+                className={`px-3 py-1.5 rounded-[7px] text-[11px] font-semibold transition-colors cursor-pointer border-0 ${
+                  period === p.id
+                    ? 'bg-studio-gold text-white'
+                    : 'bg-transparent text-studio-w2 hover:text-studio-white'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={exportCsv}
+            title={
+              exportEnabled
+                ? copy.exportCsv || 'Export CSV'
+                : copy.exportDisabled || 'Export requires the export_rechte feature flag'
+            }
+            className={!exportEnabled ? 'opacity-60' : ''}
+          >
+            <Download size={14} className="mr-1.5 inline" />
+            {copy.exportCsv || 'Export CSV'}
+          </Button>
         </div>
       </PageHeader>
 

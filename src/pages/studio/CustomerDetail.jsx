@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ChevronRight, Plus, Pencil, Calendar, ArrowLeftRight, MessageCircle, ScrollText, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCustomer, updateCustomer } from '../../api/customers'
@@ -10,6 +10,7 @@ import { Card, Badge, Button, Input, Spinner, PageHeader, Modal } from '../../co
 import CaseForm from '../../components/forms/CaseForm'
 import CustomerAvatar from '../../components/CustomerAvatar'
 import MedicalAmpelDot from '../../components/medical/MedicalAmpelDot'
+import MedicalClearancePanel from '../../components/medical/MedicalClearancePanel'
 import ActivityFeed from '../../components/activity/ActivityFeed'
 import useContent from '../../i18n/useContent'
 import { PIPELINE_VALUES } from '../../constants/pipeline'
@@ -163,6 +164,7 @@ const CaseRow = ({ c, onClick, copy }) => (
 const CustomerDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { t, studioPages, studioActivity: activityCopy } = useContent()
   const copy = studioPages.customerDetail
   const PIPELINE_STAGES = PIPELINE_VALUES
@@ -189,6 +191,23 @@ const CustomerDetail = () => {
   const [showEditModal,  setShowEditModal]  = useState(false)
   const [editForm,       setEditForm]       = useState({})
   const [savingEdit,     setSavingEdit]     = useState(false)
+
+  useEffect(() => {
+    if (!customer || searchParams.get('focus') !== 'medical_clearance') return
+    const el = document.getElementById('medical-clearance')
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      el.classList.add('ring-2', 'ring-studio-gold-2')
+      const tmr = setTimeout(() => {
+        el.classList.remove('ring-2', 'ring-studio-gold-2')
+        const next = new URLSearchParams(searchParams)
+        next.delete('focus')
+        setSearchParams(next, { replace: true })
+      }, 2500)
+      return () => clearTimeout(tmr)
+    }
+    return undefined
+  }, [customer, searchParams, setSearchParams])
 
   useEffect(() => {
     const load = async () => {
@@ -375,6 +394,17 @@ const CustomerDetail = () => {
           </p>
         </div>
       )}
+
+      <div className="mb-5">
+        <MedicalClearancePanel
+          customerId={id}
+          clearance={customer.medical_clearance}
+          readOnly={!!customer.read_only}
+          onUpdated={(next) =>
+            setCustomer((prev) => (prev ? { ...prev, medical_clearance: next } : prev))
+          }
+        />
+      </div>
 
       <div className="flex gap-5 items-start">
 

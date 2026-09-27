@@ -1,10 +1,10 @@
-import { useState } from 'react'
-import { useNavigate, NavLink } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useLocation, NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Calendar, CalendarDays, BarChart2, Heart,
   ShoppingBag, Coins, Settings, LogOut, ChevronLeft, ChevronRight,
   FolderOpen, ClipboardList, ArrowLeftRight, MessageCircle, ListChecks,
-  History, Sparkles, Headphones, Microscope,
+  History, Sparkles, Headphones, Microscope, Lock,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../ElayaLogo'
@@ -12,6 +12,42 @@ import StudioNotificationBell from '../studio/StudioNotificationBell'
 import AdminStudioWorkspaceBanner from '../admin/AdminStudioWorkspaceBanner'
 import useAuthStore from '../../store/authStore'
 import useContent from '../../i18n/useContent'
+import { getEffectiveFeatures } from '../../api/config'
+
+/**
+ * Studio route → required feature key. Backend enforces the real gate;
+ * this only avoids rendering a page whose API calls would 403.
+ */
+const ROUTE_FEATURE_MAP = {
+  '/studio/appointments': 'terminbuchung',
+  '/studio/today': 'terminbuchung',
+  '/studio/cases': 'case_basic',
+  '/studio/sessions': 'sitzungsprotokoll',
+  '/studio/analytics': 'analytics',
+  '/studio/crm': 'crm_leads',
+  '/studio/elaya': 'ki_studio_assistent',
+  '/studio/platform-chat': 'studio_chat',
+  '/studio/chat': 'chat_studio_kunde',
+  '/studio/shop': 'elayshop',
+  '/studio/transfers': 'studio_wechsel',
+  '/studio/elaycoins': 'elaycoins_basic',
+  '/studio/simulator': 'tattoocase_simulator',
+}
+
+/** Fallback panel shown instead of a gated page's content. */
+const FeatureLocked = ({ label }) => (
+  <div className="flex flex-col items-center justify-center gap-3 py-24 px-6 text-center">
+    <div className="flex items-center justify-center w-12 h-12 rounded-full bg-studio-bg-3 border border-elaya-border">
+      <Lock size={18} className="text-studio-w3" />
+    </div>
+    <p className="m-0 text-studio-white text-[15px] font-semibold">
+      {label || 'Diese Funktion ist für dein Paket nicht aktiviert.'}
+    </p>
+    <p className="m-0 text-studio-w3 text-[13px] max-w-[420px]">
+      Bitte kontaktiere Elaya, um dieses Feature freizuschalten.
+    </p>
+  </div>
+)
 
 // ── NavItem ────────────────────────────────────────────────────────────────
 const NavItem = ({ to, icon: Icon, label, collapsed, end }) => (
@@ -45,6 +81,7 @@ const NavItem = ({ to, icon: Icon, label, collapsed, end }) => (
 // ── Layout ────────────────────────────────────────────────────────────────
 const StudioLayout = ({ children }) => {
   const navigate = useNavigate()
+  const location = useLocation()
   const logout   = useAuthStore((s) => s.logout)
   const user     = useAuthStore((s) => s.user)
   const profile  = useAuthStore((s) => s.profile)
@@ -52,36 +89,73 @@ const StudioLayout = ({ children }) => {
   const exitStudioWorkspace = useAuthStore((s) => s.exitStudioWorkspace)
   const { common, toast: toastMessages, studioNav, t } = useContent()
 
+  // Effective feature flags for the current studio — drives nav visibility
+  // and a soft route guard. Backend still enforces via requireFeature.
+  const [features, setFeatures] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getEffectiveFeatures()
+      .then((res) => {
+        if (!cancelled) setFeatures(res?.data?.data?.features || {})
+      })
+      .catch(() => {
+        if (!cancelled) setFeatures({})
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const featuresLoaded = features !== null
+  const isOn = (key) => !featuresLoaded || features[key] !== false
+
   const NAV_SECTIONS = [
     {
       label: t('studio.sectionStudio'),
       items: [
         { to: '/studio/dashboard',    icon: LayoutDashboard, label: studioNav.dashboard },
-        { to: '/studio/appointments', icon: Calendar,        label: studioNav.appointments },
-        { to: '/studio/today',        icon: CalendarDays,    label: studioNav.today },
+        { to: '/studio/appointments', icon: Calendar,        label: studioNav.appointments, feature: 'terminbuchung' },
+        { to: '/studio/today',        icon: CalendarDays,    label: studioNav.today, feature: 'terminbuchung' },
         { to: '/studio/customers',    icon: Users,           label: studioNav.customers },
-        { to: '/studio/cases',        icon: FolderOpen,      label: studioNav.cases, end: true },
-        { to: '/studio/sessions',     icon: ClipboardList,   label: studioNav.sessions, end: true },
-        { to: '/studio/analytics',    icon: BarChart2,       label: studioNav.analytics },
+        { to: '/studio/cases',        icon: FolderOpen,      label: studioNav.cases, end: true, feature: 'case_basic' },
+        { to: '/studio/sessions',     icon: ClipboardList,   label: studioNav.sessions, end: true, feature: 'sitzungsprotokoll' },
+        { to: '/studio/analytics',    icon: BarChart2,       label: studioNav.analytics, feature: 'analytics' },
+        // Aftercare page still works without AI — only its KI panel gates internally.
         { to: '/studio/aftercare',    icon: Heart,           label: studioNav.aftercare },
-        { to: '/studio/crm',          icon: ListChecks,      label: studioNav.crm },
+        { to: '/studio/crm',          icon: ListChecks,      label: studioNav.crm, feature: 'crm_leads' },
         { to: '/studio/activity',     icon: History,         label: studioNav.activity },
-        { to: '/studio/elaya',         icon: Sparkles,        label: studioNav.elayaChat },
-        { to: '/studio/platform-chat', icon: Headphones,      label: studioNav.platformChat },
-        { to: '/studio/chat',          icon: MessageCircle,   label: studioNav.chat },
+        { to: '/studio/elaya',         icon: Sparkles,        label: studioNav.elayaChat, feature: 'ki_studio_assistent' },
+        { to: '/studio/platform-chat', icon: Headphones,      label: studioNav.platformChat, feature: 'studio_chat' },
+        { to: '/studio/chat',          icon: MessageCircle,   label: studioNav.chat, feature: 'chat_studio_kunde' },
       ],
     },
     {
       label: t('studio.sectionAdmin'),
       items: [
-        { to: '/studio/shop',      icon: ShoppingBag,   label: studioNav.shop },
-        { to: '/studio/transfers', icon: ArrowLeftRight, label: studioNav.transfers },
-        { to: '/studio/elaycoins', icon: Coins,         label: studioNav.elaycoins },
-        { to: '/studio/simulator', icon: Microscope,    label: studioNav.simulator || 'Case Simulator' },
+        { to: '/studio/shop',      icon: ShoppingBag,   label: studioNav.shop, feature: 'elayshop' },
+        { to: '/studio/transfers', icon: ArrowLeftRight, label: studioNav.transfers, feature: 'studio_wechsel' },
+        { to: '/studio/elaycoins', icon: Coins,         label: studioNav.elaycoins, feature: 'elaycoins_basic' },
+        { to: '/studio/simulator', icon: Microscope,    label: studioNav.simulator || 'Case Simulator', feature: 'tattoocase_simulator' },
         { to: '/studio/settings',  icon: Settings,      label: studioNav.settings },
       ],
     },
-  ]
+  ].map((section) => ({
+    ...section,
+    items: section.items.filter((item) => !item.feature || isOn(item.feature)),
+  }))
+
+  // Soft route guard: if the current path needs a feature that's off, show a
+  // locked panel instead of the page (backend already 403s the underlying API).
+  const requiredRouteFeature = useMemo(() => {
+    const match = Object.keys(ROUTE_FEATURE_MAP).find(
+      (prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`)
+    )
+    return match ? ROUTE_FEATURE_MAP[match] : null
+  }, [location.pathname])
+
+  const routeLocked =
+    featuresLoaded && requiredRouteFeature && features[requiredRouteFeature] === false
 
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem('sidebar_collapsed') === '1' } catch { return false }
@@ -200,7 +274,7 @@ const StudioLayout = ({ children }) => {
         <div className="sticky top-0 z-40 flex justify-end px-4 py-2 border-b border-elaya-border/60 bg-studio-bg/90 backdrop-blur-sm">
           <StudioNotificationBell />
         </div>
-        {children}
+        {routeLocked ? <FeatureLocked /> : children}
       </main>
     </div>
   )

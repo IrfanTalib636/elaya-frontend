@@ -12,3 +12,7 @@ export const previewSessionPrediction = (data) =>
 
 /** Live price calculator — draft studio_pricing + sample case, no persist. */
 export const previewPricing = (data) => api.post('/config/pricing/preview', data)
+
+/** Effective feature flags for the current studio/customer — drives nav gating. */
+export const getEffectiveFeatures = (params) =>
+  api.get('/config/features/effective', { params })

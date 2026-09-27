@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Radio, Send, WifiOff } from 'lucide-react'
+import { Radio, Send, Sparkles, WifiOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import {
   openPlatformConversation,
@@ -8,6 +8,7 @@ import {
   markPlatformConversationRead,
 } from '../../api/platformMessaging'
 import { markConversationNotificationsRead } from '../../api/notifications'
+import { getEffectiveFeatures } from '../../api/config'
 import { getApiErrorMessage } from '../../lib/apiError'
 import usePlatformMessagingSocket from '../../hooks/usePlatformMessagingSocket'
 import { PageHeader, Spinner } from '../../components/ui'
@@ -38,8 +39,17 @@ export default function StudioPlatformChat() {
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const [peerTyping, setPeerTyping] = useState(false)
+  const [prioritySupport, setPrioritySupport] = useState(false)
   const bottomRef = useRef(null)
   const typingTimer = useRef(null)
+
+  useEffect(() => {
+    getEffectiveFeatures()
+      .then((res) => {
+        setPrioritySupport(Boolean(res?.data?.data?.features?.priority_support))
+      })
+      .catch(() => setPrioritySupport(false))
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -128,7 +138,15 @@ export default function StudioPlatformChat() {
   return (
     <div className="flex flex-col h-[calc(100vh-120px)] min-h-[480px]">
       <div className="flex items-start justify-between gap-4 mb-4">
-        <PageHeader title={copy.title} subtitle={copy.subtitle} />
+        <div className="flex items-center gap-2">
+          <PageHeader title={copy.title} subtitle={copy.subtitle} />
+          {prioritySupport ? (
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-studio-gold/15 text-studio-gold-2 border border-studio-gold/30">
+              <Sparkles size={10} />
+              {copy.priorityBadge || 'Priority'}
+            </span>
+          ) : null}
+        </div>
         <span
           className={`inline-flex items-center gap-1.5 text-[11px] mt-1 ${
             connected ? 'text-studio-teal' : 'text-studio-w3'

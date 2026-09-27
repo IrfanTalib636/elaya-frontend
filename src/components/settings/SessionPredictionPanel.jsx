@@ -19,6 +19,9 @@ export default function SessionPredictionPanel({
   saveConfig,
   saveLabel,
   showPlausibility = false,
+  section = null,
+  title = null,
+  description = null,
 }) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
@@ -94,9 +97,11 @@ export default function SessionPredictionPanel({
     <Card className="flex flex-col gap-5">
       <div className="border-b border-elaya-border pb-4">
         <h2 className="text-[15px] font-bold text-studio-white m-0">
-          {t('settingsPage.sessions.title')}
+          {title || t('settingsPage.sessions.title')}
         </h2>
-        <p className="text-studio-w3 text-[12px] m-0 mt-1">{t('settingsPage.sessions.desc')}</p>
+        <p className="text-studio-w3 text-[12px] m-0 mt-1">
+          {description || t('settingsPage.sessions.desc')}
+        </p>
       </div>
 
       <p className="text-studio-w3 text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4">
@@ -115,6 +120,7 @@ export default function SessionPredictionPanel({
           disabled={!canEdit}
           savedBaseline={savedBaseline}
           plausibility={showPlausibility ? plausibility : null}
+          section={section}
         />
       ) : (
         <p className="text-studio-w2 text-[12px] m-0">{t('settingsPage.sessions.noParameters')}</p>

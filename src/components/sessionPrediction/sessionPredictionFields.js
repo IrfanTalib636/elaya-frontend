@@ -255,6 +255,35 @@ export const AFTERCARE_FIELDS = [
   { key: 'high' },
 ]
 
+/**
+ * Super Admin Engine — left-nav sections. Maps each `TATTOO_DELTA_GROUPS` key
+ * (and the other form blocks) to one of the 8 prototype sections, so
+ * `SessionPredictionForm` can render only the relevant blocks per `section`.
+ */
+export const TATTOO_GROUP_SECTION = {
+  fitzpatrick: 'fitzpatrick',
+  location: 'fitzpatrick',
+  scarring: 'fitzpatrick',
+  density: 'fitzpatrick',
+  saturation: 'fitzpatrick',
+  coverup: 'fitzpatrick',
+  age: 'fitzpatrick',
+  prior_treatment: 'fitzpatrick',
+  type: 'fitzpatrick',
+  goal: 'fitzpatrick',
+  color: 'colors',
+  color_count: 'colors',
+  laser_profile: 'colors',
+  healing_history: 'healing',
+  lightening_rate: 'healing',
+}
+
+/** Default BMI floor rows (mirrors backend `sessionPredictionDefaults.js`). */
+export const DEFAULT_BMI_FLOORS = [
+  { min_bmi: 30, min_score: 4 },
+  { min_bmi: 35, min_score: 5 },
+]
+
 export const cloneSessionPrediction = (source = {}) =>
   JSON.parse(JSON.stringify(source || {}))
 
@@ -297,4 +326,8 @@ export const buildSessionPredictionPayload = (values = {}) => ({
       toNumber(val, 0),
     ])
   ),
+  lifestyle_bmi_floors: (values.lifestyle_bmi_floors || DEFAULT_BMI_FLOORS).map((row) => ({
+    min_bmi: toNumber(row.min_bmi, 30),
+    min_score: toNumber(row.min_score, 4),
+  })),
 })

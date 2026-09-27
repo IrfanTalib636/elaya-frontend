@@ -1,12 +1,25 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { DollarSign, Activity, FlaskConical, Settings2 } from 'lucide-react'
+import {
+  BookOpen,
+  SlidersHorizontal,
+  DollarSign,
+  Palette,
+  Fingerprint,
+  Activity,
+  HeartPulse,
+  History,
+  FlaskConical,
+  Settings2,
+} from 'lucide-react'
 import { PageHeader } from '../../components/ui'
 import PricingRulesPanel from '../../components/settings/PricingRulesPanel'
 import SessionPredictionPanel from '../../components/settings/SessionPredictionPanel'
 import ConfigLifecycleBar from '../../components/settings/ConfigLifecycleBar'
 import EngineCaseSimulator from '../../components/engine/EngineCaseSimulator'
+import EngineHowItWorks from '../../components/engine/EngineHowItWorks'
+import EngineImpactPanel from '../../components/engine/EngineImpactPanel'
 import useAdminConfigDomain from '../../hooks/useAdminConfigDomain'
 import useAuthStore from '../../store/authStore'
 import { ROLES } from '../../constants/roles'
@@ -17,18 +30,38 @@ const VIEWS = [
   { id: 'admin', icon: Settings2, labelKey: 'adminPages.engine.viewAdmin' },
 ]
 
-const ADMIN_TABS = [
-  { id: 'pricing', icon: DollarSign, labelKey: 'settings.tabs.prices' },
-  { id: 'sessions', icon: Activity, labelKey: 'settings.tabs.sessionPrediction' },
+/**
+ * Super Admin Engine — 8 left-nav sections (prototype `ENG_SEC_NAV` parity,
+ * inkderm-prototype/public/admin/index.html ~L8362).
+ */
+const ENGINE_SECTIONS = [
+  { id: 'how', icon: BookOpen, labelKey: 'adminPages.engine.sections.how' },
+  { id: 'base', icon: SlidersHorizontal, labelKey: 'adminPages.engine.sections.base' },
+  { id: 'pricing', icon: DollarSign, labelKey: 'adminPages.engine.sections.pricing' },
+  { id: 'colors', icon: Palette, labelKey: 'adminPages.engine.sections.colors' },
+  { id: 'fitzpatrick', icon: Fingerprint, labelKey: 'adminPages.engine.sections.fitzpatrick' },
+  { id: 'lifestyle', icon: Activity, labelKey: 'adminPages.engine.sections.lifestyle' },
+  { id: 'healing', icon: HeartPulse, labelKey: 'adminPages.engine.sections.healing' },
+  { id: 'versions', icon: History, labelKey: 'adminPages.engine.sections.versions' },
 ]
 
-const DOMAIN_BY_TAB = {
-  pricing: 'default_pricing',
-  sessions: 'session_prediction',
-}
+const SECTION_IDS = ENGINE_SECTIONS.map((s) => s.id)
 
 /**
- * Prediction Engine — Studio simulator (live) + Super Admin rule editor.
+ * These 5 sections all edit `session_prediction` and are rendered through the
+ * SAME mounted `SessionPredictionPanel` instance (only the `section` prop
+ * changes) — switching between them never re-fetches or drops unsaved edits.
+ * Only leaving this group (e.g. to "how" / "pricing" / "versions") and coming
+ * back remounts it, same as the previous tab behaviour.
+ */
+const SESSION_FORM_SECTIONS = ['base', 'colors', 'fitzpatrick', 'lifestyle', 'healing']
+
+/** Legacy `?tab=pricing|sessions` deep links from the old 2-tab layout. */
+const LEGACY_TAB_SECTION = { pricing: 'pricing', sessions: 'base' }
+
+/**
+ * Prediction Engine — Studio simulator (published/live only) + Super Admin
+ * 3-column rule editor (sections | editor | sticky Impact preview).
  * Language / theme stay in Settings — not here.
  */
 const AdminEngine = () => {
@@ -40,18 +73,22 @@ const AdminEngine = () => {
 
   const [searchParams, setSearchParams] = useSearchParams()
   const viewFromUrl = searchParams.get('view')
-  const tabFromUrl = searchParams.get('tab')
+  const sectionFromUrl = searchParams.get('section')
+  const tabFromUrl = searchParams.get('tab') // legacy
 
   const [view, setView] = useState(
-    viewFromUrl === 'admin' || tabFromUrl ? 'admin' : 'studio'
+    viewFromUrl === 'admin' || sectionFromUrl || tabFromUrl ? 'admin' : 'studio'
   )
-  const [activeTab, setActiveTab] = useState(
-    ADMIN_TABS.some((tab) => tab.id === tabFromUrl) ? tabFromUrl : 'pricing'
-  )
+  const [activeSection, setActiveSection] = useState(() => {
+    if (SECTION_IDS.includes(sectionFromUrl)) return sectionFromUrl
+    if (tabFromUrl && LEGACY_TAB_SECTION[tabFromUrl]) return LEGACY_TAB_SECTION[tabFromUrl]
+    return 'how'
+  })
 
   const {
     lifecycleByDomain,
     panelEpoch,
+    loadPlatformBundle,
     loadPricing,
     savePricing,
     loadSessions,
@@ -63,36 +100,49 @@ const AdminEngine = () => {
   useEffect(() => {
     if (viewFromUrl === 'admin' || viewFromUrl === 'studio') {
       setView(viewFromUrl)
-    } else if (tabFromUrl) {
+    } else if (sectionFromUrl || tabFromUrl) {
       setView('admin')
     }
-    if (tabFromUrl && ADMIN_TABS.some((tab) => tab.id === tabFromUrl)) {
-      setActiveTab(tabFromUrl)
+    if (SECTION_IDS.includes(sectionFromUrl)) {
+      setActiveSection(sectionFromUrl)
+    } else if (tabFromUrl && LEGACY_TAB_SECTION[tabFromUrl]) {
+      setActiveSection(LEGACY_TAB_SECTION[tabFromUrl])
     }
-  }, [viewFromUrl, tabFromUrl])
+  }, [viewFromUrl, sectionFromUrl, tabFromUrl])
+
+  // The Impact panel compares both domains regardless of which section panel
+  // happens to be mounted, so keep `lifecycleByDomain` fresh independently —
+  // on entering the admin view, and again after any publish/discard.
+  useEffect(() => {
+    if (view !== 'admin') return
+    void loadPlatformBundle()
+  }, [view, panelEpoch, loadPlatformBundle])
 
   const selectView = (id) => {
     setView(id)
     if (id === 'studio') {
       setSearchParams({})
     } else {
-      setSearchParams({ view: 'admin', ...(activeTab !== 'pricing' ? { tab: activeTab } : {}) })
+      setSearchParams({
+        view: 'admin',
+        ...(activeSection !== 'how' ? { section: activeSection } : {}),
+      })
     }
   }
 
-  const selectTab = (id) => {
-    setActiveTab(id)
+  const selectSection = (id) => {
+    setActiveSection(id)
     setSearchParams({
       view: 'admin',
-      ...(id !== 'pricing' ? { tab: id } : {}),
+      ...(id !== 'how' ? { section: id } : {}),
     })
   }
 
-  const activeDomain = DOMAIN_BY_TAB[activeTab]
-  const activeLifecycle = activeDomain ? lifecycleByDomain[activeDomain] : null
+  const pricingLifecycle = lifecycleByDomain.default_pricing
+  const sessionsLifecycle = lifecycleByDomain.session_prediction
 
   return (
-    <div className="p-6 max-w-[1240px]">
+    <div className="p-6 max-w-[1440px]">
       <PageHeader
         title={copy.title || 'Prediction Engine'}
         subtitle={
@@ -128,20 +178,23 @@ const AdminEngine = () => {
         <>
           <p className="text-studio-w2 text-[13px] m-0 mb-5 max-w-[720px]">
             {copy.studioHint ||
-              'Tattoo case simulator — computes live against the published engine.'}
+              'Tattoo case simulator — computes live against the published engine. To compare against unpublished draft rules, use the Impact preview under Super Admin / Engine → Versions & audit.'}
           </p>
           <EngineCaseSimulator mode="admin" />
         </>
       ) : (
-        <div className="flex gap-6">
-          <nav className="flex flex-col gap-0.5 w-44 shrink-0" translate="no">
-            {ADMIN_TABS.map(({ id, icon: Icon, labelKey }) => (
+        <div className="grid grid-cols-1 lg:grid-cols-[200px_minmax(0,1fr)_340px] gap-6 items-start">
+          <nav className="flex flex-col gap-0.5 lg:sticky lg:top-4" translate="no">
+            <p className="text-studio-w3 text-[11px] font-semibold uppercase tracking-wide m-0 mb-2 px-3">
+              {t('adminPages.engine.navSections', { defaultValue: 'Sections' })}
+            </p>
+            {ENGINE_SECTIONS.map(({ id, icon: Icon, labelKey }) => (
               <button
                 key={id}
                 type="button"
-                onClick={() => selectTab(id)}
+                onClick={() => selectSection(id)}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-colors w-full text-left cursor-pointer border-0 ${
-                  activeTab === id
+                  activeSection === id
                     ? 'bg-(--nav-active-bg) text-studio-gold-2'
                     : 'bg-transparent text-studio-w1 hover:text-studio-white hover:bg-studio-bg-4'
                 }`}
@@ -152,15 +205,17 @@ const AdminEngine = () => {
             ))}
           </nav>
 
-          <div className="flex-1 flex flex-col gap-5">
-            {activeTab === 'pricing' && (
+          <div className="min-w-0 flex flex-col gap-5">
+            {activeSection === 'how' ? <EngineHowItWorks /> : null}
+
+            {activeSection === 'pricing' ? (
               <>
                 {canEditRules ? (
                   <ConfigLifecycleBar
                     domain="default_pricing"
                     canEdit={canEditRules}
-                    hasDraft={Boolean(activeLifecycle?.has_draft)}
-                    currentVersion={activeLifecycle?.current_version || 0}
+                    hasDraft={Boolean(pricingLifecycle?.has_draft)}
+                    currentVersion={pricingLifecycle?.current_version || 0}
                     onPublished={() => void handleLifecyclePublished('default_pricing')}
                     onDraftDiscarded={(life) => handleDraftDiscarded('default_pricing', life)}
                   />
@@ -176,15 +231,16 @@ const AdminEngine = () => {
                   coinWertLabel={t('settingsPage.pricing.chfPerCoin')}
                 />
               </>
-            )}
-            {activeTab === 'sessions' && (
+            ) : null}
+
+            {SESSION_FORM_SECTIONS.includes(activeSection) ? (
               <>
                 {canEditRules ? (
                   <ConfigLifecycleBar
                     domain="session_prediction"
                     canEdit={canEditRules}
-                    hasDraft={Boolean(activeLifecycle?.has_draft)}
-                    currentVersion={activeLifecycle?.current_version || 0}
+                    hasDraft={Boolean(sessionsLifecycle?.has_draft)}
+                    currentVersion={sessionsLifecycle?.current_version || 0}
                     onPublished={() => void handleLifecyclePublished('session_prediction')}
                     onDraftDiscarded={(life) =>
                       handleDraftDiscarded('session_prediction', life)
@@ -193,17 +249,73 @@ const AdminEngine = () => {
                 ) : null}
                 <SessionPredictionPanel
                   key={`sessions-${panelEpoch}`}
+                  section={activeSection}
+                  title={t(`adminPages.engine.sections.${activeSection}`)}
+                  description={t(`adminPages.engine.sectionHints.${activeSection}`, {
+                    defaultValue: t('settingsPage.sessions.desc'),
+                  })}
                   canEdit={canEditRules}
                   loadConfig={loadSessions}
                   saveConfig={canEditRules ? saveSessions : undefined}
                   saveLabel={t('adminPages.settings.saveDraft', {
                     defaultValue: 'Save draft',
                   })}
-                  showPlausibility
+                  showPlausibility={activeSection === 'base'}
                 />
               </>
-            )}
+            ) : null}
+
+            {activeSection === 'versions' ? (
+              <div className="rounded-2xl border border-elaya-border bg-studio-bg-3 p-5 flex flex-col gap-5">
+                <h3 className="flex items-center gap-2 text-studio-white text-[14px] font-semibold m-0">
+                  <History size={16} className="text-studio-gold-2" />
+                  {t('adminPages.engine.sections.versions')}
+                </h3>
+                <p className="text-[11px] text-studio-w3 m-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4">
+                  {copy.versionsHint ||
+                    "Pricing and session prediction publish independently today — publishing one domain's draft does not affect the other's."}
+                </p>
+                <div>
+                  <p className="text-[12px] font-semibold text-studio-w1 m-0 mb-2">
+                    {t('settings.tabs.prices')}
+                  </p>
+                  <ConfigLifecycleBar
+                    domain="default_pricing"
+                    canEdit={canEditRules}
+                    hasDraft={Boolean(pricingLifecycle?.has_draft)}
+                    currentVersion={pricingLifecycle?.current_version || 0}
+                    onPublished={() => void handleLifecyclePublished('default_pricing')}
+                    onDraftDiscarded={(life) => handleDraftDiscarded('default_pricing', life)}
+                  />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-studio-w1 m-0 mb-2">
+                    {t('settings.tabs.sessionPrediction')}
+                  </p>
+                  <ConfigLifecycleBar
+                    domain="session_prediction"
+                    canEdit={canEditRules}
+                    hasDraft={Boolean(sessionsLifecycle?.has_draft)}
+                    currentVersion={sessionsLifecycle?.current_version || 0}
+                    onPublished={() => void handleLifecyclePublished('session_prediction')}
+                    onDraftDiscarded={(life) =>
+                      handleDraftDiscarded('session_prediction', life)
+                    }
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
+
+          <aside className="lg:sticky lg:top-4">
+            <EngineImpactPanel
+              draftPricing={pricingLifecycle?.draft?.data || null}
+              hasPricingDraft={Boolean(pricingLifecycle?.has_draft)}
+              draftSessions={sessionsLifecycle?.draft?.data || null}
+              hasSessionsDraft={Boolean(sessionsLifecycle?.has_draft)}
+              refreshKey={panelEpoch}
+            />
+          </aside>
         </div>
       )}
     </div>

@@ -12,7 +12,7 @@ import ElaycoinRulesTab from '../../components/settings/ElaycoinRulesTab'
 import AutomationsTab from '../../components/settings/AutomationsTab'
 import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
 import useAuthStore from '../../store/authStore'
-import { getStudioConfig, updateStudioConfig } from '../../api/config'
+import { getStudioConfig, updateStudioConfig, getEffectiveFeatures } from '../../api/config'
 import {
   getStudioSettings,
   updateStudioSettings,
@@ -51,9 +51,9 @@ const TABS = [
   { id: 'group',      icon: Layers },
   { id: 'booking',    icon: ShieldAlert },
   { id: 'elaycoins',  icon: Coins },
-  { id: 'automations', icon: Bell },
-  { id: 'locations',  icon: MapPin },
-  { id: 'rooms',      icon: Grid },
+  { id: 'automations', icon: Bell, feature: 'automatisierungen' },
+  { id: 'locations',  icon: MapPin, feature: 'multi_location' },
+  { id: 'rooms',      icon: Grid, feature: 'multi_raeume' },
   { id: 'staff',      icon: Users },
   { id: 'logins',     icon: KeyRound },
   { id: 'stripe',     icon: CreditCard },
@@ -1975,12 +1975,40 @@ const StudioSettings = () => {
   const [activeTab, setActiveTab] = useState(
     TABS.some((tab) => tab.id === tabFromUrl) ? tabFromUrl : 'appearance'
   )
+  const [features, setFeatures] = useState(null)
 
   useEffect(() => {
-    if (tabFromUrl && TABS.some((tab) => tab.id === tabFromUrl)) {
+    let cancelled = false
+    getEffectiveFeatures()
+      .then((res) => {
+        if (!cancelled) setFeatures(res?.data?.data?.features || {})
+      })
+      .catch(() => {
+        if (!cancelled) setFeatures({})
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Hide automations / multi-location / rooms tabs when the studio's package
+  // doesn't include them (automatisierungen / multi_location / multi_raeume).
+  const visibleTabs = TABS.filter(
+    (tab) => !tab.feature || !features || features[tab.feature] !== false
+  )
+
+  useEffect(() => {
+    if (tabFromUrl && visibleTabs.some((tab) => tab.id === tabFromUrl)) {
       setActiveTab(tabFromUrl)
     }
-  }, [tabFromUrl])
+  }, [tabFromUrl]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // If the active tab just became hidden (feature toggled off), fall back.
+  useEffect(() => {
+    if (features && !visibleTabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab('appearance')
+    }
+  }, [features]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectTab = (id) => {
     setActiveTab(id)
@@ -1995,7 +2023,7 @@ const StudioSettings = () => {
 
       <div className="flex gap-6">
         <nav className="flex flex-col gap-0.5 w-44 shrink-0" translate="no">
-          {TABS.map(({ id, icon: Icon }) => (
+          {visibleTabs.map(({ id, icon: Icon }) => (
             <button
               key={id}
               type="button"

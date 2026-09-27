@@ -47,6 +47,23 @@ const unb = (v, copy) =>
 const fmtChf = (n) =>
   new Intl.NumberFormat('de-CH', { style: 'currency', currency: 'CHF' }).format(Number(n) || 0)
 
+/** Small green/red status dot used by the studio flag toggles (AN/AUS style). */
+const StatusDot = ({ on }) => (
+  <span
+    className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${
+      on ? 'bg-emerald-400' : 'bg-red-400'
+    }`}
+  />
+)
+
+/** Section header for a feature group (icon + name), used across all three tabs. */
+const GroupHeader = ({ icon, label }) => (
+  <p className="m-0 mb-1.5 text-[11px] font-bold uppercase tracking-wide text-studio-w3 flex items-center gap-1.5">
+    <span aria-hidden="true">{icon}</span>
+    {label}
+  </p>
+)
+
 /**
  * Pakete & Features — prototype parity (Paket-Verwaltung + Studio Feature-Flags).
  * Theme: Elaya admin tokens.
@@ -60,6 +77,7 @@ const AdminFeatures = () => {
   const [tab, setTab] = useState('packages')
   const [loading, setLoading] = useState(true)
   const [catalog, setCatalog] = useState([])
+  const [groups, setGroups] = useState([])
   const [studios, setStudios] = useState([])
   const [plans, setPlans] = useState({})
   const [seatLimits, setSeatLimits] = useState({})
@@ -84,6 +102,7 @@ const AdminFeatures = () => {
       const [c, s] = await Promise.all([getFeatureCatalog(), listStudioFeatures()])
       const data = c.data.data || {}
       setCatalog(data.catalog || [])
+      setGroups(Array.isArray(data.groups) ? data.groups : [])
       setPlans(data.subscription_plans || {})
       setSeatLimits(data.subscription_seat_limits || {})
       setPackages(data.subscription_packages || [])
@@ -117,6 +136,26 @@ const AdminFeatures = () => {
     }
     return map
   }, [studios])
+
+  /** Prefer server-provided groups; else derive from flat catalog (each entry carries gruppe/category). */
+  const groupedCatalog = useMemo(() => {
+    if (Array.isArray(groups) && groups.length) return groups
+    const map = new Map()
+    for (const f of catalog) {
+      const key = f.category || f.gruppe || 'other'
+      if (!map.has(key)) {
+        map.set(key, {
+          gruppe: f.gruppe || key,
+          gruppe_en: f.gruppe_en || f.gruppe || key,
+          icon: f.icon || '📁',
+          category: key,
+          features: [],
+        })
+      }
+      map.get(key).features.push(f)
+    }
+    return [...map.values()]
+  }, [groups, catalog])
 
   const setPlan = async (studio, plan) => {
     setSavingId(studio.studio_id)
@@ -527,22 +566,33 @@ const AdminFeatures = () => {
             <p className="font-semibold m-0 mb-3 text-studio-white">
               {copy.globalTitle || 'Global feature switches'}
             </p>
-            <div className="flex flex-wrap gap-2">
-              {catalog.map((f) => (
-                <button
-                  key={f.key}
-                  type="button"
-                  disabled={!canEdit}
-                  onClick={() => toggleGlobal(f.key)}
-                  className={`px-2.5 py-1 rounded-md text-[12px] border cursor-pointer ${
-                    global[f.key] === false
-                      ? 'border-red-400 text-red-500'
-                      : 'border-admin-line text-studio-w2'
-                  } ${!canEdit ? 'opacity-60 cursor-default' : ''}`}
-                >
-                  {f.label}
-                  {global[f.key] === false ? ' · OFF' : ''}
-                </button>
+            <div className="flex flex-col gap-3">
+              {groupedCatalog.map((g) => (
+                <div key={g.category}>
+                  <GroupHeader icon={g.icon} label={g.gruppe} />
+                  <div className="flex flex-wrap gap-2">
+                    {g.features.map((f) => {
+                      const off = global[f.key] === false
+                      return (
+                        <button
+                          key={f.key}
+                          type="button"
+                          disabled={!canEdit}
+                          onClick={() => toggleGlobal(f.key)}
+                          className={`inline-flex items-center px-2.5 py-1 rounded-md text-[12px] border cursor-pointer ${
+                            off
+                              ? 'border-red-400 text-red-500'
+                              : 'border-admin-line text-studio-w2'
+                          } ${!canEdit ? 'opacity-60 cursor-default' : ''}`}
+                        >
+                          <StatusDot on={!off} />
+                          {f.label}
+                          {off ? ' · OFF' : ''}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               ))}
             </div>
             <p className="text-[11px] text-studio-w3 m-0 mt-2">
@@ -648,34 +698,47 @@ const AdminFeatures = () => {
                       </Button>
                     </div>
                   ) : null}
-                  <div className="flex flex-wrap gap-1.5">
-                    {catalog.map((f) => {
-                      const on = s.features?.[f.key]
-                      const ov = s.overrides?.[f.key]
-                      return (
-                        <button
-                          key={f.key}
-                          type="button"
-                          disabled={!canEdit || savingId === s.studio_id}
-                          title={
-                            ov === true
-                              ? copy.forceOn
-                              : ov === false
-                                ? copy.forceOff
-                                : copy.planDefault
-                          }
-                          onClick={() => toggleOverride(s, f.key)}
-                          className={`px-2 py-1 rounded text-[11px] border cursor-pointer ${
-                            on
-                              ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
-                              : 'border-admin-line text-studio-w3'
-                          } ${!canEdit ? 'opacity-60 cursor-default' : ''}`}
-                        >
-                          {f.label}
-                          {ov === true ? ' ★' : ov === false ? ' ✕' : ''}
-                        </button>
-                      )
-                    })}
+                  <div className="flex flex-col gap-3">
+                    {groupedCatalog.map((g) => (
+                      <div key={g.category}>
+                        <GroupHeader icon={g.icon} label={g.gruppe} />
+                        <div className="flex flex-wrap gap-1.5">
+                          {g.features.map((f) => {
+                            const on = Boolean(s.features?.[f.key])
+                            const ov = s.overrides?.[f.key]
+                            return (
+                              <button
+                                key={f.key}
+                                type="button"
+                                disabled={!canEdit || savingId === s.studio_id}
+                                title={
+                                  ov === true
+                                    ? copy.forceOn
+                                    : ov === false
+                                      ? copy.forceOff
+                                      : copy.planDefault
+                                }
+                                onClick={() => toggleOverride(s, f.key)}
+                                className={`inline-flex items-center px-2 py-1 rounded text-[11px] border cursor-pointer ${
+                                  on
+                                    ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
+                                    : 'border-admin-line text-studio-w3'
+                                } ${!canEdit ? 'opacity-60 cursor-default' : ''}`}
+                              >
+                                <StatusDot on={on} />
+                                {f.label}
+                                <span className="ml-1 font-semibold">
+                                  {on
+                                    ? copy.statusOn || 'AN'
+                                    : copy.statusOff || 'AUS'}
+                                </span>
+                                {ov === true ? ' ★' : ov === false ? ' ✕' : ''}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </Card>
               )
@@ -779,24 +842,32 @@ const AdminFeatures = () => {
             <p className="m-0 mt-1 text-[13px] font-semibold text-studio-white">
               {copy.featuresTitle || 'Features'}
             </p>
-            <div className="flex flex-wrap gap-1.5">
-              {catalog.map((f) => {
-                const on = pkgForm.features.includes(f.key)
-                return (
-                  <button
-                    key={f.key}
-                    type="button"
-                    onClick={() => togglePkgFeature(f.key)}
-                    className={`px-2 py-1 rounded text-[11px] border cursor-pointer ${
-                      on
-                        ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
-                        : 'border-admin-line text-studio-w3'
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                )
-              })}
+            <div className="flex flex-col gap-3">
+              {groupedCatalog.map((g) => (
+                <div key={g.category}>
+                  <GroupHeader icon={g.icon} label={g.gruppe} />
+                  <div className="flex flex-wrap gap-1.5">
+                    {g.features.map((f) => {
+                      const on = pkgForm.features.includes(f.key)
+                      return (
+                        <button
+                          key={f.key}
+                          type="button"
+                          onClick={() => togglePkgFeature(f.key)}
+                          className={`inline-flex items-center px-2 py-1 rounded text-[11px] border cursor-pointer ${
+                            on
+                              ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
+                              : 'border-admin-line text-studio-w3'
+                          }`}
+                        >
+                          <StatusDot on={on} />
+                          {f.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
             <div className="flex justify-end gap-2 mt-2">
               <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>

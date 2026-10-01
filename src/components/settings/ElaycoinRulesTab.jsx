@@ -3,13 +3,17 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { Card, Spinner } from '../ui'
 import { getStudioConfig } from '../../api/config'
+import {
+  localizeElaycoinTriggers,
+  situationLabel,
+} from '../../i18n/elaycoinLocalize'
 
 /**
  * Studio read-only Elaycoin-Regeln — platform rules from Admin (prototype Settings → Elaycoins).
  */
 const ElaycoinRulesTab = () => {
   const { t, i18n } = useTranslation()
-  const isDe = (i18n.language || 'en').startsWith('de')
+  const language = i18n.language || 'en'
   const [loading, setLoading] = useState(true)
   const [regeln, setRegeln] = useState(null)
   const [limits, setLimits] = useState(null)
@@ -46,7 +50,7 @@ const ElaycoinRulesTab = () => {
     const gc = Number(regeln?.geldwert_coins) || 100
     const chf = Number(regeln?.geldwert_chf) || 5
     if (!gc) return '—'
-    return `CHF ${((Number(coins) || 0) / gc * chf).toFixed(2)}`
+    return `CHF ${(((Number(coins) || 0) / gc) * chf).toFixed(2)}`
   }
 
   if (loading) {
@@ -63,9 +67,16 @@ const ElaycoinRulesTab = () => {
   const minA = regeln?.grenze_pro_aktion_min ?? 0
   const maxA = regeln?.grenze_pro_aktion_max ?? 1000
   const verfall = limits?.verfallMonate ?? 12
-  const triggers = Array.isArray(regeln?.verfall_reset_trigger)
-    ? regeln.verfall_reset_trigger.join(', ')
-    : 'Sitzung, Nachsorge-Check, Termin, Einkauf'
+  const triggerLabels = t('adminPages.elaycoins.triggerLabels', { returnObjects: true })
+  const triggers = localizeElaycoinTriggers(
+    Array.isArray(regeln?.verfall_reset_trigger)
+      ? regeln.verfall_reset_trigger
+      : t('adminPages.elaycoins.verfallResetDefault', {
+          defaultValue: 'Session, Aftercare check, Appointment, Purchase',
+        }),
+    language,
+    triggerLabels && typeof triggerLabels === 'object' ? triggerLabels : {}
+  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -150,7 +161,7 @@ const ElaycoinRulesTab = () => {
                             isOn ? 'text-studio-white' : 'text-studio-w3'
                           }`}
                         >
-                          {isDe ? s.label : s.label}
+                          {situationLabel(s, language)}
                         </p>
                         <p className="m-0 text-[11px] text-studio-w3">{hint}</p>
                       </div>

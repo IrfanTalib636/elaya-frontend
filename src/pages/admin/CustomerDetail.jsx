@@ -212,19 +212,27 @@ const AdminCustomerDetail = () => {
           </h3>
           <div className="grid grid-cols-2 gap-3 text-[13px]">
             <div>
-              <p className="m-0 text-[10px] uppercase text-admin-muted">Email</p>
+              <p className="m-0 text-[10px] uppercase text-admin-muted">
+                {copy.labelEmail || 'Email'}
+              </p>
               <p className="m-0 mt-0.5 text-studio-w1">{customer.email || '—'}</p>
             </div>
             <div>
-              <p className="m-0 text-[10px] uppercase text-admin-muted">Phone</p>
+              <p className="m-0 text-[10px] uppercase text-admin-muted">
+                {copy.labelPhone || 'Phone'}
+              </p>
               <p className="m-0 mt-0.5 text-studio-w1">{customer.telefon || '—'}</p>
             </div>
             <div>
-              <p className="m-0 text-[10px] uppercase text-admin-muted">Studio</p>
+              <p className="m-0 text-[10px] uppercase text-admin-muted">
+                {copy.labelStudio || 'Studio'}
+              </p>
               <p className="m-0 mt-0.5 text-studio-w1">{studioName}</p>
             </div>
             <div>
-              <p className="m-0 text-[10px] uppercase text-admin-muted">Pipeline</p>
+              <p className="m-0 text-[10px] uppercase text-admin-muted">
+                {copy.labelPipeline || 'Pipeline'}
+              </p>
               <p className="m-0 mt-0.5">
                 {customer.pipeline_stufe ? (
                   <Badge variant="status" value={customer.pipeline_stufe}>
@@ -328,7 +336,11 @@ const AdminCustomerDetail = () => {
                       <td className="p-3">{fmtDate(a.date)}</td>
                       <td className="p-3 tabular-nums">{a.time || '—'}</td>
                       <td className="p-3">
-                        {a.consultationOnly ? 'beratung' : a.type || '—'}
+                        {a.consultationOnly
+                          ? copy.consultation || t('adminPages.customerDetail.consultation', {
+                              defaultValue: 'Consultation',
+                            })
+                          : a.type || '—'}
                       </td>
                       <td className="p-3">
                         <Badge variant="status" value={a.status}>
@@ -361,17 +373,17 @@ const AdminCustomerDetail = () => {
             onChange={(e) => setForm((f) => ({ ...f, nachname: e.target.value }))}
           />
           <Input
-            label="Email"
+            label={copy.labelEmail || 'Email'}
             value={form.email}
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
           />
           <Input
-            label="Phone"
+            label={copy.labelPhone || 'Phone'}
             value={form.telefon}
             onChange={(e) => setForm((f) => ({ ...f, telefon: e.target.value }))}
           />
           <label className="flex flex-col gap-1 text-[12px] text-studio-w2">
-            Pipeline
+            {copy.labelPipeline || 'Pipeline'}
             <select
               value={form.pipeline_stufe}
               onChange={(e) => setForm((f) => ({ ...f, pipeline_stufe: e.target.value }))}

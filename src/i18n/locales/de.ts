@@ -1361,7 +1361,7 @@ const de: TranslationSchema = {
     },
     "pricing": {
       "title": "Preise & Elaycoin",
-      "desc": "Plattformweite Preisberechnungsregeln (nur Ansicht). Nur Elaya Super-Admin kann diese ändern. Der Live-Rechner zeigt die Auswirkung der Faktoren.",
+      "desc": "Plattformweite Preisregeln (nur Ansicht). Preis pro Sitzung ist der höhere Wert aus Mindestpreis und Fläche × Basispreis pro cm², aufgerundet auf CHF 5, oder der Pauschalpreis für PMU. Farben und Tattoo-Faktoren ändern die Sitzungszahl, nicht den Preis.",
       "readOnlyHint": "Nur Ansicht — nur Elaya Super-Admin kann die Preisberechnungsregeln ändern.",
       "coinSectionTitle": "Elaycoin-Wert",
       "chfPerCoin": "CHF pro Coin",
@@ -3068,44 +3068,47 @@ const de: TranslationSchema = {
       "tcTypes": {
         "amateur": "Amateur",
         "professional": "Professionell",
-        "cover_up": "Cover-up",
-        "unknown": "Unbekannt"
+        "cosmetic": "Kosmetisch",
+        "coverup": "Cover-up",
+        "mixed": "Gemischt"
       },
       "goals": {
         "full_removal": "Vollständige Entfernung",
-        "lightening": "Aufhellung",
-        "partial": "Teilweise"
+        "lightening_for_coverup": "Aufhellen für Cover-up",
+        "partial_fade": "Teilweise"
       },
       "laserLevels": {
         "basic": "Basic",
-        "standard": "Standard",
+        "unknown": "Unbekannt",
         "advanced": "Advanced",
+        "premium": "Premium",
         "elite": "Elite"
       },
       "smokerOpts": {
-        "never": "Nie",
-        "former": "Früher",
-        "occasional": "Gelegentlich",
-        "daily": "Täglich"
+        "no": "Nein",
+        "occasionally": "Gelegentlich",
+        "daily_light": "Täglich leicht",
+        "daily_heavy": "Täglich stark"
       },
       "alcoholOpts": {
         "never": "Nie",
-        "rare": "Selten",
-        "weekly": "Wöchentlich",
-        "daily": "Täglich"
+        "rarely": "Selten",
+        "1-2x_week": "1–2× / Woche",
+        "3-4x_week": "3–4× / Woche",
+        "5+x_week": "5+× / Woche"
       },
       "sleepQualityOpts": {
-        "very_good": "Sehr gut",
+        "excellent": "Sehr gut",
         "good": "Gut",
         "fair": "Mittel",
-        "poor": "Schlecht",
-        "very_poor": "Sehr schlecht"
+        "poor": "Schlecht"
       },
       "sleepHoursOpts": {
-        "under_5": "< 5 Std",
-        "5-6": "5–6 Std",
+        "8+": "8+ Std",
         "7-8": "7–8 Std",
-        "over_9": "> 9 Std"
+        "6-7": "6–7 Std",
+        "5-6": "5–6 Std",
+        "under_5": "< 5 Std"
       },
       "stressOpts": {
         "low": "Niedrig",
@@ -3114,30 +3117,30 @@ const de: TranslationSchema = {
         "very_high": "Sehr hoch"
       },
       "activityOpts": {
-        "sedentary": "Sitzend",
+        "high": "Hoch",
+        "regular": "Regelmässig",
         "light": "Leicht",
-        "moderate": "Moderat",
-        "high": "Hoch"
+        "low": "Niedrig"
       },
       "sportOpts": {
-        "never": "Nie",
-        "1-2": "1–2× / Woche",
+        "5+": "5+× / Woche",
         "3-4": "3–4× / Woche",
-        "daily": "Täglich"
+        "1-2": "1–2× / Woche",
+        "0": "Kein Sport"
       },
-      "hydrationOpts": { "low": "Niedrig", "medium": "Mittel", "high": "Hoch" },
+      "hydrationOpts": { "good": "Gut", "normal": "Normal", "low": "Niedrig" },
       "nutritionOpts": {
-        "poor": "Schlecht",
-        "fair": "Mittel",
+        "very_good": "Sehr gut",
         "good": "Gut",
-        "very_good": "Sehr gut"
+        "fair": "Mittel",
+        "poor": "Schlecht",
+        "very_poor": "Sehr schlecht"
       },
       "aftercareOpts": { "high": "Hoch", "medium": "Mittel", "low": "Niedrig" },
       "healingOpts": {
-        "good": "Gut",
-        "average": "Durchschnitt",
-        "problematic": "Problematisch",
-        "unknown": "Unbekannt"
+        "normal": "Normal",
+        "mixed": "Gemischt",
+        "problematic": "Problematisch"
       },
       "lighteningOpts": {
         "fast": "Schnell",
@@ -3303,7 +3306,20 @@ const de: TranslationSchema = {
     },
     "aiTraining": {
       "title": "AI Training Center",
-      "subtitle": "Vision-/KI-Kalibrierung für Tattoo-Analyse"
+      "subtitle": "System-Prompts der Live-KI-Agenten bearbeiten. Feature-Flags steuern weiterhin jeden Agenten pro Studio.",
+      "modelName": "Modellname",
+      "changeReason": "Änderungsgrund",
+      "changeReasonPh": "Warum ändern Sie diesen Prompt?",
+      "savePrompt": "Prompt speichern",
+      "loadError": "AI-Konfiguration konnte nicht geladen werden",
+      "saved": "AI-Konfiguration gespeichert",
+      "saveFailed": "Speichern fehlgeschlagen",
+      "prompts": {
+        "nachsorge": "Nachsorge (Foto-Check)",
+        "verblassung": "Verblassungsanalyse",
+        "customer_chat": "Kunden-Elaya-Chat",
+        "studio_chat": "Studio-Elaya-Chat"
+      }
     },
     "finance": {
       "title": "Finanzen",
@@ -3472,6 +3488,8 @@ const de: TranslationSchema = {
       "packageDefaultSaved": "Auf Paket-Standard zurückgesetzt",
       "cancel": "Abbrechen",
       "save": "Speichern",
+      "statusOn": "AN",
+      "statusOff": "AUS",
       "saving": "Speichern…"
     },
     "elaycoins": {
@@ -3514,7 +3532,14 @@ const de: TranslationSchema = {
       "verfallMonate": "Verfall nach Inaktivität",
       "months": "Monate",
       "verfallReset": "Verfall-Frist zurückgesetzt durch",
+      "verfallResetDefault": "Sitzung, Nachsorge-Check, Termin, Einkauf",
       "verfallResetHint": "Kommagetrennt — jede dieser Kundenaktionen setzt die Verfall-Frist zurück.",
+      "triggerLabels": {
+        "Sitzung": "Sitzung",
+        "Nachsorge-Check": "Nachsorge-Check",
+        "Termin": "Termin",
+        "Einkauf": "Einkauf"
+      },
       "deckelProzent": "Deckel % vom Preis (Shop-Einlösung)",
       "minWert": "Min CHF / Coin (Studio-Band)",
       "maxWert": "Max CHF / Coin (Studio-Band)",
@@ -3725,6 +3750,111 @@ const de: TranslationSchema = {
         "previewSelect": "Produkt auswählen…"
       }
     },
+    "users": {
+      "title": "Admin-Benutzer",
+      "subtitle": "Admins einladen, Berechtigungen zuweisen, aktivieren oder deaktivieren. Keine Impersonation.",
+      "inviteTitle": "Admin einladen",
+      "inviteHint": "Wenn diese E-Mail bereits eingeladen wurde und sich nie angemeldet hat, sendet „Einladung senden“ die E-Mail erneut, statt fehlzuschlagen.",
+      "email": "E-Mail",
+      "name": "Name",
+      "role": "Rolle",
+      "roleAdmin": "Admin",
+      "roleSuperAdmin": "Super Admin",
+      "permissions": "Berechtigungen",
+      "superAdminAllPerms": "Super Admin erhält automatisch alle Berechtigungen.",
+      "sendInvite": "Einladung senden",
+      "tempPassword": "Dev-Temporärpasswort: {{password}} (auch als Reset-Link per E-Mail)",
+      "directory": "Verzeichnis",
+      "lastActive": "zuletzt aktiv {{when}}",
+      "neverLoggedIn": "nie angemeldet",
+      "resendInvite": "Einladung erneut senden",
+      "deactivate": "Deaktivieren",
+      "activate": "Aktivieren",
+      "loadError": "Admin-Benutzer konnten nicht geladen werden",
+      "emailRequired": "E-Mail ist erforderlich",
+      "inviteFailed": "Einladung fehlgeschlagen",
+      "resendFailed": "Erneutes Senden fehlgeschlagen",
+      "deactivated": "Deaktiviert",
+      "activated": "Aktiviert",
+      "updateFailed": "Aktualisierung fehlgeschlagen",
+      "permsUpdated": "Berechtigungen aktualisiert",
+      "inviteEmailFailed": "Admin gespeichert, aber Einladungs-E-Mail fehlgeschlagen — EMAIL_PROVIDER / SMTP prüfen, dann Einladung erneut senden"
+    },
+    "lasers": {
+      "title": "Laser-Katalog",
+      "subtitle": "Freigegebene Geräte, die Studios auswählen können. Studios dürfen Stammdaten nicht bearbeiten.",
+      "editLaser": "Laser bearbeiten",
+      "addLaser": "Laser hinzufügen",
+      "manufacturer": "Hersteller",
+      "model": "Modell",
+      "wavelengths": "Wellenlängen (nm)",
+      "wavelengthsHint": "Kommagetrennt, z. B. 532, 1064",
+      "notes": "Notizen",
+      "activeSelectable": "Aktiv (von Studios wählbar)",
+      "cancel": "Abbrechen",
+      "update": "Aktualisieren",
+      "create": "Anlegen",
+      "pendingRequests": "Offene Studio-Anfragen",
+      "studioFallback": "Studio",
+      "reject": "Ablehnen",
+      "approve": "Freigeben",
+      "catalog": "Katalog",
+      "noWavelengths": "Keine Wellenlängen",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "edit": "Bearbeiten",
+      "loadError": "Laser konnten nicht geladen werden",
+      "required": "Hersteller und Modell sind erforderlich",
+      "updated": "Laser aktualisiert",
+      "created": "Laser angelegt",
+      "saveFailed": "Speichern fehlgeschlagen",
+      "approved": "Freigegeben & zum Katalog hinzugefügt",
+      "rejected": "Abgelehnt",
+      "resolveFailed": "Entscheidung fehlgeschlagen"
+    },
+    "studioTeam": {
+      "title": "Studio-Team",
+      "subtitle": "Mitarbeiter-Profile (ohne Login) und Benutzerkonten (ELAYA-Logins) über alle Studios.",
+      "tabLogins": "Benutzerkonten ({{count}})",
+      "tabProfiles": "Mitarbeiter-Profile ({{count}})",
+      "lastLogin": "zuletzt {{when}}",
+      "deactivate": "Deaktivieren",
+      "activate": "Aktivieren",
+      "linkedLogin": "Login verknüpft",
+      "noLogin": "kein Login",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "loadError": "Studio-Team konnte nicht geladen werden",
+      "deactivated": "Deaktiviert",
+      "activated": "Aktiviert",
+      "roleUpdated": "Rolle aktualisiert",
+      "updateFailed": "Aktualisierung fehlgeschlagen"
+    },
+    "customerDetail": {
+      "back": "Zurück",
+      "subtitle": "Elaya-Admin-Supportzugriff — Aktionen werden wo vorgesehen protokolliert.",
+      "edit": "Bearbeiten",
+      "openStudio": "Studio-Arbeitsbereich",
+      "openChat": "Studio-Chat",
+      "openCoins": "Elaycoins",
+      "profileHeading": "Profil",
+      "labelEmail": "E-Mail",
+      "labelPhone": "Telefon",
+      "labelStudio": "Studio",
+      "labelPipeline": "Pipeline",
+      "supportHeading": "Support-Modus",
+      "supportBody": "Sie bleiben als Elaya Admin angemeldet. Nutzen Sie dieses Profil, um das Studio zu unterstützen und Kundendaten bei Bedarf anzupassen.",
+      "casesHeading": "Cases",
+      "noCases": "Keine Cases",
+      "appointmentsHeading": "Termine",
+      "noAppointments": "Keine Termine",
+      "editTitle": "Kunde bearbeiten",
+      "consultation": "Beratung",
+      "loadError": "Kunde konnte nicht geladen werden",
+      "saved": "Kunde aktualisiert",
+      "saveError": "Speichern fehlgeschlagen"
+    },
+
     "transfers": {
       "title": "Studio-Wechsel",
       "subtitle": "Kundenanfragen zum Studio-Wechsel prüfen",

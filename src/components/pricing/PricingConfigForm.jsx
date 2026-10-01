@@ -3,13 +3,6 @@ import { PRICING_GROUPS } from './pricingFields'
 import PricingLiveCalculator from './PricingLiveCalculator'
 import useContent from '../../i18n/useContent'
 
-/**
- * Full pricing editor (base prices + all multipliers), reused by
- * Studio-Einstellungen and the Admin per-studio pricing modal.
- *
- * `savedPricing` is the currently stored override set; passing it lets the live
- * calculator show saved → draft instead of only the draft price.
- */
 const PricingConfigForm = ({
   values,
   defaults,
@@ -22,9 +15,6 @@ const PricingConfigForm = ({
   const copy = components.pricing
 
   return (
-    // Container query, not a viewport breakpoint: this form renders both in the
-    // wide settings page and in the narrower admin modal, so the split has to
-    // follow the space actually available here.
     <div className="@container">
       <div className="grid grid-cols-1 @lg:grid-cols-[minmax(0,1fr)_280px] gap-5 items-start">
         <div className="flex flex-col gap-5 min-w-0">
@@ -60,10 +50,6 @@ const PricingConfigForm = ({
             )
           })}
         </div>
-
-        {/* Own column so it can stay visible while the factors scroll past
-            without ever covering them. Capped to the viewport and scrollable,
-            so the closing total stays reachable on short screens. */}
         <aside className="order-first @lg:order-none @lg:sticky @lg:top-4 @lg:max-h-[calc(100vh-2rem)] @lg:overflow-y-auto min-w-0">
           <PricingLiveCalculator
             values={values}

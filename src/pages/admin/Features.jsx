@@ -18,6 +18,13 @@ import {
 } from '../../api/adminConfig'
 import { getApiErrorMessage } from '../../lib/apiError'
 import useContent from '../../i18n/useContent'
+import {
+  featureGroupLabel,
+  featureLabel,
+  isEnglishLang,
+  packageDescription,
+  packageName,
+} from '../../i18n/localizedField'
 import useAuthStore from '../../store/authStore'
 import { ROLES } from '../../constants/roles'
 
@@ -69,8 +76,9 @@ const GroupHeader = ({ icon, label }) => (
  * Theme: Elaya admin tokens.
  */
 const AdminFeatures = () => {
-  const { t, adminPages } = useContent()
+  const { t, adminPages, language } = useContent()
   const copy = adminPages.features || {}
+  const isEn = isEnglishLang(language)
   const role = useAuthStore((s) => s.user?.role)
   const canEdit = role === ROLES.SUPER_ADMIN
 
@@ -271,9 +279,9 @@ const AdminFeatures = () => {
     setEditingId(p.id)
     setPkgForm({
       id: p.id,
-      name: p.name || p.name_de || '',
+      name: packageName(p, language) || p.name || '',
       preis_monat: String(p.preis_monat ?? 0),
-      beschreibung: p.beschreibung || '',
+      beschreibung: packageDescription(p, language) || p.beschreibung || '',
       mitarbeiter_max:
         lim.mitarbeiter_max === null || lim.mitarbeiter_max === undefined
           ? ''
@@ -335,6 +343,7 @@ const AdminFeatures = () => {
       return
     }
 
+    const desc = String(pkgForm.beschreibung || '').trim()
     let nextList = [...packages]
     if (editingId) {
       nextList = nextList.map((p) =>
@@ -342,10 +351,11 @@ const AdminFeatures = () => {
           ? {
               ...p,
               name,
-              name_de: name,
-              name_en: name,
+              name_de: isEn ? p.name_de || name : name,
+              name_en: isEn ? name : p.name_en || name,
               preis_monat: preis,
-              beschreibung: String(pkgForm.beschreibung || '').trim(),
+              beschreibung: isEn ? p.beschreibung || desc : desc,
+              beschreibung_en: isEn ? desc : p.beschreibung_en || desc,
               limits,
               features: pkgForm.features,
             }
@@ -369,7 +379,8 @@ const AdminFeatures = () => {
         name_de: name,
         name_en: name,
         preis_monat: preis,
-        beschreibung: String(pkgForm.beschreibung || '').trim(),
+        beschreibung: desc,
+        beschreibung_en: desc,
         limits,
         features: pkgForm.features,
         plan: 'basic',
@@ -504,7 +515,7 @@ const AdminFeatures = () => {
                 <Card key={p.id}>
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <p className="m-0 text-[16px] font-semibold text-studio-white">
-                      {p.name || p.name_de}
+                      {packageName(p, language) || p.name || p.name_de}
                     </p>
                     <p className="m-0 text-[13px] font-semibold text-admin-emerald whitespace-nowrap">
                       {fmtChf(p.preis_monat)}
@@ -514,7 +525,7 @@ const AdminFeatures = () => {
                     </p>
                   </div>
                   <p className="m-0 mb-3 text-[12px] text-studio-w2">
-                    {p.beschreibung || '—'}
+                    {packageDescription(p, language) || '—'}
                   </p>
                   <div className="flex flex-col gap-1 text-[12px] text-studio-w2 mb-4">
                     <span>
@@ -569,7 +580,7 @@ const AdminFeatures = () => {
             <div className="flex flex-col gap-3">
               {groupedCatalog.map((g) => (
                 <div key={g.category}>
-                  <GroupHeader icon={g.icon} label={g.gruppe} />
+                  <GroupHeader icon={g.icon} label={featureGroupLabel(g, language)} />
                   <div className="flex flex-wrap gap-2">
                     {g.features.map((f) => {
                       const off = global[f.key] === false
@@ -586,8 +597,8 @@ const AdminFeatures = () => {
                           } ${!canEdit ? 'opacity-60 cursor-default' : ''}`}
                         >
                           <StatusDot on={!off} />
-                          {f.label}
-                          {off ? ' · OFF' : ''}
+                          {featureLabel(f, language)}
+                          {off ? ` · ${copy.statusOff || 'OFF'}` : ''}
                         </button>
                       )
                     })}
@@ -701,7 +712,7 @@ const AdminFeatures = () => {
                   <div className="flex flex-col gap-3">
                     {groupedCatalog.map((g) => (
                       <div key={g.category}>
-                        <GroupHeader icon={g.icon} label={g.gruppe} />
+                        <GroupHeader icon={g.icon} label={featureGroupLabel(g, language)} />
                         <div className="flex flex-wrap gap-1.5">
                           {g.features.map((f) => {
                             const on = Boolean(s.features?.[f.key])
@@ -726,11 +737,11 @@ const AdminFeatures = () => {
                                 } ${!canEdit ? 'opacity-60 cursor-default' : ''}`}
                               >
                                 <StatusDot on={on} />
-                                {f.label}
+                                {featureLabel(f, language)}
                                 <span className="ml-1 font-semibold">
                                   {on
-                                    ? copy.statusOn || 'AN'
-                                    : copy.statusOff || 'AUS'}
+                                    ? copy.statusOn || 'ON'
+                                    : copy.statusOff || 'OFF'}
                                 </span>
                                 {ov === true ? ' ★' : ov === false ? ' ✕' : ''}
                               </button>
@@ -845,7 +856,7 @@ const AdminFeatures = () => {
             <div className="flex flex-col gap-3">
               {groupedCatalog.map((g) => (
                 <div key={g.category}>
-                  <GroupHeader icon={g.icon} label={g.gruppe} />
+                  <GroupHeader icon={g.icon} label={featureGroupLabel(g, language)} />
                   <div className="flex flex-wrap gap-1.5">
                     {g.features.map((f) => {
                       const on = pkgForm.features.includes(f.key)
@@ -861,7 +872,7 @@ const AdminFeatures = () => {
                           }`}
                         >
                           <StatusDot on={on} />
-                          {f.label}
+                          {featureLabel(f, language)}
                         </button>
                       )
                     })}

@@ -1359,7 +1359,7 @@ const en = {
     },
     "pricing": {
       "title": "Prices & Elaycoin",
-      "desc": "Platform price-calculation rules (view only). Only Elaya super admin can change these. The live calculator shows how factors affect price.",
+      "desc": "Platform price rules (view only). Price per session is the higher of the minimum and area × base price per cm², rounded up to CHF 5, or the flat PMU price. Colours and tattoo factors change the session count, not the price.",
       "readOnlyHint": "View only — only Elaya super admin can change price calculation rules.",
       "coinSectionTitle": "Elaycoin value",
       "chfPerCoin": "CHF per coin",
@@ -3066,44 +3066,47 @@ const en = {
       "tcTypes": {
         "amateur": "Amateur",
         "professional": "Professional",
-        "cover_up": "Cover-up",
-        "unknown": "Unknown"
+        "cosmetic": "Cosmetic",
+        "coverup": "Cover-up",
+        "mixed": "Mixed"
       },
       "goals": {
         "full_removal": "Full removal",
-        "lightening": "Lightening",
-        "partial": "Partial"
+        "lightening_for_coverup": "Lighten for cover-up",
+        "partial_fade": "Partial fade"
       },
       "laserLevels": {
         "basic": "Basic",
-        "standard": "Standard",
+        "unknown": "Unknown",
         "advanced": "Advanced",
+        "premium": "Premium",
         "elite": "Elite"
       },
       "smokerOpts": {
-        "never": "Never",
-        "former": "Former",
-        "occasional": "Occasional",
-        "daily": "Daily"
+        "no": "No",
+        "occasionally": "Occasionally",
+        "daily_light": "Daily, light",
+        "daily_heavy": "Daily, heavy"
       },
       "alcoholOpts": {
         "never": "Never",
-        "rare": "Rare",
-        "weekly": "Weekly",
-        "daily": "Daily"
+        "rarely": "Rarely",
+        "1-2x_week": "1–2× / week",
+        "3-4x_week": "3–4× / week",
+        "5+x_week": "5+× / week"
       },
       "sleepQualityOpts": {
-        "very_good": "Very good",
+        "excellent": "Excellent",
         "good": "Good",
         "fair": "Fair",
-        "poor": "Poor",
-        "very_poor": "Very poor"
+        "poor": "Poor"
       },
       "sleepHoursOpts": {
-        "under_5": "< 5 h",
-        "5-6": "5–6 h",
+        "8+": "8+ h",
         "7-8": "7–8 h",
-        "over_9": "> 9 h"
+        "6-7": "6–7 h",
+        "5-6": "5–6 h",
+        "under_5": "< 5 h"
       },
       "stressOpts": {
         "low": "Low",
@@ -3112,30 +3115,30 @@ const en = {
         "very_high": "Very high"
       },
       "activityOpts": {
-        "sedentary": "Sedentary",
+        "high": "High",
+        "regular": "Regular",
         "light": "Light",
-        "moderate": "Moderate",
-        "high": "High"
+        "low": "Low"
       },
       "sportOpts": {
-        "never": "Never",
-        "1-2": "1–2× / week",
+        "5+": "5+× / week",
         "3-4": "3–4× / week",
-        "daily": "Daily"
+        "1-2": "1–2× / week",
+        "0": "No sport"
       },
-      "hydrationOpts": { "low": "Low", "medium": "Medium", "high": "High" },
+      "hydrationOpts": { "good": "Good", "normal": "Normal", "low": "Low" },
       "nutritionOpts": {
-        "poor": "Poor",
-        "fair": "Fair",
+        "very_good": "Very good",
         "good": "Good",
-        "very_good": "Very good"
+        "fair": "Fair",
+        "poor": "Poor",
+        "very_poor": "Very poor"
       },
       "aftercareOpts": { "high": "High", "medium": "Medium", "low": "Low" },
       "healingOpts": {
-        "good": "Good",
-        "average": "Average",
-        "problematic": "Problematic",
-        "unknown": "Unknown"
+        "normal": "Normal",
+        "mixed": "Mixed",
+        "problematic": "Problematic"
       },
       "lighteningOpts": {
         "fast": "Fast",
@@ -3301,7 +3304,20 @@ const en = {
     },
     "aiTraining": {
       "title": "AI Training Center",
-      "subtitle": "Vision / AI calibration for tattoo analysis"
+      "subtitle": "Edit system prompts used by live AI agents. Feature flags still gate each agent per studio.",
+      "modelName": "Model name",
+      "changeReason": "Change reason",
+      "changeReasonPh": "Why are you changing this prompt?",
+      "savePrompt": "Save prompt",
+      "loadError": "Failed to load AI config",
+      "saved": "AI config saved",
+      "saveFailed": "Save failed",
+      "prompts": {
+        "nachsorge": "Aftercare (photo check)",
+        "verblassung": "Fading analysis",
+        "customer_chat": "Customer Elaya chat",
+        "studio_chat": "Studio Elaya chat"
+      }
     },
     "finance": {
       "title": "Finance",
@@ -3470,6 +3486,8 @@ const en = {
       "packageDefaultSaved": "Reset to package defaults",
       "cancel": "Cancel",
       "save": "Save",
+      "statusOn": "ON",
+      "statusOff": "OFF",
       "saving": "Saving…"
     },
     "elaycoins": {
@@ -3512,7 +3530,14 @@ const en = {
       "verfallMonate": "Expiry after inactivity",
       "months": "Months",
       "verfallReset": "Expiry period reset by",
+      "verfallResetDefault": "Session, Aftercare check, Appointment, Purchase",
       "verfallResetHint": "Comma-separated — each of these customer actions resets the expiry deadline.",
+      "triggerLabels": {
+        "Sitzung": "Session",
+        "Nachsorge-Check": "Aftercare check",
+        "Termin": "Appointment",
+        "Einkauf": "Purchase"
+      },
       "deckelProzent": "Cap % of price (shop redeem)",
       "minWert": "Min CHF / coin (studio bound)",
       "maxWert": "Max CHF / coin (studio bound)",
@@ -3723,6 +3748,111 @@ const en = {
         "previewSelect": "Select a product…"
       }
     },
+    "users": {
+      "title": "Admin users",
+      "subtitle": "Invite admins, assign permissions, activate or deactivate. No impersonation.",
+      "inviteTitle": "Invite admin",
+      "inviteHint": "If this email was already invited and never logged in, Send invite will resend the email instead of failing.",
+      "email": "Email",
+      "name": "Name",
+      "role": "Role",
+      "roleAdmin": "Admin",
+      "roleSuperAdmin": "Super Admin",
+      "permissions": "Permissions",
+      "superAdminAllPerms": "Super Admin receives all permissions automatically.",
+      "sendInvite": "Send invite",
+      "tempPassword": "Dev temporary password: {{password}} (also emailed as reset link)",
+      "directory": "Directory",
+      "lastActive": "last active {{when}}",
+      "neverLoggedIn": "never logged in",
+      "resendInvite": "Resend invite",
+      "deactivate": "Deactivate",
+      "activate": "Activate",
+      "loadError": "Failed to load admin users",
+      "emailRequired": "Email is required",
+      "inviteFailed": "Invite failed",
+      "resendFailed": "Resend failed",
+      "deactivated": "Deactivated",
+      "activated": "Activated",
+      "updateFailed": "Update failed",
+      "permsUpdated": "Permissions updated",
+      "inviteEmailFailed": "Admin saved but invite email failed — check server EMAIL_PROVIDER / SMTP, then use Resend invite"
+    },
+    "lasers": {
+      "title": "Laser catalog",
+      "subtitle": "Approved devices studios can select. Studios cannot edit master data.",
+      "editLaser": "Edit laser",
+      "addLaser": "Add laser",
+      "manufacturer": "Manufacturer",
+      "model": "Model",
+      "wavelengths": "Wavelengths (nm)",
+      "wavelengthsHint": "Comma-separated, e.g. 532, 1064",
+      "notes": "Notes",
+      "activeSelectable": "Active (selectable by studios)",
+      "cancel": "Cancel",
+      "update": "Update",
+      "create": "Create",
+      "pendingRequests": "Pending studio requests",
+      "studioFallback": "Studio",
+      "reject": "Reject",
+      "approve": "Approve",
+      "catalog": "Catalog",
+      "noWavelengths": "No wavelengths",
+      "active": "Active",
+      "inactive": "Inactive",
+      "edit": "Edit",
+      "loadError": "Failed to load lasers",
+      "required": "Manufacturer and model are required",
+      "updated": "Laser updated",
+      "created": "Laser created",
+      "saveFailed": "Save failed",
+      "approved": "Approved & added to catalog",
+      "rejected": "Rejected",
+      "resolveFailed": "Resolve failed"
+    },
+    "studioTeam": {
+      "title": "Studio team",
+      "subtitle": "Staff Profiles (no login) and User Accounts (ELAYA logins) across all studios.",
+      "tabLogins": "User Accounts ({{count}})",
+      "tabProfiles": "Staff Profiles ({{count}})",
+      "lastLogin": "last {{when}}",
+      "deactivate": "Deactivate",
+      "activate": "Activate",
+      "linkedLogin": "linked login",
+      "noLogin": "no login",
+      "active": "Active",
+      "inactive": "Inactive",
+      "loadError": "Failed to load studio team data",
+      "deactivated": "Deactivated",
+      "activated": "Activated",
+      "roleUpdated": "Role updated",
+      "updateFailed": "Update failed"
+    },
+    "customerDetail": {
+      "back": "Back",
+      "subtitle": "Elaya Admin support access — actions are audited where applicable.",
+      "edit": "Edit",
+      "openStudio": "Studio workspace",
+      "openChat": "Studio chat",
+      "openCoins": "Elaycoins",
+      "profileHeading": "Profile",
+      "labelEmail": "Email",
+      "labelPhone": "Phone",
+      "labelStudio": "Studio",
+      "labelPipeline": "Pipeline",
+      "supportHeading": "Support mode",
+      "supportBody": "You remain logged in as Elaya Admin. Use this profile to support the studio and adjust customer data when needed.",
+      "casesHeading": "Cases",
+      "noCases": "No cases",
+      "appointmentsHeading": "Appointments",
+      "noAppointments": "No appointments",
+      "editTitle": "Edit customer",
+      "consultation": "Consultation",
+      "loadError": "Could not load customer",
+      "saved": "Customer updated",
+      "saveError": "Could not save"
+    },
+
     "transfers": {
       "title": "Studio change",
       "subtitle": "Review customer requests to switch studios",

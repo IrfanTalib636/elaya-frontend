@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { PageHeader, Card, Button, Input, Spinner, Badge, Select } from '../../components/ui'
+import { PageHeader, Card, Button, Spinner, Badge, Select } from '../../components/ui'
 import {
   listAdminStudioLogins,
   listAdminStaffProfiles,
   updateStudioLogin,
 } from '../../api/studioTeam'
 import { getApiErrorMessage } from '../../lib/apiError'
+import useContent from '../../i18n/useContent'
+import { localizedField } from '../../i18n/localizedField'
 
 export default function AdminStudioTeam() {
+  const { adminPages, language, t } = useContent()
+  const copy = adminPages.studioTeam || {}
   const [tab, setTab] = useState('logins')
   const [loading, setLoading] = useState(true)
   const [logins, setLogins] = useState([])
@@ -26,11 +30,11 @@ export default function AdminStudioTeam() {
       setRoles(l.data.data.account_roles || [])
       setProfiles(p.data.data.profiles || [])
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Failed to load studio team data'))
+      toast.error(getApiErrorMessage(err, copy.loadError || 'Failed to load studio team data'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [copy.loadError])
 
   useEffect(() => {
     void load()
@@ -42,10 +46,10 @@ export default function AdminStudioTeam() {
         status,
         studio_id: user.studio_id,
       })
-      toast.success(status === 'gesperrt' ? 'Deactivated' : 'Activated')
+      toast.success(status === 'gesperrt' ? copy.deactivated : copy.activated)
       await load()
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Update failed'))
+      toast.error(getApiErrorMessage(err, copy.updateFailed || 'Update failed'))
     }
   }
 
@@ -55,12 +59,15 @@ export default function AdminStudioTeam() {
         studio_account_role,
         studio_id: user.studio_id,
       })
-      toast.success('Role updated')
+      toast.success(copy.roleUpdated || 'Role updated')
       await load()
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Update failed'))
+      toast.error(getApiErrorMessage(err, copy.updateFailed || 'Update failed'))
     }
   }
+
+  const roleLabel = (r) =>
+    localizedField(r, language, { de: 'label_de', en: 'label' }) || r.label || r.key
 
   if (loading) {
     return (
@@ -72,10 +79,7 @@ export default function AdminStudioTeam() {
 
   return (
     <div className="max-w-[1100px] flex flex-col gap-5">
-      <PageHeader
-        title="Studio team"
-        subtitle="Staff Profiles (no login) and User Accounts (ELAYA logins) across all studios."
-      />
+      <PageHeader title={copy.title} subtitle={copy.subtitle} />
 
       <div className="flex gap-2">
         <Button
@@ -83,14 +87,14 @@ export default function AdminStudioTeam() {
           variant={tab === 'logins' ? 'primary' : 'ghost'}
           onClick={() => setTab('logins')}
         >
-          User Accounts ({logins.length})
+          {t('adminPages.studioTeam.tabLogins', { count: logins.length })}
         </Button>
         <Button
           size="sm"
           variant={tab === 'profiles' ? 'primary' : 'ghost'}
           onClick={() => setTab('profiles')}
         >
-          Staff Profiles ({profiles.length})
+          {t('adminPages.studioTeam.tabProfiles', { count: profiles.length })}
         </Button>
       </div>
 
@@ -109,7 +113,9 @@ export default function AdminStudioTeam() {
                   {u.email} · {u.studio?.firma || '—'} ({u.studio?.studio_code}) ·{' '}
                   {u.studio_account_role}
                   {u.last_login
-                    ? ` · last ${new Date(u.last_login).toLocaleString()}`
+                    ? ` · ${t('adminPages.studioTeam.lastLogin', {
+                        when: new Date(u.last_login).toLocaleString(),
+                      })}`
                     : ''}
                 </p>
               </div>
@@ -123,13 +129,13 @@ export default function AdminStudioTeam() {
                 >
                   {roles.map((r) => (
                     <option key={r.key} value={r.key}>
-                      {r.label}
+                      {roleLabel(r)}
                     </option>
                   ))}
                 </Select>
                 {u.status === 'aktiv' ? (
                   <Button size="sm" variant="ghost" onClick={() => void setStatus(u, 'gesperrt')}>
-                    Deactivate
+                    {copy.deactivate}
                   </Button>
                 ) : (
                   <Button
@@ -137,7 +143,7 @@ export default function AdminStudioTeam() {
                     variant="secondary"
                     onClick={() => void setStatus(u, 'aktiv')}
                   >
-                    Activate
+                    {copy.activate}
                   </Button>
                 )}
               </div>
@@ -157,11 +163,11 @@ export default function AdminStudioTeam() {
                 </p>
                 <p className="m-0 text-[11px] text-studio-w3">
                   {p.rolle} · {p.studio.firma} ({p.studio.studio_code})
-                  {p.user_id ? ' · linked login' : ' · no login'}
+                  {p.user_id ? ` · ${copy.linkedLogin}` : ` · ${copy.noLogin}`}
                 </p>
               </div>
               <Badge variant="status" value={p.aktiv ? 'aktiv' : 'gesperrt'}>
-                {p.aktiv ? 'Active' : 'Inactive'}
+                {p.aktiv ? copy.active : copy.inactive}
               </Badge>
             </div>
           ))}

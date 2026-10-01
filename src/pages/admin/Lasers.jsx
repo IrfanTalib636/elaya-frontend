@@ -9,6 +9,7 @@ import {
   resolveLaserRequest,
 } from '../../api/adminPhase4'
 import { getApiErrorMessage } from '../../lib/apiError'
+import useContent from '../../i18n/useContent'
 
 const emptyForm = () => ({
   manufacturer: '',
@@ -25,6 +26,8 @@ const parseWavelengths = (raw) =>
     .filter((n) => Number.isFinite(n) && n > 0)
 
 export default function AdminLasers() {
+  const { adminPages } = useContent()
+  const copy = adminPages.lasers || {}
   const [loading, setLoading] = useState(true)
   const [devices, setDevices] = useState([])
   const [requests, setRequests] = useState([])
@@ -42,11 +45,11 @@ export default function AdminLasers() {
       setDevices(d.data.data.devices || [])
       setRequests(r.data.data.requests || [])
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Failed to load lasers'))
+      toast.error(getApiErrorMessage(err, copy.loadError || 'Failed to load lasers'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [copy.loadError])
 
   useEffect(() => {
     void load()
@@ -70,7 +73,7 @@ export default function AdminLasers() {
 
   const handleSave = async () => {
     if (!form.manufacturer.trim() || !form.model.trim()) {
-      toast.error('Manufacturer and model are required')
+      toast.error(copy.required || 'Manufacturer and model are required')
       return
     }
     setSaving(true)
@@ -84,11 +87,11 @@ export default function AdminLasers() {
       }
       if (editingId) await updateLaser(editingId, payload)
       else await createLaser(payload)
-      toast.success(editingId ? 'Laser updated' : 'Laser created')
+      toast.success(editingId ? copy.updated : copy.created)
       cancelEdit()
       await load()
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Save failed'))
+      toast.error(getApiErrorMessage(err, copy.saveFailed || 'Save failed'))
     } finally {
       setSaving(false)
     }
@@ -97,10 +100,10 @@ export default function AdminLasers() {
   const handleResolve = async (id, decision) => {
     try {
       await resolveLaserRequest(id, { decision })
-      toast.success(decision === 'approved' ? 'Approved & added to catalog' : 'Rejected')
+      toast.success(decision === 'approved' ? copy.approved : copy.rejected)
       await load()
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Resolve failed'))
+      toast.error(getApiErrorMessage(err, copy.resolveFailed || 'Resolve failed'))
     }
   }
 
@@ -114,34 +117,31 @@ export default function AdminLasers() {
 
   return (
     <div className="max-w-[960px] flex flex-col gap-5">
-      <PageHeader
-        title="Laser catalog"
-        subtitle="Approved devices studios can select. Studios cannot edit master data."
-      />
+      <PageHeader title={copy.title} subtitle={copy.subtitle} />
 
       <Card className="flex flex-col gap-3">
         <h3 className="m-0 text-[14px] font-semibold text-studio-white">
-          {editingId ? 'Edit laser' : 'Add laser'}
+          {editingId ? copy.editLaser : copy.addLaser}
         </h3>
         <div className="grid grid-cols-2 gap-3">
           <Input
-            label="Manufacturer"
+            label={copy.manufacturer}
             value={form.manufacturer}
             onChange={(e) => setForm((f) => ({ ...f, manufacturer: e.target.value }))}
           />
           <Input
-            label="Model"
+            label={copy.model}
             value={form.model}
             onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
           />
           <Input
-            label="Wavelengths (nm)"
-            hint="Comma-separated, e.g. 532, 1064"
+            label={copy.wavelengths}
+            hint={copy.wavelengthsHint}
             value={form.wavelengths}
             onChange={(e) => setForm((f) => ({ ...f, wavelengths: e.target.value }))}
           />
           <Input
-            label="Notes"
+            label={copy.notes}
             value={form.notes}
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
           />
@@ -152,16 +152,16 @@ export default function AdminLasers() {
             checked={form.active}
             onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))}
           />
-          Active (selectable by studios)
+          {copy.activeSelectable}
         </label>
         <div className="flex gap-2 justify-end">
           {editingId ? (
             <Button size="sm" variant="ghost" onClick={cancelEdit} disabled={saving}>
-              Cancel
+              {copy.cancel}
             </Button>
           ) : null}
           <Button size="sm" loading={saving} onClick={() => void handleSave()}>
-            {editingId ? 'Update' : 'Create'}
+            {editingId ? copy.update : copy.create}
           </Button>
         </div>
       </Card>
@@ -169,7 +169,7 @@ export default function AdminLasers() {
       {requests.length > 0 ? (
         <Card className="flex flex-col gap-3">
           <h3 className="m-0 text-[14px] font-semibold text-studio-white">
-            Pending studio requests
+            {copy.pendingRequests}
           </h3>
           <ul className="m-0 p-0 list-none flex flex-col gap-2">
             {requests.map((req) => (
@@ -182,15 +182,19 @@ export default function AdminLasers() {
                     {req.manufacturer} {req.model}
                   </p>
                   <p className="m-0 text-[11px] text-studio-w3">
-                    {req.studio?.firma || 'Studio'} · {req.requested_by || '—'}
+                    {req.studio?.firma || copy.studioFallback} · {req.requested_by || '—'}
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => void handleResolve(req.id, 'rejected')}>
-                    Reject
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => void handleResolve(req.id, 'rejected')}
+                  >
+                    {copy.reject}
                   </Button>
                   <Button size="sm" onClick={() => void handleResolve(req.id, 'approved')}>
-                    Approve
+                    {copy.approve}
                   </Button>
                 </div>
               </li>
@@ -200,7 +204,9 @@ export default function AdminLasers() {
       ) : null}
 
       <Card className="flex flex-col gap-2">
-        <h3 className="m-0 text-[14px] font-semibold text-studio-white mb-1">Catalog</h3>
+        <h3 className="m-0 text-[14px] font-semibold text-studio-white mb-1">
+          {copy.catalog}
+        </h3>
         {devices.map((d) => (
           <div
             key={d.id}
@@ -209,15 +215,16 @@ export default function AdminLasers() {
             <div>
               <p className="m-0 text-[13px] text-studio-white font-medium">{d.label}</p>
               <p className="m-0 text-[11px] text-studio-w3">
-                {(d.wavelengths_nm || []).map((n) => `${n} nm`).join(' · ') || 'No wavelengths'}
+                {(d.wavelengths_nm || []).map((n) => `${n} nm`).join(' · ') ||
+                  copy.noWavelengths}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant={d.active ? 'status' : 'default'} value={d.active ? 'aktiv' : 'gesperrt'}>
-                {d.active ? 'Active' : 'Inactive'}
+                {d.active ? copy.active : copy.inactive}
               </Badge>
               <Button size="sm" variant="ghost" onClick={() => startEdit(d)}>
-                Edit
+                {copy.edit}
               </Button>
             </div>
           </div>

@@ -20,6 +20,11 @@ import {
   updatePlatformConfig,
 } from '../../api/adminConfig'
 import useContent from '../../i18n/useContent'
+import {
+  canonicalizeElaycoinTriggers,
+  localizeElaycoinTriggers,
+  situationLabel,
+} from '../../i18n/elaycoinLocalize'
 import useAuthStore from '../../store/authStore'
 import { ROLES } from '../../constants/roles'
 
@@ -27,10 +32,13 @@ import { ROLES } from '../../constants/roles'
  * Elaycoins Admin — balances + platform rules (prototype Elaycoin-Regeln structure).
  */
 const AdminElaycoins = () => {
-  const { t, adminPages } = useContent()
+  const { t, adminPages, language } = useContent()
   const copy = adminPages.elaycoins
   const role = useAuthStore((s) => s.user?.role)
   const canEditRules = role === ROLES.SUPER_ADMIN
+
+  const defaultTriggers =
+    copy.verfallResetDefault || 'Session, Aftercare check, Appointment, Purchase'
 
   const [tab, setTab] = useState('balances')
   const [loading, setLoading] = useState(true)
@@ -53,7 +61,7 @@ const AdminElaycoins = () => {
     grenze_pro_aktion_min: '0',
     grenze_pro_aktion_max: '1000',
     verfallMonate: '12',
-    verfall_reset_trigger: 'Sitzung, Nachsorge-Check, Termin, Einkauf',
+    verfall_reset_trigger: defaultTriggers,
     deckelProzent: '20',
     minWert: '0.05',
     maxWert: '0.2',
@@ -88,8 +96,16 @@ const AdminElaycoins = () => {
       const cfg = res.data.data.platform_config || {}
       const er = cfg.elaycoin_regeln || {}
       const triggers = Array.isArray(er.verfall_reset_trigger)
-        ? er.verfall_reset_trigger.join(', ')
-        : 'Sitzung, Nachsorge-Check, Termin, Einkauf'
+        ? localizeElaycoinTriggers(
+            er.verfall_reset_trigger,
+            language,
+            copy.triggerLabels || {}
+          )
+        : localizeElaycoinTriggers(
+            copy.verfallResetDefault || defaultTriggers,
+            language,
+            copy.triggerLabels || {}
+          )
       setRules({
         geldwert_coins: String(er.geldwert_coins ?? 100),
         geldwert_chf: String(er.geldwert_chf ?? 5),
@@ -97,7 +113,7 @@ const AdminElaycoins = () => {
         grenze_pro_aktion_min: String(er.grenze_pro_aktion_min ?? 0),
         grenze_pro_aktion_max: String(er.grenze_pro_aktion_max ?? 1000),
         verfallMonate: String(cfg.verfallMonate ?? 12),
-        verfall_reset_trigger: triggers,
+        verfall_reset_trigger: triggers || defaultTriggers,
         deckelProzent: String(cfg.deckelProzent ?? 20),
         minWert: String(cfg.minWert ?? 0.05),
         maxWert: String(cfg.maxWert ?? 0.2),
@@ -110,7 +126,7 @@ const AdminElaycoins = () => {
     } finally {
       setRulesLoading(false)
     }
-  }, [copy.rulesLoadError])
+  }, [copy.rulesLoadError, copy.triggerLabels, copy.verfallResetDefault, defaultTriggers, language])
 
   useEffect(() => {
     if (tab === 'balances') load(page)
@@ -251,10 +267,7 @@ const AdminElaycoins = () => {
     if (!canEditRules) return
     setRulesSaving(true)
     try {
-      const triggers = String(rules.verfall_reset_trigger || '')
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean)
+      const triggers = canonicalizeElaycoinTriggers(rules.verfall_reset_trigger)
       await updatePlatformConfig({
         verfallMonate: Number(rules.verfallMonate),
         deckelProzent: Number(rules.deckelProzent),
@@ -270,6 +283,7 @@ const AdminElaycoins = () => {
           situations: rules.situations.map((s) => ({
             key: s.key,
             label: s.label,
+            label_en: s.label_en || s.label,
             kat: s.kat,
             coins: Number(s.coins) || 0,
             aktiv: s.aktiv !== false,
@@ -548,9 +562,16 @@ const AdminElaycoins = () => {
                           <input
                             type="text"
                             className={`${inputCls} flex-1 min-w-[160px]`}
-                            value={s.label}
+                            value={situationLabel(s, language)}
                             disabled={!canEditRules}
-                            onChange={(e) => updateSituation(s._idx, { label: e.target.value })}
+                            onChange={(e) => {
+                              const v = e.target.value
+                              const isEn = String(language || '').startsWith('en')
+                              updateSituation(
+                                s._idx,
+                                isEn ? { label_en: v } : { label: v }
+                              )
+                            }}
                           />
                           <span
                             className={`font-bold font-mono text-[13px] ${

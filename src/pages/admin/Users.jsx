@@ -9,6 +9,8 @@ import {
 } from '../../api/adminPhase4'
 import { getApiErrorMessage } from '../../lib/apiError'
 import { ROLES } from '../../constants/roles'
+import useContent from '../../i18n/useContent'
+import { localizedField } from '../../i18n/localizedField'
 
 const emptyInvite = () => ({
   email: '',
@@ -18,6 +20,8 @@ const emptyInvite = () => ({
 })
 
 export default function AdminUsers() {
+  const { adminPages, language, t } = useContent()
+  const copy = adminPages.users || {}
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState([])
   const [catalog, setCatalog] = useState([])
@@ -33,11 +37,11 @@ export default function AdminUsers() {
       setUsers(res.data.data.users || [])
       setCatalog(res.data.data.permission_catalog || [])
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Failed to load admin users'))
+      toast.error(getApiErrorMessage(err, copy.loadError || 'Failed to load admin users'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [copy.loadError])
 
   useEffect(() => {
     void load()
@@ -55,16 +59,21 @@ export default function AdminUsers() {
     })
   }
 
+  const permLabel = (p) =>
+    localizedField(p, language, { de: 'label_de', en: 'label' }) || p.label || p.key
+
+  const permDesc = (p) =>
+    localizedField(p, language, { de: 'description_de', en: 'description' }) ||
+    p.description ||
+    ''
+
   const handleInviteResult = (res) => {
     const data = res.data?.data || {}
-    const msg = res.data?.message || 'Admin invited'
+    const msg = res.data?.message || copy.sendInvite
     if (data.invite_sent) {
       toast.success(msg)
     } else {
-      toast.error(
-        msg ||
-          'Admin saved but invite email failed — check server EMAIL_PROVIDER / SMTP, then use Resend invite'
-      )
+      toast.error(msg || copy.inviteEmailFailed)
     }
     if (data.temporary_password) {
       setTempPassword(data.temporary_password)
@@ -73,7 +82,7 @@ export default function AdminUsers() {
 
   const handleInvite = async () => {
     if (!invite.email.trim()) {
-      toast.error('Email is required')
+      toast.error(copy.emailRequired || 'Email is required')
       return
     }
     setSaving(true)
@@ -89,7 +98,7 @@ export default function AdminUsers() {
       setInvite(emptyInvite())
       await load()
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Invite failed'))
+      toast.error(getApiErrorMessage(err, copy.inviteFailed || 'Invite failed'))
     } finally {
       setSaving(false)
     }
@@ -102,7 +111,7 @@ export default function AdminUsers() {
       handleInviteResult(res)
       await load()
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Resend failed'))
+      toast.error(getApiErrorMessage(err, copy.resendFailed || 'Resend failed'))
     } finally {
       setResendingId(null)
     }
@@ -111,20 +120,20 @@ export default function AdminUsers() {
   const setStatus = async (user, status) => {
     try {
       await updateAdminUser(user.id, { status })
-      toast.success(status === 'gesperrt' ? 'Deactivated' : 'Activated')
+      toast.success(status === 'gesperrt' ? copy.deactivated : copy.activated)
       await load()
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Update failed'))
+      toast.error(getApiErrorMessage(err, copy.updateFailed || 'Update failed'))
     }
   }
 
   const setUserPerms = async (user, permissions) => {
     try {
       await updateAdminUser(user.id, { permissions })
-      toast.success('Permissions updated')
+      toast.success(copy.permsUpdated || 'Permissions updated')
       await load()
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Update failed'))
+      toast.error(getApiErrorMessage(err, copy.updateFailed || 'Update failed'))
     }
   }
 
@@ -138,41 +147,39 @@ export default function AdminUsers() {
 
   return (
     <div className="max-w-[960px] flex flex-col gap-5">
-      <PageHeader
-        title="Admin users"
-        subtitle="Invite admins, assign permissions, activate or deactivate. No impersonation."
-      />
+      <PageHeader title={copy.title} subtitle={copy.subtitle} />
 
       <Card className="flex flex-col gap-3">
-        <h3 className="m-0 text-[14px] font-semibold text-studio-white">Invite admin</h3>
-        <p className="m-0 text-[12px] text-studio-w3">
-          If this email was already invited and never logged in, Send invite will resend the email
-          instead of failing.
-        </p>
+        <h3 className="m-0 text-[14px] font-semibold text-studio-white">
+          {copy.inviteTitle}
+        </h3>
+        <p className="m-0 text-[12px] text-studio-w3">{copy.inviteHint}</p>
         <div className="grid grid-cols-2 gap-3">
           <Input
-            label="Email"
+            label={copy.email}
             type="email"
             value={invite.email}
             onChange={(e) => setInvite((f) => ({ ...f, email: e.target.value }))}
           />
           <Input
-            label="Name"
+            label={copy.name}
             value={invite.name}
             onChange={(e) => setInvite((f) => ({ ...f, name: e.target.value }))}
           />
           <Select
-            label="Role"
+            label={copy.role}
             value={invite.role}
             onChange={(e) => setInvite((f) => ({ ...f, role: e.target.value }))}
           >
-            <option value={ROLES.ADMIN}>Admin</option>
-            <option value={ROLES.SUPER_ADMIN}>Super Admin</option>
+            <option value={ROLES.ADMIN}>{copy.roleAdmin}</option>
+            <option value={ROLES.SUPER_ADMIN}>{copy.roleSuperAdmin}</option>
           </Select>
         </div>
         {invite.role === ROLES.ADMIN ? (
           <div className="flex flex-col gap-1.5">
-            <p className="m-0 text-[12px] font-semibold text-studio-white">Permissions</p>
+            <p className="m-0 text-[12px] font-semibold text-studio-white">
+              {copy.permissions}
+            </p>
             {catalog.map((p) => (
               <label key={p.key} className="flex items-start gap-2 text-[12px] text-studio-w2">
                 <input
@@ -181,31 +188,31 @@ export default function AdminUsers() {
                   onChange={() => togglePerm(p.key)}
                 />
                 <span>
-                  <span className="text-studio-white">{p.label}</span>
-                  {p.description ? ` — ${p.description}` : ''}
+                  <span className="text-studio-white">{permLabel(p)}</span>
+                  {permDesc(p) ? ` — ${permDesc(p)}` : ''}
                 </span>
               </label>
             ))}
           </div>
         ) : (
-          <p className="m-0 text-[12px] text-studio-w3">
-            Super Admin receives all permissions automatically.
-          </p>
+          <p className="m-0 text-[12px] text-studio-w3">{copy.superAdminAllPerms}</p>
         )}
         <div className="flex justify-end">
           <Button loading={saving} onClick={() => void handleInvite()}>
-            Send invite
+            {copy.sendInvite}
           </Button>
         </div>
         {tempPassword ? (
           <p className="m-0 text-[12px] text-studio-gold-2">
-            Dev temporary password: <code>{tempPassword}</code> (also emailed as reset link)
+            {t('adminPages.users.tempPassword', { password: tempPassword })}
           </p>
         ) : null}
       </Card>
 
       <Card className="flex flex-col gap-2">
-        <h3 className="m-0 text-[14px] font-semibold text-studio-white mb-1">Directory</h3>
+        <h3 className="m-0 text-[14px] font-semibold text-studio-white mb-1">
+          {copy.directory}
+        </h3>
         {users.map((u) => (
           <div
             key={u.id}
@@ -219,8 +226,10 @@ export default function AdminUsers() {
                 <p className="m-0 text-[11px] text-studio-w3">
                   {u.email} · {u.role}
                   {u.last_login
-                    ? ` · last active ${new Date(u.last_login).toLocaleString()}`
-                    : ' · never logged in'}
+                    ? ` · ${t('adminPages.users.lastActive', {
+                        when: new Date(u.last_login).toLocaleString(),
+                      })}`
+                    : ` · ${copy.neverLoggedIn}`}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -234,16 +243,16 @@ export default function AdminUsers() {
                     loading={resendingId === u.id}
                     onClick={() => void handleResend(u)}
                   >
-                    Resend invite
+                    {copy.resendInvite}
                   </Button>
                 ) : null}
                 {u.status === 'aktiv' ? (
                   <Button size="sm" variant="ghost" onClick={() => void setStatus(u, 'gesperrt')}>
-                    Deactivate
+                    {copy.deactivate}
                   </Button>
                 ) : (
                   <Button size="sm" variant="secondary" onClick={() => void setStatus(u, 'aktiv')}>
-                    Activate
+                    {copy.activate}
                   </Button>
                 )}
               </div>
@@ -268,7 +277,7 @@ export default function AdminUsers() {
                         void setUserPerms(u, next)
                       }}
                     >
-                      {p.label}
+                      {permLabel(p)}
                     </button>
                   )
                 })}

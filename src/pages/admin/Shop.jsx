@@ -29,7 +29,7 @@ import {
 import useContent from '../../i18n/useContent'
 import useAuthStore from '../../store/authStore'
 import { ROLES } from '../../constants/roles'
-import { resolveProductPrice, pickActivePromotion, formatMoney } from '../../utils/shopPricing'
+import { resolveProductPrice, pickActivePromotion, formatMoney, isDiscountInRange } from '../../utils/shopPricing'
 import { resolveShopImageUrl } from '../../utils/mediaUrl'
 
 const CATEGORY_IDS = ['Nachsorge', 'Sonnenschutz', 'Reinigung', 'Zubehör', 'Sonstiges']
@@ -101,15 +101,25 @@ const PricePreview = ({ price, size = 'md' }) => {
 
 const PromotionStatusBadge = ({ promo, copy }) => {
   const now = new Date()
-  const von = promo.von ? new Date(promo.von) : null
-  const bis = promo.bis ? new Date(promo.bis) : null
+  const inRange = isDiscountInRange(now, promo.von, promo.bis)
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Zurich',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now)
+  const start = typeof promo.von === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(promo.von)
+    ? promo.von
+    : promo.von
+      ? new Date(promo.von).toISOString().slice(0, 10)
+      : ''
   let label = copy.statusOff
   let cls = 'bg-studio-w4 text-studio-w2'
   if (promo.aktiv) {
-    if (von && now < von) {
+    if (!inRange && start && today < start) {
       label = copy.statusScheduled
       cls = 'bg-studio-gold/15 text-studio-gold-2'
-    } else if (bis && now > bis) {
+    } else if (!inRange) {
       label = copy.statusExpired
       cls = 'bg-elaya-error/15 text-elaya-error'
     } else {

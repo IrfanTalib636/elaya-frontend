@@ -41,21 +41,21 @@ const LOCATIONS = [
 ]
 const LEVELS = ['low', 'medium', 'high', 'very_high']
 const COVERUP = ['none', 'once', 'multiple', 'unknown']
-const TC_TYPES = ['amateur', 'professional', 'cover_up', 'unknown']
-const GOALS = ['full_removal', 'lightening', 'partial']
-const LASER_LEVELS = ['basic', 'standard', 'advanced', 'elite']
-const HEALING = ['good', 'average', 'problematic', 'unknown']
+const TC_TYPES = ['amateur', 'professional', 'cosmetic', 'coverup', 'mixed']
+const GOALS = ['full_removal', 'partial_fade', 'lightening_for_coverup']
+const LASER_LEVELS = ['basic', 'unknown', 'advanced', 'premium', 'elite']
+const HEALING = ['normal', 'mixed', 'problematic']
 const LIGHTENING = ['fast', 'expected', 'slow', 'stagnant']
 const AFTERCARE = ['high', 'medium', 'low']
-const SMOKER = ['never', 'former', 'occasional', 'daily']
-const ALCOHOL = ['never', 'rare', 'weekly', 'daily']
-const SLEEP_Q = ['very_good', 'good', 'fair', 'poor', 'very_poor']
-const SLEEP_H = ['under_5', '5-6', '7-8', 'over_9']
+const SMOKER = ['no', 'occasionally', 'daily_light', 'daily_heavy']
+const ALCOHOL = ['never', 'rarely', '1-2x_week', '3-4x_week', '5+x_week']
+const SLEEP_Q = ['excellent', 'good', 'fair', 'poor']
+const SLEEP_H = ['8+', '7-8', '6-7', '5-6', 'under_5']
 const STRESS = ['low', 'medium', 'high', 'very_high']
-const ACTIVITY = ['sedentary', 'light', 'moderate', 'high']
-const SPORT = ['never', '1-2', '3-4', 'daily']
-const HYDRATION = ['low', 'medium', 'high']
-const NUTRITION = ['poor', 'fair', 'good', 'very_good']
+const ACTIVITY = ['high', 'regular', 'light', 'low']
+const SPORT = ['5+', '3-4', '1-2', '0']
+const HYDRATION = ['good', 'normal', 'low']
+const NUTRITION = ['very_good', 'good', 'fair', 'poor', 'very_poor']
 
 const fieldClass =
   'w-full rounded-[10px] border border-elaya-border bg-studio-bg-4 text-studio-white text-[13px] px-3 py-2 outline-none focus:border-studio-gold/50'
@@ -71,30 +71,30 @@ const defaultForm = () => ({
   tc_density: 'medium',
   tc_saturation: 'medium',
   tc_coverup: 'none',
-  tc_age_years: 3,
+  tc_age_years: 5,
   tc_prior_treatment: false,
   tc_prior_treatment_count: 0,
   tc_type: 'professional',
   goal_target: 'full_removal',
   skin_keloid_risk: 'low',
-  laser_profile_level: 'standard',
+  laser_profile_level: 'basic',
   type: 'tattoo',
   tc_colors_present: ['black'],
   laserId: '',
-  healing_history: 'average',
-  lightening_rate: '',
+  healing_history: 'normal',
+  lightening_rate: 'expected',
   life_aftercare_commitment: 'medium',
-  life_age: 32,
+  life_age: 34,
   life_height_cm: 170,
-  life_weight_kg: 70,
-  life_smoker: 'never',
-  life_alcohol: 'rare',
+  life_weight_kg: 72,
+  life_smoker: 'no',
+  life_alcohol: 'never',
   life_sleep_quality: 'good',
   life_sleep_hours: '7-8',
   life_stress: 'medium',
-  life_activity: 'moderate',
-  life_sport_frequency: '1-2',
-  life_hydration: 'medium',
+  life_activity: 'regular',
+  life_sport_freq: '1-2',
+  life_hydration: 'normal',
   life_nutrition: 'good',
 })
 
@@ -133,10 +133,6 @@ const NumField = ({ label, value, onChange, step = 'any', min }) => (
   </div>
 )
 
-/**
- * Tattoo Case Simulator — prototype Studio-Ansicht parity.
- * Runs live against published (or optional draft) pricing + session engines.
- */
 const EngineCaseSimulator = ({
   mode = 'admin',
   draftPricing = null,
@@ -168,6 +164,12 @@ const EngineCaseSimulator = ({
     }
     return Math.max(0, Number(form.flaeche_cm2) || 0)
   }, [form])
+
+  const selectedLaser = useMemo(
+    () => lasers.find((l) => l.id === form.laserId) || lasers[0],
+    [lasers, form.laserId]
+  )
+  const activeColorDeltas = selectedLaser?.color_deltas || colorDeltas
 
   const caseInput = useMemo(() => {
     const colors = form.tc_colors_present || []
@@ -204,12 +206,15 @@ const EngineCaseSimulator = ({
       life_sleep_hours: form.life_sleep_hours,
       life_stress: form.life_stress,
       life_activity: form.life_activity,
-      life_sport_frequency: form.life_sport_frequency,
+      life_sport_freq: form.life_sport_freq,
       life_hydration: form.life_hydration,
       life_nutrition: form.life_nutrition,
+      ...(activeColorDeltas && Object.keys(activeColorDeltas).length
+        ? { laser_color_deltas: activeColorDeltas }
+        : {}),
     }
     return input
-  }, [form, area])
+  }, [form, area, activeColorDeltas])
 
   useEffect(() => {
     let cancelled = false
@@ -247,7 +252,6 @@ const EngineCaseSimulator = ({
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount / mode
   }, [mode])
 
   useEffect(() => {
@@ -283,18 +287,16 @@ const EngineCaseSimulator = ({
     return () => clearTimeout(timer)
   }, [caseInput, draftPricing, draftSessions, copy.previewFailed])
 
-  const selectedLaser = lasers.find((l) => l.id === form.laserId) || lasers[0]
-
   const laserStrengths = useMemo(() => {
     const strong = []
     const weak = []
     for (const c of COLORS) {
-      const d = Number(colorDeltas[c] ?? 0)
+      const d = Number(activeColorDeltas[c] ?? 0)
       if (d <= 1) strong.push(c)
       if (d >= 2) weak.push({ key: c, delta: d })
     }
     return { strong, weak }
-  }, [colorDeltas])
+  }, [activeColorDeltas])
 
   const toggleColor = (c) => {
     setForm((prev) => {
@@ -319,7 +321,6 @@ const EngineCaseSimulator = ({
 
   const lifestyleScore = liveSession?.lifestyle_score
   const lifestyleAvg = liveSession?.lifestyle_average
-  // Prototype meter 0–30 ≈ sum of 7 factors (1–5). Map average 1–5 → index 7–35.
   const lifestyleIndex =
     lifestyleAvg != null
       ? Math.round(Number(lifestyleAvg) * 7)
@@ -339,19 +340,18 @@ const EngineCaseSimulator = ({
     const colors = form.tc_colors_present || []
     let hardest = 0
     for (const c of colors) {
-      hardest = Math.max(hardest, Number(colorDeltas[c] ?? 0))
+      hardest = Math.max(hardest, Number(activeColorDeltas[c] ?? 0))
     }
     const extras = colors.filter((c) => c !== 'black' && c !== 'grey')
     const countDelta = extras.length === 0 ? 0 : extras.length <= 2 ? 1 : 3
     return Math.max(hardest, countDelta)
-  }, [form.tc_colors_present, colorDeltas])
+  }, [form.tc_colors_present, activeColorDeltas])
 
   const colorDifficulty =
     colorImpact <= 0 ? 'low' : colorImpact <= 2 ? 'medium' : 'high'
 
   const opt = (key) => (v) => copy[key]?.[v] || v
 
-  // option maps (avoid colliding with label string keys)
   const coverupLabel = opt('coverupOpts')
   const smokerLabel = opt('smokerOpts')
   const alcoholLabel = opt('alcoholOpts')
@@ -613,7 +613,7 @@ const EngineCaseSimulator = ({
             <div className="flex flex-wrap gap-2">
               {COLORS.map((c) => {
                 const on = (form.tc_colors_present || []).includes(c)
-                const d = Number(colorDeltas[c] ?? 0)
+                const d = Number(activeColorDeltas[c] ?? 0)
                 return (
                   <button
                     key={c}
@@ -636,7 +636,6 @@ const EngineCaseSimulator = ({
           </div>
         </section>
 
-        {/* Lifestyle */}
         <section className="rounded-2xl border border-elaya-border bg-studio-bg-3 p-5">
           <h3 className="text-studio-white text-[14px] font-semibold m-0 mb-4">
             {copy.secLifestyle || 'Lifestyle'}
@@ -706,8 +705,8 @@ const EngineCaseSimulator = ({
             />
             <SelectField
               label={copy.sport || 'Sport'}
-              value={form.life_sport_frequency}
-              onChange={(v) => set('life_sport_frequency', v)}
+              value={form.life_sport_freq}
+              onChange={(v) => set('life_sport_freq', v)}
               options={SPORT}
               optionLabel={sportLabel}
             />
@@ -735,7 +734,6 @@ const EngineCaseSimulator = ({
           </div>
         </section>
 
-        {/* Healing */}
         <section className="rounded-2xl border border-elaya-border bg-studio-bg-3 p-5">
           <h3 className="text-studio-white text-[14px] font-semibold m-0 mb-4">
             {copy.secHealing || 'Healing & response'}

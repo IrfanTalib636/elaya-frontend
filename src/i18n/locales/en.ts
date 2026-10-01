@@ -1359,7 +1359,7 @@ const en = {
     },
     "pricing": {
       "title": "Prices & Elaycoin",
-      "desc": "Platform price-calculation rules (view only). Only Elaya super admin can change these. The live calculator shows how factors affect price.",
+      "desc": "Platform price rules (view only). Price per session is the higher of the minimum and area × base price per cm², rounded up to CHF 5, or the flat PMU price. Colours and tattoo factors change the session count, not the price.",
       "readOnlyHint": "View only — only Elaya super admin can change price calculation rules.",
       "coinSectionTitle": "Elaycoin value",
       "chfPerCoin": "CHF per coin",
@@ -3066,44 +3066,47 @@ const en = {
       "tcTypes": {
         "amateur": "Amateur",
         "professional": "Professional",
-        "cover_up": "Cover-up",
-        "unknown": "Unknown"
+        "cosmetic": "Cosmetic",
+        "coverup": "Cover-up",
+        "mixed": "Mixed"
       },
       "goals": {
         "full_removal": "Full removal",
-        "lightening": "Lightening",
-        "partial": "Partial"
+        "lightening_for_coverup": "Lighten for cover-up",
+        "partial_fade": "Partial fade"
       },
       "laserLevels": {
         "basic": "Basic",
-        "standard": "Standard",
+        "unknown": "Unknown",
         "advanced": "Advanced",
+        "premium": "Premium",
         "elite": "Elite"
       },
       "smokerOpts": {
-        "never": "Never",
-        "former": "Former",
-        "occasional": "Occasional",
-        "daily": "Daily"
+        "no": "No",
+        "occasionally": "Occasionally",
+        "daily_light": "Daily, light",
+        "daily_heavy": "Daily, heavy"
       },
       "alcoholOpts": {
         "never": "Never",
-        "rare": "Rare",
-        "weekly": "Weekly",
-        "daily": "Daily"
+        "rarely": "Rarely",
+        "1-2x_week": "1–2× / week",
+        "3-4x_week": "3–4× / week",
+        "5+x_week": "5+× / week"
       },
       "sleepQualityOpts": {
-        "very_good": "Very good",
+        "excellent": "Excellent",
         "good": "Good",
         "fair": "Fair",
-        "poor": "Poor",
-        "very_poor": "Very poor"
+        "poor": "Poor"
       },
       "sleepHoursOpts": {
-        "under_5": "< 5 h",
-        "5-6": "5–6 h",
+        "8+": "8+ h",
         "7-8": "7–8 h",
-        "over_9": "> 9 h"
+        "6-7": "6–7 h",
+        "5-6": "5–6 h",
+        "under_5": "< 5 h"
       },
       "stressOpts": {
         "low": "Low",
@@ -3112,30 +3115,30 @@ const en = {
         "very_high": "Very high"
       },
       "activityOpts": {
-        "sedentary": "Sedentary",
+        "high": "High",
+        "regular": "Regular",
         "light": "Light",
-        "moderate": "Moderate",
-        "high": "High"
+        "low": "Low"
       },
       "sportOpts": {
-        "never": "Never",
-        "1-2": "1–2× / week",
+        "5+": "5+× / week",
         "3-4": "3–4× / week",
-        "daily": "Daily"
+        "1-2": "1–2× / week",
+        "0": "No sport"
       },
-      "hydrationOpts": { "low": "Low", "medium": "Medium", "high": "High" },
+      "hydrationOpts": { "good": "Good", "normal": "Normal", "low": "Low" },
       "nutritionOpts": {
-        "poor": "Poor",
-        "fair": "Fair",
+        "very_good": "Very good",
         "good": "Good",
-        "very_good": "Very good"
+        "fair": "Fair",
+        "poor": "Poor",
+        "very_poor": "Very poor"
       },
       "aftercareOpts": { "high": "High", "medium": "Medium", "low": "Low" },
       "healingOpts": {
-        "good": "Good",
-        "average": "Average",
-        "problematic": "Problematic",
-        "unknown": "Unknown"
+        "normal": "Normal",
+        "mixed": "Mixed",
+        "problematic": "Problematic"
       },
       "lighteningOpts": {
         "fast": "Fast",

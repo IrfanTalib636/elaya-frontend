@@ -1,5 +1,3 @@
-/** Field keys only — labels live in i18n (`components.sessionPrediction`). */
-
 export const SESSION_BASE_FIELDS = [
   { key: 'base_sessions', step: '1', hintKey: 'base_sessions' },
   { key: 'min_sessions', step: '1' },
@@ -255,11 +253,6 @@ export const AFTERCARE_FIELDS = [
   { key: 'high' },
 ]
 
-/**
- * Super Admin Engine — left-nav sections. Maps each `TATTOO_DELTA_GROUPS` key
- * (and the other form blocks) to one of the 8 prototype sections, so
- * `SessionPredictionForm` can render only the relevant blocks per `section`.
- */
 export const TATTOO_GROUP_SECTION = {
   fitzpatrick: 'fitzpatrick',
   location: 'fitzpatrick',
@@ -278,7 +271,6 @@ export const TATTOO_GROUP_SECTION = {
   lightening_rate: 'healing',
 }
 
-/** Default BMI floor rows (mirrors backend `sessionPredictionDefaults.js`). */
 export const DEFAULT_BMI_FLOORS = [
   { min_bmi: 30, min_score: 4 },
   { min_bmi: 35, min_score: 5 },
@@ -292,13 +284,12 @@ const toNumber = (value, fallback = 0) => {
   return Number.isFinite(n) ? n : fallback
 }
 
-/** Build a PATCH-ready payload (all numbers) from form state. */
 export const buildSessionPredictionPayload = (values = {}) => ({
   base_sessions: toNumber(values.base_sessions, 8),
   min_sessions: toNumber(values.min_sessions, 3),
   max_sessions: toNumber(values.max_sessions, 20),
-  range_minus: toNumber(values.range_minus, 2),
-  range_plus: toNumber(values.range_plus, 2),
+  range_minus: toNumber(values.range_minus, 1),
+  range_plus: toNumber(values.range_plus, 1),
   tattoo_deltas: Object.fromEntries(
     Object.entries(values.tattoo_deltas || {}).map(([group, map]) => [
       group,

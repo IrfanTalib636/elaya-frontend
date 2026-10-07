@@ -18,6 +18,9 @@ export default function PricingRulesPanel({
   savePricing,
   saveLabel,
   coinWertLabel = null,
+  presetId = null,
+  onPresetChange = null,
+  onPreviewValues = null,
 }) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
@@ -55,6 +58,11 @@ export default function PricingRulesPanel({
   useEffect(() => {
     void load()
   }, [load])
+
+  useEffect(() => {
+    if (loading || !onPreviewValues) return
+    onPreviewValues(buildStudioPricing(pricing))
+  }, [loading, pricing, onPreviewValues])
 
   const handleCancel = () => {
     setPricing(savedPricing)
@@ -136,6 +144,8 @@ export default function PricingRulesPanel({
         savedPricing={savedPricing}
         disabled={!editing}
         onChange={(key, value) => setPricing((prev) => ({ ...prev, [key]: value }))}
+        presetId={presetId}
+        onPresetChange={onPresetChange}
       />
 
       {editing ? (

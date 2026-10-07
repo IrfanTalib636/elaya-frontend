@@ -4,14 +4,6 @@ import { previewPricing, previewSessionPrediction } from '../../api/config'
 import { Spinner } from '../ui'
 import useContent from '../../i18n/useContent'
 
-/**
- * Shared "sample case" for the Impact preview — reuses the same Excel
- * plausibility preset (`example_2`, medium colourful tattoo, 40 cm²) that the
- * pricing/session-prediction live calculators already use. This keeps the
- * comparison apples-to-apples without duplicating EngineCaseSimulator's form.
- */
-const PRESET_ID = 'example_2'
-
 const fmtChf = (n) =>
   n == null
     ? '—'
@@ -73,14 +65,21 @@ const CompareRow = ({ label, liveValue, draftValue, liveLabel, draftLabel }) => 
  * forces a refetch after publish / discard.
  */
 const EngineImpactPanel = ({
+  presetId = 'example_2',
+  pricingOverride = null,
+  sessionsOverride = null,
   draftPricing = null,
   draftSessions = null,
   hasPricingDraft = false,
   hasSessionsDraft = false,
   refreshKey = 0,
 }) => {
-  const { adminPages } = useContent()
+  const { adminPages, components } = useContent()
   const copy = adminPages.engine?.impact || {}
+  const presetLabel =
+    components?.pricing?.live?.presets?.[presetId] ||
+    copy.sampleCaseName ||
+    'Medium colourful tattoo (40 cm²)'
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -88,36 +87,42 @@ const EngineImpactPanel = ({
   const [sessions, setSessions] = useState(null)
   const reqSeq = useRef(0)
 
+  const pricingBody =
+    pricingOverride || (hasPricingDraft && draftPricing ? draftPricing : null)
+  const sessionsBody =
+    sessionsOverride || (hasSessionsDraft && draftSessions ? draftSessions : null)
+
   useEffect(() => {
     const seq = ++reqSeq.current
     setLoading(true)
     setError('')
-    ;(async () => {
-      try {
-        const [priceRes, sessRes] = await Promise.all([
-          previewPricing({
-            preset_id: PRESET_ID,
-            ...(hasPricingDraft && draftPricing ? { studio_pricing: draftPricing } : {}),
-          }),
-          previewSessionPrediction({
-            preset_id: PRESET_ID,
-            ...(hasSessionsDraft && draftSessions
-              ? { session_prediction: draftSessions }
-              : {}),
-          }),
-        ])
-        if (seq !== reqSeq.current) return
-        setPricing(priceRes.data?.data || null)
-        setSessions(sessRes.data?.data || null)
-      } catch (err) {
-        if (seq !== reqSeq.current) return
-        setError(err?.response?.data?.message || copy.loadFailed || 'Could not load impact preview')
-      } finally {
-        if (seq === reqSeq.current) setLoading(false)
-      }
-    })()
+    const timer = setTimeout(() => {
+      ;(async () => {
+        try {
+          const [priceRes, sessRes] = await Promise.all([
+            previewPricing({
+              preset_id: presetId,
+              ...(pricingBody ? { studio_pricing: pricingBody } : {}),
+            }),
+            previewSessionPrediction({
+              preset_id: presetId,
+              ...(sessionsBody ? { session_prediction: sessionsBody } : {}),
+            }),
+          ])
+          if (seq !== reqSeq.current) return
+          setPricing(priceRes.data?.data || null)
+          setSessions(sessRes.data?.data || null)
+        } catch (err) {
+          if (seq !== reqSeq.current) return
+          setError(err?.response?.data?.message || copy.loadFailed || 'Could not load impact preview')
+        } finally {
+          if (seq === reqSeq.current) setLoading(false)
+        }
+      })()
+    }, 200)
+    return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- copy.loadFailed is static i18n text
-  }, [draftPricing, draftSessions, hasPricingDraft, hasSessionsDraft, refreshKey])
+  }, [presetId, pricingBody, sessionsBody, refreshKey])
 
   // `baseline` is always computed from the currently *published* config
   // (never affected by the request body) → LIVE. `live` is computed with the
@@ -142,6 +147,11 @@ const EngineImpactPanel = ({
       : null
 
   const anyDraft = hasPricingDraft || hasSessionsDraft
+  const screenDiffers =
+    !anyDraft &&
+    (String(livePrice ?? '') !== String(draftPrice ?? '') ||
+      String(liveSessions?.min ?? '') !== String(draftSessionsResult?.min ?? '') ||
+      String(liveSessions?.max ?? '') !== String(draftSessionsResult?.max ?? ''))
 
   return (
     <div className="rounded-2xl border border-elaya-border bg-studio-bg-3 p-5">
@@ -154,7 +164,7 @@ const EngineImpactPanel = ({
       </div>
 
       <p className="text-[11px] text-studio-w3 m-0 mb-4">
-        {copy.sampleCase || 'Sample case'}: {copy.sampleCaseName || 'Medium colourful tattoo (40 cm²)'}
+        {copy.sampleCase || 'Sample case'}: {presetLabel}
       </p>
 
       {error ? (
@@ -173,7 +183,9 @@ const EngineImpactPanel = ({
       >
         {anyDraft
           ? copy.hasDraft || 'Pending draft — not yet published'
-          : copy.noChanges || 'No pending draft — showing published rules for both domains.'}
+          : screenDiffers
+            ? copy.unsaved || 'Draft column follows the values on this screen.'
+            : copy.noChanges || 'No pending draft — showing published rules for both domains.'}
       </p>
 
       <CompareRow

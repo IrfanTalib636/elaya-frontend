@@ -15,18 +15,15 @@ const AdminSettings = () => {
     <div className="p-6 max-w-[860px]">
       <PageHeader
         title={copy.title}
-        subtitle={
-          copy.appearanceOnlySubtitle ||
-          'Appearance and dashboard preferences. Pricing & session prediction live in Engine; lockouts in Medical & Safety.'
-        }
+        subtitle={copy.appearanceOnlySubtitle}
       />
 
       <div className="mb-5 rounded-[12px] border border-elaya-border bg-studio-bg-4 px-4 py-3 text-[12px] text-studio-w1 flex flex-wrap gap-x-4 gap-y-2">
         <Link to="/admin/engine" className="text-studio-gold-2 no-underline hover:underline">
-          → Prediction Engine (prices & session forecast)
+          {copy.engineLink}
         </Link>
         <Link to="/admin/medical" className="text-studio-gold-2 no-underline hover:underline">
-          → Medical & Safety (lockouts)
+          {copy.medicalLink}
         </Link>
       </div>
 

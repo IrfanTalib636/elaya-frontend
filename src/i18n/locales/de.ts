@@ -30,7 +30,9 @@ const de: TranslationSchema = {
     "backToLogin": "Zurück zur Anmeldung",
     "notifications": "Mitteilungen",
     "markAllRead": "Alle gelesen",
-    "noNotifications": "Noch keine Mitteilungen"
+    "noNotifications": "Noch keine Mitteilungen",
+    "increase": "Erhöhen",
+    "decrease": "Verringern"
   },
   "toast": {
     "loginSuccess": "Erfolgreich angemeldet",
@@ -173,7 +175,7 @@ const de: TranslationSchema = {
     "sidebarTag": "Skin · Laser · Care",
     "contentPlaceholder": "Inhalt folgt",
     "comingSoonBody": "Dieser Bereich gehört zum Platform-Admin-Prototyp. Als Nächstes verdrahten wir ihn mit Live-Daten — sag mir, welcher Screen zuerst kommen soll.",
-    "searchPlaceholder": "Kunde, Case, Studio…",
+    "searchPlaceholder": "Kunde, Fall, Studio…",
     "toolsHeading": "Plattform-Tools",
     "versionLabel": "Elaya Admin v0.1",
     "lockHint": "Super-Admin-Zugang",
@@ -182,15 +184,15 @@ const de: TranslationSchema = {
       { "id": "studios", "label": "Studios" },
       { "id": "studioChat", "label": "Studio-Chat" },
       { "id": "customers", "label": "Kunden" },
-      { "id": "crm", "label": "CRM & Leads" },
-      { "id": "engine", "label": "Engine" },
-      { "id": "medical", "label": "Medical & Safety" },
+      { "id": "crm", "label": "CRM & Anfragen" },
+      { "id": "engine", "label": "Prognose-Engine" },
+      { "id": "medical", "label": "Medizin & Sicherheit" },
       { "id": "documents", "label": "Digitale Dokumente" },
       { "id": "transfer", "label": "Studio-Wechsel" },
       { "id": "elaycoins", "label": "Elaycoins" },
       { "id": "automations", "label": "Automatisierungen" },
       { "id": "finance", "label": "Finanzen" },
-      { "id": "features", "label": "Pakete & Features" },
+      { "id": "features", "label": "Pakete & Funktionen" },
       { "id": "audit", "label": "Audit-Log" },
       { "id": "lasers", "label": "Laser" },
       { "id": "ai", "label": "KI Training" },
@@ -2698,6 +2700,9 @@ const de: TranslationSchema = {
     "settings": {
       "title": "Einstellungen",
       "subtitle": "Darstellung, Preisberechnung, Sitzungsprognose und medizinische Sperren — nur Super-Admin darf Kernregeln ändern.",
+      "appearanceOnlySubtitle": "Darstellung und Dashboard. Preise und Sitzungsprognose liegen in der Prognose-Engine, Sperren unter Medizin & Sicherheit.",
+      "engineLink": "→ Prognose-Engine (Preise & Sitzungsprognose)",
+      "medicalLink": "→ Medizin & Sicherheit (Sperren)",
       "loadError": "Einstellungen konnten nicht geladen werden",
       "updatedReload": "Sitzungsprognose wurde aktualisiert — lade neu…",
       "saved": "Gespeichert — Studios & Apps werden live aktualisiert",
@@ -2749,7 +2754,7 @@ const de: TranslationSchema = {
           "desc": "Nachrichten mit den Studios"
         },
         "engine": {
-          "title": "Prediction Engine",
+          "title": "Prognose-Engine",
           "desc": "Preise & Sitzungsprognose"
         },
         "elaycoins": {
@@ -2813,7 +2818,7 @@ const de: TranslationSchema = {
       }
     },
     "crm": {
-      "title": "CRM & Leads",
+      "title": "CRM & Anfragen",
       "subtitle": "Pipeline, Leads und Plattform-CRM",
       "loadError": "CRM-Übersicht konnte nicht geladen werden",
       "manageStudios": "Studios verwalten",
@@ -2920,10 +2925,10 @@ const de: TranslationSchema = {
       "activityStudioUpdated": "Studio aktualisiert"
     },
     "engine": {
-      "title": "Prediction Engine",
+      "title": "Prognose-Engine",
       "subtitle": "Zentrale Steuerung von Preisen und Sitzungsprognose. Nur Super Admin kann Rechenregeln ändern. Studios nutzen den Simulator nur lesend.",
       "viewStudio": "Studio-Ansicht",
-      "viewAdmin": "Super Admin / Engine",
+      "viewAdmin": "Super Admin / Prognose",
       "studioHint": "Tattoo-Case-Simulator — rechnet live gegen die veröffentlichte Engine. Zum Vergleich mit unveröffentlichten Draft-Regeln: Impact-Vorschau unter Super Admin / Engine → Versionen & Audit.",
       "navSections": "Bereiche",
       "sections": {
@@ -3064,8 +3069,9 @@ const de: TranslationSchema = {
         "total": "Geschätzte Gesamtkosten",
         "hasDraft": "Ausstehender Draft — noch nicht veröffentlicht",
         "noChanges": "Kein ausstehender Draft — zeigt veröffentlichte Regeln für beide Bereiche.",
+        "unsaved": "Die Draft-Spalte folgt den Werten auf diesem Bildschirm, einschliesslich ungespeicherter Änderungen.",
         "loadFailed": "Impact-Vorschau konnte nicht geladen werden",
-        "sharedInputsHint": "Gleicher Beispiel-Case wie die Live-Rechner für Preise / Sitzungsprognose — so lassen sich Preis- und Sitzungsprognose-Drafts direkt vergleichen."
+        "sharedInputsHint": "Gleicher Beispiel-Case für Preis und Sitzungsprognose — so lassen sich beide Drafts direkt vergleichen."
       }
     },
     "engineSimulator": {
@@ -3248,7 +3254,7 @@ const de: TranslationSchema = {
       }
     },
     "medical": {
-      "title": "Medical & Safety",
+      "title": "Medizin & Sicherheit",
       "subtitle": "Medizinische Flags, Sperren und Safety-Konfiguration"
     },
     "medicalSafety": {
@@ -3522,7 +3528,7 @@ const de: TranslationSchema = {
       "details": "Details"
     },
     "features": {
-      "title": "Pakete & Features",
+      "title": "Pakete & Funktionen",
       "subtitle": "Pakete (Basic / Professional / Enterprise) · globale Schalter · Studio-Overrides",
       "subtitleAbo": "Abo-Pakete · KI-Gewichtungen · Studio Feature-Flags. Reines Abo-Modell — keine Transaktionsgebühr.",
       "tabPackages": "Paket-Verwaltung",
@@ -4127,6 +4133,13 @@ const de: TranslationSchema = {
     "pricing": {
       "intro": "Diese Werte steuern die KI-Preisberechnung und die Sitzungsschätzung für die Kunden dieses Studios. Leere Felder verwenden den Plattform-Standard.",
       "platformDefault": "Plattform-Standard",
+      "priceHowTitle": "Wie wird der Preis berechnet?",
+      "priceHowLines": [
+        "Preis = Tattoo-Fläche × Basispreis pro cm². Der Mindestpreis gilt immer. Das Ergebnis wird auf CHF 5 aufgerundet.",
+        "Beispiel: 40 cm² × CHF 3.00 = CHF 120. Mindestpreis CHF 90 → CHF 120 gilt.",
+        "Wichtig: Farben ändern den Preis nicht. Farben beeinflussen nur die Sitzungsanzahl.",
+        "Das Studio kann seinen eigenen Basispreis pro cm² in den Studio-Einstellungen unter Preise setzen."
+      ],
       "groups": {
         "base": "Grundpreise",
         "color": "Farb-Multiplikatoren",
@@ -4239,6 +4252,59 @@ const de: TranslationSchema = {
         "Kunde hat Score 2.1 → Score ≤ 2.4 → Guter Lifestyle → −5% Sitzungen",
         "Kunde hat Score 3.8 → Score ≤ 4.0 → Schlechter Lifestyle → +20% Sitzungen"
       ],
+      "notes": {
+        "fitzpatrick": {
+          "title": "Was ist der Fitzpatrick-Hauttyp?",
+          "lines": [
+            "Typ I–II: sehr helle Haut, der Laser wird gut absorbiert.",
+            "Typ III: mittelhell, das ist der Standard.",
+            "Typ IV–VI: dunklere Haut, mehr Vorsicht, mehr Sitzungen sind möglich.",
+            "Delta = zusätzliche Sitzungen wegen des Hauttyps."
+          ]
+        },
+        "location": {
+          "title": "Warum beeinflusst die Körperstelle die Sitzungen?",
+          "lines": [
+            "Durchblutung und Lymphsystem sind je nach Körperstelle verschieden. Besser durchblutete Stellen heilen schneller, also weniger Sitzungen.",
+            "Hand und Fuss: schlechtere Durchblutung, mehr Sitzungen.",
+            "Rumpf und Arm: gute Durchblutung, Standard."
+          ]
+        },
+        "colors": {
+          "title": "Was bedeuten die Farb-Deltas?",
+          "lines": [
+            "Jede Farbe hat einen Delta-Wert pro Laser. Delta = zusätzliche Sitzungen wegen dieser Farbe.",
+            "Δ+0 = der Laser ist sehr gut für diese Farbe. Δ+1 = gut, leicht mehr Sitzungen. Δ+2 = schwächer, mehr Sitzungen. Δ+3 = der Laser kämpft mit dieser Farbe.",
+            "Bei mehreren Farben gilt: Color Impact = MAX(schwierigste Farbe, Farbanzahl-Delta). Nicht alle Deltas werden addiert."
+          ]
+        },
+        "lifestyleFactors": {
+          "title": "Wie werden die Faktoren berechnet?",
+          "lines": [
+            "Jeder Faktor gibt einen Score von 1 bis 5. 1 = sehr gut für die Heilung. 5 = sehr schlecht für die Heilung.",
+            "Der Durchschnitt aller Faktoren ist der Composite Score. Dieser Score bestimmt die Lifestyle-Stufe.",
+            "Beispiel: täglich stark rauchen (5) + sehr gut schlafen (1) + normaler Stress (2) = Durchschnitt 2.67 → Normal."
+          ]
+        },
+        "thresholdVsEffect": {
+          "title": "Schwelle und Einfluss — was ist der Unterschied?",
+          "lines": [
+            "Schwelle: bis zu welchem Score gilt diese Stufe? Beispiel: Schwelle 2.4 → Score bis 2.4 = Gut.",
+            "Einfluss in Prozent: wie stark wirkt diese Stufe? Beispiel: −5% → 10 Sitzungen werden zu 9.5, gerundet 10.",
+            "Multiplikator: dasselbe wie der Einfluss, anders ausgedrückt. −5% = ×0.95. Beide Felder sind editierbar und bleiben synchron.",
+            "Schwelle und Einfluss sind unabhängig. Die Schwelle ändern heisst: andere Kunden fallen in diese Stufe. Den Einfluss ändern heisst: die Stufe wirkt stärker oder schwächer."
+          ]
+        },
+        "healing": {
+          "title": "Healing & Treatment Response",
+          "lines": [
+            "Diese Werte gelten erst nach echten Sitzungen. Bei einem neuen Case bleiben sie auf 0.",
+            "Nach mehreren Sitzungen kann das Studio eingeben, wie der Kunde reagiert.",
+            "Heilungsverlauf: Normal, Gemischt oder Problematisch. Helligkeitsrate: Schnell, Erwartet, Langsam oder Stagnierend.",
+            "Diese Werte aktualisieren dann die Prognose."
+          ]
+        }
+      },
       "aftercareSection": "Nachsorge-Bereitschaft (zusätzliche Max-Sitzungen)",
       "avgUpTo": "Ø bis",
       "score": "Score",

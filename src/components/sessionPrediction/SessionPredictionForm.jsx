@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowUpRight } from 'lucide-react'
-import { Input } from '../ui'
+import NumberStepper from '../ui/NumberStepper'
+import EngineDisclosure from '../engine/EngineDisclosure'
 import {
   AFTERCARE_FIELDS,
   DEFAULT_BMI_FLOORS,
@@ -9,69 +10,42 @@ import {
   TATTOO_DELTA_GROUPS,
   TATTOO_GROUP_SECTION,
 } from './sessionPredictionFields'
-import SessionPredictionLiveCalculator from './SessionPredictionLiveCalculator'
 import useContent from '../../i18n/useContent'
 
 const NumberField = ({ id, label, value, onChange, disabled, step = '0.05', hint }) => (
-  <Input
+  <NumberStepper
     id={id}
     label={label}
-    type="number"
     step={step}
     value={value ?? ''}
-    onChange={(e) => onChange(e.target.value)}
+    onChange={onChange}
     disabled={disabled}
     hint={hint}
   />
 )
 
+const NOTE_AFTER_GROUP = {
+  fitzpatrick: 'fitzpatrick',
+  location: 'location',
+  color: 'colors',
+}
+
 const FieldGrid = ({ children }) => (
   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{children}</div>
 )
 
-const fmtCHF = (n) =>
-  n == null ? '—' : `CHF ${Number(n).toLocaleString('de-CH')}`
-
-const PlausibilityPanel = ({ report }) => {
-  const { t, components } = useContent()
-  const copy = components.sessionPrediction
-  if (!report?.results?.length) return null
-  return (
-    <div className="border border-elaya-border rounded-[10px] px-3 py-3 bg-studio-bg-4">
-      <p className="text-[12px] font-semibold m-0 mb-1">{copy.plausibilityTitle}</p>
-      <p className="text-[11px] text-studio-w3 m-0 mb-3">{copy.plausibilityHint}</p>
-      <div className="flex flex-col gap-2">
-        {report.results.map((row) => (
-          <div key={row.id} className="flex flex-wrap items-baseline justify-between gap-2">
-            <span className="text-[12px] text-studio-w1">
-              {row.pass ? '✓' : '✗'} {row.title}
-            </span>
-            <span className="text-[11px] text-studio-w3">
-              {fmtCHF(row.got.price_per_session)} · {t('components.sessionPrediction.sessionsRange', { min: row.got.sessions_min, max: row.got.sessions_max })} ·{' '}
-              {fmtCHF(row.got.total_min)}–{fmtCHF(row.got.total_max)}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 /**
- * Shared editor for platform Sitzungsprognose parameters.
- * Admin: editable. Studio: pass disabled.
- * Live calculator shows effect of current `values` immediately.
+ * Super Admin editor for platform Sitzungsprognose parameters.
+ * The case simulator covers live testing, so this form has no calculator
+ * and no Excel reference list.
  *
- * `section` (optional) limits rendering to one Super Admin Engine nav section
- * — 'base' | 'colors' | 'fitzpatrick' | 'lifestyle' | 'healing'. Omit (or pass
- * a falsy value) to render the full form, as Studio-Einstellungen still does.
+ * `section` limits rendering to one engine nav section
+ * — 'base' | 'colors' | 'fitzpatrick' | 'lifestyle' | 'healing'.
  */
 const SessionPredictionForm = ({
   values,
   onChange,
   disabled = false,
-  plausibility = null,
-  savedBaseline = null,
   section = null,
 }) => {
   const { components } = useContent()
@@ -117,12 +91,6 @@ const SessionPredictionForm = ({
             {copy.formulaHint}
           </p>
 
-          {values ? (
-            <SessionPredictionLiveCalculator values={values} savedBaseline={savedBaseline} />
-          ) : null}
-
-          <PlausibilityPanel report={plausibility} />
-
           <div>
             <p className="text-[12px] font-semibold m-0 mb-3">{copy.baseSection}</p>
             <FieldGrid>
@@ -158,6 +126,12 @@ const SessionPredictionForm = ({
         </div>
       ) : null}
 
+      {section === 'healing' ? (
+        <div className="mb-4">
+          <EngineDisclosure title={copy.notes?.healing?.title} lines={copy.notes?.healing?.lines} />
+        </div>
+      ) : null}
+
       {TATTOO_DELTA_GROUPS.filter((group) => show(TATTOO_GROUP_SECTION[group.key])).map(
         (group, i) => (
           <div key={group.key}>
@@ -176,6 +150,14 @@ const SessionPredictionForm = ({
                 />
               ))}
             </FieldGrid>
+            {NOTE_AFTER_GROUP[group.key] ? (
+              <div className="mt-3">
+                <EngineDisclosure
+                  title={copy.notes?.[NOTE_AFTER_GROUP[group.key]]?.title}
+                  lines={copy.notes?.[NOTE_AFTER_GROUP[group.key]]?.lines}
+                />
+              </div>
+            ) : null}
           </div>
         )
       )}
@@ -188,6 +170,10 @@ const SessionPredictionForm = ({
             <p className="text-[11px] text-studio-w3 m-0 mb-3">
               {copy.lifestyleCompositeHint}
             </p>
+            <EngineDisclosure
+              title={copy.notes?.lifestyleFactors?.title}
+              lines={copy.notes?.lifestyleFactors?.lines}
+            />
           </div>
 
           {LIFESTYLE_SCORE_GROUPS.map((group) => (
@@ -226,6 +212,11 @@ const SessionPredictionForm = ({
               ))}
             </div>
           </div>
+
+          <EngineDisclosure
+            title={copy.notes?.thresholdVsEffect?.title}
+            lines={copy.notes?.thresholdVsEffect?.lines}
+          />
 
           <div>
             <div className="h-px bg-elaya-border mb-5" />

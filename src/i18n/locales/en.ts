@@ -28,7 +28,9 @@ const en = {
     "backToLogin": "Back to login",
     "notifications": "Notifications",
     "markAllRead": "Mark all read",
-    "noNotifications": "No notifications yet"
+    "noNotifications": "No notifications yet",
+    "increase": "Increase",
+    "decrease": "Decrease"
   },
   "toast": {
     "loginSuccess": "Logged in successfully",
@@ -2696,6 +2698,9 @@ const en = {
     "settings": {
       "title": "Settings",
       "subtitle": "Appearance, price calculation, session prediction, and medical lockouts — only super admin can edit core rules.",
+      "appearanceOnlySubtitle": "Appearance and dashboard preferences. Pricing and session prediction live in the Prediction Engine. Lockouts live in Medical & Safety.",
+      "engineLink": "→ Prediction Engine (prices & session forecast)",
+      "medicalLink": "→ Medical & Safety (lockouts)",
       "loadError": "Could not load settings",
       "updatedReload": "Session prediction was updated — reloading…",
       "saved": "Saved — studios & apps update live",
@@ -3062,8 +3067,9 @@ const en = {
         "total": "Estimated total",
         "hasDraft": "Pending draft — not yet published",
         "noChanges": "No pending draft — showing published rules for both domains.",
+        "unsaved": "Draft column follows the values on this screen, including unsaved edits.",
         "loadFailed": "Could not load impact preview",
-        "sharedInputsHint": "Same sample case as the pricing / session-prediction live calculators, so pricing and session-prediction drafts compare like-for-like."
+        "sharedInputsHint": "Same sample case for price and session prediction, so the two drafts compare like-for-like."
       }
     },
     "engineSimulator": {
@@ -4125,6 +4131,13 @@ const en = {
     "pricing": {
       "intro": "These values control AI price calculation and session estimates for this studio's customers. Empty fields use the platform default.",
       "platformDefault": "Platform default",
+      "priceHowTitle": "How is the price calculated?",
+      "priceHowLines": [
+        "Price = tattoo area × base price per cm². The minimum price always applies. The result is rounded up to CHF 5.",
+        "Example: 40 cm² × CHF 3.00 = CHF 120. Minimum price CHF 90 → CHF 120 applies.",
+        "Important: colours do not change the price. Colours only change the session count.",
+        "A studio can set its own base price per cm² under Studio settings → Prices."
+      ],
       "groups": {
         "base": "Base prices",
         "color": "Colour multipliers",
@@ -4237,6 +4250,59 @@ const en = {
         "Customer has score 2.1 → score ≤ 2.4 → good lifestyle → −5% sessions",
         "Customer has score 3.8 → score ≤ 4.0 → poor lifestyle → +20% sessions"
       ],
+      "notes": {
+        "fitzpatrick": {
+          "title": "What is the Fitzpatrick skin type?",
+          "lines": [
+            "Type I–II: very fair skin, the laser is absorbed well.",
+            "Type III: medium, this is the standard.",
+            "Type IV–VI: darker skin, more caution, more sessions are possible.",
+            "Delta = extra sessions because of the skin type."
+          ]
+        },
+        "location": {
+          "title": "Why does body location change the session count?",
+          "lines": [
+            "Blood flow and the lymph system differ by body location. Better circulation heals faster, so fewer sessions.",
+            "Hand and foot: poorer circulation, more sessions.",
+            "Torso and arm: good circulation, standard."
+          ]
+        },
+        "colors": {
+          "title": "What do the colour deltas mean?",
+          "lines": [
+            "Each colour has a delta per laser. Delta = extra sessions because of that colour.",
+            "Δ+0 = the laser is very good for this colour. Δ+1 = good, slightly more sessions. Δ+2 = weaker, more sessions. Δ+3 = the laser struggles with this colour.",
+            "With several colours: Color Impact = MAX(hardest colour, colour-count delta). The deltas are not all added together."
+          ]
+        },
+        "lifestyleFactors": {
+          "title": "How are the factors calculated?",
+          "lines": [
+            "Each factor gives a score from 1 to 5. 1 = very good for healing. 5 = very bad for healing.",
+            "The average of all factors is the composite score. That score sets the lifestyle level.",
+            "Example: heavy daily smoking (5) + very good sleep (1) + normal stress (2) = average 2.67 → normal."
+          ]
+        },
+        "thresholdVsEffect": {
+          "title": "Threshold and effect — what is the difference?",
+          "lines": [
+            "Threshold: up to which score does this level apply? Example: threshold 2.4 → a score up to 2.4 is Good.",
+            "Effect in percent: how strongly does this level act? Example: −5% turns 10 sessions into 9.5, which rounds to 10.",
+            "Multiplier: the same effect written another way. −5% = ×0.95. Both fields are editable and stay in step.",
+            "Threshold and effect are independent. Changing the threshold means different customers fall into this level. Changing the effect means the level acts more strongly or more weakly."
+          ]
+        },
+        "healing": {
+          "title": "Healing and treatment response",
+          "lines": [
+            "These values apply only after real sessions. On a new case they stay at 0.",
+            "After several sessions the studio can record how the customer responds.",
+            "Healing course: normal, mixed, or problematic. Lightening rate: fast, expected, slow, or stagnant.",
+            "Those values then update the prediction."
+          ]
+        }
+      },
       "aftercareSection": "Aftercare readiness (extra max sessions)",
       "avgUpTo": "Avg up to",
       "score": "Score",

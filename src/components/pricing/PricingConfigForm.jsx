@@ -1,6 +1,7 @@
-import { Input } from '../ui'
 import { PRICING_GROUPS } from './pricingFields'
 import PricingLiveCalculator from './PricingLiveCalculator'
+import NumberStepper from '../ui/NumberStepper'
+import EngineDisclosure from '../engine/EngineDisclosure'
 import useContent from '../../i18n/useContent'
 
 const PricingConfigForm = ({
@@ -10,6 +11,8 @@ const PricingConfigForm = ({
   disabled = false,
   savedPricing = null,
   studioId = null,
+  presetId = null,
+  onPresetChange = null,
 }) => {
   const { components } = useContent()
   const copy = components.pricing
@@ -30,18 +33,14 @@ const PricingConfigForm = ({
                 <p className="text-[12px] font-semibold text-studio-w2 m-0 mb-3">{title}</p>
                 <div className="grid grid-cols-1 @xl:grid-cols-2 @4xl:grid-cols-3 gap-3">
                   {group.fields.map(({ key, label, step }) => (
-                    <Input
+                    <NumberStepper
                       key={key}
                       id={`pricing-${key}`}
                       label={copy.fields[key] || label}
-                      type="number"
                       min={0}
                       step={step ?? '0.05'}
                       value={values?.[key] ?? ''}
-                      onChange={(e) => onChange(key, e.target.value)}
-                      placeholder={
-                        defaults?.[key] != null ? String(defaults[key]) : copy.platformDefault
-                      }
+                      onChange={(next) => onChange(key, next)}
                       disabled={disabled}
                     />
                   ))}
@@ -49,12 +48,16 @@ const PricingConfigForm = ({
               </div>
             )
           })}
+
+          <EngineDisclosure title={copy.priceHowTitle} lines={copy.priceHowLines} />
         </div>
         <aside className="order-first @lg:order-none @lg:sticky @lg:top-4 @lg:max-h-[calc(100vh-2rem)] @lg:overflow-y-auto min-w-0">
           <PricingLiveCalculator
             values={values}
             savedBaseline={savedPricing}
             studioId={studioId}
+            presetId={presetId}
+            onPresetChange={onPresetChange}
           />
         </aside>
       </div>

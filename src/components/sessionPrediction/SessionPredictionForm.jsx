@@ -209,6 +209,24 @@ const SessionPredictionForm = ({
             </div>
           ))}
 
+          <div className="rounded-[12px] border border-elaya-border border-l-4 border-l-studio-teal bg-studio-bg-4 px-4 py-3">
+            <p className="text-[12px] font-semibold text-studio-teal m-0 mb-2 uppercase tracking-wide">
+              {copy.thresholdsTitle}
+            </p>
+            <p className="text-[12px] text-studio-w1 m-0 leading-relaxed">{copy.thresholdsIntro}</p>
+            <p className="text-[12px] text-studio-w1 m-0 mt-2 leading-relaxed">{copy.thresholdsDefine}</p>
+            <p className="text-[11px] font-semibold text-studio-teal m-0 mt-3 mb-1 uppercase tracking-wide">
+              {copy.thresholdsExampleTitle}
+            </p>
+            <div className="text-[12px] text-studio-teal leading-relaxed">
+              {(copy.thresholdsExamples || []).map((line) => (
+                <p key={line} className="m-0">
+                  {line}
+                </p>
+              ))}
+            </div>
+          </div>
+
           <div>
             <div className="h-px bg-elaya-border mb-5" />
             <p className="text-[12px] font-semibold m-0 mb-3">{copy.lifestyleMultipliers}</p>

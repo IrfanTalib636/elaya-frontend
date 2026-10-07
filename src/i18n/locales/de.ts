@@ -2945,12 +2945,110 @@ const de: TranslationSchema = {
       },
       "how": {
         "title": "Wie funktioniert ELAYA?",
-        "priceTitle": "Preisberechnung",
-        "priceText": "Preis pro Sitzung = MAX(Mindestpreis, Fläche cm² × Basispreis pro cm²), aufgerundet auf CHF 5. Farben ändern den Preis NICHT — sie beeinflussen nur die Sitzungsanzahl, über das Delta-System unten.",
-        "deltaTitle": "Sitzungs-Deltas",
-        "deltaText": "Jedes Tattoo-Merkmal (Hauttyp, Körperstelle, Farben, Dichte, Alter, Cover-up, …) addiert oder entfernt Sitzungen von der Basis. Bei mehreren Farben gilt: Color Impact = MAX(schwierigste Farbe, Farbanzahl-Delta) — Deltas werden nicht einfach addiert.",
-        "lifestyleTitle": "Lifestyle Composite",
-        "lifestyleText": "Sieben Lifestyle-Faktoren (je 1–5 bewertet) werden zu einem Composite Score gemittelt, der über die Lifestyle-Schwellentabelle auf einen Sitzungs-Multiplikator abgebildet wird. Ein BMI ≥30/35 hebt den Composite Score auf einen konfigurierbaren Mindestwert an.",
+        "liveDraft": {
+          "title": "Live und Draft",
+          "liveTitle": "Live",
+          "liveText": "Live-Ansicht ist nur zum Lesen. Studio und Kunden-App verwenden diese Werte.",
+          "draftTitle": "Draft",
+          "draftText": "Draft-Ansicht ist editierbar. Änderungen werden erst mit „Veröffentlichen“ live geschaltet.",
+          "controls": "Die Live-Version ist der veröffentlichte Stand. Draft zurücksetzen verwirft unveröffentlichte Änderungen und stellt die Live-Werte wieder her. Veröffentlichen schaltet den Draft frei.",
+          "split": "Preisregeln und Sitzungsprognose haben je einen eigenen Draft. Das Veröffentlichen des einen veröffentlicht den anderen nicht. Bearbeiten kannst du sie unter Preise, Basis & Bereich, Farben & Laser, Fitzpatrick & Haut, Lifestyle und Healing & Response. Versionen & Audit zeigt beide.",
+          "impact": "Die Impact-Vorschau rechts rechnet denselben Beispiel-Case zweimal: einmal mit den veröffentlichten Live-Werten und einmal mit dem ausstehenden Draft. Solange du nicht veröffentlicht hast, stimmen beide Spalten überein."
+        },
+        "delta": {
+          "title": "Was ist ein Delta und wieviel ist es wert?",
+          "intro": "Ein Delta (+/−) bedeutet: zusätzliche oder weniger Sitzungen im Vergleich zur Basis.",
+          "ruleTitle": "Grundregel",
+          "plus": "Δ+1 = ca. 1 Sitzung mehr bei normalem Lifestyle",
+          "minus": "Δ−1 = ca. 1 Sitzung weniger bei normalem Lifestyle",
+          "importantLabel": "Wichtig:",
+          "important": "Der Lifestyle-Multiplikator wirkt auf die GESAMTZAHL aller Sitzungen, nicht nur auf einzelne Deltas.",
+          "exampleTitle": "Beispiel",
+          "rows": [
+            { "label": "Basis", "value": "8" },
+            { "label": "Typ IV (Δ+1)", "value": "+1" },
+            { "label": "Grün (Δ+3)", "value": "+3" },
+            { "label": "Hand (Δ+1)", "value": "+1" }
+          ],
+          "rawLabel": "Rohwert",
+          "rawValue": "13",
+          "multipliers": [
+            "× Lifestyle normal (×1.00) = 13 Sitzungen",
+            "× Lifestyle schlecht (×1.20) = 15.6 → 16 Sitzungen",
+            "× Lifestyle sehr schlecht (×1.50) = 19.5 → 20 Sitzungen"
+          ],
+          "conclusionTitle": "Fazit",
+          "conclusionIntro": "Wenn du einen Delta um +1 erhöhst:",
+          "conclusionLines": [
+            "→ Bei normalem Lifestyle: +1 Sitzung mehr",
+            "→ Bei schlechtem Lifestyle (×1.20): +1.2 Sitzungen mehr",
+            "→ Bei sehr schlechtem Lifestyle (×1.50): +1.5 Sitzungen mehr"
+          ],
+          "conclusionEmphasis": "Je schlechter der Lifestyle des Kunden, desto stärker wirkt sich jede Delta-Änderung aus."
+        },
+        "calc": {
+          "title": "Wie die Berechnung funktioniert",
+          "priceTitle": "Preis pro Sitzung",
+          "priceRule": "Die Live-Regel lautet: Preis pro Sitzung = MAX(Mindestpreis, Fläche cm² × Basispreis pro cm²), aufgerundet auf die nächsten CHF 5. Die Zahlen darunter sind das Rechenbeispiel.",
+          "priceExample": [
+            "Tattoo-Fläche × CHF 3.00 = Preis",
+            "Mindestpreis: CHF 90",
+            "Beispiel: 40 cm² × 3 = CHF 120"
+          ],
+          "priceColors": "Farben beeinflussen den Preis NICHT. Sie beeinflussen nur die Sitzungsanzahl.",
+          "sessionsTitle": "Sitzungsanzahl",
+          "sessionsText": "Basis (8) + alle Deltas = Rohwert. Rohwert × Lifestyle-Multiplikator = Mitte. Range: Mitte − 1 bis Mitte + 1.",
+          "whatTitle": "Was sind Deltas?",
+          "whatIntro": "Jeder Faktor addiert oder subtrahiert Sitzungen:",
+          "whatLines": [
+            "+ = mehr Sitzungen nötig",
+            "− = weniger Sitzungen nötig",
+            "0 = kein Einfluss"
+          ],
+          "colorImpact": "Bei mehreren Farben gilt: Color Impact = MAX(schwierigste Farbe, Farbanzahl-Delta). Diese beiden werden nicht einfach addiert.",
+          "exampleTitle": "Beispiel",
+          "exampleLines": [
+            "Basis: 8",
+            "Grün (Δ+3): +3",
+            "Hand (Δ+1): +1",
+            "Raucher-Score: ×1.2",
+            "(8+4) × 1.2 = 14.4 → 14 Sitzungen",
+            "Range: 13–15 Sitzungen"
+          ],
+          "costTitle": "Gesamtkosten",
+          "costText": "CHF 120 × 13–15 = CHF 1'560–1'800",
+          "effectTitle": "Einfluss einer Delta-Änderung",
+          "effectIntro": "Wenn du z.B. Typ III von Δ0 auf Δ1 änderst:",
+          "effectLines": [
+            "→ Rohwert steigt von 13 auf 14",
+            "→ × Lifestyle 1.00 = 14 Sitzungen (+1)",
+            "→ × Lifestyle 1.20 = 16.8 → 17 Sitzungen (+1.2)",
+            "→ × Lifestyle 1.50 = 21 Sitzungen (+1.5)"
+          ],
+          "effectEmphasis": "Je höher der Lifestyle-Multiplikator, desto mehr wirkt sich jede Delta-Änderung aus."
+        },
+        "lifestyle": {
+          "title": "Wie der Lifestyle-Index berechnet wird",
+          "step1Lead": "1. Jeder Faktor gibt einen Score",
+          "step1Scale": "(1 = sehr gut, 5 = sehr schlecht)",
+          "step2": "2. Durchschnitt aller Faktoren = Composite Score",
+          "step3": "3. Composite Score bestimmt den Einfluss:",
+          "bands": [
+            { "range": "Score 0–1.6", "name": "Sehr guter Lifestyle", "effect": "−15% Sitzungen", "tone": "good" },
+            { "range": "Score 1.6–2.4", "name": "Guter Lifestyle", "effect": "−5% Sitzungen", "tone": "good" },
+            { "range": "Score 2.4–3.2", "name": "Normaler Lifestyle", "effect": "±0%", "tone": "normal" },
+            { "range": "Score 3.2–4.0", "name": "Schlechter Lifestyle", "effect": "+20% Sitzungen", "tone": "poor" },
+            { "range": "Score 4.0–5.0", "name": "Sehr schlechter", "effect": "+50% Sitzungen", "tone": "poor" }
+          ],
+          "exampleTitle": "Beispiel",
+          "exampleLines": [
+            "Kunde raucht täglich (Score 5) + schläft gut (Score 2)",
+            "+ kein Sport (Score 4) + normaler Stress (Score 2)",
+            "Durchschnitt: (5+2+4+2) / 4 = 3.25 → Schlechter Lifestyle",
+            "Einfluss: +20% mehr Sitzungen"
+          ],
+          "bmiNote": "Ein BMI ab 30 hebt den Composite Score auf einen konfigurierbaren Mindestwert (ab 30 mindestens 4, ab 35 mindestens 5). Er kann den Score nur anheben, nie senken."
+        },
         "aiTitle": "Verbindung zum AI Training Center",
         "aiText": "Diese Engine-Werte fliessen in das ELAYA AI Training Center ein. Änderungen werden versioniert und für die KI-Kalibrierung verwendet."
       },
@@ -4133,6 +4231,14 @@ const de: TranslationSchema = {
       "lifestyleComposite": "Lifestyle-Composite",
       "lifestyleCompositeHint": "Sieben Hauptfaktoren gemittelt: Rauchen, Alkohol, Schlaf (Qualität+Stunden als ein Score), Stress, Aktivität (inkl. Sport), Hydration, Ernährung. Nachsorge fliesst nicht in den Score ein. BMI ≥30 hebt den Score auf mind. 4, ≥35 auf 5.",
       "lifestyleMultipliers": "Lifestyle-Multiplikatoren",
+      "thresholdsTitle": "Wie funktionieren die Schwellen?",
+      "thresholdsIntro": "Der Lifestyle-Score ist der Durchschnitt aller Faktoren (Rauchen, Alkohol, Schlaf usw.). Jeder Faktor gibt einen Wert von 1 (sehr gut) bis 5 (sehr schlecht).",
+      "thresholdsDefine": "Die Schwelle definiert: bis zu welchem Score gilt eine Lifestyle-Stufe?",
+      "thresholdsExampleTitle": "Beispiel",
+      "thresholdsExamples": [
+        "Kunde hat Score 2.1 → Score ≤ 2.4 → Guter Lifestyle → −5% Sitzungen",
+        "Kunde hat Score 3.8 → Score ≤ 4.0 → Schlechter Lifestyle → +20% Sitzungen"
+      ],
       "aftercareSection": "Nachsorge-Bereitschaft (zusätzliche Max-Sitzungen)",
       "avgUpTo": "Ø bis",
       "score": "Score",

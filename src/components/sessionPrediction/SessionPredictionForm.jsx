@@ -2,6 +2,9 @@ import { Link } from 'react-router-dom'
 import { ArrowUpRight } from 'lucide-react'
 import NumberStepper from '../ui/NumberStepper'
 import EngineDisclosure from '../engine/EngineDisclosure'
+import CaseLaserMatrix from '../engine/CaseLaserMatrix'
+import { useEngineCaseOptional } from '../engine/EngineCaseContext'
+import { caseBmi } from '../engine/engineCaseModel'
 import {
   AFTERCARE_FIELDS,
   DEFAULT_BMI_FLOORS,
@@ -12,17 +15,62 @@ import {
 } from './sessionPredictionFields'
 import useContent from '../../i18n/useContent'
 
-const NumberField = ({ id, label, value, onChange, disabled, step = '0.05', hint }) => (
-  <NumberStepper
-    id={id}
-    label={label}
-    step={step}
-    value={value ?? ''}
-    onChange={onChange}
-    disabled={disabled}
-    hint={hint}
-  />
-)
+const deltaHintFor = (value, t) => {
+  const n = parseFloat(value)
+  if (!Number.isFinite(n) || n === 0) {
+    return {
+      text: t('components.sessionPrediction.deltaNone', { defaultValue: 'No impact on sessions' }),
+      tone: 'neutral',
+    }
+  }
+  if (n > 0) {
+    return {
+      text: t('components.sessionPrediction.deltaMore', {
+        count: n,
+        defaultValue: `+${n} session(s) with normal lifestyle`,
+      }),
+      tone: 'up',
+    }
+  }
+  const count = Math.abs(n)
+  return {
+    text: t('components.sessionPrediction.deltaLess', {
+      count,
+      defaultValue: `−${count} session(s) with normal lifestyle`,
+    }),
+    tone: 'down',
+  }
+}
+
+const NumberField = ({
+  id,
+  label,
+  value,
+  onChange,
+  disabled,
+  step = '0.05',
+  hint,
+  effect = false,
+  active = false,
+  badge = null,
+}) => {
+  const { t } = useContent()
+  const effectHint = effect ? deltaHintFor(value, t) : null
+  return (
+    <NumberStepper
+      id={id}
+      label={label}
+      step={step}
+      value={value ?? ''}
+      onChange={onChange}
+      disabled={disabled}
+      hint={effectHint?.text || hint}
+      hintTone={effectHint?.tone || 'neutral'}
+      active={active}
+      badge={badge}
+    />
+  )
+}
 
 const NOTE_AFTER_GROUP = {
   fitzpatrick: 'fitzpatrick',
@@ -48,10 +96,20 @@ const SessionPredictionForm = ({
   disabled = false,
   section = null,
 }) => {
-  const { components } = useContent()
+  const { components, t } = useContent()
   const copy = components.sessionPrediction
+  const engineCase = useEngineCaseOptional()
+  const activeKeys = engineCase?.activeKeys || null
+  const caseBmiValue = engineCase?.form ? caseBmi(engineCase.form) : null
+  const activeBadge = t('components.sessionPrediction.activeInCase', {
+    defaultValue: 'Active in current case',
+  })
 
   const show = (id) => !section || section === id
+  const fieldActive = (group, key) => {
+    if (!activeKeys || !activeKeys[group]) return true
+    return activeKeys[group].includes(key)
+  }
 
   const setBase = (key, value) => onChange({ ...values, [key]: value })
 
@@ -85,6 +143,17 @@ const SessionPredictionForm = ({
 
   return (
     <div className="flex flex-col gap-6">
+      {engineCase && section && section !== 'base' ? (
+        <p className="text-[11px] m-0 border border-studio-teal/30 rounded-[10px] px-3 py-2 bg-studio-teal/10 text-studio-w1">
+          {t('components.sessionPrediction.caseBanner', {
+            area: engineCase.area,
+            laser: engineCase.laserName || '—',
+            fitz: engineCase.form.skin_fitzpatrick_type,
+            location: engineCase.form.tc_body_location_main,
+            defaultValue: `Current case from the Case Simulator: ${engineCase.area} cm² · ${engineCase.laserName || '—'} · Fitzpatrick ${engineCase.form.skin_fitzpatrick_type} · ${engineCase.form.tc_body_location_main}`,
+          })}
+        </p>
+      ) : null}
       {show('base') ? (
         <>
           <p className="text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4 text-studio-w3">
@@ -132,23 +201,40 @@ const SessionPredictionForm = ({
         </div>
       ) : null}
 
-      {TATTOO_DELTA_GROUPS.filter((group) => show(TATTOO_GROUP_SECTION[group.key])).map(
+      {section === 'colors' ? (
+        <>
+          <CaseLaserMatrix disabled={disabled} />
+          {engineCase?.selectedLaser ? (
+            <EngineDisclosure title={copy.notes?.colors?.title} lines={copy.notes?.colors?.lines} />
+          ) : null}
+        </>
+      ) : null}
+
+      {TATTOO_DELTA_GROUPS.filter((group) => show(TATTOO_GROUP_SECTION[group.key]))
+        .filter((group) => !(group.key === 'color' && engineCase?.selectedLaser))
+        .map(
         (group, i) => (
           <div key={group.key}>
             {i > 0 || !section ? <div className="h-px bg-elaya-border mb-5" /> : null}
             <p className="text-[12px] font-semibold m-0 mb-3">{copy.tattooGroupTitles[group.key]}</p>
             <FieldGrid>
-              {group.fields.map(({ key }) => (
-                <NumberField
-                  key={key}
-                  id={`sp-delta-${group.key}-${key}`}
-                  label={copy.tattooFields[group.key]?.[key] || key}
-                  step="1"
-                  value={values?.tattoo_deltas?.[group.key]?.[key]}
-                  onChange={(v) => setMap('tattoo_deltas', group.key, key, v)}
-                  disabled={disabled}
-                />
-              ))}
+              {group.fields.map(({ key }) => {
+                const active = fieldActive(group.key, key)
+                return (
+                  <NumberField
+                    key={key}
+                    id={`sp-delta-${group.key}-${key}`}
+                    label={copy.tattooFields[group.key]?.[key] || key}
+                    step="1"
+                    effect
+                    active={Boolean(activeKeys) && active}
+                    badge={activeKeys && active ? activeBadge : null}
+                    value={values?.tattoo_deltas?.[group.key]?.[key]}
+                    onChange={(v) => setMap('tattoo_deltas', group.key, key, v)}
+                    disabled={disabled || (activeKeys && !active)}
+                  />
+                )
+              })}
             </FieldGrid>
             {NOTE_AFTER_GROUP[group.key] ? (
               <div className="mt-3">
@@ -180,17 +266,22 @@ const SessionPredictionForm = ({
             <div key={group.key}>
               <p className="text-[12px] font-semibold m-0 mb-3">{copy.lifestyleGroupTitles[group.key]}</p>
               <FieldGrid>
-                {group.fields.map(({ key }) => (
-                  <NumberField
-                    key={key}
-                    id={`sp-life-${group.key}-${key}`}
-                    label={copy.lifestyleFields[group.key]?.[key] || key}
-                    step="0.1"
-                    value={values?.lifestyle_scores?.[group.key]?.[key]}
-                    onChange={(v) => setMap('lifestyle_scores', group.key, key, v)}
-                    disabled={disabled}
-                  />
-                ))}
+                {group.fields.map(({ key }) => {
+                  const active = fieldActive(group.key, key)
+                  return (
+                    <NumberField
+                      key={key}
+                      id={`sp-life-${group.key}-${key}`}
+                      label={copy.lifestyleFields[group.key]?.[key] || key}
+                      step="0.1"
+                      active={Boolean(activeKeys) && active}
+                      badge={activeKeys && active ? activeBadge : null}
+                      value={values?.lifestyle_scores?.[group.key]?.[key]}
+                      onChange={(v) => setMap('lifestyle_scores', group.key, key, v)}
+                      disabled={disabled || (activeKeys && !active)}
+                    />
+                  )
+                })}
               </FieldGrid>
             </div>
           ))}
@@ -261,13 +352,18 @@ const SessionPredictionForm = ({
               {(values?.lifestyle_bmi_floors?.length
                 ? values.lifestyle_bmi_floors
                 : DEFAULT_BMI_FLOORS
-              ).map((row, index) => (
+              ).map((row, index) => {
+                const applies =
+                  caseBmiValue != null && caseBmiValue >= Number(row.min_bmi)
+                return (
                 <div key={`bmi-floor-${index}`} className="grid grid-cols-2 gap-3 max-w-[360px]">
                   <NumberField
                     id={`sp-bmi-floor-${index}-min`}
                     label={copy.bmiFloorMinBmi}
                     step="0.5"
                     value={row.min_bmi}
+                    active={applies}
+                    badge={applies ? activeBadge : null}
                     onChange={(v) => setBmiFloor(index, 'min_bmi', v)}
                     disabled={disabled}
                   />
@@ -280,7 +376,8 @@ const SessionPredictionForm = ({
                     disabled={disabled}
                   />
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </>
@@ -291,25 +388,31 @@ const SessionPredictionForm = ({
           <div className="h-px bg-elaya-border mb-5" />
           <p className="text-[12px] font-semibold m-0 mb-3">{copy.aftercareSection}</p>
           <FieldGrid>
-            {AFTERCARE_FIELDS.map(({ key }) => (
-              <NumberField
-                key={key}
-                id={`sp-aftercare-${key}`}
-                label={copy.aftercareFields[key]}
-                step="1"
-                value={values?.aftercare_extra_max?.[key]}
-                onChange={(v) =>
-                  onChange({
-                    ...values,
-                    aftercare_extra_max: {
-                      ...(values.aftercare_extra_max || {}),
-                      [key]: v,
-                    },
-                  })
-                }
-                disabled={disabled}
-              />
-            ))}
+            {AFTERCARE_FIELDS.map(({ key }) => {
+              const active = fieldActive('aftercare', key)
+              return (
+                <NumberField
+                  key={key}
+                  id={`sp-aftercare-${key}`}
+                  label={copy.aftercareFields[key]}
+                  step="1"
+                  effect
+                  active={Boolean(activeKeys) && active}
+                  badge={activeKeys && active ? activeBadge : null}
+                  value={values?.aftercare_extra_max?.[key]}
+                  onChange={(v) =>
+                    onChange({
+                      ...values,
+                      aftercare_extra_max: {
+                        ...(values.aftercare_extra_max || {}),
+                        [key]: v,
+                      },
+                    })
+                  }
+                  disabled={disabled || (activeKeys && !active)}
+                />
+              )
+            })}
           </FieldGrid>
         </div>
       ) : null}

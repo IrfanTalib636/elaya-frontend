@@ -20,6 +20,7 @@ import ConfigLifecycleBar from '../../components/settings/ConfigLifecycleBar'
 import EngineCaseSimulator from '../../components/engine/EngineCaseSimulator'
 import EngineHowItWorks from '../../components/engine/EngineHowItWorks'
 import EngineImpactPanel from '../../components/engine/EngineImpactPanel'
+import { EngineCaseProvider } from '../../components/engine/EngineCaseContext'
 import useAdminConfigDomain from '../../hooks/useAdminConfigDomain'
 import useAuthStore from '../../store/authStore'
 import { ROLES } from '../../constants/roles'
@@ -151,6 +152,7 @@ const AdminEngine = () => {
   const handleSessionsPreview = useCallback(rememberPreview(setSessionsPreview), [])
 
   return (
+    <EngineCaseProvider>
     <div className="p-6 max-w-[1440px]">
       <PageHeader
         title={copy.title || 'Prediction Engine'}
@@ -334,6 +336,7 @@ const AdminEngine = () => {
         </div>
       )}
     </div>
+    </EngineCaseProvider>
   )
 }
 

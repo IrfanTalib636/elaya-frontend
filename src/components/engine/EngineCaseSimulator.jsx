@@ -11,6 +11,7 @@ import { getPlatformConfig } from '../../api/adminConfig'
 import { Spinner } from '../ui'
 import NumberStepper from '../ui/NumberStepper'
 import useContent from '../../i18n/useContent'
+import { useEngineCaseOptional } from './EngineCaseContext'
 
 const COLORS = [
   'black',
@@ -139,8 +140,13 @@ const EngineCaseSimulator = ({
   const { adminPages, t } = useContent()
   const copy = adminPages.engineSimulator || {}
 
-  const [form, setForm] = useState(defaultForm)
-  const [lasers, setLasers] = useState([])
+  const sharedCase = useEngineCaseOptional()
+  const [localForm, setLocalForm] = useState(defaultForm)
+  const [localLasers, setLocalLasers] = useState([])
+  const form = sharedCase?.form ?? localForm
+  const setForm = sharedCase?.setForm ?? setLocalForm
+  const lasers = sharedCase ? sharedCase.lasers : localLasers
+  const setLasers = sharedCase?.setLasers ?? setLocalLasers
   const [colorDeltas, setColorDeltas] = useState({})
   const [loadingMeta, setLoadingMeta] = useState(true)
   const [loadingPreview, setLoadingPreview] = useState(false)

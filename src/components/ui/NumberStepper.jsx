@@ -21,6 +21,9 @@ const NumberStepper = ({
   label,
   error,
   hint,
+  hintTone = 'neutral',
+  badge = null,
+  active = false,
   className = '',
   id,
   value,
@@ -40,15 +43,28 @@ const NumberStepper = ({
 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
-      {label ? (
-        <label htmlFor={fieldId} className="text-studio-white text-[12px] font-semibold">
-          {label}
-        </label>
+      {label || badge ? (
+        <div className="flex items-center justify-between gap-2">
+          {label ? (
+            <label htmlFor={fieldId} className="text-studio-white text-[12px] font-semibold">
+              {label}
+            </label>
+          ) : (
+            <span />
+          )}
+          {badge ? (
+            <span className="shrink-0 rounded-full border border-studio-teal/50 bg-studio-teal/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-studio-teal">
+              {badge}
+            </span>
+          ) : null}
+        </div>
       ) : null}
       <div
-        className={`flex items-stretch rounded-[10px] border-[1.5px] bg-studio-bg-3 overflow-hidden ${
-          error ? 'border-studio-red' : 'border-elaya-border-strong focus-within:border-studio-gold'
-        } ${disabled ? 'opacity-60' : ''}`}
+        className={`flex items-stretch rounded-[10px] border-[1.5px] overflow-hidden ${
+          active ? 'border-studio-teal bg-studio-teal/10' : 'bg-studio-bg-3'
+        } ${error ? 'border-studio-red' : active ? '' : 'border-elaya-border-strong focus-within:border-studio-gold'} ${
+          disabled ? 'opacity-45' : ''
+        }`}
       >
         <input
           id={fieldId}
@@ -82,7 +98,15 @@ const NumberStepper = ({
         </div>
       </div>
       {error ? <p className="text-studio-red text-[11px] m-0">{error}</p> : null}
-      {hint && !error ? <p className="text-studio-w3 text-[11px] m-0">{hint}</p> : null}
+      {hint && !error ? (
+        <p
+          className={`text-[11px] m-0 ${
+            hintTone === 'up' ? 'text-[#e0a45a]' : hintTone === 'down' ? 'text-[#4ADE80]' : 'text-studio-w3'
+          }`}
+        >
+          {hint}
+        </p>
+      ) : null}
     </div>
   )
 }

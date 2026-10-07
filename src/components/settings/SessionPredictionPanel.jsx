@@ -10,25 +10,23 @@ import {
 import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
 
 /**
- * Shared session-prediction rules + live calculator.
- * Studio: canEdit=false. Super admin: canEdit=true (platform-wide save).
+ * Super Admin editor for platform session-prediction parameters.
+ * Studios do not see this panel. Live testing is the Case Simulator.
  */
 export default function SessionPredictionPanel({
   canEdit = false,
   loadConfig,
   saveConfig,
   saveLabel,
-  showPlausibility = false,
   section = null,
   title = null,
   description = null,
+  onPreviewValues = null,
 }) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [values, setValues] = useState(null)
-  const [savedBaseline, setSavedBaseline] = useState(null)
-  const [plausibility, setPlausibility] = useState(null)
 
   const load = useCallback(
     async ({ silent = false } = {}) => {
@@ -37,8 +35,6 @@ export default function SessionPredictionPanel({
         const data = await loadConfig()
         const next = cloneSessionPrediction(data.session_prediction)
         setValues(next)
-        setSavedBaseline(cloneSessionPrediction(next))
-        setPlausibility(data.excel_plausibility || null)
       } catch {
         toast.error(t('settingsPage.sessions.toasts.loadFailed'))
       } finally {
@@ -51,6 +47,11 @@ export default function SessionPredictionPanel({
   useEffect(() => {
     void load()
   }, [load])
+
+  useEffect(() => {
+    if (loading || !values || !onPreviewValues) return
+    onPreviewValues(buildSessionPredictionPayload(values))
+  }, [loading, values, onPreviewValues])
 
   usePlatformConfigSocket({
     enabled: true,
@@ -69,8 +70,6 @@ export default function SessionPredictionPanel({
       })
       const next = cloneSessionPrediction(data?.session_prediction || values)
       setValues(next)
-      setSavedBaseline(cloneSessionPrediction(next))
-      if (data?.excel_plausibility) setPlausibility(data.excel_plausibility)
       toast.success(
         t('adminPages.settings.draftSaved', {
           defaultValue: t('settingsPage.sessions.toasts.saved', {
@@ -118,8 +117,6 @@ export default function SessionPredictionPanel({
           values={values}
           onChange={canEdit ? setValues : () => {}}
           disabled={!canEdit}
-          savedBaseline={savedBaseline}
-          plausibility={showPlausibility ? plausibility : null}
           section={section}
         />
       ) : (

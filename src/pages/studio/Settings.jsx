@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Monitor, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Activity, Layers, MapPin, ShieldAlert, KeyRound, Coins, Bell } from 'lucide-react'
+import { Monitor, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Layers, MapPin, ShieldAlert, KeyRound, Coins, Bell } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Card, PageHeader, Input, Button, Spinner, Select, Badge } from '../../components/ui'
 import AppearanceSettings from '../../components/settings/AppearanceSettings'
 import PricingRulesPanel from '../../components/settings/PricingRulesPanel'
-import SessionPredictionPanel from '../../components/settings/SessionPredictionPanel'
 import TeamLoginsPanel from '../../components/settings/TeamLoginsPanel'
 import ElaycoinRulesTab from '../../components/settings/ElaycoinRulesTab'
 import AutomationsTab from '../../components/settings/AutomationsTab'
@@ -29,7 +28,6 @@ const TAB_I18N = {
   appearance: 'appearance',
   profile: 'profile',
   pricing: 'prices',
-  sessions: 'sessionPrediction',
   hours: 'hours',
   group: 'groupBooking',
   booking: 'bookingRules',
@@ -46,7 +44,6 @@ const TABS = [
   { id: 'appearance', icon: Monitor },
   { id: 'profile',    icon: User },
   { id: 'pricing',    icon: DollarSign },
-  { id: 'sessions',   icon: Activity },
   { id: 'hours',      icon: Clock },
   { id: 'group',      icon: Layers },
   { id: 'booking',    icon: ShieldAlert },
@@ -158,17 +155,6 @@ const PricingTab = () => {
       coinWertLabel={t('settingsPage.pricing.chfPerCoin')}
     />
   )
-}
-
-const SessionPredictionTab = () => {
-  const loadConfig = useCallback(async () => {
-    const res = await getStudioConfig()
-    return {
-      session_prediction: res.data.data.studio_config?.session_prediction,
-    }
-  }, [])
-
-  return <SessionPredictionPanel canEdit={false} loadConfig={loadConfig} />
 }
 
 // ── Profile tab ────────────────────────────────────────────────────────────
@@ -2018,7 +2004,7 @@ const StudioSettings = () => {
   return (
     // Pricing needs the extra width for its live calculator column; the other
     // tabs stay narrow so form rows don't stretch into unreadable lines.
-    <div className={`p-6 ${activeTab === 'pricing' || activeTab === 'sessions' ? 'max-w-[1240px]' : 'max-w-[860px]'}`}>
+    <div className={`p-6 ${activeTab === 'pricing' ? 'max-w-[1240px]' : 'max-w-[860px]'}`}>
       <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
 
       <div className="flex gap-6">
@@ -2044,7 +2030,6 @@ const StudioSettings = () => {
           {activeTab === 'appearance' && <AppearanceSettings />}
           {activeTab === 'profile' && <ProfileTab />}
           {activeTab === 'pricing' && <PricingTab />}
-          {activeTab === 'sessions' && <SessionPredictionTab />}
           {activeTab === 'hours'   && <HoursTab />}
           {activeTab === 'group'   && <GroupBookingTab />}
           {activeTab === 'booking' && <BookingRulesTab />}

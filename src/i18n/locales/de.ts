@@ -30,7 +30,9 @@ const de: TranslationSchema = {
     "backToLogin": "Zurück zur Anmeldung",
     "notifications": "Mitteilungen",
     "markAllRead": "Alle gelesen",
-    "noNotifications": "Noch keine Mitteilungen"
+    "noNotifications": "Noch keine Mitteilungen",
+    "increase": "Erhöhen",
+    "decrease": "Verringern"
   },
   "toast": {
     "loginSuccess": "Erfolgreich angemeldet",
@@ -173,7 +175,7 @@ const de: TranslationSchema = {
     "sidebarTag": "Skin · Laser · Care",
     "contentPlaceholder": "Inhalt folgt",
     "comingSoonBody": "Dieser Bereich gehört zum Platform-Admin-Prototyp. Als Nächstes verdrahten wir ihn mit Live-Daten — sag mir, welcher Screen zuerst kommen soll.",
-    "searchPlaceholder": "Kunde, Case, Studio…",
+    "searchPlaceholder": "Kunde, Fall, Studio…",
     "toolsHeading": "Plattform-Tools",
     "versionLabel": "Elaya Admin v0.1",
     "lockHint": "Super-Admin-Zugang",
@@ -182,15 +184,15 @@ const de: TranslationSchema = {
       { "id": "studios", "label": "Studios" },
       { "id": "studioChat", "label": "Studio-Chat" },
       { "id": "customers", "label": "Kunden" },
-      { "id": "crm", "label": "CRM & Leads" },
-      { "id": "engine", "label": "Engine" },
-      { "id": "medical", "label": "Medical & Safety" },
+      { "id": "crm", "label": "CRM & Anfragen" },
+      { "id": "engine", "label": "Prognose-Engine" },
+      { "id": "medical", "label": "Medizin & Sicherheit" },
       { "id": "documents", "label": "Digitale Dokumente" },
       { "id": "transfer", "label": "Studio-Wechsel" },
       { "id": "elaycoins", "label": "Elaycoins" },
       { "id": "automations", "label": "Automatisierungen" },
       { "id": "finance", "label": "Finanzen" },
-      { "id": "features", "label": "Pakete & Features" },
+      { "id": "features", "label": "Pakete & Funktionen" },
       { "id": "audit", "label": "Audit-Log" },
       { "id": "lasers", "label": "Laser" },
       { "id": "ai", "label": "KI Training" },
@@ -2698,6 +2700,9 @@ const de: TranslationSchema = {
     "settings": {
       "title": "Einstellungen",
       "subtitle": "Darstellung, Preisberechnung, Sitzungsprognose und medizinische Sperren — nur Super-Admin darf Kernregeln ändern.",
+      "appearanceOnlySubtitle": "Darstellung und Dashboard. Preise und Sitzungsprognose liegen in der Prognose-Engine, Sperren unter Medizin & Sicherheit.",
+      "engineLink": "→ Prognose-Engine (Preise & Sitzungsprognose)",
+      "medicalLink": "→ Medizin & Sicherheit (Sperren)",
       "loadError": "Einstellungen konnten nicht geladen werden",
       "updatedReload": "Sitzungsprognose wurde aktualisiert — lade neu…",
       "saved": "Gespeichert — Studios & Apps werden live aktualisiert",
@@ -2713,7 +2718,8 @@ const de: TranslationSchema = {
       "discardDraft": "Entwurf verwerfen",
       "lifecycle": "Lebenszyklus",
       "currentVersion": "Veröffentlicht v{{version}}",
-      "publish": "Veröffentlichen",
+        "publish": "Veröffentlichen",
+        "publishConfirm": "Bist du sicher, dass du diese Änderungen veröffentlichen willst?",
       "published": "Als Version {{version}} veröffentlicht",
       "publishReason": "Grund der Veröffentlichung",
       "publishReasonPlaceholder": "Warum gehen diese Regeln live?",
@@ -2749,7 +2755,7 @@ const de: TranslationSchema = {
           "desc": "Nachrichten mit den Studios"
         },
         "engine": {
-          "title": "Prediction Engine",
+          "title": "Prognose-Engine",
           "desc": "Preise & Sitzungsprognose"
         },
         "elaycoins": {
@@ -2813,7 +2819,7 @@ const de: TranslationSchema = {
       }
     },
     "crm": {
-      "title": "CRM & Leads",
+      "title": "CRM & Anfragen",
       "subtitle": "Pipeline, Leads und Plattform-CRM",
       "loadError": "CRM-Übersicht konnte nicht geladen werden",
       "manageStudios": "Studios verwalten",
@@ -2920,10 +2926,10 @@ const de: TranslationSchema = {
       "activityStudioUpdated": "Studio aktualisiert"
     },
     "engine": {
-      "title": "Prediction Engine",
+      "title": "Prognose-Engine",
       "subtitle": "Zentrale Steuerung von Preisen und Sitzungsprognose. Nur Super Admin kann Rechenregeln ändern. Studios nutzen den Simulator nur lesend.",
       "viewStudio": "Studio-Ansicht",
-      "viewAdmin": "Super Admin / Engine",
+      "viewAdmin": "Super Admin / Prognose",
       "studioHint": "Tattoo-Case-Simulator — rechnet live gegen die veröffentlichte Engine. Zum Vergleich mit unveröffentlichten Draft-Regeln: Impact-Vorschau unter Super Admin / Engine → Versionen & Audit.",
       "navSections": "Bereiche",
       "sections": {
@@ -2945,29 +2951,129 @@ const de: TranslationSchema = {
       },
       "how": {
         "title": "Wie funktioniert ELAYA?",
-        "priceTitle": "Preisberechnung",
-        "priceText": "Preis pro Sitzung = MAX(Mindestpreis, Fläche cm² × Basispreis pro cm²), aufgerundet auf CHF 5. Farben ändern den Preis NICHT — sie beeinflussen nur die Sitzungsanzahl, über das Delta-System unten.",
-        "deltaTitle": "Sitzungs-Deltas",
-        "deltaText": "Jedes Tattoo-Merkmal (Hauttyp, Körperstelle, Farben, Dichte, Alter, Cover-up, …) addiert oder entfernt Sitzungen von der Basis. Bei mehreren Farben gilt: Color Impact = MAX(schwierigste Farbe, Farbanzahl-Delta) — Deltas werden nicht einfach addiert.",
-        "lifestyleTitle": "Lifestyle Composite",
-        "lifestyleText": "Sieben Lifestyle-Faktoren (je 1–5 bewertet) werden zu einem Composite Score gemittelt, der über die Lifestyle-Schwellentabelle auf einen Sitzungs-Multiplikator abgebildet wird. Ein BMI ≥30/35 hebt den Composite Score auf einen konfigurierbaren Mindestwert an.",
+        "liveDraft": {
+          "title": "Live und Draft",
+          "liveTitle": "Live",
+          "liveText": "Live-Ansicht ist nur zum Lesen. Studio und Kunden-App verwenden diese Werte.",
+          "draftTitle": "Draft",
+          "draftText": "Draft-Ansicht ist editierbar. Änderungen werden erst mit „Veröffentlichen“ live geschaltet.",
+          "controls": "Die Live-Version ist der veröffentlichte Stand. Draft zurücksetzen verwirft unveröffentlichte Änderungen und stellt die Live-Werte wieder her. Veröffentlichen schaltet den Draft frei.",
+          "split": "Preisregeln und Sitzungsprognose haben je einen eigenen Draft. Das Veröffentlichen des einen veröffentlicht den anderen nicht. Bearbeiten kannst du sie unter Preise, Basis & Bereich, Farben & Laser, Fitzpatrick & Haut, Lifestyle und Healing & Response. Versionen & Audit zeigt beide.",
+          "impact": "Die Impact-Vorschau rechts rechnet denselben Beispiel-Case zweimal: einmal mit den veröffentlichten Live-Werten und einmal mit dem ausstehenden Draft. Solange du nicht veröffentlicht hast, stimmen beide Spalten überein."
+        },
+        "delta": {
+          "title": "Was ist ein Delta und wieviel ist es wert?",
+          "intro": "Ein Delta (+/−) bedeutet: zusätzliche oder weniger Sitzungen im Vergleich zur Basis.",
+          "ruleTitle": "Grundregel",
+          "plus": "Δ+1 = ca. 1 Sitzung mehr bei normalem Lifestyle",
+          "minus": "Δ−1 = ca. 1 Sitzung weniger bei normalem Lifestyle",
+          "importantLabel": "Wichtig:",
+          "important": "Der Lifestyle-Multiplikator wirkt auf die GESAMTZAHL aller Sitzungen, nicht nur auf einzelne Deltas.",
+          "exampleTitle": "Beispiel",
+          "rows": [
+            { "label": "Basis", "value": "8" },
+            { "label": "Typ IV (Δ+1)", "value": "+1" },
+            { "label": "Grün (Δ+3)", "value": "+3" },
+            { "label": "Hand (Δ+1)", "value": "+1" }
+          ],
+          "rawLabel": "Rohwert",
+          "rawValue": "13",
+          "multipliers": [
+            "× Lifestyle normal (×1.00) = 13 Sitzungen",
+            "× Lifestyle schlecht (×1.20) = 15.6 → 16 Sitzungen",
+            "× Lifestyle sehr schlecht (×1.50) = 19.5 → 20 Sitzungen"
+          ],
+          "conclusionTitle": "Fazit",
+          "conclusionIntro": "Wenn du einen Delta um +1 erhöhst:",
+          "conclusionLines": [
+            "→ Bei normalem Lifestyle: +1 Sitzung mehr",
+            "→ Bei schlechtem Lifestyle (×1.20): +1.2 Sitzungen mehr",
+            "→ Bei sehr schlechtem Lifestyle (×1.50): +1.5 Sitzungen mehr"
+          ],
+          "conclusionEmphasis": "Je schlechter der Lifestyle des Kunden, desto stärker wirkt sich jede Delta-Änderung aus."
+        },
+        "calc": {
+          "title": "Wie die Berechnung funktioniert",
+          "priceTitle": "Preis pro Sitzung",
+          "priceRule": "Die Live-Regel lautet: Preis pro Sitzung = MAX(Mindestpreis, Fläche cm² × Basispreis pro cm²), aufgerundet auf die nächsten CHF 5. Die Zahlen darunter sind das Rechenbeispiel.",
+          "priceExample": [
+            "Tattoo-Fläche × CHF 3.00 = Preis",
+            "Mindestpreis: CHF 90",
+            "Beispiel: 40 cm² × 3 = CHF 120"
+          ],
+          "priceColors": "Farben beeinflussen den Preis NICHT. Sie beeinflussen nur die Sitzungsanzahl.",
+          "sessionsTitle": "Sitzungsanzahl",
+          "sessionsText": "Basis (8) + alle Deltas = Rohwert. Rohwert × Lifestyle-Multiplikator = Mitte. Range: Mitte − 1 bis Mitte + 1.",
+          "whatTitle": "Was sind Deltas?",
+          "whatIntro": "Jeder Faktor addiert oder subtrahiert Sitzungen:",
+          "whatLines": [
+            "+ = mehr Sitzungen nötig",
+            "− = weniger Sitzungen nötig",
+            "0 = kein Einfluss"
+          ],
+          "colorImpact": "Bei mehreren Farben gilt: Color Impact = MAX(schwierigste Farbe, Farbanzahl-Delta). Diese beiden werden nicht einfach addiert.",
+          "exampleTitle": "Beispiel",
+          "exampleLines": [
+            "Basis: 8",
+            "Grün (Δ+3): +3",
+            "Hand (Δ+1): +1",
+            "Raucher-Score: ×1.2",
+            "(8+4) × 1.2 = 14.4 → 14 Sitzungen",
+            "Range: 13–15 Sitzungen"
+          ],
+          "costTitle": "Gesamtkosten",
+          "costText": "CHF 120 × 13–15 = CHF 1'560–1'800",
+          "effectTitle": "Einfluss einer Delta-Änderung",
+          "effectIntro": "Wenn du z.B. Typ III von Δ0 auf Δ1 änderst:",
+          "effectLines": [
+            "→ Rohwert steigt von 13 auf 14",
+            "→ × Lifestyle 1.00 = 14 Sitzungen (+1)",
+            "→ × Lifestyle 1.20 = 16.8 → 17 Sitzungen (+1.2)",
+            "→ × Lifestyle 1.50 = 21 Sitzungen (+1.5)"
+          ],
+          "effectEmphasis": "Je höher der Lifestyle-Multiplikator, desto mehr wirkt sich jede Delta-Änderung aus."
+        },
+        "lifestyle": {
+          "title": "Wie der Lifestyle-Index berechnet wird",
+          "step1Lead": "1. Jeder Faktor gibt einen Score",
+          "step1Scale": "(1 = sehr gut, 5 = sehr schlecht)",
+          "step2": "2. Durchschnitt aller Faktoren = Composite Score",
+          "step3": "3. Composite Score bestimmt den Einfluss:",
+          "bands": [
+            { "range": "Score 0–1.6", "name": "Sehr guter Lifestyle", "effect": "−15% Sitzungen", "tone": "good" },
+            { "range": "Score 1.6–2.4", "name": "Guter Lifestyle", "effect": "−5% Sitzungen", "tone": "good" },
+            { "range": "Score 2.4–3.2", "name": "Normaler Lifestyle", "effect": "±0%", "tone": "normal" },
+            { "range": "Score 3.2–4.0", "name": "Schlechter Lifestyle", "effect": "+20% Sitzungen", "tone": "poor" },
+            { "range": "Score 4.0–5.0", "name": "Sehr schlechter", "effect": "+50% Sitzungen", "tone": "poor" }
+          ],
+          "exampleTitle": "Beispiel",
+          "exampleLines": [
+            "Kunde raucht täglich (Score 5) + schläft gut (Score 2)",
+            "+ kein Sport (Score 4) + normaler Stress (Score 2)",
+            "Durchschnitt: (5+2+4+2) / 4 = 3.25 → Schlechter Lifestyle",
+            "Einfluss: +20% mehr Sitzungen"
+          ],
+          "bmiNote": "Ein BMI ab 30 hebt den Composite Score auf einen konfigurierbaren Mindestwert (ab 30 mindestens 4, ab 35 mindestens 5). Er kann den Score nur anheben, nie senken."
+        },
         "aiTitle": "Verbindung zum AI Training Center",
         "aiText": "Diese Engine-Werte fliessen in das ELAYA AI Training Center ein. Änderungen werden versioniert und für die KI-Kalibrierung verwendet."
       },
       "versionsHint": "Preise und Sitzungsprognose werden heute unabhängig veröffentlicht — das Veröffentlichen eines Bereichs beeinflusst den ausstehenden Draft des anderen nicht.",
       "impact": {
         "title": "Impact-Vorschau",
-        "sampleCase": "Beispiel-Case",
+        "sampleCase": "Aktueller Case",
         "sampleCaseName": "Mittelgrosses bunttes Tattoo (40 cm²)",
         "live": "Live",
         "draft": "Draft",
         "pricePerSession": "Preis / Sitzung",
         "sessions": "Prognostizierte Sitzungen",
         "total": "Geschätzte Gesamtkosten",
+        "delta": "Delta",
         "hasDraft": "Ausstehender Draft — noch nicht veröffentlicht",
         "noChanges": "Kein ausstehender Draft — zeigt veröffentlichte Regeln für beide Bereiche.",
+        "unsaved": "Die Draft-Spalte folgt den Werten auf diesem Bildschirm, einschliesslich ungespeicherter Änderungen.",
         "loadFailed": "Impact-Vorschau konnte nicht geladen werden",
-        "sharedInputsHint": "Gleicher Beispiel-Case wie die Live-Rechner für Preise / Sitzungsprognose — so lassen sich Preis- und Sitzungsprognose-Drafts direkt vergleichen."
+        "sharedInputsHint": "Der aktuelle Case aus dem Case Simulator ist die Basis. Live nutzt die veröffentlichten Regeln. Draft nutzt die Werte auf diesem Bildschirm."
       }
     },
     "engineSimulator": {
@@ -2993,6 +3099,13 @@ const de: TranslationSchema = {
       "saturation": "Sättigung",
       "coverup": "Cover-up",
       "tattooAge": "Tattoo-Alter (Jahre)",
+      "depth": "Tiefe",
+      "depthOptions": {
+        "shallow": "Oberflächlich",
+        "normal": "Normal",
+        "deep": "Tief",
+        "very_deep": "Sehr tief"
+      },
       "tattooType": "Tattoo-Art",
       "goal": "Behandlungsziel",
       "scarRisk": "Narben-/Keloidrisiko",
@@ -3150,7 +3263,7 @@ const de: TranslationSchema = {
       }
     },
     "medical": {
-      "title": "Medical & Safety",
+      "title": "Medizin & Sicherheit",
       "subtitle": "Medizinische Flags, Sperren und Safety-Konfiguration"
     },
     "medicalSafety": {
@@ -3424,7 +3537,7 @@ const de: TranslationSchema = {
       "details": "Details"
     },
     "features": {
-      "title": "Pakete & Features",
+      "title": "Pakete & Funktionen",
       "subtitle": "Pakete (Basic / Professional / Enterprise) · globale Schalter · Studio-Overrides",
       "subtitleAbo": "Abo-Pakete · KI-Gewichtungen · Studio Feature-Flags. Reines Abo-Modell — keine Transaktionsgebühr.",
       "tabPackages": "Paket-Verwaltung",
@@ -4029,6 +4142,13 @@ const de: TranslationSchema = {
     "pricing": {
       "intro": "Diese Werte steuern die KI-Preisberechnung und die Sitzungsschätzung für die Kunden dieses Studios. Leere Felder verwenden den Plattform-Standard.",
       "platformDefault": "Plattform-Standard",
+      "priceHowTitle": "Wie wird der Preis berechnet?",
+      "priceHowLines": [
+        "Preis = Tattoo-Fläche × Basispreis pro cm². Der Mindestpreis gilt immer. Das Ergebnis wird auf CHF 5 aufgerundet.",
+        "Beispiel: 40 cm² × CHF 3.00 = CHF 120. Mindestpreis CHF 90 → CHF 120 gilt.",
+        "Wichtig: Farben ändern den Preis nicht. Farben beeinflussen nur die Sitzungsanzahl.",
+        "Das Studio kann seinen eigenen Basispreis pro cm² in den Studio-Einstellungen unter Preise setzen."
+      ],
       "groups": {
         "base": "Grundpreise",
         "color": "Farb-Multiplikatoren",
@@ -4129,10 +4249,80 @@ const de: TranslationSchema = {
       "noDeltas": "Keine Tattoo-Deltas ≠ 0 — einfache Prognose (±1 Sitzung um die Mitte).",
       "loadPreview": "Vorschau laden",
       "formulaHint": "Formel: (Basis + Tattoo-Deltas) × Lifestyle-Multiplikator → Sitzungsmitte, danach Min/Max-Range. Lifestyle-Score 1 = ×0.85 (optimal), Score 5 = ×1.50 (stark beeinträchtigt). Kunden sehen diese Parameter nicht.",
+      "deltaNone": "Kein Einfluss auf Sitzungen",
+      "deltaMore": "+{{count}} Sitzung(en) bei normalem Lifestyle",
+      "deltaLess": "{{count}} Sitzung(en) weniger bei normalem Lifestyle",
+      "lifestyleHigher": "Score {{score}} · mehr Sitzungen als bei normalem Lifestyle",
+      "lifestyleLower": "Score {{score}} · weniger Sitzungen als bei normalem Lifestyle",
+      "caseBmiLine": "BMI des aktuellen Case: {{bmi}}",
+      "activeInCase": "Aktiv im aktuellen Case",
+      "laserMatrixTitle": "Laser-Farb-Deltas",
+      "caseBanner": "Aktueller Case aus dem Case Simulator: {{area}} cm² · {{laser}} · Fitzpatrick {{fitz}} · {{location}}",
       "baseSection": "Basis & Range",
       "lifestyleComposite": "Lifestyle-Composite",
       "lifestyleCompositeHint": "Sieben Hauptfaktoren gemittelt: Rauchen, Alkohol, Schlaf (Qualität+Stunden als ein Score), Stress, Aktivität (inkl. Sport), Hydration, Ernährung. Nachsorge fliesst nicht in den Score ein. BMI ≥30 hebt den Score auf mind. 4, ≥35 auf 5.",
       "lifestyleMultipliers": "Lifestyle-Multiplikatoren",
+      "thresholdsTitle": "Wie funktionieren die Schwellen?",
+      "thresholdsIntro": "Der Lifestyle-Score ist der Durchschnitt aller Faktoren (Rauchen, Alkohol, Schlaf usw.). Jeder Faktor gibt einen Wert von 1 (sehr gut) bis 5 (sehr schlecht).",
+      "thresholdsDefine": "Die Schwelle definiert: bis zu welchem Score gilt eine Lifestyle-Stufe?",
+      "thresholdsExampleTitle": "Beispiel",
+      "thresholdsExamples": [
+        "Kunde hat Score 2.1 → Score ≤ 2.4 → Guter Lifestyle → −5% Sitzungen",
+        "Kunde hat Score 3.8 → Score ≤ 4.0 → Schlechter Lifestyle → +20% Sitzungen"
+      ],
+      "notes": {
+        "fitzpatrick": {
+          "title": "Was ist der Fitzpatrick-Hauttyp?",
+          "lines": [
+            "Typ I–II: sehr helle Haut, der Laser wird gut absorbiert.",
+            "Typ III: mittelhell, das ist der Standard.",
+            "Typ IV–VI: dunklere Haut, mehr Vorsicht, mehr Sitzungen sind möglich.",
+            "Delta = zusätzliche Sitzungen wegen des Hauttyps."
+          ]
+        },
+        "location": {
+          "title": "Warum beeinflusst die Körperstelle die Sitzungen?",
+          "lines": [
+            "Durchblutung und Lymphsystem sind je nach Körperstelle verschieden. Besser durchblutete Stellen heilen schneller, also weniger Sitzungen.",
+            "Hand und Fuss: schlechtere Durchblutung, mehr Sitzungen.",
+            "Rumpf und Arm: gute Durchblutung, Standard."
+          ]
+        },
+        "colors": {
+          "title": "Was bedeuten die Farb-Deltas?",
+          "lines": [
+            "Jede Farbe hat einen Delta-Wert pro Laser. Delta = zusätzliche Sitzungen wegen dieser Farbe.",
+            "Δ+0 = der Laser ist sehr gut für diese Farbe. Δ+1 = gut, leicht mehr Sitzungen. Δ+2 = schwächer, mehr Sitzungen. Δ+3 = der Laser kämpft mit dieser Farbe.",
+            "Bei mehreren Farben gilt: Color Impact = MAX(schwierigste Farbe, Farbanzahl-Delta). Nicht alle Deltas werden addiert."
+          ]
+        },
+        "lifestyleFactors": {
+          "title": "Wie werden die Faktoren berechnet?",
+          "lines": [
+            "Jeder Faktor gibt einen Score von 1 bis 5. 1 = sehr gut für die Heilung. 5 = sehr schlecht für die Heilung.",
+            "Der Durchschnitt aller Faktoren ist der Composite Score. Dieser Score bestimmt die Lifestyle-Stufe.",
+            "Beispiel: täglich stark rauchen (5) + sehr gut schlafen (1) + normaler Stress (2) = Durchschnitt 2.67 → Normal."
+          ]
+        },
+        "thresholdVsEffect": {
+          "title": "Schwelle und Einfluss — was ist der Unterschied?",
+          "lines": [
+            "Schwelle: bis zu welchem Score gilt diese Stufe? Beispiel: Schwelle 2.4 → Score bis 2.4 = Gut.",
+            "Einfluss in Prozent: wie stark wirkt diese Stufe? Beispiel: −5% → 10 Sitzungen werden zu 9.5, gerundet 10.",
+            "Multiplikator: dasselbe wie der Einfluss, anders ausgedrückt. −5% = ×0.95. Beide Felder sind editierbar und bleiben synchron.",
+            "Schwelle und Einfluss sind unabhängig. Die Schwelle ändern heisst: andere Kunden fallen in diese Stufe. Den Einfluss ändern heisst: die Stufe wirkt stärker oder schwächer."
+          ]
+        },
+        "healing": {
+          "title": "Healing & Treatment Response",
+          "lines": [
+            "Diese Werte gelten erst nach echten Sitzungen. Bei einem neuen Case bleiben sie auf 0.",
+            "Nach mehreren Sitzungen kann das Studio eingeben, wie der Kunde reagiert.",
+            "Heilungsverlauf: Normal, Gemischt oder Problematisch. Helligkeitsrate: Schnell, Erwartet, Langsam oder Stagnierend.",
+            "Diese Werte aktualisieren dann die Prognose."
+          ]
+        }
+      },
       "aftercareSection": "Nachsorge-Bereitschaft (zusätzliche Max-Sitzungen)",
       "avgUpTo": "Ø bis",
       "score": "Score",
@@ -4159,6 +4349,7 @@ const de: TranslationSchema = {
         "saturation": "Sättigung (Delta)",
         "coverup": "Cover-up / Layering (Delta)",
         "age": "Tattoo-Alter (Delta)",
+        "depth": "Tiefe (Delta)",
         "prior_treatment": "Vorbehandlung (Delta)",
         "type": "Tattoo-Art (Delta)",
         "goal": "Entfernungsziel (Delta)",
@@ -4238,6 +4429,12 @@ const de: TranslationSchema = {
           "age_8_15": "8–15 Jahre",
           "over_15": "über 15 Jahre",
           "unknown": "Unbekannt"
+        },
+        "depth": {
+          "shallow": "Oberflächlich",
+          "normal": "Normal",
+          "deep": "Tief",
+          "very_deep": "Sehr tief"
         },
         "prior_treatment": {
           "none": "Keine",

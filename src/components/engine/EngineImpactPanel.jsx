@@ -3,14 +3,7 @@ import { Gauge, AlertTriangle } from 'lucide-react'
 import { previewPricing, previewSessionPrediction } from '../../api/config'
 import { Spinner } from '../ui'
 import useContent from '../../i18n/useContent'
-
-/**
- * Shared "sample case" for the Impact preview — reuses the same Excel
- * plausibility preset (`example_2`, medium colourful tattoo, 40 cm²) that the
- * pricing/session-prediction live calculators already use. This keeps the
- * comparison apples-to-apples without duplicating EngineCaseSimulator's form.
- */
-const PRESET_ID = 'example_2'
+import { useEngineCaseOptional } from './EngineCaseContext'
 
 const fmtChf = (n) =>
   n == null
@@ -23,7 +16,7 @@ const fmtRange = (min, max) => (min == null || max == null ? '—' : `${min}–$
  * Row comparing LIVE (published) vs DRAFT (unpublished) for one metric.
  * Highlights when the two differ, matching the prototype's `.pe-cmp-changed`.
  */
-const CompareRow = ({ label, liveValue, draftValue, liveLabel, draftLabel }) => {
+const CompareRow = ({ label, liveValue, draftValue, liveLabel, draftLabel, deltaLabel, deltaValue }) => {
   const changed = String(liveValue) !== String(draftValue)
   return (
     <div
@@ -58,6 +51,11 @@ const CompareRow = ({ label, liveValue, draftValue, liveLabel, draftLabel }) => 
           </p>
         </div>
       </div>
+      {deltaValue ? (
+        <p className={`text-[11px] m-0 mt-1.5 ${changed ? 'text-studio-gold-2' : 'text-studio-w3'}`}>
+          {deltaLabel}: {deltaValue}
+        </p>
+      ) : null}
     </div>
   )
 }
@@ -73,14 +71,31 @@ const CompareRow = ({ label, liveValue, draftValue, liveLabel, draftLabel }) => 
  * forces a refetch after publish / discard.
  */
 const EngineImpactPanel = ({
+  presetId = 'example_2',
+  pricingOverride = null,
+  sessionsOverride = null,
   draftPricing = null,
   draftSessions = null,
   hasPricingDraft = false,
   hasSessionsDraft = false,
   refreshKey = 0,
 }) => {
-  const { adminPages } = useContent()
+  const { adminPages, components } = useContent()
   const copy = adminPages.engine?.impact || {}
+  const engineCase = useEngineCaseOptional()
+  const presetLabel =
+    components?.pricing?.live?.presets?.[presetId] ||
+    copy.sampleCaseName ||
+    'Medium colourful tattoo (40 cm²)'
+  const tattooFields = components?.sessionPrediction?.tattooFields || {}
+  const caseLabel = engineCase
+    ? `${engineCase.area} cm² · ${engineCase.laserName || '—'} · Fitzpatrick ${engineCase.form.skin_fitzpatrick_type} · ${(engineCase.form.tc_colors_present || [])
+        .map((color) => tattooFields.color?.[color] || color)
+        .join(', ')} · ${
+        tattooFields.location?.[engineCase.form.tc_body_location_main] ||
+        engineCase.form.tc_body_location_main
+      }`
+    : presetLabel
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -88,36 +103,50 @@ const EngineImpactPanel = ({
   const [sessions, setSessions] = useState(null)
   const reqSeq = useRef(0)
 
+  const pricingBody =
+    pricingOverride || (hasPricingDraft && draftPricing ? draftPricing : null)
+  const sessionsBody =
+    sessionsOverride || (hasSessionsDraft && draftSessions ? draftSessions : null)
+
   useEffect(() => {
     const seq = ++reqSeq.current
     setLoading(true)
     setError('')
-    ;(async () => {
-      try {
-        const [priceRes, sessRes] = await Promise.all([
-          previewPricing({
-            preset_id: PRESET_ID,
-            ...(hasPricingDraft && draftPricing ? { studio_pricing: draftPricing } : {}),
-          }),
-          previewSessionPrediction({
-            preset_id: PRESET_ID,
-            ...(hasSessionsDraft && draftSessions
-              ? { session_prediction: draftSessions }
-              : {}),
-          }),
-        ])
-        if (seq !== reqSeq.current) return
-        setPricing(priceRes.data?.data || null)
-        setSessions(sessRes.data?.data || null)
-      } catch (err) {
-        if (seq !== reqSeq.current) return
-        setError(err?.response?.data?.message || copy.loadFailed || 'Could not load impact preview')
-      } finally {
-        if (seq === reqSeq.current) setLoading(false)
-      }
-    })()
+    const timer = setTimeout(() => {
+      ;(async () => {
+        try {
+          const publishedCase = engineCase?.publishedCaseInput || null
+          const draftCase = engineCase?.draftCaseInput || publishedCase
+          const caseFields = publishedCase ? { case_input: publishedCase } : { preset_id: presetId }
+          const draftFields = draftCase ? { case_input: draftCase } : { preset_id: presetId }
+          const [priceRes, publishedSess, draftSess] = await Promise.all([
+            previewPricing({
+              ...draftFields,
+              ...(pricingBody ? { studio_pricing: pricingBody } : {}),
+            }),
+            previewSessionPrediction(caseFields),
+            previewSessionPrediction({
+              ...draftFields,
+              ...(sessionsBody ? { session_prediction: sessionsBody } : {}),
+            }),
+          ])
+          if (seq !== reqSeq.current) return
+          setPricing(priceRes.data?.data || null)
+          setSessions({
+            baseline: publishedSess.data?.data?.live || null,
+            live: draftSess.data?.data?.live || null,
+          })
+        } catch (err) {
+          if (seq !== reqSeq.current) return
+          setError(err?.response?.data?.message || copy.loadFailed || 'Could not load impact preview')
+        } finally {
+          if (seq === reqSeq.current) setLoading(false)
+        }
+      })()
+    }, 200)
+    return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- copy.loadFailed is static i18n text
-  }, [draftPricing, draftSessions, hasPricingDraft, hasSessionsDraft, refreshKey])
+  }, [presetId, pricingBody, sessionsBody, refreshKey, engineCase])
 
   // `baseline` is always computed from the currently *published* config
   // (never affected by the request body) → LIVE. `live` is computed with the
@@ -141,7 +170,30 @@ const EngineImpactPanel = ({
       ? draftPrice * draftSessionsResult.max
       : null
 
+  const signed = (n) => {
+    if (n == null || Number.isNaN(Number(n))) return '—'
+    const v = Number(n)
+    if (v === 0) return '0'
+    return `${v > 0 ? '+' : '−'}${Math.abs(v)}`
+  }
+  const priceDelta = livePrice != null && draftPrice != null ? draftPrice - livePrice : null
+  const sessionDelta =
+    liveSessions?.min != null && draftSessionsResult?.min != null
+      ? `${signed(draftSessionsResult.min - liveSessions.min)} / ${signed(
+          draftSessionsResult.max - liveSessions.max
+        )}`
+      : null
+  const totalDeltaMin =
+    liveTotalMin != null && draftTotalMin != null ? draftTotalMin - liveTotalMin : null
+  const totalDeltaMax =
+    liveTotalMax != null && draftTotalMax != null ? draftTotalMax - liveTotalMax : null
+
   const anyDraft = hasPricingDraft || hasSessionsDraft
+  const screenDiffers =
+    !anyDraft &&
+    (String(livePrice ?? '') !== String(draftPrice ?? '') ||
+      String(liveSessions?.min ?? '') !== String(draftSessionsResult?.min ?? '') ||
+      String(liveSessions?.max ?? '') !== String(draftSessionsResult?.max ?? ''))
 
   return (
     <div className="rounded-2xl border border-elaya-border bg-studio-bg-3 p-5">
@@ -154,7 +206,7 @@ const EngineImpactPanel = ({
       </div>
 
       <p className="text-[11px] text-studio-w3 m-0 mb-4">
-        {copy.sampleCase || 'Sample case'}: {copy.sampleCaseName || 'Medium colourful tattoo (40 cm²)'}
+        {copy.sampleCase || 'Sample case'}: {caseLabel}
       </p>
 
       {error ? (
@@ -173,7 +225,9 @@ const EngineImpactPanel = ({
       >
         {anyDraft
           ? copy.hasDraft || 'Pending draft — not yet published'
-          : copy.noChanges || 'No pending draft — showing published rules for both domains.'}
+          : screenDiffers
+            ? copy.unsaved || 'Draft column follows the values on this screen.'
+            : copy.noChanges || 'No pending draft — showing published rules for both domains.'}
       </p>
 
       <CompareRow
@@ -182,6 +236,8 @@ const EngineImpactPanel = ({
         draftLabel={copy.draft || 'Draft'}
         liveValue={fmtChf(livePrice)}
         draftValue={fmtChf(draftPrice)}
+        deltaLabel={copy.delta || 'Delta'}
+        deltaValue={priceDelta == null ? null : signed(priceDelta)}
       />
       <CompareRow
         label={copy.sessions || 'Predicted sessions'}
@@ -189,6 +245,8 @@ const EngineImpactPanel = ({
         draftLabel={copy.draft || 'Draft'}
         liveValue={fmtRange(liveSessions?.min, liveSessions?.max)}
         draftValue={fmtRange(draftSessionsResult?.min, draftSessionsResult?.max)}
+        deltaLabel={copy.delta || 'Delta'}
+        deltaValue={sessionDelta}
       />
       <CompareRow
         label={copy.total || 'Estimated total'}
@@ -203,6 +261,12 @@ const EngineImpactPanel = ({
           draftTotalMin != null && draftTotalMax != null
             ? `${fmtChf(draftTotalMin)}–${fmtChf(draftTotalMax)}`
             : '—'
+        }
+        deltaLabel={copy.delta || 'Delta'}
+        deltaValue={
+          totalDeltaMin == null || totalDeltaMax == null
+            ? null
+            : `${signed(totalDeltaMin)} / ${signed(totalDeltaMax)}`
         }
       />
 

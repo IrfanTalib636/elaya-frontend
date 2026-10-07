@@ -20,11 +20,22 @@ const fmtMult = (n) => (n == null ? '—' : `× ${n}`)
  * unsaved form draft; `savedBaseline` is what is currently stored, so the panel
  * can show saved → draft while the studio edits.
  */
-const PricingLiveCalculator = ({ values, savedBaseline = null, studioId = null }) => {
+const PricingLiveCalculator = ({
+  values,
+  savedBaseline = null,
+  studioId = null,
+  presetId: presetIdProp = null,
+  onPresetChange = null,
+}) => {
   const { components } = useContent()
   const copy = components.pricing
   const liveCopy = copy.live
-  const [presetId, setPresetId] = useState('example_2')
+  const [internalPresetId, setInternalPresetId] = useState('example_2')
+  const presetId = presetIdProp || internalPresetId
+  const setPresetId = (next) => {
+    if (onPresetChange) onPresetChange(next)
+    else setInternalPresetId(next)
+  }
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState(null)

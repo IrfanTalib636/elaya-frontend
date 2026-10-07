@@ -9,7 +9,9 @@ import { listLasers } from '../../api/adminPhase4'
 import { previewPricing, previewSessionPrediction, getStudioConfig } from '../../api/config'
 import { getPlatformConfig } from '../../api/adminConfig'
 import { Spinner } from '../ui'
+import NumberStepper from '../ui/NumberStepper'
 import useContent from '../../i18n/useContent'
+import { useEngineCaseOptional } from './EngineCaseContext'
 
 const COLORS = [
   'black',
@@ -80,6 +82,7 @@ const defaultForm = () => ({
   laser_profile_level: 'basic',
   type: 'tattoo',
   tc_colors_present: ['black'],
+  tc_depth: 'normal',
   laserId: '',
   healing_history: 'normal',
   lightening_rate: 'expected',
@@ -119,18 +122,15 @@ const SelectField = ({ label, value, onChange, options, optionLabel }) => (
   </div>
 )
 
-const NumField = ({ label, value, onChange, step = 'any', min }) => (
-  <div>
-    <label className={labelClass}>{label}</label>
-    <input
-      type="number"
-      step={step}
-      min={min}
-      className={fieldClass}
-      value={value}
-      onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))}
-    />
-  </div>
+const NumField = ({ label, value, onChange, step = 1, min, className = '' }) => (
+  <NumberStepper
+    label={label}
+    className={className}
+    step={step === 'any' ? 1 : step}
+    min={min}
+    value={value}
+    onChange={(raw) => onChange(raw === '' ? '' : Number(raw))}
+  />
 )
 
 const EngineCaseSimulator = ({
@@ -141,8 +141,13 @@ const EngineCaseSimulator = ({
   const { adminPages, t } = useContent()
   const copy = adminPages.engineSimulator || {}
 
-  const [form, setForm] = useState(defaultForm)
-  const [lasers, setLasers] = useState([])
+  const sharedCase = useEngineCaseOptional()
+  const [localForm, setLocalForm] = useState(defaultForm)
+  const [localLasers, setLocalLasers] = useState([])
+  const form = sharedCase?.form ?? localForm
+  const setForm = sharedCase?.setForm ?? setLocalForm
+  const lasers = sharedCase ? sharedCase.lasers : localLasers
+  const setLasers = sharedCase?.setLasers ?? setLocalLasers
   const [colorDeltas, setColorDeltas] = useState({})
   const [loadingMeta, setLoadingMeta] = useState(true)
   const [loadingPreview, setLoadingPreview] = useState(false)
@@ -193,7 +198,8 @@ const EngineCaseSimulator = ({
       skin_keloid_risk: form.skin_keloid_risk,
       laser_profile_level: form.laser_profile_level,
       tc_colors_present: colors,
-      tc_depth: 'normal',
+      tc_depth: form.tc_depth || 'normal',
+      ...(selectedLaser?.id ? { laser_device_id: selectedLaser.id } : {}),
       healing_history: form.healing_history || undefined,
       lightening_rate: form.lightening_rate || undefined,
       life_aftercare_commitment: form.life_aftercare_commitment,
@@ -214,7 +220,7 @@ const EngineCaseSimulator = ({
         : {}),
     }
     return input
-  }, [form, area, activeColorDeltas])
+  }, [form, area, activeColorDeltas, selectedLaser])
 
   useEffect(() => {
     let cancelled = false
@@ -482,20 +488,20 @@ const EngineCaseSimulator = ({
             </div>
             {form.sizeMode === 'lxb' ? (
               <div className="flex items-center gap-2 flex-wrap">
-                <input
-                  type="number"
-                  step="any"
-                  className={`${fieldClass} max-w-[90px]`}
+                <NumField
+                  className="w-[120px]"
+                  step="1"
+                  min={0}
                   value={form.tc_size_length}
-                  onChange={(e) => set('tc_size_length', Number(e.target.value))}
+                  onChange={(v) => set('tc_size_length', v)}
                 />
                 <span className="text-studio-w3">×</span>
-                <input
-                  type="number"
-                  step="any"
-                  className={`${fieldClass} max-w-[90px]`}
+                <NumField
+                  className="w-[120px]"
+                  step="1"
+                  min={0}
                   value={form.tc_size_width}
-                  onChange={(e) => set('tc_size_width', Number(e.target.value))}
+                  onChange={(v) => set('tc_size_width', v)}
                 />
                 <span className="text-studio-w3 text-[12px]">cm =</span>
                 <span className="text-studio-teal font-semibold text-[13px]">
@@ -503,12 +509,12 @@ const EngineCaseSimulator = ({
                 </span>
               </div>
             ) : (
-              <input
-                type="number"
-                step="any"
-                className={`${fieldClass} max-w-[140px]`}
+              <NumField
+                className="max-w-[180px]"
+                step="1"
+                min={0}
                 value={form.flaeche_cm2}
-                onChange={(e) => set('flaeche_cm2', Number(e.target.value))}
+                onChange={(v) => set('flaeche_cm2', v)}
               />
             )}
           </div>
@@ -555,6 +561,13 @@ const EngineCaseSimulator = ({
               onChange={(v) => set('tc_age_years', v)}
               step="1"
               min={0}
+            />
+            <SelectField
+              label={copy.depth || 'Ink depth'}
+              value={form.tc_depth || 'normal'}
+              onChange={(v) => set('tc_depth', v)}
+              options={['shallow', 'normal', 'deep', 'very_deep']}
+              optionLabel={(v) => copy.depthOptions?.[v] || v}
             />
             <SelectField
               label={copy.tattooType || 'Tattoo type'}

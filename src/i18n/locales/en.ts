@@ -28,7 +28,9 @@ const en = {
     "backToLogin": "Back to login",
     "notifications": "Notifications",
     "markAllRead": "Mark all read",
-    "noNotifications": "No notifications yet"
+    "noNotifications": "No notifications yet",
+    "increase": "Increase",
+    "decrease": "Decrease"
   },
   "toast": {
     "loginSuccess": "Logged in successfully",
@@ -2696,6 +2698,9 @@ const en = {
     "settings": {
       "title": "Settings",
       "subtitle": "Appearance, price calculation, session prediction, and medical lockouts — only super admin can edit core rules.",
+      "appearanceOnlySubtitle": "Appearance and dashboard preferences. Pricing and session prediction live in the Prediction Engine. Lockouts live in Medical & Safety.",
+      "engineLink": "→ Prediction Engine (prices & session forecast)",
+      "medicalLink": "→ Medical & Safety (lockouts)",
       "loadError": "Could not load settings",
       "updatedReload": "Session prediction was updated — reloading…",
       "saved": "Saved — studios & apps update live",
@@ -2711,7 +2716,8 @@ const en = {
       "discardDraft": "Discard draft",
       "lifecycle": "Lifecycle",
       "currentVersion": "Published v{{version}}",
-      "publish": "Publish",
+        "publish": "Publish",
+        "publishConfirm": "Are you sure you want to publish these changes?",
       "published": "Published as version {{version}}",
       "publishReason": "Publish reason",
       "publishReasonPlaceholder": "Why are these rules going live?",
@@ -2943,29 +2949,129 @@ const en = {
       },
       "how": {
         "title": "How does ELAYA work?",
-        "priceTitle": "Price calculation",
-        "priceText": "Price per session = MAX(minimum price, area cm² × base price per cm²), rounded up to CHF 5. Colours do NOT change the price — they only change the number of sessions, via the delta system below.",
-        "deltaTitle": "Session deltas",
-        "deltaText": "Every tattoo characteristic (skin type, body location, colours, density, age, cover-up, …) adds or removes sessions from the base value. With multiple colours: Color Impact = MAX(hardest colour delta, colour-count delta) — deltas are not simply summed.",
-        "lifestyleTitle": "Lifestyle composite",
-        "lifestyleText": "Seven lifestyle factors (each scored 1–5) are averaged into one composite score, which maps to a session-count multiplier via the Lifestyle thresholds table. A BMI of 30+/35+ floors the composite score at a configurable minimum.",
+        "liveDraft": {
+          "title": "Live and Draft",
+          "liveTitle": "Live",
+          "liveText": "Live view is read-only. The studio and the customer app use these values.",
+          "draftTitle": "Draft",
+          "draftText": "Draft view is editable. Changes go live only when you press Publish.",
+          "controls": "The live version is the published set. Reset draft throws away unpublished edits and returns to those live values. Publish is what switches the draft on.",
+          "split": "Price rules and session-prediction rules each have their own draft. Publishing one does not publish the other. You edit them in Pricing, Base & range, Colours & laser, Fitzpatrick & skin, Lifestyle, and Healing & response. Versions & audit shows both.",
+          "impact": "The Impact preview on the right runs the same sample case twice: once with the published Live values and once with the pending Draft. Until you publish, both columns match."
+        },
+        "delta": {
+          "title": "What is a delta and how much is it worth?",
+          "intro": "A delta (+/−) means extra sessions or fewer sessions compared with the base.",
+          "ruleTitle": "Basic rule",
+          "plus": "Δ+1 = about 1 more session at a normal lifestyle",
+          "minus": "Δ−1 = about 1 fewer session at a normal lifestyle",
+          "importantLabel": "Important:",
+          "important": "The lifestyle multiplier applies to the TOTAL number of sessions, not only to individual deltas.",
+          "exampleTitle": "Example",
+          "rows": [
+            { "label": "Base", "value": "8" },
+            { "label": "Type IV (Δ+1)", "value": "+1" },
+            { "label": "Green (Δ+3)", "value": "+3" },
+            { "label": "Hand (Δ+1)", "value": "+1" }
+          ],
+          "rawLabel": "Raw value",
+          "rawValue": "13",
+          "multipliers": [
+            "× normal lifestyle (×1.00) = 13 sessions",
+            "× poor lifestyle (×1.20) = 15.6 → 16 sessions",
+            "× very poor lifestyle (×1.50) = 19.5 → 20 sessions"
+          ],
+          "conclusionTitle": "Conclusion",
+          "conclusionIntro": "If you raise a delta by +1:",
+          "conclusionLines": [
+            "→ At a normal lifestyle: +1 session",
+            "→ At a poor lifestyle (×1.20): +1.2 sessions",
+            "→ At a very poor lifestyle (×1.50): +1.5 sessions"
+          ],
+          "conclusionEmphasis": "The worse the customer's lifestyle, the more every delta change counts."
+        },
+        "calc": {
+          "title": "How the calculation works",
+          "priceTitle": "Price per session",
+          "priceRule": "The live rule is: price per session = MAX(minimum price, area cm² × base price per cm²), rounded up to the next CHF 5. The figures below are the teaching example.",
+          "priceExample": [
+            "Tattoo area × CHF 3.00 = price",
+            "Minimum price: CHF 90",
+            "Example: 40 cm² × 3 = CHF 120"
+          ],
+          "priceColors": "Colours do NOT affect the price. They only affect the session count.",
+          "sessionsTitle": "Session count",
+          "sessionsText": "Base (8) + all deltas = raw value. Raw value × lifestyle multiplier = centre. Range: centre − 1 to centre + 1.",
+          "whatTitle": "What are deltas?",
+          "whatIntro": "Each factor adds or subtracts sessions:",
+          "whatLines": [
+            "+ = more sessions needed",
+            "− = fewer sessions needed",
+            "0 = no effect"
+          ],
+          "colorImpact": "With several colours, Color Impact = MAX(hardest colour delta, colour-count delta). Those two are not simply added.",
+          "exampleTitle": "Example",
+          "exampleLines": [
+            "Base: 8",
+            "Green (Δ+3): +3",
+            "Hand (Δ+1): +1",
+            "Smoker score: ×1.2",
+            "(8+4) × 1.2 = 14.4 → 14 sessions",
+            "Range: 13–15 sessions"
+          ],
+          "costTitle": "Total cost",
+          "costText": "CHF 120 × 13–15 = CHF 1,560–1,800",
+          "effectTitle": "Effect of a delta change",
+          "effectIntro": "If you change type III from Δ0 to Δ1:",
+          "effectLines": [
+            "→ The raw value rises from 13 to 14",
+            "→ × lifestyle 1.00 = 14 sessions (+1)",
+            "→ × lifestyle 1.20 = 16.8 → 17 sessions (+1.2)",
+            "→ × lifestyle 1.50 = 21 sessions (+1.5)"
+          ],
+          "effectEmphasis": "The higher the lifestyle multiplier, the more every delta change counts."
+        },
+        "lifestyle": {
+          "title": "How the lifestyle index is calculated",
+          "step1Lead": "1. Each factor gives a score",
+          "step1Scale": "(1 = very good, 5 = very bad)",
+          "step2": "2. Average of all factors = composite score",
+          "step3": "3. The composite score sets the effect:",
+          "bands": [
+            { "range": "Score 0–1.6", "name": "Very good lifestyle", "effect": "−15% sessions", "tone": "good" },
+            { "range": "Score 1.6–2.4", "name": "Good lifestyle", "effect": "−5% sessions", "tone": "good" },
+            { "range": "Score 2.4–3.2", "name": "Normal lifestyle", "effect": "±0%", "tone": "normal" },
+            { "range": "Score 3.2–4.0", "name": "Poor lifestyle", "effect": "+20% sessions", "tone": "poor" },
+            { "range": "Score 4.0–5.0", "name": "Very poor", "effect": "+50% sessions", "tone": "poor" }
+          ],
+          "exampleTitle": "Example",
+          "exampleLines": [
+            "Customer smokes daily (score 5) + sleeps well (score 2)",
+            "+ no sport (score 4) + normal stress (score 2)",
+            "Average: (5+2+4+2) / 4 = 3.25 → poor lifestyle",
+            "Effect: +20% more sessions"
+          ],
+          "bmiNote": "A BMI of 30 or above raises the composite score to a configurable minimum (30+ at least 4, 35+ at least 5). It can only raise the score, never lower it."
+        },
         "aiTitle": "Link to the AI Training Center",
         "aiText": "These engine values feed into the ELAYA AI Training Center. Changes are versioned and used for AI calibration."
       },
       "versionsHint": "Pricing and session prediction publish independently today — publishing one domain's draft does not affect the other's pending draft.",
       "impact": {
         "title": "Impact preview",
-        "sampleCase": "Sample case",
+        "sampleCase": "Current case",
         "sampleCaseName": "Medium colourful tattoo (40 cm²)",
         "live": "Live",
         "draft": "Draft",
         "pricePerSession": "Price / session",
         "sessions": "Predicted sessions",
         "total": "Estimated total",
+        "delta": "Delta",
         "hasDraft": "Pending draft — not yet published",
         "noChanges": "No pending draft — showing published rules for both domains.",
+        "unsaved": "Draft column follows the values on this screen, including unsaved edits.",
         "loadFailed": "Could not load impact preview",
-        "sharedInputsHint": "Same sample case as the pricing / session-prediction live calculators, so pricing and session-prediction drafts compare like-for-like."
+        "sharedInputsHint": "The current Case Simulator case is the baseline. Live uses published rules. Draft uses the values on this screen."
       }
     },
     "engineSimulator": {
@@ -2991,6 +3097,13 @@ const en = {
       "saturation": "Saturation",
       "coverup": "Cover-up",
       "tattooAge": "Tattoo age (years)",
+      "depth": "Ink depth",
+      "depthOptions": {
+        "shallow": "Shallow",
+        "normal": "Normal",
+        "deep": "Deep",
+        "very_deep": "Very deep"
+      },
       "tattooType": "Tattoo type",
       "goal": "Treatment goal",
       "scarRisk": "Scar / keloid risk",
@@ -4027,6 +4140,13 @@ const en = {
     "pricing": {
       "intro": "These values control AI price calculation and session estimates for this studio's customers. Empty fields use the platform default.",
       "platformDefault": "Platform default",
+      "priceHowTitle": "How is the price calculated?",
+      "priceHowLines": [
+        "Price = tattoo area × base price per cm². The minimum price always applies. The result is rounded up to CHF 5.",
+        "Example: 40 cm² × CHF 3.00 = CHF 120. Minimum price CHF 90 → CHF 120 applies.",
+        "Important: colours do not change the price. Colours only change the session count.",
+        "A studio can set its own base price per cm² under Studio settings → Prices."
+      ],
       "groups": {
         "base": "Base prices",
         "color": "Colour multipliers",
@@ -4127,10 +4247,80 @@ const en = {
       "noDeltas": "No tattoo deltas ≠ 0 — simple forecast (±1 session around the mid).",
       "loadPreview": "Load preview",
       "formulaHint": "Formula: (base + tattoo deltas) × lifestyle multiplier → session mid, then min/max range. Lifestyle score 1 = ×0.85 (optimal), score 5 = ×1.50 (strongly impaired). Customers do not see these parameters.",
+      "deltaNone": "No impact on sessions",
+      "deltaMore": "+{{count}} session(s) with normal lifestyle",
+      "deltaLess": "−{{count}} session(s) with normal lifestyle",
+      "lifestyleHigher": "Score {{score}} · more sessions than a normal lifestyle",
+      "lifestyleLower": "Score {{score}} · fewer sessions than a normal lifestyle",
+      "caseBmiLine": "Current case BMI: {{bmi}}",
+      "activeInCase": "Active in current case",
+      "laserMatrixTitle": "Laser colour deltas",
+      "caseBanner": "Current case from the Case Simulator: {{area}} cm² · {{laser}} · Fitzpatrick {{fitz}} · {{location}}",
       "baseSection": "Base & range",
       "lifestyleComposite": "Lifestyle composite",
       "lifestyleCompositeHint": "Seven main factors averaged: smoking, alcohol, sleep (quality+hours as one score), stress, activity (incl. sport), hydration, nutrition. Aftercare does not enter the score. BMI ≥30 raises the score to at least 4, ≥35 to 5.",
       "lifestyleMultipliers": "Lifestyle multipliers",
+      "thresholdsTitle": "How do the thresholds work?",
+      "thresholdsIntro": "The lifestyle score is the average of all factors (smoking, alcohol, sleep, and the rest). Each factor gives a value from 1 (very good) to 5 (very bad).",
+      "thresholdsDefine": "The threshold defines: up to which score does a lifestyle level apply?",
+      "thresholdsExampleTitle": "Example",
+      "thresholdsExamples": [
+        "Customer has score 2.1 → score ≤ 2.4 → good lifestyle → −5% sessions",
+        "Customer has score 3.8 → score ≤ 4.0 → poor lifestyle → +20% sessions"
+      ],
+      "notes": {
+        "fitzpatrick": {
+          "title": "What is the Fitzpatrick skin type?",
+          "lines": [
+            "Type I–II: very fair skin, the laser is absorbed well.",
+            "Type III: medium, this is the standard.",
+            "Type IV–VI: darker skin, more caution, more sessions are possible.",
+            "Delta = extra sessions because of the skin type."
+          ]
+        },
+        "location": {
+          "title": "Why does body location change the session count?",
+          "lines": [
+            "Blood flow and the lymph system differ by body location. Better circulation heals faster, so fewer sessions.",
+            "Hand and foot: poorer circulation, more sessions.",
+            "Torso and arm: good circulation, standard."
+          ]
+        },
+        "colors": {
+          "title": "What do the colour deltas mean?",
+          "lines": [
+            "Each colour has a delta per laser. Delta = extra sessions because of that colour.",
+            "Δ+0 = the laser is very good for this colour. Δ+1 = good, slightly more sessions. Δ+2 = weaker, more sessions. Δ+3 = the laser struggles with this colour.",
+            "With several colours: Color Impact = MAX(hardest colour, colour-count delta). The deltas are not all added together."
+          ]
+        },
+        "lifestyleFactors": {
+          "title": "How are the factors calculated?",
+          "lines": [
+            "Each factor gives a score from 1 to 5. 1 = very good for healing. 5 = very bad for healing.",
+            "The average of all factors is the composite score. That score sets the lifestyle level.",
+            "Example: heavy daily smoking (5) + very good sleep (1) + normal stress (2) = average 2.67 → normal."
+          ]
+        },
+        "thresholdVsEffect": {
+          "title": "Threshold and effect — what is the difference?",
+          "lines": [
+            "Threshold: up to which score does this level apply? Example: threshold 2.4 → a score up to 2.4 is Good.",
+            "Effect in percent: how strongly does this level act? Example: −5% turns 10 sessions into 9.5, which rounds to 10.",
+            "Multiplier: the same effect written another way. −5% = ×0.95. Both fields are editable and stay in step.",
+            "Threshold and effect are independent. Changing the threshold means different customers fall into this level. Changing the effect means the level acts more strongly or more weakly."
+          ]
+        },
+        "healing": {
+          "title": "Healing and treatment response",
+          "lines": [
+            "These values apply only after real sessions. On a new case they stay at 0.",
+            "After several sessions the studio can record how the customer responds.",
+            "Healing course: normal, mixed, or problematic. Lightening rate: fast, expected, slow, or stagnant.",
+            "Those values then update the prediction."
+          ]
+        }
+      },
       "aftercareSection": "Aftercare readiness (extra max sessions)",
       "avgUpTo": "Avg up to",
       "score": "Score",
@@ -4157,6 +4347,7 @@ const en = {
         "saturation": "Saturation (delta)",
         "coverup": "Cover-up / layering (delta)",
         "age": "Tattoo age (delta)",
+        "depth": "Ink depth (delta)",
         "prior_treatment": "Prior treatment (delta)",
         "type": "Tattoo type (delta)",
         "goal": "Removal goal (delta)",
@@ -4236,6 +4427,12 @@ const en = {
           "age_8_15": "8–15 years",
           "over_15": "over 15 years",
           "unknown": "Unknown"
+        },
+        "depth": {
+          "shallow": "Shallow",
+          "normal": "Normal",
+          "deep": "Deep",
+          "very_deep": "Very deep"
         },
         "prior_treatment": {
           "none": "None",

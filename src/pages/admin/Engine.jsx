@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -20,6 +20,7 @@ import ConfigLifecycleBar from '../../components/settings/ConfigLifecycleBar'
 import EngineCaseSimulator from '../../components/engine/EngineCaseSimulator'
 import EngineHowItWorks from '../../components/engine/EngineHowItWorks'
 import EngineImpactPanel from '../../components/engine/EngineImpactPanel'
+import { EngineCaseProvider } from '../../components/engine/EngineCaseContext'
 import useAdminConfigDomain from '../../hooks/useAdminConfigDomain'
 import useAuthStore from '../../store/authStore'
 import { ROLES } from '../../constants/roles'
@@ -140,8 +141,18 @@ const AdminEngine = () => {
 
   const pricingLifecycle = lifecycleByDomain.default_pricing
   const sessionsLifecycle = lifecycleByDomain.session_prediction
+  const [impactPreset, setImpactPreset] = useState('example_2')
+  const [pricingPreview, setPricingPreview] = useState(null)
+  const [sessionsPreview, setSessionsPreview] = useState(null)
+
+  const rememberPreview = (setter) => (next) => {
+    setter((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
+  }
+  const handlePricingPreview = useCallback(rememberPreview(setPricingPreview), [])
+  const handleSessionsPreview = useCallback(rememberPreview(setSessionsPreview), [])
 
   return (
+    <EngineCaseProvider>
     <div className="p-6 max-w-[1440px]">
       <PageHeader
         title={copy.title || 'Prediction Engine'}
@@ -229,6 +240,9 @@ const AdminEngine = () => {
                     defaultValue: 'Save draft',
                   })}
                   coinWertLabel={t('settingsPage.pricing.chfPerCoin')}
+                  presetId={impactPreset}
+                  onPresetChange={setImpactPreset}
+                  onPreviewValues={handlePricingPreview}
                 />
               </>
             ) : null}
@@ -260,7 +274,7 @@ const AdminEngine = () => {
                   saveLabel={t('adminPages.settings.saveDraft', {
                     defaultValue: 'Save draft',
                   })}
-                  showPlausibility={activeSection === 'base'}
+                  onPreviewValues={handleSessionsPreview}
                 />
               </>
             ) : null}
@@ -309,6 +323,9 @@ const AdminEngine = () => {
 
           <aside className="lg:sticky lg:top-4">
             <EngineImpactPanel
+              presetId={impactPreset}
+              pricingOverride={pricingPreview}
+              sessionsOverride={sessionsPreview}
               draftPricing={pricingLifecycle?.draft?.data || null}
               hasPricingDraft={Boolean(pricingLifecycle?.has_draft)}
               draftSessions={sessionsLifecycle?.draft?.data || null}
@@ -319,6 +336,7 @@ const AdminEngine = () => {
         </div>
       )}
     </div>
+    </EngineCaseProvider>
   )
 }
 

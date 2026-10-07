@@ -60,6 +60,12 @@ export default function ConfigLifecycleBar({
       )
       return
     }
+    const confirmed = window.confirm(
+      t('adminPages.settings.publishConfirm', {
+        defaultValue: 'Are you sure you want to publish these changes?',
+      })
+    )
+    if (!confirmed) return
     setPublishing(true)
     try {
       const res = await publishConfigDomain(domain, { reason: trimmed })

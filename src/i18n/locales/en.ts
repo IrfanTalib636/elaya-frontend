@@ -3097,6 +3097,13 @@ const en = {
       "saturation": "Saturation",
       "coverup": "Cover-up",
       "tattooAge": "Tattoo age (years)",
+      "depth": "Ink depth",
+      "depthOptions": {
+        "shallow": "Shallow",
+        "normal": "Normal",
+        "deep": "Deep",
+        "very_deep": "Very deep"
+      },
       "tattooType": "Tattoo type",
       "goal": "Treatment goal",
       "scarRisk": "Scar / keloid risk",
@@ -4243,6 +4250,9 @@ const en = {
       "deltaNone": "No impact on sessions",
       "deltaMore": "+{{count}} session(s) with normal lifestyle",
       "deltaLess": "−{{count}} session(s) with normal lifestyle",
+      "lifestyleHigher": "Score {{score}} · more sessions than a normal lifestyle",
+      "lifestyleLower": "Score {{score}} · fewer sessions than a normal lifestyle",
+      "caseBmiLine": "Current case BMI: {{bmi}}",
       "activeInCase": "Active in current case",
       "laserMatrixTitle": "Laser colour deltas",
       "caseBanner": "Current case from the Case Simulator: {{area}} cm² · {{laser}} · Fitzpatrick {{fitz}} · {{location}}",
@@ -4337,6 +4347,7 @@ const en = {
         "saturation": "Saturation (delta)",
         "coverup": "Cover-up / layering (delta)",
         "age": "Tattoo age (delta)",
+        "depth": "Ink depth (delta)",
         "prior_treatment": "Prior treatment (delta)",
         "type": "Tattoo type (delta)",
         "goal": "Removal goal (delta)",
@@ -4416,6 +4427,12 @@ const en = {
           "age_8_15": "8–15 years",
           "over_15": "over 15 years",
           "unknown": "Unknown"
+        },
+        "depth": {
+          "shallow": "Shallow",
+          "normal": "Normal",
+          "deep": "Deep",
+          "very_deep": "Very deep"
         },
         "prior_treatment": {
           "none": "None",

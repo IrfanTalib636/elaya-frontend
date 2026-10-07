@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import NumberStepper from '../ui/NumberStepper'
 import useContent from '../../i18n/useContent'
 import { useEngineCaseOptional } from './EngineCaseContext'
@@ -44,10 +45,16 @@ const deltaHintFor = (value, t) => {
 }
 
 /** Per-laser colour matrix. Only the Case Simulator's laser and its colours are editable. */
-const CaseLaserMatrix = ({ disabled = false }) => {
+const CaseLaserMatrix = ({ disabled = false, overrides = null, onDeltaChange = null }) => {
   const engineCase = useEngineCaseOptional()
   const { components, t } = useContent()
   const copy = components.sessionPrediction
+
+  useEffect(() => {
+    if (!engineCase?.setLaserDraftMap || !overrides) return
+    engineCase.setLaserDraftMap(overrides)
+  }, [engineCase, overrides])
+
   if (!engineCase?.lasers?.length) return null
 
   const selectedId = engineCase.selectedLaser?.id
@@ -65,7 +72,7 @@ const CaseLaserMatrix = ({ disabled = false }) => {
       </p>
       {engineCase.lasers.map((laser) => {
         const activeLaser = laser.id === selectedId
-        const drafts = engineCase.laserDrafts?.[laser.id] || {}
+        const drafts = overrides?.[laser.id] || engineCase.laserDrafts?.[laser.id] || {}
         return (
           <div
             key={laser.id}
@@ -98,7 +105,10 @@ const CaseLaserMatrix = ({ disabled = false }) => {
                     active={editable}
                     hint={hint.text}
                     hintTone={hint.tone}
-                    onChange={(next) => engineCase.setLaserColorDelta(laser.id, color, next)}
+                    onChange={(next) => {
+                      engineCase.setLaserColorDelta(laser.id, color, next)
+                      onDeltaChange?.(laser.id, color, next)
+                    }}
                   />
                 )
               })}

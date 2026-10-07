@@ -6,12 +6,14 @@ import {
   caseArea,
   defaultEngineCase,
   laserLabel,
+  readStoredEngineCase,
+  writeStoredEngineCase,
 } from './engineCaseModel'
 
 const EngineCaseContext = createContext(null)
 
 export function EngineCaseProvider({ children }) {
-  const [form, setForm] = useState(defaultEngineCase)
+  const [form, setForm] = useState(() => readStoredEngineCase() || defaultEngineCase())
   const [lasers, setLasers] = useState([])
   const [lasersReady, setLasersReady] = useState(false)
   const [laserDrafts, setLaserDrafts] = useState({})
@@ -35,6 +37,15 @@ export function EngineCaseProvider({ children }) {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  useEffect(() => {
+    writeStoredEngineCase(form)
+  }, [form])
+
+  const setLaserDraftMap = useCallback((next) => {
+    const incoming = next && typeof next === 'object' ? next : {}
+    setLaserDrafts((prev) => (JSON.stringify(prev) === JSON.stringify(incoming) ? prev : incoming))
   }, [])
 
   const setLaserColorDelta = useCallback((laserId, color, value) => {
@@ -69,6 +80,7 @@ export function EngineCaseProvider({ children }) {
       setLasers,
       selectedLaser,
       laserDrafts,
+      setLaserDraftMap,
       setLaserColorDelta,
       activeKeys: activeKeysForCase(form),
       area: caseArea(form),
@@ -82,6 +94,7 @@ export function EngineCaseProvider({ children }) {
       lasersReady,
       selectedLaser,
       laserDrafts,
+      setLaserDraftMap,
       setLaserColorDelta,
       publishedCaseInput,
       draftCaseInput,

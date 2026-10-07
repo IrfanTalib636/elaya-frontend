@@ -87,8 +87,14 @@ const EngineImpactPanel = ({
     components?.pricing?.live?.presets?.[presetId] ||
     copy.sampleCaseName ||
     'Medium colourful tattoo (40 cm²)'
+  const tattooFields = components?.sessionPrediction?.tattooFields || {}
   const caseLabel = engineCase
-    ? `${engineCase.area} cm² · ${engineCase.laserName || '—'} · Fitzpatrick ${engineCase.form.skin_fitzpatrick_type} · ${(engineCase.form.tc_colors_present || []).join(', ')}`
+    ? `${engineCase.area} cm² · ${engineCase.laserName || '—'} · Fitzpatrick ${engineCase.form.skin_fitzpatrick_type} · ${(engineCase.form.tc_colors_present || [])
+        .map((color) => tattooFields.color?.[color] || color)
+        .join(', ')} · ${
+        tattooFields.location?.[engineCase.form.tc_body_location_main] ||
+        engineCase.form.tc_body_location_main
+      }`
     : presetLabel
 
   const [loading, setLoading] = useState(true)

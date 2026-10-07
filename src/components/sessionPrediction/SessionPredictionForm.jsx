@@ -15,6 +15,32 @@ import {
 } from './sessionPredictionFields'
 import useContent from '../../i18n/useContent'
 
+const lifestyleHintFor = (value, t) => {
+  const n = parseFloat(value)
+  if (!Number.isFinite(n) || n === 3) {
+    return {
+      text: t('components.sessionPrediction.deltaNone', { defaultValue: 'No impact on sessions' }),
+      tone: 'neutral',
+    }
+  }
+  if (n > 3) {
+    return {
+      text: t('components.sessionPrediction.lifestyleHigher', {
+        score: n,
+        defaultValue: `Score ${n} · more sessions than a normal lifestyle`,
+      }),
+      tone: 'up',
+    }
+  }
+  return {
+    text: t('components.sessionPrediction.lifestyleLower', {
+      score: n,
+      defaultValue: `Score ${n} · fewer sessions than a normal lifestyle`,
+    }),
+    tone: 'down',
+  }
+}
+
 const deltaHintFor = (value, t) => {
   const n = parseFloat(value)
   if (!Number.isFinite(n) || n === 0) {
@@ -51,11 +77,16 @@ const NumberField = ({
   step = '0.05',
   hint,
   effect = false,
+  scoreEffect = false,
   active = false,
   badge = null,
 }) => {
   const { t } = useContent()
-  const effectHint = effect ? deltaHintFor(value, t) : null
+  const effectHint = scoreEffect
+    ? lifestyleHintFor(value, t)
+    : effect
+      ? deltaHintFor(value, t)
+      : null
   return (
     <NumberStepper
       id={id}
@@ -149,7 +180,9 @@ const SessionPredictionForm = ({
             area: engineCase.area,
             laser: engineCase.laserName || '—',
             fitz: engineCase.form.skin_fitzpatrick_type,
-            location: engineCase.form.tc_body_location_main,
+            location:
+              copy.tattooFields?.location?.[engineCase.form.tc_body_location_main] ||
+              engineCase.form.tc_body_location_main,
             defaultValue: `Current case from the Case Simulator: ${engineCase.area} cm² · ${engineCase.laserName || '—'} · Fitzpatrick ${engineCase.form.skin_fitzpatrick_type} · ${engineCase.form.tc_body_location_main}`,
           })}
         </p>
@@ -203,7 +236,23 @@ const SessionPredictionForm = ({
 
       {section === 'colors' ? (
         <>
-          <CaseLaserMatrix disabled={disabled} />
+          <CaseLaserMatrix
+            disabled={disabled}
+            overrides={values?.laser_color_overrides || null}
+            onDeltaChange={(laserId, color, next) => {
+              const n = next === '' || next == null ? 0 : Number(next)
+              onChange({
+                ...values,
+                laser_color_overrides: {
+                  ...(values.laser_color_overrides || {}),
+                  [laserId]: {
+                    ...(values.laser_color_overrides?.[laserId] || {}),
+                    [color]: Number.isFinite(n) ? n : 0,
+                  },
+                },
+              })
+            }}
+          />
           {engineCase?.selectedLaser ? (
             <EngineDisclosure title={copy.notes?.colors?.title} lines={copy.notes?.colors?.lines} />
           ) : null}
@@ -274,6 +323,7 @@ const SessionPredictionForm = ({
                       id={`sp-life-${group.key}-${key}`}
                       label={copy.lifestyleFields[group.key]?.[key] || key}
                       step="0.1"
+                      scoreEffect
                       active={Boolean(activeKeys) && active}
                       badge={activeKeys && active ? activeBadge : null}
                       value={values?.lifestyle_scores?.[group.key]?.[key]}
@@ -348,6 +398,14 @@ const SessionPredictionForm = ({
             <div className="h-px bg-elaya-border mb-5" />
             <p className="text-[12px] font-semibold m-0 mb-1">{copy.bmiFloorsTitle}</p>
             <p className="text-[11px] text-studio-w3 m-0 mb-3">{copy.bmiFloorsHint}</p>
+            {caseBmiValue != null ? (
+              <p className="text-[11px] text-studio-teal m-0 mb-3">
+                {t('components.sessionPrediction.caseBmiLine', {
+                  bmi: Math.round(caseBmiValue * 10) / 10,
+                  defaultValue: `Current case BMI: ${Math.round(caseBmiValue * 10) / 10}`,
+                })}
+              </p>
+            ) : null}
             <div className="flex flex-col gap-3">
               {(values?.lifestyle_bmi_floors?.length
                 ? values.lifestyle_bmi_floors
@@ -355,6 +413,7 @@ const SessionPredictionForm = ({
               ).map((row, index) => {
                 const applies =
                   caseBmiValue != null && caseBmiValue >= Number(row.min_bmi)
+                const locked = Boolean(engineCase) && !applies
                 return (
                 <div key={`bmi-floor-${index}`} className="grid grid-cols-2 gap-3 max-w-[360px]">
                   <NumberField
@@ -365,15 +424,16 @@ const SessionPredictionForm = ({
                     active={applies}
                     badge={applies ? activeBadge : null}
                     onChange={(v) => setBmiFloor(index, 'min_bmi', v)}
-                    disabled={disabled}
+                    disabled={disabled || locked}
                   />
                   <NumberField
                     id={`sp-bmi-floor-${index}-score`}
                     label={copy.bmiFloorMinScore}
                     step="1"
                     value={row.min_score}
+                    active={applies}
                     onChange={(v) => setBmiFloor(index, 'min_score', v)}
-                    disabled={disabled}
+                    disabled={disabled || locked}
                   />
                 </div>
                 )

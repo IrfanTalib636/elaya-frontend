@@ -21,6 +21,7 @@ export const defaultEngineCase = () => ({
   laser_profile_level: 'basic',
   type: 'tattoo',
   tc_colors_present: ['black'],
+  tc_depth: 'normal',
   laserId: '',
   healing_history: 'normal',
   lightening_rate: 'expected',
@@ -91,6 +92,7 @@ export const activeKeysForCase = (form) => {
     saturation: [form.tc_saturation],
     coverup: [form.tc_coverup],
     age: [ageBandFromYears(form.tc_age_years)],
+    depth: [form.tc_depth || 'normal'],
     prior_treatment: [priorKey(form)],
     type: [form.tc_type],
     goal: [form.goal_target],
@@ -115,7 +117,10 @@ export const buildEngineCaseInput = (form, laser, deltaOverride = null) => {
   if (!form) return null
   const colors = form.tc_colors_present || []
   const catalog = laser?.color_deltas && typeof laser.color_deltas === 'object' ? laser.color_deltas : {}
-  const laserDeltas = { ...catalog, ...(deltaOverride || {}) }
+  const edited =
+    deltaOverride && typeof deltaOverride === 'object' && Object.keys(deltaOverride).length
+      ? { ...catalog, ...deltaOverride }
+      : null
   const area = caseArea(form)
   return {
     type: form.type === 'pmu' ? 'pmu' : 'tattoo',
@@ -135,7 +140,8 @@ export const buildEngineCaseInput = (form, laser, deltaOverride = null) => {
     skin_keloid_risk: form.skin_keloid_risk,
     laser_profile_level: form.laser_profile_level,
     tc_colors_present: colors,
-    tc_depth: 'normal',
+    tc_depth: form.tc_depth || 'normal',
+    ...(laser?.id ? { laser_device_id: laser.id } : {}),
     healing_history: form.healing_history || undefined,
     lightening_rate: form.lightening_rate || undefined,
     life_aftercare_commitment: form.life_aftercare_commitment,
@@ -151,7 +157,32 @@ export const buildEngineCaseInput = (form, laser, deltaOverride = null) => {
     life_sport_freq: form.life_sport_freq,
     life_hydration: form.life_hydration,
     life_nutrition: form.life_nutrition,
-    ...(Object.keys(laserDeltas).length ? { laser_color_deltas: laserDeltas } : {}),
+    ...(Object.keys(catalog).length ? { laser_color_deltas: catalog } : {}),
+    ...(edited ? { laser_color_deltas_edit: edited } : {}),
+  }
+}
+
+const CASE_STORAGE_KEY = 'elaya_engine_case'
+
+export const readStoredEngineCase = () => {
+  if (typeof sessionStorage === 'undefined') return null
+  try {
+    const raw = sessionStorage.getItem(CASE_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+    return { ...defaultEngineCase(), ...parsed }
+  } catch {
+    return null
+  }
+}
+
+export const writeStoredEngineCase = (form) => {
+  if (typeof sessionStorage === 'undefined' || !form) return
+  try {
+    sessionStorage.setItem(CASE_STORAGE_KEY, JSON.stringify(form))
+  } catch {
+    /* the case still lives in memory for this visit */
   }
 }
 

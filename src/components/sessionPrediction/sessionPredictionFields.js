@@ -107,6 +107,15 @@ export const TATTOO_DELTA_GROUPS = [
     ],
   },
   {
+    key: 'depth',
+    fields: [
+      { key: 'shallow' },
+      { key: 'normal' },
+      { key: 'deep' },
+      { key: 'very_deep' },
+    ],
+  },
+  {
     key: 'prior_treatment',
     fields: [
       { key: 'none' },
@@ -261,6 +270,7 @@ export const TATTOO_GROUP_SECTION = {
   saturation: 'fitzpatrick',
   coverup: 'fitzpatrick',
   age: 'fitzpatrick',
+  depth: 'fitzpatrick',
   prior_treatment: 'fitzpatrick',
   type: 'fitzpatrick',
   goal: 'fitzpatrick',
@@ -284,7 +294,19 @@ const toNumber = (value, fallback = 0) => {
   return Number.isFinite(n) ? n : fallback
 }
 
-export const buildSessionPredictionPayload = (values = {}) => ({
+export const buildSessionPredictionPayload = (values = {}) => {
+  const laserColorOverrides = {}
+  for (const [laserId, map] of Object.entries(values?.laser_color_overrides || {})) {
+    if (!map || typeof map !== 'object' || Array.isArray(map)) continue
+    const colors = {}
+    for (const [color, raw] of Object.entries(map)) {
+      const n = Number(raw)
+      if (Number.isFinite(n)) colors[color] = n
+    }
+    if (Object.keys(colors).length) laserColorOverrides[laserId] = colors
+  }
+
+  return {
   base_sessions: toNumber(values.base_sessions, 8),
   min_sessions: toNumber(values.min_sessions, 3),
   max_sessions: toNumber(values.max_sessions, 20),
@@ -321,4 +343,8 @@ export const buildSessionPredictionPayload = (values = {}) => ({
     min_bmi: toNumber(row.min_bmi, 30),
     min_score: toNumber(row.min_score, 4),
   })),
-})
+  ...(Object.keys(laserColorOverrides).length
+    ? { laser_color_overrides: laserColorOverrides }
+    : {}),
+  }
+}

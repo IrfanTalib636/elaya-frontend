@@ -82,6 +82,7 @@ const defaultForm = () => ({
   laser_profile_level: 'basic',
   type: 'tattoo',
   tc_colors_present: ['black'],
+  tc_depth: 'normal',
   laserId: '',
   healing_history: 'normal',
   lightening_rate: 'expected',
@@ -197,7 +198,8 @@ const EngineCaseSimulator = ({
       skin_keloid_risk: form.skin_keloid_risk,
       laser_profile_level: form.laser_profile_level,
       tc_colors_present: colors,
-      tc_depth: 'normal',
+      tc_depth: form.tc_depth || 'normal',
+      ...(selectedLaser?.id ? { laser_device_id: selectedLaser.id } : {}),
       healing_history: form.healing_history || undefined,
       lightening_rate: form.lightening_rate || undefined,
       life_aftercare_commitment: form.life_aftercare_commitment,
@@ -218,7 +220,7 @@ const EngineCaseSimulator = ({
         : {}),
     }
     return input
-  }, [form, area, activeColorDeltas])
+  }, [form, area, activeColorDeltas, selectedLaser])
 
   useEffect(() => {
     let cancelled = false
@@ -559,6 +561,13 @@ const EngineCaseSimulator = ({
               onChange={(v) => set('tc_age_years', v)}
               step="1"
               min={0}
+            />
+            <SelectField
+              label={copy.depth || 'Ink depth'}
+              value={form.tc_depth || 'normal'}
+              onChange={(v) => set('tc_depth', v)}
+              options={['shallow', 'normal', 'deep', 'very_deep']}
+              optionLabel={(v) => copy.depthOptions?.[v] || v}
             />
             <SelectField
               label={copy.tattooType || 'Tattoo type'}

@@ -3099,6 +3099,13 @@ const de: TranslationSchema = {
       "saturation": "Sättigung",
       "coverup": "Cover-up",
       "tattooAge": "Tattoo-Alter (Jahre)",
+      "depth": "Tiefe",
+      "depthOptions": {
+        "shallow": "Oberflächlich",
+        "normal": "Normal",
+        "deep": "Tief",
+        "very_deep": "Sehr tief"
+      },
       "tattooType": "Tattoo-Art",
       "goal": "Behandlungsziel",
       "scarRisk": "Narben-/Keloidrisiko",
@@ -4245,6 +4252,9 @@ const de: TranslationSchema = {
       "deltaNone": "Kein Einfluss auf Sitzungen",
       "deltaMore": "+{{count}} Sitzung(en) bei normalem Lifestyle",
       "deltaLess": "{{count}} Sitzung(en) weniger bei normalem Lifestyle",
+      "lifestyleHigher": "Score {{score}} · mehr Sitzungen als bei normalem Lifestyle",
+      "lifestyleLower": "Score {{score}} · weniger Sitzungen als bei normalem Lifestyle",
+      "caseBmiLine": "BMI des aktuellen Case: {{bmi}}",
       "activeInCase": "Aktiv im aktuellen Case",
       "laserMatrixTitle": "Laser-Farb-Deltas",
       "caseBanner": "Aktueller Case aus dem Case Simulator: {{area}} cm² · {{laser}} · Fitzpatrick {{fitz}} · {{location}}",
@@ -4339,6 +4349,7 @@ const de: TranslationSchema = {
         "saturation": "Sättigung (Delta)",
         "coverup": "Cover-up / Layering (Delta)",
         "age": "Tattoo-Alter (Delta)",
+        "depth": "Tiefe (Delta)",
         "prior_treatment": "Vorbehandlung (Delta)",
         "type": "Tattoo-Art (Delta)",
         "goal": "Entfernungsziel (Delta)",
@@ -4418,6 +4429,12 @@ const de: TranslationSchema = {
           "age_8_15": "8–15 Jahre",
           "over_15": "über 15 Jahre",
           "unknown": "Unbekannt"
+        },
+        "depth": {
+          "shallow": "Oberflächlich",
+          "normal": "Normal",
+          "deep": "Tief",
+          "very_deep": "Sehr tief"
         },
         "prior_treatment": {
           "none": "Keine",

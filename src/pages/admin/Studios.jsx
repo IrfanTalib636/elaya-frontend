@@ -270,9 +270,6 @@ const AdminStudios = () => {
             <div className="space-y-4">
               <PricingConfigForm
                 values={pricingValues}
-                defaults={pricingDefaults}
-                savedPricing={pricingSaved}
-                studioId={pricingStudio?.id || pricingStudio?._id || null}
                 onChange={(key, value) =>
                   setPricingValues((prev) => ({ ...prev, [key]: value }))
                 }

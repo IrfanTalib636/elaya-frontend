@@ -240,8 +240,6 @@ const AdminEngine = () => {
                     defaultValue: 'Save draft',
                   })}
                   coinWertLabel={t('settingsPage.pricing.chfPerCoin')}
-                  presetId={impactPreset}
-                  onPresetChange={setImpactPreset}
                   onPreviewValues={handlePricingPreview}
                 />
               </>

@@ -9,8 +9,9 @@ import {
 } from '../pricing/pricingFields'
 
 /**
- * Shared price-calculation rules + live calculator.
+ * Shared price-calculation rules editor.
  * Studio: canEdit=false (view only). Super admin: canEdit=true (platform defaults).
+ * Live price simulation lives in the Engine case simulator, not here.
  */
 export default function PricingRulesPanel({
   canEdit = false,
@@ -18,8 +19,6 @@ export default function PricingRulesPanel({
   savePricing,
   saveLabel,
   coinWertLabel = null,
-  presetId = null,
-  onPresetChange = null,
   onPreviewValues = null,
 }) {
   const { t } = useTranslation()
@@ -140,12 +139,8 @@ export default function PricingRulesPanel({
 
       <PricingConfigForm
         values={pricing}
-        defaults={defaults}
-        savedPricing={savedPricing}
         disabled={!editing}
         onChange={(key, value) => setPricing((prev) => ({ ...prev, [key]: value }))}
-        presetId={presetId}
-        onPresetChange={onPresetChange}
       />
 
       {editing ? (

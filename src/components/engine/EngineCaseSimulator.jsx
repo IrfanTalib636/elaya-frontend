@@ -215,12 +215,9 @@ const EngineCaseSimulator = ({
       life_sport_freq: form.life_sport_freq,
       life_hydration: form.life_hydration,
       life_nutrition: form.life_nutrition,
-      ...(activeColorDeltas && Object.keys(activeColorDeltas).length
-        ? { laser_color_deltas: activeColorDeltas }
-        : {}),
     }
     return input
-  }, [form, area, activeColorDeltas, selectedLaser])
+  }, [form, area, selectedLaser])
 
   useEffect(() => {
     let cancelled = false

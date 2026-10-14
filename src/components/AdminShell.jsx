@@ -24,6 +24,7 @@ import {
   Brain,
   Contact,
   ClipboardList,
+  Database,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import useAuthStore from '../store/authStore'
@@ -39,6 +40,7 @@ const ICONS = {
   customers: Users,
   crm: Target,
   engine: Microscope,
+  engineMasterData: Database,
   medical: ShieldAlert,
   documents: FileText,
   shop: ShoppingBag,
@@ -62,6 +64,7 @@ const PRIMARY_NAV = [
   { to: '/admin/customers', id: 'customers' },
   { to: '/admin/crm', id: 'crm' },
   { to: '/admin/engine', id: 'engine' },
+  { to: '/admin/engine-master-data', id: 'engineMasterData' },
   { to: '/admin/medical', id: 'medical' },
   { to: '/admin/documents', id: 'documents' },
 ]

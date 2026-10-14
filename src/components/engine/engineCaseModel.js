@@ -113,14 +113,10 @@ export const activeKeysForCase = (form) => {
   }
 }
 
-export const buildEngineCaseInput = (form, laser, deltaOverride = null) => {
+/** Case fields only. Laser colour deltas come from the LIVE / DRAFT config via laser_device_id. */
+export const buildEngineCaseInput = (form, laser) => {
   if (!form) return null
   const colors = form.tc_colors_present || []
-  const catalog = laser?.color_deltas && typeof laser.color_deltas === 'object' ? laser.color_deltas : {}
-  const edited =
-    deltaOverride && typeof deltaOverride === 'object' && Object.keys(deltaOverride).length
-      ? { ...catalog, ...deltaOverride }
-      : null
   const area = caseArea(form)
   return {
     type: form.type === 'pmu' ? 'pmu' : 'tattoo',
@@ -157,8 +153,6 @@ export const buildEngineCaseInput = (form, laser, deltaOverride = null) => {
     life_sport_freq: form.life_sport_freq,
     life_hydration: form.life_hydration,
     life_nutrition: form.life_nutrition,
-    ...(Object.keys(catalog).length ? { laser_color_deltas: catalog } : {}),
-    ...(edited ? { laser_color_deltas_edit: edited } : {}),
   }
 }
 

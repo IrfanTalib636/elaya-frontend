@@ -184,6 +184,7 @@ const en = {
       { "id": "customers", "label": "Customers" },
       { "id": "crm", "label": "CRM & Leads" },
       { "id": "engine", "label": "Engine" },
+      { "id": "engineMasterData", "label": "Engine master data" },
       { "id": "medical", "label": "Medical & Safety" },
       { "id": "documents", "label": "Digital documents" },
       { "id": "transfer", "label": "Studio change" },
@@ -3892,6 +3893,30 @@ const en = {
       "permsUpdated": "Permissions updated",
       "inviteEmailFailed": "Admin saved but invite email failed — check server EMAIL_PROVIDER / SMTP, then use Resend invite"
     },
+    "engineMasterData": {
+      "title": "Engine master data",
+      "subtitle": "Central default values of the Prediction Engine: base & range, Fitzpatrick & skin, body locations, lifestyle & BMI, healing & response.",
+      "explainer": "These are the same backend values the Prediction Engine uses — not a copy. Saving here updates the shared DRAFT; the Prediction Engine immediately shows its impact on the current case, and only Publish makes it LIVE. Laser colour deltas are managed per laser in the Laser catalog, base prices under Prediction Engine → Pricing.",
+      "draftPending": "Draft pending — not yet live",
+      "inSync": "No draft — showing LIVE values",
+      "liveVersion": "LIVE version {{version}}",
+      "colFactor": "Factor",
+      "colLive": "LIVE",
+      "colDraft": "DRAFT",
+      "colDelta": "Δ",
+      "openInEngine": "Test & publish in Prediction Engine",
+      "colorsNote": "Platform colour deltas apply to lasers without their own value. Per-laser colour deltas are managed in the",
+      "openLasers": "Laser catalog",
+      "unsaved": "Unsaved changes",
+      "publishHint": "Saved drafts go LIVE after Publish in the Prediction Engine.",
+      "reset": "Reset",
+      "saveDraft": "Save draft",
+      "saved": "Draft saved — review the impact and publish in the Prediction Engine",
+      "saveFailed": "Could not save draft",
+      "loadError": "Could not load engine master data",
+      "readOnly": "View only — only Elaya super admin can change prediction values.",
+      "draftNote": "Engine master data"
+    },
     "lasers": {
       "title": "Laser catalog",
       "subtitle": "Approved devices studios can select. Studios cannot edit master data.",
@@ -3922,7 +3947,15 @@ const en = {
       "saveFailed": "Save failed",
       "approved": "Approved & added to catalog",
       "rejected": "Rejected",
-      "resolveFailed": "Resolve failed"
+      "resolveFailed": "Resolve failed",
+      "colorDeltasTitle": "Colour deltas (Prediction Engine)",
+      "colorDeltasHint": "Extra sessions per ink colour with this laser. Same values as Prediction Engine → Colours & Laser. Changes are saved as DRAFT and only become LIVE when published in the Prediction Engine.",
+      "reviewInEngine": "Review impact & publish",
+      "colorDraftPending": "A draft for these colour deltas is pending. LIVE still uses the published values until it is published in the Prediction Engine.",
+      "colorDeltasSuperAdminOnly": "Only Elaya super admin can change colour deltas.",
+      "colorDraftBadge": "Draft pending",
+      "colorsDrafted": "Colour deltas saved as draft — publish them in the Prediction Engine",
+      "liveValue": "LIVE: {{value}}"
     },
     "studioTeam": {
       "title": "Studio team",
@@ -4323,6 +4356,7 @@ const en = {
         }
       },
       "aftercareSection": "Aftercare readiness (extra max sessions)",
+      "liveValue": "LIVE: {{value}}",
       "avgUpTo": "Avg up to",
       "score": "Score",
       "multiplier": "Multiplier",

@@ -152,7 +152,7 @@ const AdminEngine = () => {
   const handleSessionsPreview = useCallback(rememberPreview(setSessionsPreview), [])
 
   return (
-    <EngineCaseProvider>
+    <EngineCaseProvider refreshKey={panelEpoch}>
     <div className="p-6 max-w-[1440px]">
       <PageHeader
         title={copy.title || 'Prediction Engine'}

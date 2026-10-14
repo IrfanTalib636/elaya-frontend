@@ -186,6 +186,7 @@ const de: TranslationSchema = {
       { "id": "customers", "label": "Kunden" },
       { "id": "crm", "label": "CRM & Anfragen" },
       { "id": "engine", "label": "Prognose-Engine" },
+      { "id": "engineMasterData", "label": "Engine-Stammdaten" },
       { "id": "medical", "label": "Medizin & Sicherheit" },
       { "id": "documents", "label": "Digitale Dokumente" },
       { "id": "transfer", "label": "Studio-Wechsel" },
@@ -3894,6 +3895,30 @@ const de: TranslationSchema = {
       "permsUpdated": "Berechtigungen aktualisiert",
       "inviteEmailFailed": "Admin gespeichert, aber Einladungs-E-Mail fehlgeschlagen — EMAIL_PROVIDER / SMTP prüfen, dann Einladung erneut senden"
     },
+    "engineMasterData": {
+      "title": "Engine-Stammdaten",
+      "subtitle": "Zentrale Standardwerte der Prognose-Engine: Basis & Bereich, Fitzpatrick & Haut, Körperstellen, Lifestyle & BMI, Healing & Response.",
+      "explainer": "Das sind dieselben Backend-Werte, die die Prognose-Engine verwendet — keine Kopie. Speichern aktualisiert den gemeinsamen DRAFT; die Prognose-Engine zeigt sofort die Auswirkung auf den aktuellen Case, und erst Veröffentlichen macht ihn LIVE. Laser-Farb-Deltas werden pro Laser im Laser-Katalog gepflegt, Basispreise unter Prognose-Engine → Preise.",
+      "draftPending": "Draft ausstehend — noch nicht live",
+      "inSync": "Kein Draft — LIVE-Werte",
+      "liveVersion": "LIVE-Version {{version}}",
+      "colFactor": "Faktor",
+      "colLive": "LIVE",
+      "colDraft": "DRAFT",
+      "colDelta": "Δ",
+      "openInEngine": "In der Prognose-Engine testen & veröffentlichen",
+      "colorsNote": "Plattform-Farb-Deltas gelten für Laser ohne eigenen Wert. Farb-Deltas pro Laser werden gepflegt im",
+      "openLasers": "Laser-Katalog",
+      "unsaved": "Ungespeicherte Änderungen",
+      "publishHint": "Gespeicherte Drafts werden nach dem Veröffentlichen in der Prognose-Engine LIVE.",
+      "reset": "Zurücksetzen",
+      "saveDraft": "Draft speichern",
+      "saved": "Draft gespeichert — Auswirkung in der Prognose-Engine prüfen und veröffentlichen",
+      "saveFailed": "Draft konnte nicht gespeichert werden",
+      "loadError": "Engine-Stammdaten konnten nicht geladen werden",
+      "readOnly": "Nur Ansicht — nur der Elaya Super-Admin kann Prognosewerte ändern.",
+      "draftNote": "Engine-Stammdaten"
+    },
     "lasers": {
       "title": "Laser-Katalog",
       "subtitle": "Freigegebene Geräte, die Studios auswählen können. Studios dürfen Stammdaten nicht bearbeiten.",
@@ -3924,7 +3949,15 @@ const de: TranslationSchema = {
       "saveFailed": "Speichern fehlgeschlagen",
       "approved": "Freigegeben & zum Katalog hinzugefügt",
       "rejected": "Abgelehnt",
-      "resolveFailed": "Entscheidung fehlgeschlagen"
+      "resolveFailed": "Entscheidung fehlgeschlagen",
+      "colorDeltasTitle": "Farb-Deltas (Prognose-Engine)",
+      "colorDeltasHint": "Zusätzliche Sitzungen pro Farbe mit diesem Laser. Dieselben Werte wie Prognose-Engine → Farben & Laser. Änderungen werden als DRAFT gespeichert und erst nach dem Veröffentlichen in der Prognose-Engine LIVE.",
+      "reviewInEngine": "Auswirkung prüfen & veröffentlichen",
+      "colorDraftPending": "Für diese Farb-Deltas liegt ein Draft vor. LIVE nutzt weiterhin die veröffentlichten Werte, bis in der Prognose-Engine veröffentlicht wird.",
+      "colorDeltasSuperAdminOnly": "Nur der Elaya Super-Admin kann Farb-Deltas ändern.",
+      "colorDraftBadge": "Draft ausstehend",
+      "colorsDrafted": "Farb-Deltas als Draft gespeichert — in der Prognose-Engine veröffentlichen",
+      "liveValue": "LIVE: {{value}}"
     },
     "studioTeam": {
       "title": "Studio-Team",
@@ -4325,6 +4358,7 @@ const de: TranslationSchema = {
         }
       },
       "aftercareSection": "Nachsorge-Bereitschaft (zusätzliche Max-Sitzungen)",
+      "liveValue": "LIVE: {{value}}",
       "avgUpTo": "Ø bis",
       "score": "Score",
       "multiplier": "Multiplikator",

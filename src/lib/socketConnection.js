@@ -155,20 +155,10 @@ export const createSocketConnection = () => {
     localStorage.setItem(TOKEN_KEY, token)
     if (closed) closed = false
 
-    if (!socket) {
-      await connect()
-      return
-    }
-
-    socket.auth = { token }
-    if (!isLive()) {
-      if (socket.active === false) {
-        teardownSocket()
-        await connect()
-        return
-      }
-      socket.connect()
-    }
+    // Always reconnect so socket auth re-runs room joins (studio workspace
+    // JWTs must join `studio:<id>` for live customer-chat notifications).
+    teardownSocket()
+    await connect()
   }
 
   /** Keep trying while the dashboard session is active. */

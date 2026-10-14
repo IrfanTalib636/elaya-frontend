@@ -8,6 +8,7 @@ import {
   markNotificationRead,
 } from '../api/notifications'
 import useContent from '../i18n/useContent'
+import { playNotificationSound } from '../lib/playNotificationSound'
 import { useSocketEvent } from './useSocketEvent'
 
 const studioName = (conversation) => {
@@ -69,6 +70,8 @@ export default function useAdminNotifications({ enabled = true } = {}) {
   }, [navigate])
 
   const showToast = useCallback((title, body, onClick) => {
+    playNotificationSound()
+
     if (document.hidden && typeof Notification !== 'undefined') {
       if (Notification.permission === 'granted') {
         const n = new Notification(title, { body, tag: title })

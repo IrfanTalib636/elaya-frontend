@@ -8,8 +8,23 @@ import {
   markNotificationRead,
 } from '../api/notifications'
 import useContent from '../i18n/useContent'
+import { playNotificationSound } from '../lib/playNotificationSound'
 import useAuthStore from '../store/authStore'
 import { useSocketEvent } from './useSocketEvent'
+
+const tabIsAway = () =>
+  typeof document !== 'undefined' &&
+  (document.visibilityState === 'hidden' || !document.hasFocus())
+
+const activeChatConversationId = () => {
+  if (typeof window === 'undefined') return null
+  if (!window.location.pathname.startsWith('/studio/chat')) return null
+  try {
+    return new URLSearchParams(window.location.search).get('conversationId')
+  } catch {
+    return null
+  }
+}
 
 const customerName = (conversation) => {
   const c = conversation?.customer
@@ -92,11 +107,17 @@ export default function useStudioNotifications({ enabled = true } = {}) {
 
       void refreshUnread()
 
-      if (window.location.pathname.startsWith('/studio/chat')) {
-        return
-      }
+      const openChatId = activeChatConversationId()
+      const viewingThisThread =
+        Boolean(openChatId) &&
+        Boolean(conversationId) &&
+        String(openChatId) === String(conversationId)
+      // Only silence when this thread is open and the tab is focused.
+      if (viewingThisThread && !tabIsAway()) return
 
-      if (document.hidden && typeof Notification !== 'undefined') {
+      playNotificationSound()
+
+      if (tabIsAway() && typeof Notification !== 'undefined') {
         if (Notification.permission === 'granted') {
           const n = new Notification(title, {
             body,
@@ -145,11 +166,13 @@ export default function useStudioNotifications({ enabled = true } = {}) {
 
       void refreshUnread()
 
-      if (window.location.pathname.startsWith('/studio/platform-chat')) {
-        return
-      }
+      const onSupport =
+        window.location.pathname.startsWith('/studio/platform-chat')
+      if (onSupport && !tabIsAway()) return
 
-      if (document.hidden && typeof Notification !== 'undefined') {
+      playNotificationSound()
+
+      if (tabIsAway() && typeof Notification !== 'undefined') {
         if (Notification.permission === 'granted') {
           const n = new Notification(title, {
             body,

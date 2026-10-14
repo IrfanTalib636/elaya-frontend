@@ -1,10 +1,11 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import ProtectedRoute from './components/ProtectedRoute'
 import GuestRoute from './components/GuestRoute'
 import StudioShell from './components/StudioShell'
 import useTheme from './hooks/useTheme'
+import { bindNotificationSoundUnlock } from './lib/playNotificationSound'
 import SocketProvider from './socket/SocketProvider'
 import { STUDIO_ROLES, ADMIN_ROLES } from './constants/roles'
 
@@ -77,6 +78,8 @@ const PageLoader = () => (
 // ── App ───────────────────────────────────────────────────────────────────
 const AppInner = () => {
   useTheme()
+
+  useEffect(() => bindNotificationSoundUnlock(), [])
 
   return (
     <>

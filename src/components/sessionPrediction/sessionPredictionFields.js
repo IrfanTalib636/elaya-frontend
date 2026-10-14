@@ -75,6 +75,7 @@ export const TATTOO_DELTA_GROUPS = [
       { key: 'medium' },
       { key: 'high' },
       { key: 'very_high' },
+      { key: 'unknown' },
     ],
   },
   {
@@ -84,6 +85,27 @@ export const TATTOO_DELTA_GROUPS = [
       { key: 'medium' },
       { key: 'high' },
       { key: 'very_high' },
+      { key: 'unknown' },
+    ],
+  },
+  {
+    key: 'shading',
+    fields: [
+      { key: 'none' },
+      { key: 'low' },
+      { key: 'medium' },
+      { key: 'high' },
+      { key: 'unknown' },
+    ],
+  },
+  {
+    key: 'linework',
+    fields: [
+      { key: 'fine' },
+      { key: 'medium' },
+      { key: 'bold' },
+      { key: 'mixed' },
+      { key: 'unknown' },
     ],
   },
   {
@@ -113,6 +135,7 @@ export const TATTOO_DELTA_GROUPS = [
       { key: 'normal' },
       { key: 'deep' },
       { key: 'very_deep' },
+      { key: 'unknown' },
     ],
   },
   {
@@ -131,6 +154,7 @@ export const TATTOO_DELTA_GROUPS = [
       { key: 'cosmetic' },
       { key: 'coverup' },
       { key: 'mixed' },
+      { key: 'unknown' },
     ],
   },
   {
@@ -268,6 +292,8 @@ export const TATTOO_GROUP_SECTION = {
   scarring: 'fitzpatrick',
   density: 'fitzpatrick',
   saturation: 'fitzpatrick',
+  shading: 'fitzpatrick',
+  linework: 'fitzpatrick',
   coverup: 'fitzpatrick',
   age: 'fitzpatrick',
   depth: 'fitzpatrick',

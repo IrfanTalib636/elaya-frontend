@@ -2,6 +2,7 @@ import axios from 'axios'
 import { TOKEN_KEY } from './session'
 import { trySilentRefresh } from './refreshSession'
 import { isStudioWorkspaceActive } from './adminWorkspaceSession'
+import i18n from '../i18n/i18n.config'
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1'
 
@@ -11,9 +12,23 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+const appLang = () =>
+  String(i18n.resolvedLanguage || i18n.language || 'de')
+    .toLowerCase()
+    .startsWith('en')
+    ? 'en'
+    : 'de'
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEY)
   if (token) config.headers.Authorization = `Bearer ${token}`
+
+  const lang = appLang()
+  if (config.params instanceof URLSearchParams) {
+    config.params.set('lang', lang)
+  } else {
+    config.params = { ...(config.params || {}), lang }
+  }
 
   if (config.data instanceof FormData) {
     if (typeof config.headers?.delete === 'function') {

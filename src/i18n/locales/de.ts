@@ -367,7 +367,7 @@ const de: TranslationSchema = {
       ],
       [
         "unknown",
-        "Unbekannt"
+        "Nicht sicher"
       ]
     ],
     "pmuTechniques": [
@@ -395,7 +395,7 @@ const de: TranslationSchema = {
       ],
       [
         "unknown",
-        "Unbekannt"
+        "Nicht sicher"
       ]
     ],
     "pmuStitchDepths": [
@@ -609,7 +609,7 @@ const de: TranslationSchema = {
       ],
       [
         "unknown",
-        "Unbekannt"
+        "Nicht sicher"
       ]
     ],
     "tcTypes": [
@@ -632,6 +632,10 @@ const de: TranslationSchema = {
       [
         "mixed",
         "Gemischt"
+      ],
+      [
+        "unknown",
+        "Nicht sicher"
       ]
     ],
     "tcCoverup": [
@@ -649,7 +653,7 @@ const de: TranslationSchema = {
       ],
       [
         "unknown",
-        "Unbekannt"
+        "Nicht sicher"
       ]
     ],
     "qualityLevel": [
@@ -668,6 +672,10 @@ const de: TranslationSchema = {
       [
         "very_high",
         "Sehr hoch"
+      ],
+      [
+        "unknown",
+        "Nicht sicher"
       ]
     ],
     "shadingLevel": [
@@ -686,6 +694,10 @@ const de: TranslationSchema = {
       [
         "high",
         "Viel"
+      ],
+      [
+        "unknown",
+        "Nicht sicher"
       ]
     ],
     "lineworkLevel": [
@@ -704,6 +716,32 @@ const de: TranslationSchema = {
       [
         "mixed",
         "Gemischt"
+      ],
+      [
+        "unknown",
+        "Nicht sicher"
+      ]
+    ],
+    "depthLevel": [
+      [
+        "shallow",
+        "Oberflächlich"
+      ],
+      [
+        "normal",
+        "Normal"
+      ],
+      [
+        "deep",
+        "Tief"
+      ],
+      [
+        "very_deep",
+        "Sehr tief"
+      ],
+      [
+        "unknown",
+        "Nicht sicher"
       ]
     ],
     "inkColors": [
@@ -1022,6 +1060,10 @@ const de: TranslationSchema = {
       [
         "very_high",
         "Sehr hoch"
+      ],
+      [
+        "unknown",
+        "Nicht sicher"
       ]
     ],
     "photoChecklist": [
@@ -1165,9 +1207,14 @@ const de: TranslationSchema = {
         "zonesGroupTitle": "Zonen dieses Tattoos",
         "zonesGroupHint": "Alle Zonen gehören zu einem grossen Tattoo. Jede Zone wird einzeln berechnet, fotografiert und dokumentiert.",
         "colorDensity": "Farbdichte",
+        "densityHint": "Wie dicht die tätowierte Fläche mit Pigment gefüllt ist — von leicht oder locker bedeckt bis sehr kompakt und stark gefüllt.",
         "saturation": "Farbsättigung",
+        "saturationHint": "Wie intensiv und stark das Pigment in den tätowierten Flächen liegt — von hell oder verblasst bis stark gesättigt.",
         "shading": "Schattierung",
-        "linework": "Linienarbeit",
+        "shadingHint": "Wie stark das Tattoo Schattierung, Verläufe oder weich gefüllte Flächen nutzt — von keiner Schattierung bis ausgedehnter Schattierung.",
+        "linework": "Linienführung",
+        "lineworkHint": "Wie die Tattoo-Linien ausgeführt sind — fein, mittel, kräftig oder eine Mischung verschiedener Linienstärken.",
+        "depth": "Tiefe",
         "dimensions": "Masse in cm *",
         "dimensionsHint": "Mit Lineal messen — Studio misst exakt nach.",
         "length": "Länge",
@@ -1919,7 +1966,9 @@ const de: TranslationSchema = {
         "amateur": "Amateur",
         "cosmetic": "Kosmetisch",
         "professional": "Professionell",
-        "coverup": "Cover-up"
+        "coverup": "Cover-up",
+        "mixed": "Gemischt",
+        "unknown": "Nicht sicher"
       },
       "goals": {
         "full_removal": "Vollständige Entfernung",
@@ -1931,7 +1980,7 @@ const de: TranslationSchema = {
         "none": "Kein Cover-up",
         "once": "1× überdeckt",
         "multiple": "Mehrfach überdeckt",
-        "unknown": "Unbekannt"
+        "unknown": "Nicht sicher"
       },
       "apptTypes": {
         "beratung": "Beratung",
@@ -2947,7 +2996,7 @@ const de: TranslationSchema = {
       "sectionHints": {
         "base": "Basis-Sitzungsanzahl, Min/Max-Bereich und die ± Spanne um die vorhergesagte Mitte.",
         "colors": "Farb- und Farbanzahl-Deltas sowie das Laserprofil-Qualitätsdelta. Pro-Gerät-Farbmatrizen liegen im Laser-Katalog.",
-        "fitzpatrick": "Hauttyp-, Körperstelle-, Dichte-, Sättigung-, Cover-up-, Tattoo-Alter-, Vorbehandlung-, Tattoo-Art- und Ziel-Deltas.",
+        "fitzpatrick": "Hauttyp-, Körperstelle-, Dichte-, Sättigung-, Schattierung-, Linienführung-, Cover-up-, Tattoo-Alter-, Vorbehandlung-, Tattoo-Art- und Ziel-Deltas.",
         "lifestyle": "Der 7-Faktoren-Lifestyle-Composite-Score, seine Score-zu-Multiplikator-Schwellen und die BMI-Mindestwerte, die den Composite-Score anheben.",
         "healing": "Healing- und Lightening-Rate-Deltas (sobald echte Sitzungen existieren) sowie Nachsorge-Bereitschaft (+ Max-Sitzungen)."
       },
@@ -3098,7 +3147,27 @@ const de: TranslationSchema = {
       "fitzType": "Typ {{type}}",
       "bodyLocation": "Körperstelle",
       "density": "Dichte",
+      "densityHint": "Wie dicht die tätowierte Fläche mit Pigment gefüllt ist — von leicht oder locker bedeckt bis sehr kompakt und stark gefüllt.",
       "saturation": "Sättigung",
+      "saturationHint": "Wie intensiv und stark das Pigment in den tätowierten Flächen liegt — von hell oder verblasst bis stark gesättigt.",
+      "shading": "Schattierung",
+      "shadingHint": "Wie stark das Tattoo Schattierung, Verläufe oder weich gefüllte Flächen nutzt — von keiner Schattierung bis ausgedehnter Schattierung.",
+      "linework": "Linienführung",
+      "lineworkHint": "Wie die Tattoo-Linien ausgeführt sind — fein, mittel, kräftig oder eine Mischung verschiedener Linienstärken.",
+      "shadingOptions": {
+        "none": "Kein",
+        "low": "Wenig",
+        "medium": "Mittel",
+        "high": "Viel",
+        "unknown": "Nicht sicher"
+      },
+      "lineworkOptions": {
+        "fine": "Fein",
+        "medium": "Mittel",
+        "bold": "Kräftig",
+        "mixed": "Gemischt",
+        "unknown": "Nicht sicher"
+      },
       "coverup": "Cover-up",
       "tattooAge": "Tattoo-Alter (Jahre)",
       "depth": "Tiefe",
@@ -3106,7 +3175,8 @@ const de: TranslationSchema = {
         "shallow": "Oberflächlich",
         "normal": "Normal",
         "deep": "Tief",
-        "very_deep": "Sehr tief"
+        "very_deep": "Sehr tief",
+        "unknown": "Nicht sicher"
       },
       "tattooType": "Tattoo-Art",
       "goal": "Behandlungsziel",
@@ -3158,7 +3228,8 @@ const de: TranslationSchema = {
         "low": "Niedrig",
         "medium": "Mittel",
         "high": "Hoch",
-        "very_high": "Sehr hoch"
+        "very_high": "Sehr hoch",
+        "unknown": "Nicht sicher"
       },
       "locations": {
         "arm": "Arm",
@@ -3178,14 +3249,15 @@ const de: TranslationSchema = {
         "none": "Keins",
         "once": "Einmal",
         "multiple": "Mehrfach",
-        "unknown": "Unbekannt"
+        "unknown": "Nicht sicher"
       },
       "tcTypes": {
         "amateur": "Amateur",
         "professional": "Professionell",
         "cosmetic": "Kosmetisch",
         "coverup": "Cover-up",
-        "mixed": "Gemischt"
+        "mixed": "Gemischt",
+        "unknown": "Nicht sicher"
       },
       "goals": {
         "full_removal": "Vollständige Entfernung",
@@ -4382,6 +4454,8 @@ const de: TranslationSchema = {
         "scarring": "Narben / Keloid-Risiko (Delta)",
         "density": "Dichte (Delta)",
         "saturation": "Sättigung (Delta)",
+        "shading": "Schattierung (Delta)",
+        "linework": "Linienführung (Delta)",
         "coverup": "Cover-up / Layering (Delta)",
         "age": "Tattoo-Alter (Delta)",
         "depth": "Tiefe (Delta)",
@@ -4443,19 +4517,35 @@ const de: TranslationSchema = {
           "low": "Niedrig",
           "medium": "Mittel",
           "high": "Hoch",
-          "very_high": "Sehr hoch"
+          "very_high": "Sehr hoch",
+          "unknown": "Nicht sicher"
         },
         "saturation": {
           "low": "Niedrig",
           "medium": "Mittel",
           "high": "Hoch",
-          "very_high": "Sehr hoch"
+          "very_high": "Sehr hoch",
+          "unknown": "Nicht sicher"
+        },
+        "shading": {
+          "none": "Kein",
+          "low": "Wenig",
+          "medium": "Mittel",
+          "high": "Viel",
+          "unknown": "Nicht sicher"
+        },
+        "linework": {
+          "fine": "Fein",
+          "medium": "Mittel",
+          "bold": "Kräftig",
+          "mixed": "Gemischt",
+          "unknown": "Nicht sicher"
         },
         "coverup": {
           "none": "Kein",
           "once": "1× überdeckt",
           "multiple": "Mehrfach",
-          "unknown": "Unbekannt"
+          "unknown": "Nicht sicher"
         },
         "age": {
           "under_1": "unter 1 Jahr",
@@ -4463,13 +4553,14 @@ const de: TranslationSchema = {
           "age_4_7": "4–7 Jahre",
           "age_8_15": "8–15 Jahre",
           "over_15": "über 15 Jahre",
-          "unknown": "Unbekannt"
+          "unknown": "Nicht sicher"
         },
         "depth": {
           "shallow": "Oberflächlich",
           "normal": "Normal",
           "deep": "Tief",
-          "very_deep": "Sehr tief"
+          "very_deep": "Sehr tief",
+          "unknown": "Nicht sicher"
         },
         "prior_treatment": {
           "none": "Keine",
@@ -4481,7 +4572,8 @@ const de: TranslationSchema = {
           "professional": "Professionell",
           "cosmetic": "Kosmetisch",
           "coverup": "Cover-up",
-          "mixed": "Gemischt"
+          "mixed": "Gemischt",
+          "unknown": "Nicht sicher"
         },
         "goal": {
           "full_removal": "Komplett",

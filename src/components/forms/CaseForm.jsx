@@ -184,6 +184,7 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
   const QUALITY_LEVEL = caseForm.qualityLevel
   const SHADING_LEVEL = caseForm.shadingLevel
   const LINEWORK_LEVEL = caseForm.lineworkLevel
+  const DEPTH_LEVEL = caseForm.depthLevel
   const INK_COLORS = caseForm.inkColors
   const FITZPATRICK = caseForm.fitzpatrick
   const RISK_LEVEL = caseForm.riskLevel
@@ -350,7 +351,7 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
           return ''
         }
         if (!form.tc_colors_present.length) return v.colorsRequired
-        if (!form.tc_density || !form.tc_saturation || !form.tc_shading || !form.tc_linework) {
+        if (!form.tc_density || !form.tc_saturation || !form.tc_shading || !form.tc_linework || !form.tc_depth) {
           return v.propertiesRequired
         }
         if (!form.tc_size_length || !form.tc_size_width) return v.sizeRequired
@@ -458,6 +459,7 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
       tc_saturation: form.zonen_aktiv ? undefined : form.tc_saturation || undefined,
       tc_shading: form.zonen_aktiv ? undefined : form.tc_shading || undefined,
       tc_linework: form.zonen_aktiv ? undefined : form.tc_linework || undefined,
+      tc_depth: form.zonen_aktiv ? undefined : form.tc_depth || undefined,
       tc_size_length: form.zonen_aktiv ? undefined : num(form.tc_size_length),
       tc_size_width: form.zonen_aktiv ? undefined : num(form.tc_size_width),
       skin_fitzpatrick_type: form.skin_fitzpatrick_type || undefined,
@@ -760,7 +762,7 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
                 </div>
               </div>
               <div>
-                <FieldLabel>{ui.properties.density}</FieldLabel>
+                <FieldLabel hint={ui.properties.densityHint}>{ui.properties.density}</FieldLabel>
                 <OptGrid>
                   {ZONE_DICHTE.map(([v, l]) => (
                     <Opt key={v} active={z.dichte === v} onClick={() => setZone(z._id, { dichte: v })}>{l}</Opt>
@@ -850,15 +852,16 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
         </div>
 
         {[
-          ['tc_density', ui.properties.colorDensity, QUALITY_LEVEL],
-          ['tc_saturation', ui.properties.saturation, QUALITY_LEVEL],
-          ['tc_shading', ui.properties.shading, SHADING_LEVEL],
-          ['tc_linework', ui.properties.linework, LINEWORK_LEVEL],
-        ].map(([field, label, opts]) => (
+          ['tc_density', ui.properties.colorDensity, QUALITY_LEVEL, ui.properties.densityHint],
+          ['tc_saturation', ui.properties.saturation, QUALITY_LEVEL, ui.properties.saturationHint],
+          ['tc_shading', ui.properties.shading, SHADING_LEVEL, ui.properties.shadingHint],
+          ['tc_linework', ui.properties.linework, LINEWORK_LEVEL, ui.properties.lineworkHint],
+          ['tc_depth', ui.properties.depth, DEPTH_LEVEL],
+        ].map(([field, label, opts, hint]) => (
           <div key={field}>
-            <FieldLabel>{label} *</FieldLabel>
+            <FieldLabel hint={hint}>{label} *</FieldLabel>
             <OptGrid>
-              {opts.map(([v, l]) => (
+              {(opts || []).map(([v, l]) => (
                 <Opt key={v} active={form[field] === v} onClick={() => set(field, v)}>{l}</Opt>
               ))}
             </OptGrid>

@@ -365,7 +365,7 @@ const en = {
       ],
       [
         "unknown",
-        "Unknown"
+        "Not sure"
       ]
     ],
     "pmuTechniques": [
@@ -393,7 +393,7 @@ const en = {
       ],
       [
         "unknown",
-        "Unknown"
+        "Not sure"
       ]
     ],
     "pmuStitchDepths": [
@@ -607,7 +607,7 @@ const en = {
       ],
       [
         "unknown",
-        "Unknown"
+        "Not sure"
       ]
     ],
     "tcTypes": [
@@ -630,6 +630,10 @@ const en = {
       [
         "mixed",
         "Mixed"
+      ],
+      [
+        "unknown",
+        "Not sure"
       ]
     ],
     "tcCoverup": [
@@ -647,7 +651,7 @@ const en = {
       ],
       [
         "unknown",
-        "Unknown"
+        "Not sure"
       ]
     ],
     "qualityLevel": [
@@ -666,6 +670,10 @@ const en = {
       [
         "very_high",
         "Very high"
+      ],
+      [
+        "unknown",
+        "Not sure"
       ]
     ],
     "shadingLevel": [
@@ -684,6 +692,10 @@ const en = {
       [
         "high",
         "High"
+      ],
+      [
+        "unknown",
+        "Not sure"
       ]
     ],
     "lineworkLevel": [
@@ -702,6 +714,32 @@ const en = {
       [
         "mixed",
         "Mixed"
+      ],
+      [
+        "unknown",
+        "Not sure"
+      ]
+    ],
+    "depthLevel": [
+      [
+        "shallow",
+        "Shallow"
+      ],
+      [
+        "normal",
+        "Normal"
+      ],
+      [
+        "deep",
+        "Deep"
+      ],
+      [
+        "very_deep",
+        "Very deep"
+      ],
+      [
+        "unknown",
+        "Not sure"
       ]
     ],
     "inkColors": [
@@ -1020,6 +1058,10 @@ const en = {
       [
         "very_high",
         "Very high"
+      ],
+      [
+        "unknown",
+        "Not sure"
       ]
     ],
     "photoChecklist": [
@@ -1163,9 +1205,14 @@ const en = {
         "zonesGroupTitle": "Zones of this tattoo",
         "zonesGroupHint": "All zones belong to one large tattoo. Each zone is priced, photographed and documented separately.",
         "colorDensity": "Color density",
+        "densityHint": "How densely the tattooed area is filled with pigment — from lightly or loosely covered to very compact and heavily filled.",
         "saturation": "Saturation",
+        "saturationHint": "How intense and strongly deposited the pigment appears within the tattooed areas — from light or faded to highly saturated.",
         "shading": "Shading",
-        "linework": "Linework",
+        "shadingHint": "How much the tattoo uses shading, gradients, or softly filled areas — from no shading to extensive shading.",
+        "linework": "Line style",
+        "lineworkHint": "How the tattoo lines are executed — fine, medium, bold, or a mixture of different line weights.",
+        "depth": "Depth",
         "dimensions": "Dimensions in cm *",
         "dimensionsHint": "Measure with ruler — studio confirms exactly.",
         "length": "Length",
@@ -1917,7 +1964,9 @@ const en = {
         "amateur": "Amateur",
         "cosmetic": "Cosmetic",
         "professional": "Professional",
-        "coverup": "Cover-up"
+        "coverup": "Cover-up",
+        "mixed": "Mixed",
+        "unknown": "Not sure"
       },
       "goals": {
         "full_removal": "Full removal",
@@ -1929,7 +1978,7 @@ const en = {
         "none": "No cover-up",
         "once": "Covered once",
         "multiple": "Covered multiple times",
-        "unknown": "Unknown"
+        "unknown": "Not sure"
       },
       "apptTypes": {
         "beratung": "Consultation",
@@ -2945,7 +2994,7 @@ const en = {
       "sectionHints": {
         "base": "Base session count, min/max range and the ± range around the predicted mid.",
         "colors": "Colour and colour-count deltas, plus the laser-profile quality delta. Per-device colour matrices live in the Lasers catalog.",
-        "fitzpatrick": "Skin type, body location, density, saturation, cover-up, tattoo age, prior treatment, tattoo type and removal goal deltas.",
+        "fitzpatrick": "Skin type, body location, density, saturation, shading, line style, cover-up, tattoo age, prior treatment, tattoo type and removal goal deltas.",
         "lifestyle": "The 7-factor lifestyle composite, its score-to-multiplier thresholds, and the BMI floors that raise the composite score.",
         "healing": "Healing history and lightening-rate deltas (once real sessions exist), plus aftercare-commitment extra max sessions."
       },
@@ -3096,7 +3145,27 @@ const en = {
       "fitzType": "Type {{type}}",
       "bodyLocation": "Body location",
       "density": "Density",
+      "densityHint": "How densely the tattooed area is filled with pigment — from lightly or loosely covered to very compact and heavily filled.",
       "saturation": "Saturation",
+      "saturationHint": "How intense and strongly deposited the pigment appears within the tattooed areas — from light or faded to highly saturated.",
+      "shading": "Shading",
+      "shadingHint": "How much the tattoo uses shading, gradients, or softly filled areas — from no shading to extensive shading.",
+      "linework": "Line style",
+      "lineworkHint": "How the tattoo lines are executed — fine, medium, bold, or a mixture of different line weights.",
+      "shadingOptions": {
+        "none": "None",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "unknown": "Not sure"
+      },
+      "lineworkOptions": {
+        "fine": "Fine",
+        "medium": "Medium",
+        "bold": "Bold",
+        "mixed": "Mixed",
+        "unknown": "Not sure"
+      },
       "coverup": "Cover-up",
       "tattooAge": "Tattoo age (years)",
       "depth": "Ink depth",
@@ -3104,7 +3173,8 @@ const en = {
         "shallow": "Shallow",
         "normal": "Normal",
         "deep": "Deep",
-        "very_deep": "Very deep"
+        "very_deep": "Very deep",
+        "unknown": "Not sure"
       },
       "tattooType": "Tattoo type",
       "goal": "Treatment goal",
@@ -3156,7 +3226,8 @@ const en = {
         "low": "Low",
         "medium": "Medium",
         "high": "High",
-        "very_high": "Very high"
+        "very_high": "Very high",
+        "unknown": "Not sure"
       },
       "locations": {
         "arm": "Arm",
@@ -3176,14 +3247,15 @@ const en = {
         "none": "None",
         "once": "Once",
         "multiple": "Multiple",
-        "unknown": "Unknown"
+        "unknown": "Not sure"
       },
       "tcTypes": {
         "amateur": "Amateur",
         "professional": "Professional",
         "cosmetic": "Cosmetic",
         "coverup": "Cover-up",
-        "mixed": "Mixed"
+        "mixed": "Mixed",
+        "unknown": "Not sure"
       },
       "goals": {
         "full_removal": "Full removal",
@@ -4380,6 +4452,8 @@ const en = {
         "scarring": "Scars / keloid risk (delta)",
         "density": "Density (delta)",
         "saturation": "Saturation (delta)",
+        "shading": "Shading (delta)",
+        "linework": "Line style (delta)",
         "coverup": "Cover-up / layering (delta)",
         "age": "Tattoo age (delta)",
         "depth": "Ink depth (delta)",
@@ -4441,19 +4515,35 @@ const en = {
           "low": "Low",
           "medium": "Medium",
           "high": "High",
-          "very_high": "Very high"
+          "very_high": "Very high",
+          "unknown": "Not sure"
         },
         "saturation": {
           "low": "Low",
           "medium": "Medium",
           "high": "High",
-          "very_high": "Very high"
+          "very_high": "Very high",
+          "unknown": "Not sure"
+        },
+        "shading": {
+          "none": "None",
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High",
+          "unknown": "Not sure"
+        },
+        "linework": {
+          "fine": "Fine",
+          "medium": "Medium",
+          "bold": "Bold",
+          "mixed": "Mixed",
+          "unknown": "Not sure"
         },
         "coverup": {
           "none": "None",
           "once": "Covered once",
           "multiple": "Multiple",
-          "unknown": "Unknown"
+          "unknown": "Not sure"
         },
         "age": {
           "under_1": "under 1 year",
@@ -4461,13 +4551,14 @@ const en = {
           "age_4_7": "4–7 years",
           "age_8_15": "8–15 years",
           "over_15": "over 15 years",
-          "unknown": "Unknown"
+          "unknown": "Not sure"
         },
         "depth": {
           "shallow": "Shallow",
           "normal": "Normal",
           "deep": "Deep",
-          "very_deep": "Very deep"
+          "very_deep": "Very deep",
+          "unknown": "Not sure"
         },
         "prior_treatment": {
           "none": "None",
@@ -4479,7 +4570,8 @@ const en = {
           "professional": "Professional",
           "cosmetic": "Cosmetic",
           "coverup": "Cover-up",
-          "mixed": "Mixed"
+          "mixed": "Mixed",
+          "unknown": "Not sure"
         },
         "goal": {
           "full_removal": "Complete",

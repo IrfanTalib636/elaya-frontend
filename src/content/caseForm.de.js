@@ -37,13 +37,13 @@ export const caseForm = {
   pmuSides: [['left', 'Links'], ['right', 'Rechts'], ['both', 'Beide']],
   pmuAgeRanges: [
     ['<1', '< 1 Jahr'], ['1-3', '1-3 Jahre'], ['4-7', '4-7 Jahre'],
-    ['8-15', '8-15 Jahre'], ['>15', '> 15 Jahre'], ['unknown', 'Unbekannt'],
+    ['8-15', '8-15 Jahre'], ['>15', '> 15 Jahre'], ['unknown', 'Nicht sicher'],
   ],
   pmuTechniques: [
     ['professional', 'Professionell'], ['amateur', 'Amateur'], ['cosmetic', 'Cosmetic Tattoo'],
   ],
   pmuPigments: [
-    ['organic', 'Organisch (pflanzlich)'], ['inorganic', 'Anorganisch (Eisenoxid)'], ['unknown', 'Unbekannt'],
+    ['organic', 'Organisch (pflanzlich)'], ['inorganic', 'Anorganisch (Eisenoxid)'], ['unknown', 'Nicht sicher'],
   ],
   pmuStitchDepths: [
     ['surface', 'Oberflächlich (Microblading)'], ['medium', 'Mittel (Standard PMU)'], ['deep', 'Tief (klassisches Verfahren)'],
@@ -70,27 +70,37 @@ export const caseForm = {
 
   tcAgeBuckets: [
     ['under_1', '< 1 Jahr'], ['age_1_3', '1–3 Jahre'], ['age_4_7', '4–7 Jahre'],
-    ['age_8_15', '8–15 Jahre'], ['over_15', '> 15 Jahre'], ['unknown', 'Unbekannt'],
+    ['age_8_15', '8–15 Jahre'], ['over_15', '> 15 Jahre'], ['unknown', 'Nicht sicher'],
   ],
 
   tcTypes: [
     ['professional', 'Professionell'], ['amateur', 'Amateur'], ['cosmetic', 'Kosmetisch'],
-    ['coverup', 'Cover-up'], ['mixed', 'Gemischt'],
+    ['coverup', 'Cover-up'], ['mixed', 'Gemischt'], ['unknown', 'Nicht sicher'],
   ],
 
   tcCoverup: [
     ['none', 'Kein Cover-up'], ['once', '1× überdeckt'],
-    ['multiple', 'Mehrfach überdeckt'], ['unknown', 'Unbekannt'],
+    ['multiple', 'Mehrfach überdeckt'], ['unknown', 'Nicht sicher'],
   ],
 
   qualityLevel: [
     ['low', 'Niedrig'], ['medium', 'Mittel'], ['high', 'Hoch'], ['very_high', 'Sehr hoch'],
+    ['unknown', 'Nicht sicher'],
   ],
 
-  shadingLevel: [['none', 'Kein'], ['low', 'Wenig'], ['medium', 'Mittel'], ['high', 'Viel']],
+  shadingLevel: [
+    ['none', 'Kein'], ['low', 'Wenig'], ['medium', 'Mittel'], ['high', 'Viel'],
+    ['unknown', 'Nicht sicher'],
+  ],
 
   lineworkLevel: [
     ['fine', 'Fein'], ['medium', 'Mittel'], ['bold', 'Kräftig'], ['mixed', 'Gemischt'],
+    ['unknown', 'Nicht sicher'],
+  ],
+
+  depthLevel: [
+    ['shallow', 'Oberflächlich'], ['normal', 'Normal'], ['deep', 'Tief'], ['very_deep', 'Sehr tief'],
+    ['unknown', 'Nicht sicher'],
   ],
 
   inkColors: [
@@ -162,6 +172,7 @@ export const caseForm = {
 
   zoneDichte: [
     ['low', 'Niedrig'], ['medium', 'Mittel'], ['high', 'Hoch'], ['very_high', 'Sehr hoch'],
+    ['unknown', 'Nicht sicher'],
   ],
 
 
@@ -301,6 +312,7 @@ export const caseForm = {
       saturation: 'Farbsättigung',
       shading: 'Schattierung',
       linework: 'Linienarbeit',
+      depth: 'Tiefe',
       dimensions: 'Masse in cm *',
       dimensionsHint: 'Mit Lineal messen — Studio misst exakt nach.',
       length: 'Länge',

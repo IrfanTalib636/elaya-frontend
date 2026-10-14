@@ -27,7 +27,7 @@ const en = {
     "resetPassword": "Reset password",
     "backToLogin": "Back to login",
     "notifications": "Notifications",
-    "markAllRead": "Mark all read",
+    "markAllRead": "Mark all as read",
     "noNotifications": "No notifications yet",
     "increase": "Increase",
     "decrease": "Decrease"
@@ -1269,7 +1269,8 @@ const en = {
     "desc": "Choose the colour scheme for the studio dashboard.",
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "Match device",
+    "holdForOptions": "Press and hold for Light, Dark or Match device."
   },
   "settings": {
     "title": "Settings",

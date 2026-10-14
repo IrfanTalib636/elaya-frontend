@@ -30,6 +30,7 @@ import useAuthStore from '../store/authStore'
 import useContent from '../i18n/useContent'
 import ElayaLogo from './ElayaLogo'
 import AdminNotificationBell from './admin/AdminNotificationBell'
+import ThemeSwitcher from './ThemeSwitcher'
 
 const ICONS = {
   overview: LayoutDashboard,
@@ -202,7 +203,8 @@ const AdminShell = () => {
       </aside>
 
       <main className="min-h-screen flex-1 ml-studio-sidebar relative px-7 py-6">
-        <div className="absolute top-5 right-7 z-[70]">
+        <div className="absolute top-5 right-7 z-[70] flex items-center gap-2">
+          <ThemeSwitcher />
           <AdminNotificationBell />
         </div>
         <Outlet context={{ displayName }} />

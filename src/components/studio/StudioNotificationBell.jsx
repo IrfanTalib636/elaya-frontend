@@ -42,9 +42,10 @@ export default function StudioNotificationBell() {
       >
         <Bell size={16} />
         {unreadCount > 0 ? (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-studio-gold text-[10px] font-bold text-studio-bg flex items-center justify-center">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
+          <span
+            className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#e05555] border-[1.5px] border-studio-bg-3 pointer-events-none"
+            aria-hidden
+          />
         ) : null}
       </button>
 
@@ -60,7 +61,7 @@ export default function StudioNotificationBell() {
                 onClick={() => void markAllRead()}
                 className="text-[11px] text-studio-gold-2 bg-transparent border-0 cursor-pointer"
               >
-                {common.markAllRead ?? 'Mark all read'}
+                {common.markAllRead ?? 'Mark all as read'}
               </button>
             ) : null}
           </div>

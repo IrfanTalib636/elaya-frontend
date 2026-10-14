@@ -29,7 +29,7 @@ const de: TranslationSchema = {
     "resetPassword": "Passwort zurücksetzen",
     "backToLogin": "Zurück zur Anmeldung",
     "notifications": "Mitteilungen",
-    "markAllRead": "Alle gelesen",
+    "markAllRead": "Alle als gelesen markieren",
     "noNotifications": "Noch keine Mitteilungen",
     "increase": "Erhöhen",
     "decrease": "Verringern"
@@ -1271,7 +1271,8 @@ const de: TranslationSchema = {
     "desc": "Wähle das Farbschema für das Studio-Dashboard.",
     "light": "Hell",
     "dark": "Dunkel",
-    "system": "System"
+    "system": "Geräteeinstellung",
+    "holdForOptions": "Gedrückt halten für Hell, Dunkel oder Geräteeinstellung."
   },
   "settings": {
     "title": "Einstellungen",

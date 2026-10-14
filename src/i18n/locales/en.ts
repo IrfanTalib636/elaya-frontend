@@ -1361,7 +1361,7 @@ const en = {
       }
     },
     "pricing": {
-      "title": "Prices & Elaycoin",
+      "title": "Pricing",
       "desc": "Platform price rules (view only). Price per session is the higher of the minimum and area × base price per cm², rounded up to CHF 5, or the flat PMU price. Colours and tattoo factors change the session count, not the price.",
       "readOnlyHint": "View only — only Elaya super admin can change price calculation rules.",
       "coinSectionTitle": "Elaycoin value",

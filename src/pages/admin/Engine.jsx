@@ -239,7 +239,6 @@ const AdminEngine = () => {
                   saveLabel={t('adminPages.settings.saveDraft', {
                     defaultValue: 'Save draft',
                   })}
-                  coinWertLabel={t('settingsPage.pricing.chfPerCoin')}
                   onPreviewValues={handlePricingPreview}
                 />
               </>

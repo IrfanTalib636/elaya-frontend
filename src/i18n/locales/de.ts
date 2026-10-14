@@ -1363,7 +1363,7 @@ const de: TranslationSchema = {
       }
     },
     "pricing": {
-      "title": "Preise & Elaycoin",
+      "title": "Preise",
       "desc": "Plattformweite Preisregeln (nur Ansicht). Preis pro Sitzung ist der höhere Wert aus Mindestpreis und Fläche × Basispreis pro cm², aufgerundet auf CHF 5, oder der Pauschalpreis für PMU. Farben und Tattoo-Faktoren ändern die Sitzungszahl, nicht den Preis.",
       "readOnlyHint": "Nur Ansicht — nur Elaya Super-Admin kann die Preisberechnungsregeln ändern.",
       "coinSectionTitle": "Elaycoin-Wert",

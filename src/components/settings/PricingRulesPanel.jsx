@@ -18,7 +18,6 @@ export default function PricingRulesPanel({
   loadPricing,
   savePricing,
   saveLabel,
-  coinWertLabel = null,
   onPreviewValues = null,
 }) {
   const { t } = useTranslation()
@@ -125,15 +124,6 @@ export default function PricingRulesPanel({
             defaultValue:
               'View only — only Elaya super admin can change price calculation rules.',
           })}
-        </p>
-      ) : null}
-
-      {coinWertLabel != null && coinWert != null ? (
-        <p className="text-studio-w2 text-[12px] m-0">
-          {coinWertLabel}:{' '}
-          <span className="text-studio-white font-medium">
-            {t('settingsPage.pricing.priceWithCurrency', { value: coinWert })}
-          </span>
         </p>
       ) : null}
 

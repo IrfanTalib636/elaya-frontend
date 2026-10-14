@@ -363,7 +363,9 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
         if (!form.skin_sun_zone) return v.sunRequired
         return ''
       case 3:
-        if (!form.life_smoker || !form.life_alcohol || !form.life_activity) return v.lifestyleRequired
+        if (!form.life_smoker || !form.life_alcohol || !form.life_activity || !form.life_sport_freq) {
+          return v.lifestyleRequired
+        }
         if (!form.life_sleep_hours || !form.life_sleep_quality || !form.life_stress) return v.sleepRequired
         if (!form.life_height_cm || !form.life_weight_kg) return v.bodyMassRequired
         if (!form.life_hydration || !form.life_nutrition) return v.hydrationRequired

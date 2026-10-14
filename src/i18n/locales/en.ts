@@ -1244,7 +1244,7 @@ const en = {
         "weight": "Weight (kg)",
         "alcohol": "Alcohol *",
         "activity": "Activity level *",
-        "sportFreq": "Exercise per week (optional)",
+        "sportFreq": "Exercise per week *",
         "sleepHours": "Sleep hours *",
         "sleepQuality": "Sleep quality *",
         "stress": "Stress level *",

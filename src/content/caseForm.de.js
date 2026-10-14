@@ -350,7 +350,7 @@ export const caseForm = {
       weight: 'Gewicht (kg)',
       alcohol: 'Alkohol *',
       activity: 'Aktivitätslevel *',
-      sportFreq: 'Sport pro Woche (optional)',
+      sportFreq: 'Sport pro Woche *',
       sleepHours: 'Schlafstunden *',
       sleepQuality: 'Schlafqualität *',
       stress: 'Stressniveau *',

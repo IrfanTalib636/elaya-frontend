@@ -318,12 +318,15 @@ const toNumber = (value, fallback = 0) => {
 
 export const buildSessionPredictionPayload = (values = {}) => {
   const laserColorOverrides = {}
+  const platformColors = values?.tattoo_deltas?.color || {}
   for (const [laserId, map] of Object.entries(values?.laser_color_overrides || {})) {
     if (!map || typeof map !== 'object' || Array.isArray(map)) continue
     const colors = {}
     for (const [color, raw] of Object.entries(map)) {
       const n = Number(raw)
-      if (Number.isFinite(n)) colors[color] = n
+      if (!Number.isFinite(n)) continue
+      const fallback = Number(platformColors[color] ?? 0)
+      if (n !== fallback) colors[color] = n
     }
     if (Object.keys(colors).length) laserColorOverrides[laserId] = colors
   }

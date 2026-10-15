@@ -23,6 +23,7 @@ const NumberStepper = ({
   hint,
   hintTone = 'neutral',
   badge = null,
+  badgeTone = 'teal',
   active = false,
   className = '',
   id,
@@ -53,7 +54,15 @@ const NumberStepper = ({
             <span />
           )}
           {badge ? (
-            <span className="shrink-0 rounded-full border border-studio-teal/50 bg-studio-teal/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-studio-teal">
+            <span
+              className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${
+                badgeTone === 'muted'
+                  ? 'border-elaya-border bg-studio-bg-4 text-studio-w3'
+                  : badgeTone === 'gold'
+                    ? 'border-studio-gold/50 bg-studio-gold/15 text-studio-gold-2'
+                    : 'border-studio-teal/50 bg-studio-teal/15 text-studio-teal'
+              }`}
+            >
               {badge}
             </span>
           ) : null}

@@ -13,7 +13,7 @@ import useContent from '../../i18n/useContent'
 import useAuthStore from '../../store/authStore'
 import { ROLES } from '../../constants/roles'
 import LaserColorDeltasEditor from '../../components/lasers/LaserColorDeltasEditor'
-import { sameLaserColors } from '../../components/lasers/laserColors'
+import { laserColorOverrideCount, sameLaserColors } from '../../components/lasers/laserColors'
 
 const emptyForm = (colors = {}) => ({
   manufacturer: '',
@@ -33,7 +33,7 @@ const parseWavelengths = (raw) =>
     .filter((n) => Number.isFinite(n) && n > 0)
 
 export default function AdminLasers() {
-  const { adminPages } = useContent()
+  const { adminPages, t } = useContent()
   const copy = adminPages.lasers || {}
   const canEditColors = useAuthStore((s) => s.user?.role) === ROLES.SUPER_ADMIN
   const [loading, setLoading] = useState(true)
@@ -179,6 +179,7 @@ export default function AdminLasers() {
         <LaserColorDeltasEditor
           values={form.colors}
           liveValues={form.liveColors}
+          defaultValues={defaultColors}
           pending={form.colorsPending}
           disabled={!canEditColors}
           onChange={(colors) => setForm((f) => ({ ...f, colors }))}
@@ -246,6 +247,20 @@ export default function AdminLasers() {
               <p className="m-0 text-[11px] text-studio-w3">
                 {(d.wavelengths_nm || []).map((n) => `${n} nm`).join(' · ') ||
                   copy.noWavelengths}
+              </p>
+              <p className="m-0 text-[11px] text-studio-w3">
+                {(() => {
+                  const count = (d.color_override_keys_draft || d.color_override_keys || []).length
+                  const effectiveCount =
+                    count ||
+                    laserColorOverrideCount(d.color_deltas_draft || d.color_deltas, defaultColors)
+                  return effectiveCount
+                    ? t('adminPages.lasers.colorOverrideCount', {
+                        count: effectiveCount,
+                        defaultValue: `${effectiveCount} colour override(s)`,
+                      })
+                    : copy.colorAllInherited
+                })()}
               </p>
             </div>
             <div className="flex items-center gap-2">

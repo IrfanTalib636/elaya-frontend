@@ -257,18 +257,26 @@ const SessionPredictionForm = ({
           <CaseLaserMatrix
             disabled={disabled}
             overrides={values?.laser_color_overrides || null}
+            platformColors={values?.tattoo_deltas?.color || {}}
             onDeltaChange={(laserId, color, next) => {
-              const n = next === '' || next == null ? 0 : Number(next)
-              onChange({
-                ...values,
-                laser_color_overrides: {
-                  ...(values.laser_color_overrides || {}),
-                  [laserId]: {
-                    ...(values.laser_color_overrides?.[laserId] || {}),
-                    [color]: Number.isFinite(n) ? n : 0,
-                  },
-                },
-              })
+              const fallback = Number(values?.tattoo_deltas?.color?.[color] ?? 0)
+              const n = next === '' || next == null ? fallback : Number(next)
+              const value = Number.isFinite(n) ? n : fallback
+              const current = { ...(values.laser_color_overrides?.[laserId] || {}) }
+              if (value === fallback) delete current[color]
+              else current[color] = value
+              const nextOverrides = { ...(values.laser_color_overrides || {}) }
+              if (Object.keys(current).length) nextOverrides[laserId] = current
+              else delete nextOverrides[laserId]
+              onChange({ ...values, laser_color_overrides: nextOverrides })
+            }}
+            onInherit={(laserId, color) => {
+              const current = { ...(values.laser_color_overrides?.[laserId] || {}) }
+              delete current[color]
+              const nextOverrides = { ...(values.laser_color_overrides || {}) }
+              if (Object.keys(current).length) nextOverrides[laserId] = current
+              else delete nextOverrides[laserId]
+              onChange({ ...values, laser_color_overrides: nextOverrides })
             }}
           />
           {engineCase?.selectedLaser ? (

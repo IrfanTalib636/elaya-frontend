@@ -2995,7 +2995,7 @@ const de: TranslationSchema = {
       },
       "sectionHints": {
         "base": "Basis-Sitzungsanzahl, Min/Max-Bereich und die ± Spanne um die vorhergesagte Mitte.",
-        "colors": "Farb- und Farbanzahl-Deltas sowie das Laserprofil-Qualitätsdelta. Pro-Gerät-Farbmatrizen liegen im Laser-Katalog.",
+        "colors": "Standard-Farb-Deltas als Fallback, plus Farbanzahl und Laserprofil-Qualität. Ein Laser speichert nur Farben, die du im Laser-Katalog überschreibst.",
         "fitzpatrick": "Hauttyp-, Körperstelle-, Dichte-, Sättigung-, Schattierung-, Linienführung-, Cover-up-, Tattoo-Alter-, Vorbehandlung-, Tattoo-Art- und Ziel-Deltas.",
         "lifestyle": "Der 7-Faktoren-Lifestyle-Composite-Score, seine Score-zu-Multiplikator-Schwellen und die BMI-Mindestwerte, die den Composite-Score anheben.",
         "healing": "Healing- und Lightening-Rate-Deltas (sobald echte Sitzungen existieren) sowie Nachsorge-Bereitschaft (+ Max-Sitzungen)."
@@ -3983,7 +3983,7 @@ const de: TranslationSchema = {
     "engineMasterData": {
       "title": "Engine-Stammdaten",
       "subtitle": "Zentrale Standardwerte der Prognose-Engine: Basis & Bereich, Fitzpatrick & Haut, Körperstellen, Lifestyle & BMI, Healing & Response.",
-      "explainer": "Das sind dieselben Backend-Werte, die die Prognose-Engine verwendet — keine Kopie. Speichern aktualisiert den gemeinsamen DRAFT; die Prognose-Engine zeigt sofort die Auswirkung auf den aktuellen Case, und erst Veröffentlichen macht ihn LIVE. Laser-Farb-Deltas werden pro Laser im Laser-Katalog gepflegt, Basispreise unter Prognose-Engine → Preise.",
+      "explainer": "Das sind dieselben Backend-Werte, die die Prognose-Engine verwendet — keine Kopie. Speichern aktualisiert den gemeinsamen DRAFT; die Prognose-Engine zeigt sofort die Auswirkung auf den aktuellen Case, und erst Veröffentlichen macht ihn LIVE. Die Standard-Farb-Deltas unten sind Fallbacks. Überschreibungen pro Laser liegen im Laser-Katalog. Basispreise unter Prognose-Engine → Preise.",
       "draftPending": "Draft ausstehend — noch nicht live",
       "inSync": "Kein Draft — LIVE-Werte",
       "liveVersion": "LIVE-Version {{version}}",
@@ -3992,7 +3992,8 @@ const de: TranslationSchema = {
       "colDraft": "DRAFT",
       "colDelta": "Δ",
       "openInEngine": "In der Prognose-Engine testen & veröffentlichen",
-      "colorsNote": "Plattform-Farb-Deltas gelten für Laser ohne eigenen Wert. Farb-Deltas pro Laser werden gepflegt im",
+      "colorsNote": "Das sind die globalen Standard-Farb-Deltas (Fallbacks). ELAYA nutzt sie für jede Farbe, die ein Laser nicht selbst überschreibt. Überschreibungen pro Laser pflegst du im",
+      "colorsNoteExample": "Beispiel: Global Grün = +2. Hat PicoPlus Grün = +4, gilt +4. Hat ein anderer Laser kein eigenes Grün, gilt +2. Spätere Änderungen am Standard gelten weiter für alle Laser ohne eigene Überschreibung dieser Farbe.",
       "openLasers": "Laser-Katalog",
       "unsaved": "Ungespeicherte Änderungen",
       "publishHint": "Gespeicherte Drafts werden nach dem Veröffentlichen in der Prognose-Engine LIVE.",
@@ -4035,8 +4036,15 @@ const de: TranslationSchema = {
       "approved": "Freigegeben & zum Katalog hinzugefügt",
       "rejected": "Abgelehnt",
       "resolveFailed": "Entscheidung fehlgeschlagen",
-      "colorDeltasTitle": "Farb-Deltas (Prognose-Engine)",
-      "colorDeltasHint": "Zusätzliche Sitzungen pro Farbe mit diesem Laser. Dieselben Werte wie Prognose-Engine → Farben & Laser. Änderungen werden als DRAFT gespeichert und erst nach dem Veröffentlichen in der Prognose-Engine LIVE.",
+      "colorDeltasTitle": "Farb-Deltas für diesen Laser",
+      "colorDeltasHint": "Die vorausgefüllten Werte sind die Standard-Farb-Deltas aus den Engine-Stammdaten. Wenn du sie nicht änderst, bleiben sie geerbt: spätere Standard-Änderungen gelten weiter. Nur ein Wert, den du änderst, wird als Überschreibung für diesen Laser gespeichert. Überschreibungen sind DRAFT und werden LIVE, wenn du in der Prognose-Engine veröffentlichst.",
+      "colorInheritedBadge": "Geerbt",
+      "colorOverrideBadge": "Überschreibung",
+      "colorInheritedHint": "Geerbt von den Standard-Farb-Deltas",
+      "colorOverrideHint": "Überschreibung für diesen Laser",
+      "colorUseDefault": "Standard verwenden",
+      "colorAllInherited": "Alle Farben vom Standard geerbt",
+      "colorOverrideCount": "{{count}} Farb-Überschreibung(en)",
       "reviewInEngine": "Auswirkung prüfen & veröffentlichen",
       "colorDraftPending": "Für diese Farb-Deltas liegt ein Draft vor. LIVE nutzt weiterhin die veröffentlichten Werte, bis in der Prognose-Engine veröffentlicht wird.",
       "colorDeltasSuperAdminOnly": "Nur der Elaya Super-Admin kann Farb-Deltas ändern.",
@@ -4381,6 +4389,11 @@ const de: TranslationSchema = {
       "caseBmiLine": "BMI des aktuellen Case: {{bmi}}",
       "activeInCase": "Aktiv im aktuellen Case",
       "laserMatrixTitle": "Laser-Farb-Deltas",
+      "colorInheritedBadge": "Geerbt",
+      "colorOverrideBadge": "Überschreibung",
+      "colorInheritedHint": "Geerbt von den Standard-Farb-Deltas",
+      "colorOverrideHint": "Überschreibung für diesen Laser",
+      "colorUseDefault": "Standard verwenden",
       "caseBanner": "Aktueller Case aus dem Case Simulator: {{area}} cm² · {{laser}} · Fitzpatrick {{fitz}} · {{location}}",
       "baseSection": "Basis & Range",
       "lifestyleComposite": "Lifestyle-Composite",
@@ -4415,8 +4428,8 @@ const de: TranslationSchema = {
         "colors": {
           "title": "Was bedeuten die Farb-Deltas?",
           "lines": [
-            "Jede Farbe hat einen Delta-Wert pro Laser. Delta = zusätzliche Sitzungen wegen dieser Farbe.",
-            "Δ+0 = der Laser ist sehr gut für diese Farbe. Δ+1 = gut, leicht mehr Sitzungen. Δ+2 = schwächer, mehr Sitzungen. Δ+3 = der Laser kämpft mit dieser Farbe.",
+            "Standard-Farb-Deltas sind Plattform-Fallbacks. Ein Laser nutzt sie, solange diese Farbe für ihn nicht überschrieben wurde.",
+            "Jede Farbe hat einen Delta-Wert. Delta = zusätzliche Sitzungen wegen dieser Farbe. Δ+0 = der Laser ist sehr gut für diese Farbe. Δ+1 = gut, leicht mehr Sitzungen. Δ+2 = schwächer, mehr Sitzungen. Δ+3 = der Laser kämpft mit dieser Farbe.",
             "Bei mehreren Farben gilt: Color Impact = MAX(schwierigste Farbe, Farbanzahl-Delta). Nicht alle Deltas werden addiert."
           ]
         },
@@ -4467,7 +4480,7 @@ const de: TranslationSchema = {
       "tattooGroupTitles": {
         "fitzpatrick": "Fitzpatrick (Delta)",
         "location": "Körperstelle (Delta)",
-        "color": "Farben — schwierigste Farbe zählt (Delta)",
+        "color": "Standard-Farb-Deltas (Fallback)",
         "color_count": "Farbanzahl (Delta, falls höher als schwierigste Farbe)",
         "scarring": "Narben / Keloid-Risiko (Delta)",
         "density": "Dichte (Delta)",
@@ -4689,7 +4702,7 @@ const de: TranslationSchema = {
         "medium": "Mittel",
         "high": "Hoch"
       },
-      "colorLaserMatrixHint": "Jedes Lasergerät hat sein eigenes Farb-Delta-Profil im Laser-Katalog. Die untenstehenden Deltas sind der Plattform-Standard, wenn keine Pro-Gerät-Matrix greift.",
+      "colorLaserMatrixHint": "Die Tabelle unten zeigt die Standard-Farb-Deltas (Fallbacks). Jeder Laser erbt sie, bis eine Farbe für diesen Laser im Laser-Katalog überschrieben wird.",
       "colorLaserMatrixLink": "Laser & Farbmatrix verwalten",
       "bmiFloorsTitle": "BMI-Mindestwerte (Minimum-Score)",
       "bmiFloorsHint": "Ist der BMI gleich oder über der Schwelle, wird der Lifestyle-Composite-Score auf diesen Mindestwert angehoben — er kann den Score nur erhöhen, nie senken.",

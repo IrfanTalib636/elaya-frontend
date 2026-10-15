@@ -2993,7 +2993,7 @@ const en = {
       },
       "sectionHints": {
         "base": "Base session count, min/max range and the ± range around the predicted mid.",
-        "colors": "Colour and colour-count deltas, plus the laser-profile quality delta. Per-device colour matrices live in the Lasers catalog.",
+        "colors": "Default colour deltas used as fallbacks, plus colour-count and laser-profile quality. A laser only stores colours you override in the Laser catalog.",
         "fitzpatrick": "Skin type, body location, density, saturation, shading, line style, cover-up, tattoo age, prior treatment, tattoo type and removal goal deltas.",
         "lifestyle": "The 7-factor lifestyle composite, its score-to-multiplier thresholds, and the BMI floors that raise the composite score.",
         "healing": "Healing history and lightening-rate deltas (once real sessions exist), plus aftercare-commitment extra max sessions."
@@ -3981,7 +3981,7 @@ const en = {
     "engineMasterData": {
       "title": "Engine master data",
       "subtitle": "Central default values of the Prediction Engine: base & range, Fitzpatrick & skin, body locations, lifestyle & BMI, healing & response.",
-      "explainer": "These are the same backend values the Prediction Engine uses — not a copy. Saving here updates the shared DRAFT; the Prediction Engine immediately shows its impact on the current case, and only Publish makes it LIVE. Laser colour deltas are managed per laser in the Laser catalog, base prices under Prediction Engine → Pricing.",
+      "explainer": "These are the same backend values the Prediction Engine uses — not a copy. Saving here updates the shared DRAFT; the Prediction Engine immediately shows its impact on the current case, and only Publish makes it LIVE. Default colour deltas below are fallbacks. Per-laser overrides live in the Laser catalog. Base prices are under Prediction Engine → Pricing.",
       "draftPending": "Draft pending — not yet live",
       "inSync": "No draft — showing LIVE values",
       "liveVersion": "LIVE version {{version}}",
@@ -3990,7 +3990,8 @@ const en = {
       "colDraft": "DRAFT",
       "colDelta": "Δ",
       "openInEngine": "Test & publish in Prediction Engine",
-      "colorsNote": "Platform colour deltas apply to lasers without their own value. Per-laser colour deltas are managed in the",
+      "colorsNote": "These values are the global default colour deltas (fallbacks). ELAYA uses them for any colour a laser has not overridden. Per-laser overrides are managed in the",
+      "colorsNoteExample": "Example: global Green = +2. If PicoPlus has Green = +4, ELAYA uses +4. If another laser has no Green of its own, ELAYA uses +2. Later changes to a default still apply to every laser without an override for that colour.",
       "openLasers": "Laser catalog",
       "unsaved": "Unsaved changes",
       "publishHint": "Saved drafts go LIVE after Publish in the Prediction Engine.",
@@ -4033,8 +4034,15 @@ const en = {
       "approved": "Approved & added to catalog",
       "rejected": "Rejected",
       "resolveFailed": "Resolve failed",
-      "colorDeltasTitle": "Colour deltas (Prediction Engine)",
-      "colorDeltasHint": "Extra sessions per ink colour with this laser. Same values as Prediction Engine → Colours & Laser. Changes are saved as DRAFT and only become LIVE when published in the Prediction Engine.",
+      "colorDeltasTitle": "Colour deltas for this laser",
+      "colorDeltasHint": "Prefills show the Engine Master Data default colour deltas. Leave them unchanged and they stay inherited: later default edits still apply. Only a value you change is saved as an override for this laser. Overrides are stored as DRAFT and become LIVE when published in the Prediction Engine.",
+      "colorInheritedBadge": "Inherited",
+      "colorOverrideBadge": "Override",
+      "colorInheritedHint": "Inherited from default colour deltas",
+      "colorOverrideHint": "Override for this laser",
+      "colorUseDefault": "Use default",
+      "colorAllInherited": "All colours inherited from defaults",
+      "colorOverrideCount": "{{count}} colour override(s)",
       "reviewInEngine": "Review impact & publish",
       "colorDraftPending": "A draft for these colour deltas is pending. LIVE still uses the published values until it is published in the Prediction Engine.",
       "colorDeltasSuperAdminOnly": "Only Elaya super admin can change colour deltas.",
@@ -4379,6 +4387,11 @@ const en = {
       "caseBmiLine": "Current case BMI: {{bmi}}",
       "activeInCase": "Active in current case",
       "laserMatrixTitle": "Laser colour deltas",
+      "colorInheritedBadge": "Inherited",
+      "colorOverrideBadge": "Override",
+      "colorInheritedHint": "Inherited from default colour deltas",
+      "colorOverrideHint": "Override for this laser",
+      "colorUseDefault": "Use default",
       "caseBanner": "Current case from the Case Simulator: {{area}} cm² · {{laser}} · Fitzpatrick {{fitz}} · {{location}}",
       "baseSection": "Base & range",
       "lifestyleComposite": "Lifestyle composite",
@@ -4413,8 +4426,8 @@ const en = {
         "colors": {
           "title": "What do the colour deltas mean?",
           "lines": [
-            "Each colour has a delta per laser. Delta = extra sessions because of that colour.",
-            "Δ+0 = the laser is very good for this colour. Δ+1 = good, slightly more sessions. Δ+2 = weaker, more sessions. Δ+3 = the laser struggles with this colour.",
+            "Default colour deltas are platform fallbacks. A laser uses them unless that colour has been overridden for that laser.",
+            "Each colour has a delta. Delta = extra sessions because of that colour. Δ+0 = the laser is very good for this colour. Δ+1 = good, slightly more sessions. Δ+2 = weaker, more sessions. Δ+3 = the laser struggles with this colour.",
             "With several colours: Color Impact = MAX(hardest colour, colour-count delta). The deltas are not all added together."
           ]
         },
@@ -4465,7 +4478,7 @@ const en = {
       "tattooGroupTitles": {
         "fitzpatrick": "Fitzpatrick (delta)",
         "location": "Body location (delta)",
-        "color": "Colours — hardest colour counts (delta)",
+        "color": "Default colour deltas (fallback)",
         "color_count": "Colour count (delta, if higher than hardest colour)",
         "scarring": "Scars / keloid risk (delta)",
         "density": "Density (delta)",
@@ -4687,7 +4700,7 @@ const en = {
         "medium": "Medium",
         "high": "High"
       },
-      "colorLaserMatrixHint": "Each laser device has its own colour-delta profile in the Lasers catalog. The deltas below are the platform default used when no per-device matrix applies.",
+      "colorLaserMatrixHint": "The table below is the default colour deltas (fallbacks). Each laser inherits them until a colour is overridden for that laser in the Laser catalog.",
       "colorLaserMatrixLink": "Manage lasers & colour matrix",
       "bmiFloorsTitle": "BMI floors (minimum score)",
       "bmiFloorsHint": "If BMI is at or above the threshold, the lifestyle composite score is floored at this minimum — it can only raise the score, never lower it.",

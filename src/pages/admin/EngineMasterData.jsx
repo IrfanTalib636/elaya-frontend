@@ -151,12 +151,15 @@ export default function EngineMasterData() {
         </div>
 
         {active.id === 'colors' ? (
-          <p className="m-0 rounded-[10px] border border-elaya-border bg-studio-bg-4 px-3 py-2 text-[11px] text-studio-w2">
-            {copy.colorsNote}{' '}
-            <Link to="/admin/lasers" className="font-semibold text-studio-gold-2">
-              {copy.openLasers}
-            </Link>
-          </p>
+          <div className="rounded-[10px] border border-elaya-border bg-studio-bg-4 px-3 py-2 text-[11px] text-studio-w2 flex flex-col gap-1.5">
+            <p className="m-0">
+              {copy.colorsNote}{' '}
+              <Link to="/admin/lasers" className="font-semibold text-studio-gold-2">
+                {copy.openLasers}
+              </Link>
+            </p>
+            {copy.colorsNoteExample ? <p className="m-0">{copy.colorsNoteExample}</p> : null}
+          </div>
         ) : null}
 
         {active.groups.map((group) => (

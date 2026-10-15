@@ -46,9 +46,15 @@ const deltaHintFor = (value, t) => {
 /**
  * Per-laser colour matrix over session_prediction.laser_color_overrides — the same values the
  * Laser catalog edits. `overrides` is the engine form (draft, else live); `laser.color_deltas` is LIVE.
- * Only the Case Simulator's laser and its colours are editable.
+ * Missing override keys inherit `platformColors`. Only the Case Simulator's laser and its colours are editable.
  */
-const CaseLaserMatrix = ({ disabled = false, overrides = null, onDeltaChange = null }) => {
+const CaseLaserMatrix = ({
+  disabled = false,
+  overrides = null,
+  platformColors = {},
+  onDeltaChange = null,
+  onInherit = null,
+}) => {
   const engineCase = useEngineCaseOptional()
   const { components, t } = useContent()
   const copy = components.sessionPrediction
@@ -90,10 +96,19 @@ const CaseLaserMatrix = ({ disabled = false, overrides = null, onDeltaChange = n
               {COLORS.map((color) => {
                 const inCase = caseColors.includes(color)
                 const editable = activeLaser && inCase && !disabled
-                const liveValue = laser.color_deltas?.[color] ?? 0
-                const raw = drafts[color] ?? liveValue
+                const fallback = Number(platformColors?.[color] ?? 0)
+                const liveValue = Number(laser.color_deltas?.[color] ?? fallback)
+                const overridden = drafts[color] !== undefined && drafts[color] !== ''
+                const raw = overridden ? drafts[color] : fallback
                 const delta = deltaHintFor(raw, t)
-                const changed = Number(raw) !== Number(liveValue)
+                const changed = Number(raw) !== liveValue
+                const origin = overridden
+                  ? t('components.sessionPrediction.colorOverrideHint', {
+                      defaultValue: 'Override for this laser',
+                    })
+                  : t('components.sessionPrediction.colorInheritedHint', {
+                      defaultValue: 'Inherited from default colour deltas',
+                    })
                 const hint = changed
                   ? {
                       text: `${delta.text} · ${t('components.sessionPrediction.liveValue', {
@@ -102,20 +117,42 @@ const CaseLaserMatrix = ({ disabled = false, overrides = null, onDeltaChange = n
                       })}`,
                       tone: delta.tone,
                     }
-                  : delta
+                  : { text: `${delta.text} · ${origin}`, tone: delta.tone }
                 return (
-                  <NumberStepper
-                    key={color}
-                    id={`laser-${laser.id}-${color}`}
-                    label={copy.tattooFields?.color?.[color] || color}
-                    step="1"
-                    value={raw}
-                    disabled={!editable}
-                    active={editable}
-                    hint={hint.text}
-                    hintTone={hint.tone}
-                    onChange={(next) => onDeltaChange?.(laser.id, color, next)}
-                  />
+                  <div key={color} className="flex flex-col gap-1">
+                    <NumberStepper
+                      id={`laser-${laser.id}-${color}`}
+                      label={copy.tattooFields?.color?.[color] || color}
+                      step="1"
+                      value={raw}
+                      disabled={!editable}
+                      active={editable}
+                      badge={
+                        overridden
+                          ? t('components.sessionPrediction.colorOverrideBadge', {
+                              defaultValue: 'Override',
+                            })
+                          : t('components.sessionPrediction.colorInheritedBadge', {
+                              defaultValue: 'Inherited',
+                            })
+                      }
+                      badgeTone={overridden ? 'gold' : 'muted'}
+                      hint={hint.text}
+                      hintTone={hint.tone}
+                      onChange={(next) => onDeltaChange?.(laser.id, color, next)}
+                    />
+                    {overridden && editable ? (
+                      <button
+                        type="button"
+                        className="self-start border-0 bg-transparent p-0 text-[11px] font-semibold text-studio-gold-2 cursor-pointer hover:underline"
+                        onClick={() => onInherit?.(laser.id, color)}
+                      >
+                        {t('components.sessionPrediction.colorUseDefault', {
+                          defaultValue: 'Use default',
+                        })}
+                      </button>
+                    ) : null}
+                  </div>
                 )
               })}
             </div>

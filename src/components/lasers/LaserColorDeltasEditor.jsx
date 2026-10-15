@@ -2,13 +2,20 @@ import { Link } from 'react-router-dom'
 import { ArrowUpRight } from 'lucide-react'
 import NumberStepper from '../ui/NumberStepper'
 import useContent from '../../i18n/useContent'
-import { LASER_COLORS } from './laserColors'
+import { LASER_COLORS, isLaserColorOverride } from './laserColors'
 
 /**
- * Colour deltas of one laser = session_prediction.laser_color_overrides[laserId].
- * Edits are saved into the shared Prediction Engine DRAFT; LIVE changes only on publish.
+ * Colour deltas of one laser. Unchanged values stay inherited from Engine Master Data
+ * defaults. Only a colour the user changes is stored as an override for this laser.
  */
-export default function LaserColorDeltasEditor({ values, liveValues, pending = false, disabled = false, onChange }) {
+export default function LaserColorDeltasEditor({
+  values,
+  liveValues,
+  defaultValues = {},
+  pending = false,
+  disabled = false,
+  onChange,
+}) {
   const { adminPages, components, t } = useContent()
   const copy = adminPages.lasers || {}
   const colorLabels = components.sessionPrediction?.tattooFields?.color || {}
@@ -37,25 +44,45 @@ export default function LaserColorDeltasEditor({ values, liveValues, pending = f
 
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {LASER_COLORS.map((color) => {
-          const live = Number(liveValues?.[color] ?? 0)
+          const fallback = Number(defaultValues?.[color] ?? 0)
+          const live = Number(liveValues?.[color] ?? fallback)
           const value = values?.[color] ?? live
           const changed = Number(value) !== live
+          const overridden = isLaserColorOverride(value, fallback)
           return (
-            <NumberStepper
-              key={color}
-              id={`laser-color-${color}`}
-              label={colorLabels[color] || color}
-              step="1"
-              value={value}
-              disabled={disabled}
-              active={changed}
-              hint={changed ? t('adminPages.lasers.liveValue', { value: live, defaultValue: `LIVE: ${live}` }) : undefined}
-              hintTone={changed ? 'up' : 'neutral'}
-              onChange={(next) => {
-                const n = next === '' || next == null ? 0 : Number(next)
-                onChange?.({ ...values, [color]: Number.isFinite(n) ? n : 0 })
-              }}
-            />
+            <div key={color} className="flex flex-col gap-1">
+              <NumberStepper
+                id={`laser-color-${color}`}
+                label={colorLabels[color] || color}
+                step="1"
+                value={value}
+                disabled={disabled}
+                active={changed || overridden}
+                badge={overridden ? copy.colorOverrideBadge : copy.colorInheritedBadge}
+                badgeTone={overridden ? 'gold' : 'muted'}
+                hint={
+                  changed
+                    ? t('adminPages.lasers.liveValue', { value: live, defaultValue: `LIVE: ${live}` })
+                    : overridden
+                      ? copy.colorOverrideHint
+                      : copy.colorInheritedHint
+                }
+                hintTone={changed ? 'up' : 'neutral'}
+                onChange={(next) => {
+                  const n = next === '' || next == null ? fallback : Number(next)
+                  onChange?.({ ...values, [color]: Number.isFinite(n) ? n : fallback })
+                }}
+              />
+              {overridden && !disabled ? (
+                <button
+                  type="button"
+                  className="self-start border-0 bg-transparent p-0 text-[11px] font-semibold text-studio-gold-2 cursor-pointer hover:underline"
+                  onClick={() => onChange?.({ ...values, [color]: fallback })}
+                >
+                  {copy.colorUseDefault}
+                </button>
+              ) : null}
+            </div>
           )
         })}
       </div>

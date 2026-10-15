@@ -3008,7 +3008,7 @@ const en = {
           "draftText": "Draft view is editable. Changes go live only when you press Publish.",
           "controls": "The live version is the published set. Reset draft throws away unpublished edits and returns to those live values. Publish is what switches the draft on.",
           "split": "Price rules and session-prediction rules each have their own draft. Publishing one does not publish the other. You edit them in Pricing, Base & range, Colours & laser, Fitzpatrick & skin, Lifestyle, and Healing & response. Versions & audit shows both.",
-          "impact": "The Impact preview on the right runs the same sample case twice: once with the published Live values and once with the pending Draft. Until you publish, both columns match."
+          "impact": "The Impact preview on the right runs the same sample case twice: once with the published Live values and once with the pending Draft. Live and Draft are identical only while there are no Draft changes. As soon as a value is changed, Live stays as published and Draft shows the new calculated result."
         },
         "delta": {
           "title": "What is a delta and how much is it worth?",
@@ -3052,7 +3052,7 @@ const en = {
           ],
           "priceColors": "Colours do NOT affect the price. They only affect the session count.",
           "sessionsTitle": "Session count",
-          "sessionsText": "Base (8) + all deltas = raw value. Raw value × lifestyle multiplier = centre. Range: centre − 1 to centre + 1.",
+          "sessionsText": "Base + all deltas = raw value. Raw value × lifestyle multiplier = centre. Range uses the configured Range − / Range + around that centre.",
           "whatTitle": "What are deltas?",
           "whatIntro": "Each factor adds or subtracts sessions:",
           "whatLines": [
@@ -3104,8 +3104,20 @@ const en = {
           ],
           "bmiNote": "A BMI of 30 or above raises the composite score to a configurable minimum (30+ at least 4, 35+ at least 5). It can only raise the score, never lower it."
         },
-        "aiTitle": "Link to the AI Training Center",
-        "aiText": "These engine values feed into the ELAYA AI Training Center. Changes are versioned and used for AI calibration."
+        "aiTitle": "Link to ELAYA Chat and the AI Training Center",
+        "aiText": "ELAYA Chat and the AI Training Center always read the published Live Engine. Draft changes do not reach the AI until you Publish. Automatic model retraining is not yet active."
+      },
+      "howEditor": {
+        "editWording": "Edit wording",
+        "closeEditor": "Close editor",
+        "saveDraft": "Save draft",
+        "saved": "Explanation draft saved",
+        "saveFailed": "Could not save explanation",
+        "loadError": "Could not load explanation",
+        "draftNote": "How ELAYA works wording",
+        "factsTitle": "Current Engine rule (always from the numbers, not from this text)",
+        "factsLine": "Base {{base}} · range −{{minus}} / +{{plus}} · clamp {{min}}–{{max}} · price MAX({{minPrice}} CHF, area × {{price}} CHF) rounded up to CHF {{round}} · colours: {{colors}}",
+        "placeholderHint": "Placeholders such as {{base_sessions}} and {{range_minus}} are filled from the Engine. Do not type the range as a fixed −1/+1."
       },
       "versionsHint": "Pricing and session prediction publish independently today — publishing one domain's draft does not affect the other's pending draft.",
       "impact": {
@@ -3497,6 +3509,9 @@ const en = {
       "loadError": "Failed to load AI config",
       "saved": "AI config saved",
       "saveFailed": "Save failed",
+      "engineTitle": "Published Engine (source of truth for Chat)",
+      "engineHint": "ELAYA Chat always reads the published Live Engine — deltas, range, price rules and this explanation. Automatic model training is not yet active; values are versioned for future calibration.",
+      "openEngine": "Open Prediction Engine",
       "prompts": {
         "nachsorge": "Aftercare (photo check)",
         "verblassung": "Fading analysis",
@@ -4246,7 +4261,7 @@ const en = {
       "platformDefault": "Platform default",
       "priceHowTitle": "How is the price calculated?",
       "priceHowLines": [
-        "Price = tattoo area × base price per cm². The minimum price always applies. The result is rounded up to CHF 5.",
+        "Price = tattoo area × base price per cm². The minimum price always applies. The result is rounded up to the configured CHF step.",
         "Example: 40 cm² × CHF 3.00 = CHF 120. Minimum price CHF 90 → CHF 120 applies.",
         "Important: colours do not change the price. Colours only change the session count.",
         "A studio can set its own base price per cm² under Studio settings → Prices."
@@ -4259,12 +4274,14 @@ const en = {
         "skin": "Skin type (Fitzpatrick)",
         "location": "Body area",
         "layering": "Layering / cover-up",
-        "goal": "Treatment goal"
+        "goal": "Treatment goal",
+        "rounding": "Rounding"
       },
       "fields": {
         "basePricePerCm2": "Base price / cm² (CHF)",
         "minPrice": "Minimum price / session (CHF)",
         "pmuPrice": "PMU price (CHF)",
+        "price_round_to": "Round session price up to (CHF)",
         "color_black": "Black",
         "color_mixed": "Mixed",
         "color_multi": "Multicolour",
@@ -4348,9 +4365,12 @@ const en = {
       "lifestyleScoreLine": "Score {{score}} · ×{{mult}}",
       "midConfidence": "Mid / confidence",
       "activeFactors": "Active tattoo factors",
-      "noDeltas": "No tattoo deltas ≠ 0 — simple forecast (±1 session around the mid).",
+      "noDeltas": "No tattoo deltas ≠ 0 — simple forecast (Range − / Range + around the mid).",
       "loadPreview": "Load preview",
-      "formulaHint": "Formula: (base + tattoo deltas) × lifestyle multiplier → session mid, then min/max range. Lifestyle score 1 = ×0.85 (optimal), score 5 = ×1.50 (strongly impaired). Customers do not see these parameters.",
+      "formulaHint": "Formula: (base + tattoo deltas) × lifestyle multiplier → rounded centre, clamped to min/max, then Range − / Range + around that centre. Colour impact uses the aggregation rule below. Customers do not see these parameters.",
+      "colorAggregation": "Colour aggregation",
+      "colorAggregationMax": "MAX (hardest colour or colour count)",
+      "colorAggregationSum": "SUM (hardest colour + colour count)",
       "deltaNone": "No impact on sessions",
       "deltaMore": "+{{count}} session(s) with normal lifestyle",
       "deltaLess": "−{{count}} session(s) with normal lifestyle",

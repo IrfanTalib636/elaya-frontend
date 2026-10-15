@@ -3010,7 +3010,7 @@ const de: TranslationSchema = {
           "draftText": "Draft-Ansicht ist editierbar. Änderungen werden erst mit „Veröffentlichen“ live geschaltet.",
           "controls": "Die Live-Version ist der veröffentlichte Stand. Draft zurücksetzen verwirft unveröffentlichte Änderungen und stellt die Live-Werte wieder her. Veröffentlichen schaltet den Draft frei.",
           "split": "Preisregeln und Sitzungsprognose haben je einen eigenen Draft. Das Veröffentlichen des einen veröffentlicht den anderen nicht. Bearbeiten kannst du sie unter Preise, Basis & Bereich, Farben & Laser, Fitzpatrick & Haut, Lifestyle und Healing & Response. Versionen & Audit zeigt beide.",
-          "impact": "Die Impact-Vorschau rechts rechnet denselben Beispiel-Case zweimal: einmal mit den veröffentlichten Live-Werten und einmal mit dem ausstehenden Draft. Solange du nicht veröffentlicht hast, stimmen beide Spalten überein."
+          "impact": "Die Impact-Vorschau rechts rechnet denselben Beispiel-Case zweimal: einmal mit den veröffentlichten Live-Werten und einmal mit dem ausstehenden Draft. Live und Draft sind nur identisch, solange es keine Draft-Änderungen gibt. Sobald ein Wert geändert wird, bleibt Live unverändert und Draft zeigt das neu berechnete Ergebnis."
         },
         "delta": {
           "title": "Was ist ein Delta und wieviel ist es wert?",
@@ -3054,7 +3054,7 @@ const de: TranslationSchema = {
           ],
           "priceColors": "Farben beeinflussen den Preis NICHT. Sie beeinflussen nur die Sitzungsanzahl.",
           "sessionsTitle": "Sitzungsanzahl",
-          "sessionsText": "Basis (8) + alle Deltas = Rohwert. Rohwert × Lifestyle-Multiplikator = Mitte. Range: Mitte − 1 bis Mitte + 1.",
+          "sessionsText": "Basis + alle Deltas = Rohwert. Rohwert × Lifestyle-Multiplikator = Mitte. Die Range nutzt die konfigurierten Werte Range − / Range + um diese Mitte.",
           "whatTitle": "Was sind Deltas?",
           "whatIntro": "Jeder Faktor addiert oder subtrahiert Sitzungen:",
           "whatLines": [
@@ -3106,8 +3106,20 @@ const de: TranslationSchema = {
           ],
           "bmiNote": "Ein BMI ab 30 hebt den Composite Score auf einen konfigurierbaren Mindestwert (ab 30 mindestens 4, ab 35 mindestens 5). Er kann den Score nur anheben, nie senken."
         },
-        "aiTitle": "Verbindung zum AI Training Center",
-        "aiText": "Diese Engine-Werte fliessen in das ELAYA AI Training Center ein. Änderungen werden versioniert und für die KI-Kalibrierung verwendet."
+        "aiTitle": "Verbindung zu ELAYA Chat und AI Training Center",
+        "aiText": "ELAYA Chat und das AI Training Center lesen immer die veröffentlichte Live-Engine. Draft-Änderungen erreichen die KI erst nach dem Veröffentlichen. Automatisches Modell-Training ist noch nicht aktiv."
+      },
+      "howEditor": {
+        "editWording": "Formulierung bearbeiten",
+        "closeEditor": "Editor schliessen",
+        "saveDraft": "Draft speichern",
+        "saved": "Erklärungs-Draft gespeichert",
+        "saveFailed": "Erklärung konnte nicht gespeichert werden",
+        "loadError": "Erklärung konnte nicht geladen werden",
+        "draftNote": "Wie funktioniert ELAYA — Formulierung",
+        "factsTitle": "Aktuelle Engine-Regel (immer aus den Zahlen, nicht aus diesem Text)",
+        "factsLine": "Basis {{base}} · Range −{{minus}} / +{{plus}} · begrenzt {{min}}–{{max}} · Preis MAX({{minPrice}} CHF, Fläche × {{price}} CHF) aufgerundet auf CHF {{round}} · Farben: {{colors}}",
+        "placeholderHint": "Platzhalter wie {{base_sessions}} und {{range_minus}} werden aus der Engine gefüllt. Tippe die Range nicht als festes −1/+1."
       },
       "versionsHint": "Preise und Sitzungsprognose werden heute unabhängig veröffentlicht — das Veröffentlichen eines Bereichs beeinflusst den ausstehenden Draft des anderen nicht.",
       "impact": {
@@ -3499,6 +3511,9 @@ const de: TranslationSchema = {
       "loadError": "AI-Konfiguration konnte nicht geladen werden",
       "saved": "AI-Konfiguration gespeichert",
       "saveFailed": "Speichern fehlgeschlagen",
+      "engineTitle": "Veröffentlichte Engine (Quelle der Wahrheit für Chat)",
+      "engineHint": "ELAYA Chat liest immer die veröffentlichte Live-Engine — Deltas, Range, Preisregeln und diese Erklärung. Automatisches Modell-Training ist noch nicht aktiv; die Werte sind versioniert für spätere Kalibrierung.",
+      "openEngine": "Prognose-Engine öffnen",
       "prompts": {
         "nachsorge": "Nachsorge (Foto-Check)",
         "verblassung": "Verblassungsanalyse",
@@ -4248,7 +4263,7 @@ const de: TranslationSchema = {
       "platformDefault": "Plattform-Standard",
       "priceHowTitle": "Wie wird der Preis berechnet?",
       "priceHowLines": [
-        "Preis = Tattoo-Fläche × Basispreis pro cm². Der Mindestpreis gilt immer. Das Ergebnis wird auf CHF 5 aufgerundet.",
+        "Preis = Tattoo-Fläche × Basispreis pro cm². Der Mindestpreis gilt immer. Das Ergebnis wird auf den konfigurierten CHF-Schritt aufgerundet.",
         "Beispiel: 40 cm² × CHF 3.00 = CHF 120. Mindestpreis CHF 90 → CHF 120 gilt.",
         "Wichtig: Farben ändern den Preis nicht. Farben beeinflussen nur die Sitzungsanzahl.",
         "Das Studio kann seinen eigenen Basispreis pro cm² in den Studio-Einstellungen unter Preise setzen."
@@ -4261,12 +4276,14 @@ const de: TranslationSchema = {
         "skin": "Hauttyp (Fitzpatrick)",
         "location": "Körperstelle",
         "layering": "Layering / Cover-up",
+        "rounding": "Rundung",
         "goal": "Behandlungsziel"
       },
       "fields": {
         "basePricePerCm2": "Basispreis / cm² (CHF)",
         "minPrice": "Mindestpreis / Sitzung (CHF)",
         "pmuPrice": "PMU-Preis (CHF)",
+        "price_round_to": "Sitzungspreis aufrunden auf (CHF)",
         "color_black": "Schwarz",
         "color_mixed": "Gemischt",
         "color_multi": "Mehrfarbig",
@@ -4350,9 +4367,12 @@ const de: TranslationSchema = {
       "lifestyleScoreLine": "Score {{score}} · ×{{mult}}",
       "midConfidence": "Mitte / Konfidenz",
       "activeFactors": "Wirksame Tattoo-Faktoren",
-      "noDeltas": "Keine Tattoo-Deltas ≠ 0 — einfache Prognose (±1 Sitzung um die Mitte).",
+      "noDeltas": "Keine Tattoo-Deltas ≠ 0 — einfache Prognose (Range − / Range + um die Mitte).",
       "loadPreview": "Vorschau laden",
-      "formulaHint": "Formel: (Basis + Tattoo-Deltas) × Lifestyle-Multiplikator → Sitzungsmitte, danach Min/Max-Range. Lifestyle-Score 1 = ×0.85 (optimal), Score 5 = ×1.50 (stark beeinträchtigt). Kunden sehen diese Parameter nicht.",
+      "formulaHint": "Formel: (Basis + Tattoo-Deltas) × Lifestyle-Multiplikator → gerundete Mitte, begrenzt auf Min/Max, danach Range − / Range + um diese Mitte. Color Impact nutzt die Aggregationsregel unten. Kunden sehen diese Parameter nicht.",
+      "colorAggregation": "Farb-Aggregation",
+      "colorAggregationMax": "MAX (schwierigste Farbe oder Farbanzahl)",
+      "colorAggregationSum": "SUMME (schwierigste Farbe + Farbanzahl)",
       "deltaNone": "Kein Einfluss auf Sitzungen",
       "deltaMore": "+{{count}} Sitzung(en) bei normalem Lifestyle",
       "deltaLess": "{{count}} Sitzung(en) weniger bei normalem Lifestyle",

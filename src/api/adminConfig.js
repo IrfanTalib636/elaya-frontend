@@ -19,6 +19,9 @@ export const rollbackConfigVersion = (domain, version, { reason }) =>
 export const previewSessionPrediction = (data) =>
   api.post('/config/session-prediction/preview', data)
 
+export const getEngineHowItWorks = (lang) =>
+  api.get('/config/engine/how-it-works', { params: lang ? { lang } : {} })
+
 export const getFeatureCatalog = () => api.get('/config/features/catalog')
 export const getEffectiveFeatures = (params) =>
   api.get('/config/features/effective', { params })

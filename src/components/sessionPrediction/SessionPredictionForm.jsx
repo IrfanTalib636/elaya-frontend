@@ -190,7 +190,11 @@ const SessionPredictionForm = ({
       {show('base') ? (
         <>
           <p className="text-[11px] m-0 border border-elaya-border rounded-[10px] px-3 py-2 bg-studio-bg-4 text-studio-w3">
-            {copy.formulaHint}
+            {t('components.sessionPrediction.formulaHint', {
+              minus: values?.range_minus ?? 1,
+              plus: values?.range_plus ?? 1,
+              defaultValue: copy.formulaHint,
+            })}
           </p>
 
           <div>
@@ -209,6 +213,20 @@ const SessionPredictionForm = ({
                 />
               ))}
             </FieldGrid>
+            <div className="mt-3 max-w-[280px]">
+              <label className="block text-studio-w2 text-[12px] mb-1.5">
+                {copy.colorAggregation || 'Colour aggregation'}
+              </label>
+              <select
+                className="w-full rounded-[10px] border border-elaya-border bg-studio-bg-4 text-studio-white text-[13px] px-3 py-2 outline-none"
+                value={values?.color_aggregation === 'sum' ? 'sum' : 'max'}
+                onChange={(e) => setBase('color_aggregation', e.target.value)}
+                disabled={disabled}
+              >
+                <option value="max">{copy.colorAggregationMax || 'MAX (hardest colour or colour count)'}</option>
+                <option value="sum">{copy.colorAggregationSum || 'SUM (hardest colour + colour count)'}</option>
+              </select>
+            </div>
           </div>
         </>
       ) : null}

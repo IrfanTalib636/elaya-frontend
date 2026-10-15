@@ -329,6 +329,8 @@ export const buildSessionPredictionPayload = (values = {}) => {
   }
 
   return {
+  treatment_key: values.treatment_key || 'tattoo',
+  color_aggregation: values.color_aggregation === 'sum' ? 'sum' : 'max',
   base_sessions: toNumber(values.base_sessions, 8),
   min_sessions: toNumber(values.min_sessions, 3),
   max_sessions: toNumber(values.max_sessions, 20),
@@ -363,6 +365,10 @@ export const buildSessionPredictionPayload = (values = {}) => {
   ),
   lifestyle_bmi_floors: (values.lifestyle_bmi_floors || DEFAULT_BMI_FLOORS).map((row) => ({
     min_bmi: toNumber(row.min_bmi, 30),
+    min_score: toNumber(row.min_score, 4),
+  })),
+  lifestyle_smoker_cigs: (values.lifestyle_smoker_cigs || []).map((row) => ({
+    min_cigs: toNumber(row.min_cigs, 0),
     min_score: toNumber(row.min_score, 4),
   })),
   ...(Object.keys(laserColorOverrides).length

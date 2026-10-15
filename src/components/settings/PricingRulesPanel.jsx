@@ -19,6 +19,7 @@ export default function PricingRulesPanel({
   savePricing,
   saveLabel,
   onPreviewValues = null,
+  includeEngineRules = false,
 }) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
@@ -34,12 +35,12 @@ export default function PricingRulesPanel({
       ...(data.pricing_defaults || {}),
       ...(data.pricing || {}),
     }
-    const filled = pricingValuesFromConfig(merged)
+    const filled = pricingValuesFromConfig(merged, { includeEngineRules })
     setPricing(filled)
     setSavedPricing(filled)
     setDefaults(data.pricing_defaults || merged)
     setCoinWert(data.coin_wert ?? null)
-  }, [])
+  }, [includeEngineRules])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -130,6 +131,7 @@ export default function PricingRulesPanel({
       <PricingConfigForm
         values={pricing}
         disabled={!editing}
+        includeEngineRules={includeEngineRules}
         onChange={(key, value) => setPricing((prev) => ({ ...prev, [key]: value }))}
       />
 

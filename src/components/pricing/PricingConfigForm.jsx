@@ -1,4 +1,4 @@
-import { PRICING_GROUPS } from './pricingFields'
+import { ENGINE_PRICING_GROUPS, PRICING_GROUPS } from './pricingFields'
 import NumberStepper from '../ui/NumberStepper'
 import EngineDisclosure from '../engine/EngineDisclosure'
 import useContent from '../../i18n/useContent'
@@ -7,9 +7,11 @@ const PricingConfigForm = ({
   values,
   onChange,
   disabled = false,
+  includeEngineRules = false,
 }) => {
   const { components } = useContent()
   const copy = components.pricing
+  const groups = includeEngineRules ? [...PRICING_GROUPS, ...ENGINE_PRICING_GROUPS] : PRICING_GROUPS
 
   return (
     <div className="@container flex flex-col gap-5 min-w-0">
@@ -17,7 +19,7 @@ const PricingConfigForm = ({
         {copy.intro}
       </p>
 
-      {PRICING_GROUPS.map((group, i) => {
+      {groups.map((group, i) => {
         const title = copy.groups[group.id] || group.title
         return (
           <div key={group.id || group.title}>

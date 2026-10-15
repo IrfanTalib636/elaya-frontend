@@ -1,3 +1,5 @@
+import { LIFE_NUTRITION } from '../../constants/intakeEnums'
+
 export const SESSION_BASE_FIELDS = [
   { key: 'base_sessions', step: '1', hintKey: 'base_sessions' },
   { key: 'min_sessions', step: '1' },
@@ -270,13 +272,7 @@ export const LIFESTYLE_SCORE_GROUPS = [
   },
   {
     key: 'nutrition',
-    fields: [
-      { key: 'very_good' },
-      { key: 'good' },
-      { key: 'fair' },
-      { key: 'poor' },
-      { key: 'very_poor' },
-    ],
+    fields: LIFE_NUTRITION.map((key) => ({ key })),
   },
 ]
 

@@ -1,3 +1,5 @@
+import { canonicalizeNutrition } from '../../constants/intakeEnums'
+
 /** Shared Case Simulator case. Super Admin previews this case; it does not change engine rules. */
 
 const BLACK_FAMILY = ['black', 'grey']
@@ -158,7 +160,7 @@ export const buildEngineCaseInput = (form, laser) => {
     life_activity: form.life_activity,
     life_sport_freq: form.life_sport_freq,
     life_hydration: form.life_hydration,
-    life_nutrition: form.life_nutrition,
+    life_nutrition: canonicalizeNutrition(form.life_nutrition),
   }
 }
 
@@ -171,7 +173,9 @@ export const readStoredEngineCase = () => {
     if (!raw) return null
     const parsed = JSON.parse(raw)
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
-    return { ...defaultEngineCase(), ...parsed }
+    const merged = { ...defaultEngineCase(), ...parsed }
+    merged.life_nutrition = canonicalizeNutrition(merged.life_nutrition)
+    return merged
   } catch {
     return null
   }

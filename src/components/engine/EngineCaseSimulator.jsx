@@ -13,6 +13,7 @@ import NumberStepper from '../ui/NumberStepper'
 import useContent from '../../i18n/useContent'
 import { useEngineCaseOptional } from './EngineCaseContext'
 import { buildEngineCaseInput, defaultEngineCase } from './engineCaseModel'
+import { LIFE_NUTRITION } from '../../constants/intakeEnums'
 
 const COLORS = [
   'black',
@@ -61,7 +62,6 @@ const STRESS = ['low', 'medium', 'high', 'very_high']
 const ACTIVITY = ['high', 'regular', 'light', 'low']
 const SPORT = ['5+', '3-4', '1-2', '0']
 const HYDRATION = ['good', 'normal', 'low']
-const NUTRITION = ['very_good', 'good', 'fair', 'poor', 'very_poor']
 
 const fieldClass =
   'w-full rounded-[10px] border border-elaya-border bg-studio-bg-4 text-studio-white text-[13px] px-3 py-2 outline-none focus:border-studio-gold/50'
@@ -680,7 +680,7 @@ const EngineCaseSimulator = ({
               label={copy.nutrition || 'Nutrition'}
               value={form.life_nutrition}
               onChange={(v) => set('life_nutrition', v)}
-              options={NUTRITION}
+              options={LIFE_NUTRITION}
               optionLabel={nutritionLabel}
             />
             <SelectField

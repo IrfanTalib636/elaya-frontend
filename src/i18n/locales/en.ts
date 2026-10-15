@@ -1000,7 +1000,7 @@ const en = {
       ],
       [
         "fair",
-        "Fair"
+        "Medium"
       ],
       [
         "good",
@@ -3315,11 +3315,9 @@ const en = {
       },
       "hydrationOpts": { "good": "Good", "normal": "Normal", "low": "Low" },
       "nutritionOpts": {
-        "very_good": "Very good",
-        "good": "Good",
-        "fair": "Fair",
         "poor": "Poor",
-        "very_poor": "Very poor"
+        "fair": "Medium",
+        "good": "Good"
       },
       "aftercareOpts": { "high": "High", "medium": "Medium", "low": "Low" },
       "healingOpts": {
@@ -4659,11 +4657,9 @@ const en = {
           "low": "Low"
         },
         "nutrition": {
-          "very_good": "Very good",
-          "good": "Good",
-          "fair": "Fair",
           "poor": "Poor",
-          "very_poor": "Very poor"
+          "fair": "Medium",
+          "good": "Good"
         }
       },
       "aftercareFields": {

@@ -998,11 +998,11 @@ const de: TranslationSchema = {
     "lifeNutrition": [
       [
         "poor",
-        "Unausgewogen"
+        "Schlecht"
       ],
       [
         "fair",
-        "Mässig"
+        "Mittel"
       ],
       [
         "good",
@@ -3317,11 +3317,9 @@ const de: TranslationSchema = {
       },
       "hydrationOpts": { "good": "Gut", "normal": "Normal", "low": "Niedrig" },
       "nutritionOpts": {
-        "very_good": "Sehr gut",
-        "good": "Gut",
-        "fair": "Mittel",
         "poor": "Schlecht",
-        "very_poor": "Sehr schlecht"
+        "fair": "Mittel",
+        "good": "Gut"
       },
       "aftercareOpts": { "high": "Hoch", "medium": "Mittel", "low": "Niedrig" },
       "healingOpts": {
@@ -4661,11 +4659,9 @@ const de: TranslationSchema = {
           "low": "Niedrig"
         },
         "nutrition": {
-          "very_good": "Sehr gut",
-          "good": "Gut",
-          "fair": "Mittel",
           "poor": "Schlecht",
-          "very_poor": "Sehr schlecht"
+          "fair": "Mittel",
+          "good": "Gut"
         }
       },
       "aftercareFields": {

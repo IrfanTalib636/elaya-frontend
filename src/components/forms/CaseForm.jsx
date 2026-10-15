@@ -10,6 +10,7 @@ import {
   labelFor,
   bodyLocationLabel,
 } from '../../constants/caseIntake'
+import { canonicalizeNutrition, LIFE_NUTRITION as LIFE_NUTRITION_VALUES } from '../../constants/intakeEnums'
 import { buildPmuBodyLabel } from '../../constants/pmuIntake'
 
 // ── Shared UI bits ────────────────────────────────────────────────────────
@@ -197,7 +198,8 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
   const LIFE_SLEEP_QUALITY = caseForm.lifeSleepQuality
   const LIFE_STRESS = caseForm.lifeStress
   const LIFE_HYDRATION = caseForm.lifeHydration
-  const LIFE_NUTRITION = caseForm.lifeNutrition
+  const nutritionLabels = Object.fromEntries(caseForm.lifeNutrition || [])
+  const LIFE_NUTRITION = LIFE_NUTRITION_VALUES.map((value) => [value, nutritionLabels[value] || value])
   const GOAL_TARGETS = caseForm.goalTargets
   const ZONE_DICHTE = caseForm.zoneDichte
   const PHOTO_STD_CHECKLIST = caseForm.photoChecklist
@@ -253,7 +255,9 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
           if (value == null || value === '') continue
           // Never overwrite something already entered in this form.
           if (current[key] !== '' && current[key] != null) continue
-          patch[key] = String(value)
+          const nextValue =
+            key === 'life_nutrition' ? canonicalizeNutrition(String(value)) : String(value)
+          patch[key] = nextValue
           applied[key] = true
         }
 

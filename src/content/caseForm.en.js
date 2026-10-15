@@ -157,7 +157,7 @@ export const caseForm = {
 
   lifeHydration: [['low', 'Low'], ['normal', 'Normal'], ['good', 'Good']],
 
-  lifeNutrition: [['poor', 'Poor'], ['fair', 'Fair'], ['good', 'Good']],
+  lifeNutrition: [['poor', 'Poor'], ['fair', 'Medium'], ['good', 'Good']],
 
   lifeSportFreq: [
     ['0', 'None'], ['1-2', '1–2×/week'], ['3-4', '3–4×/week'], ['5+', '5+×/week'],

@@ -18,8 +18,8 @@ export default function PricingRulesPanel({
   loadPricing,
   savePricing,
   saveLabel,
-  coinWertLabel = null,
   onPreviewValues = null,
+  includeEngineRules = false,
 }) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
@@ -35,12 +35,12 @@ export default function PricingRulesPanel({
       ...(data.pricing_defaults || {}),
       ...(data.pricing || {}),
     }
-    const filled = pricingValuesFromConfig(merged)
+    const filled = pricingValuesFromConfig(merged, { includeEngineRules })
     setPricing(filled)
     setSavedPricing(filled)
     setDefaults(data.pricing_defaults || merged)
     setCoinWert(data.coin_wert ?? null)
-  }, [])
+  }, [includeEngineRules])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -128,18 +128,10 @@ export default function PricingRulesPanel({
         </p>
       ) : null}
 
-      {coinWertLabel != null && coinWert != null ? (
-        <p className="text-studio-w2 text-[12px] m-0">
-          {coinWertLabel}:{' '}
-          <span className="text-studio-white font-medium">
-            {t('settingsPage.pricing.priceWithCurrency', { value: coinWert })}
-          </span>
-        </p>
-      ) : null}
-
       <PricingConfigForm
         values={pricing}
         disabled={!editing}
+        includeEngineRules={includeEngineRules}
         onChange={(key, value) => setPricing((prev) => ({ ...prev, [key]: value }))}
       />
 

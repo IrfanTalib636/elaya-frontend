@@ -11,6 +11,7 @@ export const TC_COVERUP = caseForm.tcCoverup
 export const QUALITY_LEVEL = caseForm.qualityLevel
 export const SHADING_LEVEL = caseForm.shadingLevel
 export const LINEWORK_LEVEL = caseForm.lineworkLevel
+export const DEPTH_LEVEL = caseForm.depthLevel
 export const INK_COLORS = caseForm.inkColors
 export const FITZPATRICK = caseForm.fitzpatrick
 export const RISK_LEVEL = caseForm.riskLevel
@@ -46,6 +47,7 @@ export const INITIAL_CASE_FORM = {
   tc_saturation: '',
   tc_shading: '',
   tc_linework: '',
+  tc_depth: '',
   tc_size_length: '',
   tc_size_width: '',
   skin_fitzpatrick_type: '',

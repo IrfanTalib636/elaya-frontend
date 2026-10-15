@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { listLasers } from '../../api/adminPhase4'
 import {
   activeKeysForCase,
@@ -12,11 +12,11 @@ import {
 
 const EngineCaseContext = createContext(null)
 
-export function EngineCaseProvider({ children }) {
+/** `refreshKey` re-reads the laser catalog (its LIVE colour deltas) after publish / discard. */
+export function EngineCaseProvider({ children, refreshKey = 0 }) {
   const [form, setForm] = useState(() => readStoredEngineCase() || defaultEngineCase())
   const [lasers, setLasers] = useState([])
   const [lasersReady, setLasersReady] = useState(false)
-  const [laserDrafts, setLaserDrafts] = useState({})
 
   useEffect(() => {
     let cancelled = false
@@ -37,39 +37,19 @@ export function EngineCaseProvider({ children }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [refreshKey])
 
   useEffect(() => {
     writeStoredEngineCase(form)
   }, [form])
-
-  const setLaserDraftMap = useCallback((next) => {
-    const incoming = next && typeof next === 'object' ? next : {}
-    setLaserDrafts((prev) => (JSON.stringify(prev) === JSON.stringify(incoming) ? prev : incoming))
-  }, [])
-
-  const setLaserColorDelta = useCallback((laserId, color, value) => {
-    if (!laserId) return
-    const n = value === '' || value == null ? 0 : Number(value)
-    setLaserDrafts((prev) => ({
-      ...prev,
-      [laserId]: { ...(prev[laserId] || {}), [color]: Number.isFinite(n) ? n : 0 },
-    }))
-  }, [])
 
   const selectedLaser = useMemo(
     () => lasers.find((l) => l.id === form.laserId) || lasers[0] || null,
     [lasers, form.laserId]
   )
 
-  const publishedCaseInput = useMemo(
-    () => buildEngineCaseInput(form, selectedLaser, null),
-    [form, selectedLaser]
-  )
-  const draftCaseInput = useMemo(
-    () => buildEngineCaseInput(form, selectedLaser, laserDrafts[selectedLaser?.id] || null),
-    [form, selectedLaser, laserDrafts]
-  )
+  // LIVE and DRAFT run the same case; only the config (published vs draft) differs.
+  const caseInput = useMemo(() => buildEngineCaseInput(form, selectedLaser), [form, selectedLaser])
 
   const value = useMemo(
     () => ({
@@ -79,26 +59,13 @@ export function EngineCaseProvider({ children }) {
       lasersReady,
       setLasers,
       selectedLaser,
-      laserDrafts,
-      setLaserDraftMap,
-      setLaserColorDelta,
       activeKeys: activeKeysForCase(form),
       area: caseArea(form),
       laserName: laserLabel(selectedLaser),
-      publishedCaseInput,
-      draftCaseInput,
+      publishedCaseInput: caseInput,
+      draftCaseInput: caseInput,
     }),
-    [
-      form,
-      lasers,
-      lasersReady,
-      selectedLaser,
-      laserDrafts,
-      setLaserDraftMap,
-      setLaserColorDelta,
-      publishedCaseInput,
-      draftCaseInput,
-    ]
+    [form, lasers, lasersReady, selectedLaser, caseInput]
   )
 
   return <EngineCaseContext.Provider value={value}>{children}</EngineCaseContext.Provider>

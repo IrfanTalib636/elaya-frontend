@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import NumberStepper from '../ui/NumberStepper'
 import useContent from '../../i18n/useContent'
 import { useEngineCaseOptional } from './EngineCaseContext'
@@ -44,16 +43,15 @@ const deltaHintFor = (value, t) => {
   }
 }
 
-/** Per-laser colour matrix. Only the Case Simulator's laser and its colours are editable. */
+/**
+ * Per-laser colour matrix over session_prediction.laser_color_overrides — the same values the
+ * Laser catalog edits. `overrides` is the engine form (draft, else live); `laser.color_deltas` is LIVE.
+ * Only the Case Simulator's laser and its colours are editable.
+ */
 const CaseLaserMatrix = ({ disabled = false, overrides = null, onDeltaChange = null }) => {
   const engineCase = useEngineCaseOptional()
   const { components, t } = useContent()
   const copy = components.sessionPrediction
-
-  useEffect(() => {
-    if (!engineCase?.setLaserDraftMap || !overrides) return
-    engineCase.setLaserDraftMap(overrides)
-  }, [engineCase, overrides])
 
   if (!engineCase?.lasers?.length) return null
 
@@ -72,7 +70,7 @@ const CaseLaserMatrix = ({ disabled = false, overrides = null, onDeltaChange = n
       </p>
       {engineCase.lasers.map((laser) => {
         const activeLaser = laser.id === selectedId
-        const drafts = overrides?.[laser.id] || engineCase.laserDrafts?.[laser.id] || {}
+        const drafts = overrides?.[laser.id] || {}
         return (
           <div
             key={laser.id}
@@ -92,8 +90,19 @@ const CaseLaserMatrix = ({ disabled = false, overrides = null, onDeltaChange = n
               {COLORS.map((color) => {
                 const inCase = caseColors.includes(color)
                 const editable = activeLaser && inCase && !disabled
-                const raw = drafts[color] ?? laser.color_deltas?.[color] ?? 0
-                const hint = deltaHintFor(raw, t)
+                const liveValue = laser.color_deltas?.[color] ?? 0
+                const raw = drafts[color] ?? liveValue
+                const delta = deltaHintFor(raw, t)
+                const changed = Number(raw) !== Number(liveValue)
+                const hint = changed
+                  ? {
+                      text: `${delta.text} · ${t('components.sessionPrediction.liveValue', {
+                        value: liveValue,
+                        defaultValue: `LIVE: ${liveValue}`,
+                      })}`,
+                      tone: delta.tone,
+                    }
+                  : delta
                 return (
                   <NumberStepper
                     key={color}
@@ -105,10 +114,7 @@ const CaseLaserMatrix = ({ disabled = false, overrides = null, onDeltaChange = n
                     active={editable}
                     hint={hint.text}
                     hintTone={hint.tone}
-                    onChange={(next) => {
-                      engineCase.setLaserColorDelta(laser.id, color, next)
-                      onDeltaChange?.(laser.id, color, next)
-                    }}
+                    onChange={(next) => onDeltaChange?.(laser.id, color, next)}
                   />
                 )
               })}

@@ -57,6 +57,7 @@ const AdminMedical         = lazy(() => import('./pages/admin/Medical'))
 const AdminDocuments       = lazy(() => import('./pages/admin/Documents'))
 const AdminAiTraining      = lazy(() => import('./pages/admin/AiTraining'))
 const AdminLasers          = lazy(() => import('./pages/admin/Lasers'))
+const AdminEngineMasterData = lazy(() => import('./pages/admin/EngineMasterData'))
 const AdminUsers           = lazy(() => import('./pages/admin/Users'))
 const AdminStudioTeam      = lazy(() => import('./pages/admin/StudioTeam'))
 const AdminShop            = lazy(() => import('./pages/admin/Shop'))
@@ -166,6 +167,7 @@ const AppInner = () => {
             <Route path="customers/:customerId" element={<AdminCustomerDetail />} />
             <Route path="crm" element={<AdminCrm />} />
             <Route path="engine" element={<AdminEngine />} />
+            <Route path="engine-master-data" element={<AdminEngineMasterData />} />
             <Route path="medical" element={<AdminMedical />} />
             <Route path="documents" element={<AdminDocuments />} />
             <Route path="admin-chat" element={<Navigate to="/admin/studio-chat" replace />} />

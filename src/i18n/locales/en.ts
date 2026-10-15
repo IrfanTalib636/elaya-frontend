@@ -184,6 +184,7 @@ const en = {
       { "id": "customers", "label": "Customers" },
       { "id": "crm", "label": "CRM & Leads" },
       { "id": "engine", "label": "Engine" },
+      { "id": "engineMasterData", "label": "Engine master data" },
       { "id": "medical", "label": "Medical & Safety" },
       { "id": "documents", "label": "Digital documents" },
       { "id": "transfer", "label": "Studio change" },
@@ -364,7 +365,7 @@ const en = {
       ],
       [
         "unknown",
-        "Unknown"
+        "Not sure"
       ]
     ],
     "pmuTechniques": [
@@ -392,7 +393,7 @@ const en = {
       ],
       [
         "unknown",
-        "Unknown"
+        "Not sure"
       ]
     ],
     "pmuStitchDepths": [
@@ -606,7 +607,7 @@ const en = {
       ],
       [
         "unknown",
-        "Unknown"
+        "Not sure"
       ]
     ],
     "tcTypes": [
@@ -629,6 +630,10 @@ const en = {
       [
         "mixed",
         "Mixed"
+      ],
+      [
+        "unknown",
+        "Not sure"
       ]
     ],
     "tcCoverup": [
@@ -646,7 +651,7 @@ const en = {
       ],
       [
         "unknown",
-        "Unknown"
+        "Not sure"
       ]
     ],
     "qualityLevel": [
@@ -665,6 +670,10 @@ const en = {
       [
         "very_high",
         "Very high"
+      ],
+      [
+        "unknown",
+        "Not sure"
       ]
     ],
     "shadingLevel": [
@@ -683,6 +692,10 @@ const en = {
       [
         "high",
         "High"
+      ],
+      [
+        "unknown",
+        "Not sure"
       ]
     ],
     "lineworkLevel": [
@@ -701,6 +714,32 @@ const en = {
       [
         "mixed",
         "Mixed"
+      ],
+      [
+        "unknown",
+        "Not sure"
+      ]
+    ],
+    "depthLevel": [
+      [
+        "shallow",
+        "Shallow"
+      ],
+      [
+        "normal",
+        "Normal"
+      ],
+      [
+        "deep",
+        "Deep"
+      ],
+      [
+        "very_deep",
+        "Very deep"
+      ],
+      [
+        "unknown",
+        "Not sure"
       ]
     ],
     "inkColors": [
@@ -961,7 +1000,7 @@ const en = {
       ],
       [
         "fair",
-        "Fair"
+        "Medium"
       ],
       [
         "good",
@@ -1019,6 +1058,10 @@ const en = {
       [
         "very_high",
         "Very high"
+      ],
+      [
+        "unknown",
+        "Not sure"
       ]
     ],
     "photoChecklist": [
@@ -1162,9 +1205,14 @@ const en = {
         "zonesGroupTitle": "Zones of this tattoo",
         "zonesGroupHint": "All zones belong to one large tattoo. Each zone is priced, photographed and documented separately.",
         "colorDensity": "Color density",
+        "densityHint": "How densely the tattooed area is filled with pigment — from lightly or loosely covered to very compact and heavily filled.",
         "saturation": "Saturation",
+        "saturationHint": "How intense and strongly deposited the pigment appears within the tattooed areas — from light or faded to highly saturated.",
         "shading": "Shading",
-        "linework": "Linework",
+        "shadingHint": "How much the tattoo uses shading, gradients, or softly filled areas — from no shading to extensive shading.",
+        "linework": "Line style",
+        "lineworkHint": "How the tattoo lines are executed — fine, medium, bold, or a mixture of different line weights.",
+        "depth": "Depth",
         "dimensions": "Dimensions in cm *",
         "dimensionsHint": "Measure with ruler — studio confirms exactly.",
         "length": "Length",
@@ -1196,7 +1244,7 @@ const en = {
         "weight": "Weight (kg)",
         "alcohol": "Alcohol *",
         "activity": "Activity level *",
-        "sportFreq": "Exercise per week (optional)",
+        "sportFreq": "Exercise per week *",
         "sleepHours": "Sleep hours *",
         "sleepQuality": "Sleep quality *",
         "stress": "Stress level *",
@@ -1361,7 +1409,7 @@ const en = {
       }
     },
     "pricing": {
-      "title": "Prices & Elaycoin",
+      "title": "Pricing",
       "desc": "Platform price rules (view only). Price per session is the higher of the minimum and area × base price per cm², rounded up to CHF 5, or the flat PMU price. Colours and tattoo factors change the session count, not the price.",
       "readOnlyHint": "View only — only Elaya super admin can change price calculation rules.",
       "coinSectionTitle": "Elaycoin value",
@@ -1916,7 +1964,9 @@ const en = {
         "amateur": "Amateur",
         "cosmetic": "Cosmetic",
         "professional": "Professional",
-        "coverup": "Cover-up"
+        "coverup": "Cover-up",
+        "mixed": "Mixed",
+        "unknown": "Not sure"
       },
       "goals": {
         "full_removal": "Full removal",
@@ -1928,7 +1978,7 @@ const en = {
         "none": "No cover-up",
         "once": "Covered once",
         "multiple": "Covered multiple times",
-        "unknown": "Unknown"
+        "unknown": "Not sure"
       },
       "apptTypes": {
         "beratung": "Consultation",
@@ -2944,7 +2994,7 @@ const en = {
       "sectionHints": {
         "base": "Base session count, min/max range and the ± range around the predicted mid.",
         "colors": "Colour and colour-count deltas, plus the laser-profile quality delta. Per-device colour matrices live in the Lasers catalog.",
-        "fitzpatrick": "Skin type, body location, density, saturation, cover-up, tattoo age, prior treatment, tattoo type and removal goal deltas.",
+        "fitzpatrick": "Skin type, body location, density, saturation, shading, line style, cover-up, tattoo age, prior treatment, tattoo type and removal goal deltas.",
         "lifestyle": "The 7-factor lifestyle composite, its score-to-multiplier thresholds, and the BMI floors that raise the composite score.",
         "healing": "Healing history and lightening-rate deltas (once real sessions exist), plus aftercare-commitment extra max sessions."
       },
@@ -2958,7 +3008,7 @@ const en = {
           "draftText": "Draft view is editable. Changes go live only when you press Publish.",
           "controls": "The live version is the published set. Reset draft throws away unpublished edits and returns to those live values. Publish is what switches the draft on.",
           "split": "Price rules and session-prediction rules each have their own draft. Publishing one does not publish the other. You edit them in Pricing, Base & range, Colours & laser, Fitzpatrick & skin, Lifestyle, and Healing & response. Versions & audit shows both.",
-          "impact": "The Impact preview on the right runs the same sample case twice: once with the published Live values and once with the pending Draft. Until you publish, both columns match."
+          "impact": "The Impact preview on the right runs the same sample case twice: once with the published Live values and once with the pending Draft. Live and Draft are identical only while there are no Draft changes. As soon as a value is changed, Live stays as published and Draft shows the new calculated result."
         },
         "delta": {
           "title": "What is a delta and how much is it worth?",
@@ -3002,7 +3052,7 @@ const en = {
           ],
           "priceColors": "Colours do NOT affect the price. They only affect the session count.",
           "sessionsTitle": "Session count",
-          "sessionsText": "Base (8) + all deltas = raw value. Raw value × lifestyle multiplier = centre. Range: centre − 1 to centre + 1.",
+          "sessionsText": "Base + all deltas = raw value. Raw value × lifestyle multiplier = centre. Range uses the configured Range − / Range + around that centre.",
           "whatTitle": "What are deltas?",
           "whatIntro": "Each factor adds or subtracts sessions:",
           "whatLines": [
@@ -3054,8 +3104,20 @@ const en = {
           ],
           "bmiNote": "A BMI of 30 or above raises the composite score to a configurable minimum (30+ at least 4, 35+ at least 5). It can only raise the score, never lower it."
         },
-        "aiTitle": "Link to the AI Training Center",
-        "aiText": "These engine values feed into the ELAYA AI Training Center. Changes are versioned and used for AI calibration."
+        "aiTitle": "Link to ELAYA Chat and the AI Training Center",
+        "aiText": "ELAYA Chat and the AI Training Center always read the published Live Engine. Draft changes do not reach the AI until you Publish. Automatic model retraining is not yet active."
+      },
+      "howEditor": {
+        "editWording": "Edit wording",
+        "closeEditor": "Close editor",
+        "saveDraft": "Save draft",
+        "saved": "Explanation draft saved",
+        "saveFailed": "Could not save explanation",
+        "loadError": "Could not load explanation",
+        "draftNote": "How ELAYA works wording",
+        "factsTitle": "Current Engine rule (always from the numbers, not from this text)",
+        "factsLine": "Base {{base}} · range −{{minus}} / +{{plus}} · clamp {{min}}–{{max}} · price MAX({{minPrice}} CHF, area × {{price}} CHF) rounded up to CHF {{round}} · colours: {{colors}}",
+        "placeholderHint": "Placeholders such as {{base_sessions}} and {{range_minus}} are filled from the Engine. Do not type the range as a fixed −1/+1."
       },
       "versionsHint": "Pricing and session prediction publish independently today — publishing one domain's draft does not affect the other's pending draft.",
       "impact": {
@@ -3095,7 +3157,27 @@ const en = {
       "fitzType": "Type {{type}}",
       "bodyLocation": "Body location",
       "density": "Density",
+      "densityHint": "How densely the tattooed area is filled with pigment — from lightly or loosely covered to very compact and heavily filled.",
       "saturation": "Saturation",
+      "saturationHint": "How intense and strongly deposited the pigment appears within the tattooed areas — from light or faded to highly saturated.",
+      "shading": "Shading",
+      "shadingHint": "How much the tattoo uses shading, gradients, or softly filled areas — from no shading to extensive shading.",
+      "linework": "Line style",
+      "lineworkHint": "How the tattoo lines are executed — fine, medium, bold, or a mixture of different line weights.",
+      "shadingOptions": {
+        "none": "None",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "unknown": "Not sure"
+      },
+      "lineworkOptions": {
+        "fine": "Fine",
+        "medium": "Medium",
+        "bold": "Bold",
+        "mixed": "Mixed",
+        "unknown": "Not sure"
+      },
       "coverup": "Cover-up",
       "tattooAge": "Tattoo age (years)",
       "depth": "Ink depth",
@@ -3103,7 +3185,8 @@ const en = {
         "shallow": "Shallow",
         "normal": "Normal",
         "deep": "Deep",
-        "very_deep": "Very deep"
+        "very_deep": "Very deep",
+        "unknown": "Not sure"
       },
       "tattooType": "Tattoo type",
       "goal": "Treatment goal",
@@ -3155,7 +3238,8 @@ const en = {
         "low": "Low",
         "medium": "Medium",
         "high": "High",
-        "very_high": "Very high"
+        "very_high": "Very high",
+        "unknown": "Not sure"
       },
       "locations": {
         "arm": "Arm",
@@ -3175,14 +3259,15 @@ const en = {
         "none": "None",
         "once": "Once",
         "multiple": "Multiple",
-        "unknown": "Unknown"
+        "unknown": "Not sure"
       },
       "tcTypes": {
         "amateur": "Amateur",
         "professional": "Professional",
         "cosmetic": "Cosmetic",
         "coverup": "Cover-up",
-        "mixed": "Mixed"
+        "mixed": "Mixed",
+        "unknown": "Not sure"
       },
       "goals": {
         "full_removal": "Full removal",
@@ -3242,11 +3327,9 @@ const en = {
       },
       "hydrationOpts": { "good": "Good", "normal": "Normal", "low": "Low" },
       "nutritionOpts": {
-        "very_good": "Very good",
-        "good": "Good",
-        "fair": "Fair",
         "poor": "Poor",
-        "very_poor": "Very poor"
+        "fair": "Medium",
+        "good": "Good"
       },
       "aftercareOpts": { "high": "High", "medium": "Medium", "low": "Low" },
       "healingOpts": {
@@ -3426,6 +3509,9 @@ const en = {
       "loadError": "Failed to load AI config",
       "saved": "AI config saved",
       "saveFailed": "Save failed",
+      "engineTitle": "Published Engine (source of truth for Chat)",
+      "engineHint": "ELAYA Chat always reads the published Live Engine — deltas, range, price rules and this explanation. Automatic model training is not yet active; values are versioned for future calibration.",
+      "openEngine": "Open Prediction Engine",
       "prompts": {
         "nachsorge": "Aftercare (photo check)",
         "verblassung": "Fading analysis",
@@ -3892,6 +3978,30 @@ const en = {
       "permsUpdated": "Permissions updated",
       "inviteEmailFailed": "Admin saved but invite email failed — check server EMAIL_PROVIDER / SMTP, then use Resend invite"
     },
+    "engineMasterData": {
+      "title": "Engine master data",
+      "subtitle": "Central default values of the Prediction Engine: base & range, Fitzpatrick & skin, body locations, lifestyle & BMI, healing & response.",
+      "explainer": "These are the same backend values the Prediction Engine uses — not a copy. Saving here updates the shared DRAFT; the Prediction Engine immediately shows its impact on the current case, and only Publish makes it LIVE. Laser colour deltas are managed per laser in the Laser catalog, base prices under Prediction Engine → Pricing.",
+      "draftPending": "Draft pending — not yet live",
+      "inSync": "No draft — showing LIVE values",
+      "liveVersion": "LIVE version {{version}}",
+      "colFactor": "Factor",
+      "colLive": "LIVE",
+      "colDraft": "DRAFT",
+      "colDelta": "Δ",
+      "openInEngine": "Test & publish in Prediction Engine",
+      "colorsNote": "Platform colour deltas apply to lasers without their own value. Per-laser colour deltas are managed in the",
+      "openLasers": "Laser catalog",
+      "unsaved": "Unsaved changes",
+      "publishHint": "Saved drafts go LIVE after Publish in the Prediction Engine.",
+      "reset": "Reset",
+      "saveDraft": "Save draft",
+      "saved": "Draft saved — review the impact and publish in the Prediction Engine",
+      "saveFailed": "Could not save draft",
+      "loadError": "Could not load engine master data",
+      "readOnly": "View only — only Elaya super admin can change prediction values.",
+      "draftNote": "Engine master data"
+    },
     "lasers": {
       "title": "Laser catalog",
       "subtitle": "Approved devices studios can select. Studios cannot edit master data.",
@@ -3922,7 +4032,15 @@ const en = {
       "saveFailed": "Save failed",
       "approved": "Approved & added to catalog",
       "rejected": "Rejected",
-      "resolveFailed": "Resolve failed"
+      "resolveFailed": "Resolve failed",
+      "colorDeltasTitle": "Colour deltas (Prediction Engine)",
+      "colorDeltasHint": "Extra sessions per ink colour with this laser. Same values as Prediction Engine → Colours & Laser. Changes are saved as DRAFT and only become LIVE when published in the Prediction Engine.",
+      "reviewInEngine": "Review impact & publish",
+      "colorDraftPending": "A draft for these colour deltas is pending. LIVE still uses the published values until it is published in the Prediction Engine.",
+      "colorDeltasSuperAdminOnly": "Only Elaya super admin can change colour deltas.",
+      "colorDraftBadge": "Draft pending",
+      "colorsDrafted": "Colour deltas saved as draft — publish them in the Prediction Engine",
+      "liveValue": "LIVE: {{value}}"
     },
     "studioTeam": {
       "title": "Studio team",
@@ -4143,7 +4261,7 @@ const en = {
       "platformDefault": "Platform default",
       "priceHowTitle": "How is the price calculated?",
       "priceHowLines": [
-        "Price = tattoo area × base price per cm². The minimum price always applies. The result is rounded up to CHF 5.",
+        "Price = tattoo area × base price per cm². The minimum price always applies. The result is rounded up to the configured CHF step.",
         "Example: 40 cm² × CHF 3.00 = CHF 120. Minimum price CHF 90 → CHF 120 applies.",
         "Important: colours do not change the price. Colours only change the session count.",
         "A studio can set its own base price per cm² under Studio settings → Prices."
@@ -4156,12 +4274,14 @@ const en = {
         "skin": "Skin type (Fitzpatrick)",
         "location": "Body area",
         "layering": "Layering / cover-up",
-        "goal": "Treatment goal"
+        "goal": "Treatment goal",
+        "rounding": "Rounding"
       },
       "fields": {
         "basePricePerCm2": "Base price / cm² (CHF)",
         "minPrice": "Minimum price / session (CHF)",
         "pmuPrice": "PMU price (CHF)",
+        "price_round_to": "Round session price up to (CHF)",
         "color_black": "Black",
         "color_mixed": "Mixed",
         "color_multi": "Multicolour",
@@ -4245,9 +4365,12 @@ const en = {
       "lifestyleScoreLine": "Score {{score}} · ×{{mult}}",
       "midConfidence": "Mid / confidence",
       "activeFactors": "Active tattoo factors",
-      "noDeltas": "No tattoo deltas ≠ 0 — simple forecast (±1 session around the mid).",
+      "noDeltas": "No tattoo deltas ≠ 0 — simple forecast (Range − / Range + around the mid).",
       "loadPreview": "Load preview",
-      "formulaHint": "Formula: (base + tattoo deltas) × lifestyle multiplier → session mid, then min/max range. Lifestyle score 1 = ×0.85 (optimal), score 5 = ×1.50 (strongly impaired). Customers do not see these parameters.",
+      "formulaHint": "Formula: (base + tattoo deltas) × lifestyle multiplier → rounded centre, clamped to min/max, then Range − / Range + around that centre. Colour impact uses the aggregation rule below. Customers do not see these parameters.",
+      "colorAggregation": "Colour aggregation",
+      "colorAggregationMax": "MAX (hardest colour or colour count)",
+      "colorAggregationSum": "SUM (hardest colour + colour count)",
       "deltaNone": "No impact on sessions",
       "deltaMore": "+{{count}} session(s) with normal lifestyle",
       "deltaLess": "−{{count}} session(s) with normal lifestyle",
@@ -4323,6 +4446,7 @@ const en = {
         }
       },
       "aftercareSection": "Aftercare readiness (extra max sessions)",
+      "liveValue": "LIVE: {{value}}",
       "avgUpTo": "Avg up to",
       "score": "Score",
       "multiplier": "Multiplier",
@@ -4346,6 +4470,8 @@ const en = {
         "scarring": "Scars / keloid risk (delta)",
         "density": "Density (delta)",
         "saturation": "Saturation (delta)",
+        "shading": "Shading (delta)",
+        "linework": "Line style (delta)",
         "coverup": "Cover-up / layering (delta)",
         "age": "Tattoo age (delta)",
         "depth": "Ink depth (delta)",
@@ -4407,19 +4533,35 @@ const en = {
           "low": "Low",
           "medium": "Medium",
           "high": "High",
-          "very_high": "Very high"
+          "very_high": "Very high",
+          "unknown": "Not sure"
         },
         "saturation": {
           "low": "Low",
           "medium": "Medium",
           "high": "High",
-          "very_high": "Very high"
+          "very_high": "Very high",
+          "unknown": "Not sure"
+        },
+        "shading": {
+          "none": "None",
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High",
+          "unknown": "Not sure"
+        },
+        "linework": {
+          "fine": "Fine",
+          "medium": "Medium",
+          "bold": "Bold",
+          "mixed": "Mixed",
+          "unknown": "Not sure"
         },
         "coverup": {
           "none": "None",
           "once": "Covered once",
           "multiple": "Multiple",
-          "unknown": "Unknown"
+          "unknown": "Not sure"
         },
         "age": {
           "under_1": "under 1 year",
@@ -4427,13 +4569,14 @@ const en = {
           "age_4_7": "4–7 years",
           "age_8_15": "8–15 years",
           "over_15": "over 15 years",
-          "unknown": "Unknown"
+          "unknown": "Not sure"
         },
         "depth": {
           "shallow": "Shallow",
           "normal": "Normal",
           "deep": "Deep",
-          "very_deep": "Very deep"
+          "very_deep": "Very deep",
+          "unknown": "Not sure"
         },
         "prior_treatment": {
           "none": "None",
@@ -4445,7 +4588,8 @@ const en = {
           "professional": "Professional",
           "cosmetic": "Cosmetic",
           "coverup": "Cover-up",
-          "mixed": "Mixed"
+          "mixed": "Mixed",
+          "unknown": "Not sure"
         },
         "goal": {
           "full_removal": "Complete",
@@ -4533,11 +4677,9 @@ const en = {
           "low": "Low"
         },
         "nutrition": {
-          "very_good": "Very good",
-          "good": "Good",
-          "fair": "Fair",
           "poor": "Poor",
-          "very_poor": "Very poor"
+          "fair": "Medium",
+          "good": "Good"
         }
       },
       "aftercareFields": {

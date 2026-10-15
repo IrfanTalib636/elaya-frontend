@@ -1,3 +1,5 @@
+import { canonicalizeNutrition } from '../../constants/intakeEnums'
+
 /** Shared Case Simulator case. Super Admin previews this case; it does not change engine rules. */
 
 const BLACK_FAMILY = ['black', 'grey']
@@ -11,6 +13,8 @@ export const defaultEngineCase = () => ({
   tc_body_location_main: 'arm',
   tc_density: 'medium',
   tc_saturation: 'medium',
+  tc_shading: 'medium',
+  tc_linework: 'medium',
   tc_coverup: 'none',
   tc_age_years: 5,
   tc_prior_treatment: false,
@@ -90,9 +94,11 @@ export const activeKeysForCase = (form) => {
     color_count: [colorCountKey(colors)],
     density: [form.tc_density],
     saturation: [form.tc_saturation],
+    shading: [form.tc_shading],
+    linework: [form.tc_linework],
     coverup: [form.tc_coverup],
     age: [ageBandFromYears(form.tc_age_years)],
-    depth: [form.tc_depth || 'normal'],
+    depth: [form.tc_depth],
     prior_treatment: [priorKey(form)],
     type: [form.tc_type],
     goal: [form.goal_target],
@@ -113,14 +119,10 @@ export const activeKeysForCase = (form) => {
   }
 }
 
-export const buildEngineCaseInput = (form, laser, deltaOverride = null) => {
+/** Case fields only. Laser colour deltas come from the LIVE / DRAFT config via laser_device_id. */
+export const buildEngineCaseInput = (form, laser) => {
   if (!form) return null
   const colors = form.tc_colors_present || []
-  const catalog = laser?.color_deltas && typeof laser.color_deltas === 'object' ? laser.color_deltas : {}
-  const edited =
-    deltaOverride && typeof deltaOverride === 'object' && Object.keys(deltaOverride).length
-      ? { ...catalog, ...deltaOverride }
-      : null
   const area = caseArea(form)
   return {
     type: form.type === 'pmu' ? 'pmu' : 'tattoo',
@@ -131,6 +133,8 @@ export const buildEngineCaseInput = (form, laser, deltaOverride = null) => {
     tc_body_location_main: form.tc_body_location_main,
     tc_density: form.tc_density,
     tc_saturation: form.tc_saturation,
+    tc_shading: form.tc_shading,
+    tc_linework: form.tc_linework,
     tc_coverup: form.tc_coverup,
     tc_age_years: Number(form.tc_age_years) || 0,
     tc_prior_treatment: !!form.tc_prior_treatment,
@@ -140,7 +144,7 @@ export const buildEngineCaseInput = (form, laser, deltaOverride = null) => {
     skin_keloid_risk: form.skin_keloid_risk,
     laser_profile_level: form.laser_profile_level,
     tc_colors_present: colors,
-    tc_depth: form.tc_depth || 'normal',
+    tc_depth: form.tc_depth,
     ...(laser?.id ? { laser_device_id: laser.id } : {}),
     healing_history: form.healing_history || undefined,
     lightening_rate: form.lightening_rate || undefined,
@@ -156,9 +160,7 @@ export const buildEngineCaseInput = (form, laser, deltaOverride = null) => {
     life_activity: form.life_activity,
     life_sport_freq: form.life_sport_freq,
     life_hydration: form.life_hydration,
-    life_nutrition: form.life_nutrition,
-    ...(Object.keys(catalog).length ? { laser_color_deltas: catalog } : {}),
-    ...(edited ? { laser_color_deltas_edit: edited } : {}),
+    life_nutrition: canonicalizeNutrition(form.life_nutrition),
   }
 }
 
@@ -171,7 +173,9 @@ export const readStoredEngineCase = () => {
     if (!raw) return null
     const parsed = JSON.parse(raw)
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
-    return { ...defaultEngineCase(), ...parsed }
+    const merged = { ...defaultEngineCase(), ...parsed }
+    merged.life_nutrition = canonicalizeNutrition(merged.life_nutrition)
+    return merged
   } catch {
     return null
   }

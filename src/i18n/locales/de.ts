@@ -186,6 +186,7 @@ const de: TranslationSchema = {
       { "id": "customers", "label": "Kunden" },
       { "id": "crm", "label": "CRM & Anfragen" },
       { "id": "engine", "label": "Prognose-Engine" },
+      { "id": "engineMasterData", "label": "Engine-Stammdaten" },
       { "id": "medical", "label": "Medizin & Sicherheit" },
       { "id": "documents", "label": "Digitale Dokumente" },
       { "id": "transfer", "label": "Studio-Wechsel" },
@@ -366,7 +367,7 @@ const de: TranslationSchema = {
       ],
       [
         "unknown",
-        "Unbekannt"
+        "Nicht sicher"
       ]
     ],
     "pmuTechniques": [
@@ -394,7 +395,7 @@ const de: TranslationSchema = {
       ],
       [
         "unknown",
-        "Unbekannt"
+        "Nicht sicher"
       ]
     ],
     "pmuStitchDepths": [
@@ -608,7 +609,7 @@ const de: TranslationSchema = {
       ],
       [
         "unknown",
-        "Unbekannt"
+        "Nicht sicher"
       ]
     ],
     "tcTypes": [
@@ -631,6 +632,10 @@ const de: TranslationSchema = {
       [
         "mixed",
         "Gemischt"
+      ],
+      [
+        "unknown",
+        "Nicht sicher"
       ]
     ],
     "tcCoverup": [
@@ -648,7 +653,7 @@ const de: TranslationSchema = {
       ],
       [
         "unknown",
-        "Unbekannt"
+        "Nicht sicher"
       ]
     ],
     "qualityLevel": [
@@ -667,6 +672,10 @@ const de: TranslationSchema = {
       [
         "very_high",
         "Sehr hoch"
+      ],
+      [
+        "unknown",
+        "Nicht sicher"
       ]
     ],
     "shadingLevel": [
@@ -685,6 +694,10 @@ const de: TranslationSchema = {
       [
         "high",
         "Viel"
+      ],
+      [
+        "unknown",
+        "Nicht sicher"
       ]
     ],
     "lineworkLevel": [
@@ -703,6 +716,32 @@ const de: TranslationSchema = {
       [
         "mixed",
         "Gemischt"
+      ],
+      [
+        "unknown",
+        "Nicht sicher"
+      ]
+    ],
+    "depthLevel": [
+      [
+        "shallow",
+        "Oberflächlich"
+      ],
+      [
+        "normal",
+        "Normal"
+      ],
+      [
+        "deep",
+        "Tief"
+      ],
+      [
+        "very_deep",
+        "Sehr tief"
+      ],
+      [
+        "unknown",
+        "Nicht sicher"
       ]
     ],
     "inkColors": [
@@ -959,11 +998,11 @@ const de: TranslationSchema = {
     "lifeNutrition": [
       [
         "poor",
-        "Unausgewogen"
+        "Schlecht"
       ],
       [
         "fair",
-        "Mässig"
+        "Mittel"
       ],
       [
         "good",
@@ -1021,6 +1060,10 @@ const de: TranslationSchema = {
       [
         "very_high",
         "Sehr hoch"
+      ],
+      [
+        "unknown",
+        "Nicht sicher"
       ]
     ],
     "photoChecklist": [
@@ -1164,9 +1207,14 @@ const de: TranslationSchema = {
         "zonesGroupTitle": "Zonen dieses Tattoos",
         "zonesGroupHint": "Alle Zonen gehören zu einem grossen Tattoo. Jede Zone wird einzeln berechnet, fotografiert und dokumentiert.",
         "colorDensity": "Farbdichte",
+        "densityHint": "Wie dicht die tätowierte Fläche mit Pigment gefüllt ist — von leicht oder locker bedeckt bis sehr kompakt und stark gefüllt.",
         "saturation": "Farbsättigung",
+        "saturationHint": "Wie intensiv und stark das Pigment in den tätowierten Flächen liegt — von hell oder verblasst bis stark gesättigt.",
         "shading": "Schattierung",
-        "linework": "Linienarbeit",
+        "shadingHint": "Wie stark das Tattoo Schattierung, Verläufe oder weich gefüllte Flächen nutzt — von keiner Schattierung bis ausgedehnter Schattierung.",
+        "linework": "Linienführung",
+        "lineworkHint": "Wie die Tattoo-Linien ausgeführt sind — fein, mittel, kräftig oder eine Mischung verschiedener Linienstärken.",
+        "depth": "Tiefe",
         "dimensions": "Masse in cm *",
         "dimensionsHint": "Mit Lineal messen — Studio misst exakt nach.",
         "length": "Länge",
@@ -1198,7 +1246,7 @@ const de: TranslationSchema = {
         "weight": "Gewicht (kg)",
         "alcohol": "Alkohol *",
         "activity": "Aktivitätslevel *",
-        "sportFreq": "Sport pro Woche (optional)",
+        "sportFreq": "Sport pro Woche *",
         "sleepHours": "Schlafstunden *",
         "sleepQuality": "Schlafqualität *",
         "stress": "Stressniveau *",
@@ -1363,7 +1411,7 @@ const de: TranslationSchema = {
       }
     },
     "pricing": {
-      "title": "Preise & Elaycoin",
+      "title": "Preise",
       "desc": "Plattformweite Preisregeln (nur Ansicht). Preis pro Sitzung ist der höhere Wert aus Mindestpreis und Fläche × Basispreis pro cm², aufgerundet auf CHF 5, oder der Pauschalpreis für PMU. Farben und Tattoo-Faktoren ändern die Sitzungszahl, nicht den Preis.",
       "readOnlyHint": "Nur Ansicht — nur Elaya Super-Admin kann die Preisberechnungsregeln ändern.",
       "coinSectionTitle": "Elaycoin-Wert",
@@ -1918,7 +1966,9 @@ const de: TranslationSchema = {
         "amateur": "Amateur",
         "cosmetic": "Kosmetisch",
         "professional": "Professionell",
-        "coverup": "Cover-up"
+        "coverup": "Cover-up",
+        "mixed": "Gemischt",
+        "unknown": "Nicht sicher"
       },
       "goals": {
         "full_removal": "Vollständige Entfernung",
@@ -1930,7 +1980,7 @@ const de: TranslationSchema = {
         "none": "Kein Cover-up",
         "once": "1× überdeckt",
         "multiple": "Mehrfach überdeckt",
-        "unknown": "Unbekannt"
+        "unknown": "Nicht sicher"
       },
       "apptTypes": {
         "beratung": "Beratung",
@@ -2946,7 +2996,7 @@ const de: TranslationSchema = {
       "sectionHints": {
         "base": "Basis-Sitzungsanzahl, Min/Max-Bereich und die ± Spanne um die vorhergesagte Mitte.",
         "colors": "Farb- und Farbanzahl-Deltas sowie das Laserprofil-Qualitätsdelta. Pro-Gerät-Farbmatrizen liegen im Laser-Katalog.",
-        "fitzpatrick": "Hauttyp-, Körperstelle-, Dichte-, Sättigung-, Cover-up-, Tattoo-Alter-, Vorbehandlung-, Tattoo-Art- und Ziel-Deltas.",
+        "fitzpatrick": "Hauttyp-, Körperstelle-, Dichte-, Sättigung-, Schattierung-, Linienführung-, Cover-up-, Tattoo-Alter-, Vorbehandlung-, Tattoo-Art- und Ziel-Deltas.",
         "lifestyle": "Der 7-Faktoren-Lifestyle-Composite-Score, seine Score-zu-Multiplikator-Schwellen und die BMI-Mindestwerte, die den Composite-Score anheben.",
         "healing": "Healing- und Lightening-Rate-Deltas (sobald echte Sitzungen existieren) sowie Nachsorge-Bereitschaft (+ Max-Sitzungen)."
       },
@@ -2960,7 +3010,7 @@ const de: TranslationSchema = {
           "draftText": "Draft-Ansicht ist editierbar. Änderungen werden erst mit „Veröffentlichen“ live geschaltet.",
           "controls": "Die Live-Version ist der veröffentlichte Stand. Draft zurücksetzen verwirft unveröffentlichte Änderungen und stellt die Live-Werte wieder her. Veröffentlichen schaltet den Draft frei.",
           "split": "Preisregeln und Sitzungsprognose haben je einen eigenen Draft. Das Veröffentlichen des einen veröffentlicht den anderen nicht. Bearbeiten kannst du sie unter Preise, Basis & Bereich, Farben & Laser, Fitzpatrick & Haut, Lifestyle und Healing & Response. Versionen & Audit zeigt beide.",
-          "impact": "Die Impact-Vorschau rechts rechnet denselben Beispiel-Case zweimal: einmal mit den veröffentlichten Live-Werten und einmal mit dem ausstehenden Draft. Solange du nicht veröffentlicht hast, stimmen beide Spalten überein."
+          "impact": "Die Impact-Vorschau rechts rechnet denselben Beispiel-Case zweimal: einmal mit den veröffentlichten Live-Werten und einmal mit dem ausstehenden Draft. Live und Draft sind nur identisch, solange es keine Draft-Änderungen gibt. Sobald ein Wert geändert wird, bleibt Live unverändert und Draft zeigt das neu berechnete Ergebnis."
         },
         "delta": {
           "title": "Was ist ein Delta und wieviel ist es wert?",
@@ -3004,7 +3054,7 @@ const de: TranslationSchema = {
           ],
           "priceColors": "Farben beeinflussen den Preis NICHT. Sie beeinflussen nur die Sitzungsanzahl.",
           "sessionsTitle": "Sitzungsanzahl",
-          "sessionsText": "Basis (8) + alle Deltas = Rohwert. Rohwert × Lifestyle-Multiplikator = Mitte. Range: Mitte − 1 bis Mitte + 1.",
+          "sessionsText": "Basis + alle Deltas = Rohwert. Rohwert × Lifestyle-Multiplikator = Mitte. Die Range nutzt die konfigurierten Werte Range − / Range + um diese Mitte.",
           "whatTitle": "Was sind Deltas?",
           "whatIntro": "Jeder Faktor addiert oder subtrahiert Sitzungen:",
           "whatLines": [
@@ -3056,8 +3106,20 @@ const de: TranslationSchema = {
           ],
           "bmiNote": "Ein BMI ab 30 hebt den Composite Score auf einen konfigurierbaren Mindestwert (ab 30 mindestens 4, ab 35 mindestens 5). Er kann den Score nur anheben, nie senken."
         },
-        "aiTitle": "Verbindung zum AI Training Center",
-        "aiText": "Diese Engine-Werte fliessen in das ELAYA AI Training Center ein. Änderungen werden versioniert und für die KI-Kalibrierung verwendet."
+        "aiTitle": "Verbindung zu ELAYA Chat und AI Training Center",
+        "aiText": "ELAYA Chat und das AI Training Center lesen immer die veröffentlichte Live-Engine. Draft-Änderungen erreichen die KI erst nach dem Veröffentlichen. Automatisches Modell-Training ist noch nicht aktiv."
+      },
+      "howEditor": {
+        "editWording": "Formulierung bearbeiten",
+        "closeEditor": "Editor schliessen",
+        "saveDraft": "Draft speichern",
+        "saved": "Erklärungs-Draft gespeichert",
+        "saveFailed": "Erklärung konnte nicht gespeichert werden",
+        "loadError": "Erklärung konnte nicht geladen werden",
+        "draftNote": "Wie funktioniert ELAYA — Formulierung",
+        "factsTitle": "Aktuelle Engine-Regel (immer aus den Zahlen, nicht aus diesem Text)",
+        "factsLine": "Basis {{base}} · Range −{{minus}} / +{{plus}} · begrenzt {{min}}–{{max}} · Preis MAX({{minPrice}} CHF, Fläche × {{price}} CHF) aufgerundet auf CHF {{round}} · Farben: {{colors}}",
+        "placeholderHint": "Platzhalter wie {{base_sessions}} und {{range_minus}} werden aus der Engine gefüllt. Tippe die Range nicht als festes −1/+1."
       },
       "versionsHint": "Preise und Sitzungsprognose werden heute unabhängig veröffentlicht — das Veröffentlichen eines Bereichs beeinflusst den ausstehenden Draft des anderen nicht.",
       "impact": {
@@ -3097,7 +3159,27 @@ const de: TranslationSchema = {
       "fitzType": "Typ {{type}}",
       "bodyLocation": "Körperstelle",
       "density": "Dichte",
+      "densityHint": "Wie dicht die tätowierte Fläche mit Pigment gefüllt ist — von leicht oder locker bedeckt bis sehr kompakt und stark gefüllt.",
       "saturation": "Sättigung",
+      "saturationHint": "Wie intensiv und stark das Pigment in den tätowierten Flächen liegt — von hell oder verblasst bis stark gesättigt.",
+      "shading": "Schattierung",
+      "shadingHint": "Wie stark das Tattoo Schattierung, Verläufe oder weich gefüllte Flächen nutzt — von keiner Schattierung bis ausgedehnter Schattierung.",
+      "linework": "Linienführung",
+      "lineworkHint": "Wie die Tattoo-Linien ausgeführt sind — fein, mittel, kräftig oder eine Mischung verschiedener Linienstärken.",
+      "shadingOptions": {
+        "none": "Kein",
+        "low": "Wenig",
+        "medium": "Mittel",
+        "high": "Viel",
+        "unknown": "Nicht sicher"
+      },
+      "lineworkOptions": {
+        "fine": "Fein",
+        "medium": "Mittel",
+        "bold": "Kräftig",
+        "mixed": "Gemischt",
+        "unknown": "Nicht sicher"
+      },
       "coverup": "Cover-up",
       "tattooAge": "Tattoo-Alter (Jahre)",
       "depth": "Tiefe",
@@ -3105,7 +3187,8 @@ const de: TranslationSchema = {
         "shallow": "Oberflächlich",
         "normal": "Normal",
         "deep": "Tief",
-        "very_deep": "Sehr tief"
+        "very_deep": "Sehr tief",
+        "unknown": "Nicht sicher"
       },
       "tattooType": "Tattoo-Art",
       "goal": "Behandlungsziel",
@@ -3157,7 +3240,8 @@ const de: TranslationSchema = {
         "low": "Niedrig",
         "medium": "Mittel",
         "high": "Hoch",
-        "very_high": "Sehr hoch"
+        "very_high": "Sehr hoch",
+        "unknown": "Nicht sicher"
       },
       "locations": {
         "arm": "Arm",
@@ -3177,14 +3261,15 @@ const de: TranslationSchema = {
         "none": "Keins",
         "once": "Einmal",
         "multiple": "Mehrfach",
-        "unknown": "Unbekannt"
+        "unknown": "Nicht sicher"
       },
       "tcTypes": {
         "amateur": "Amateur",
         "professional": "Professionell",
         "cosmetic": "Kosmetisch",
         "coverup": "Cover-up",
-        "mixed": "Gemischt"
+        "mixed": "Gemischt",
+        "unknown": "Nicht sicher"
       },
       "goals": {
         "full_removal": "Vollständige Entfernung",
@@ -3244,11 +3329,9 @@ const de: TranslationSchema = {
       },
       "hydrationOpts": { "good": "Gut", "normal": "Normal", "low": "Niedrig" },
       "nutritionOpts": {
-        "very_good": "Sehr gut",
-        "good": "Gut",
-        "fair": "Mittel",
         "poor": "Schlecht",
-        "very_poor": "Sehr schlecht"
+        "fair": "Mittel",
+        "good": "Gut"
       },
       "aftercareOpts": { "high": "Hoch", "medium": "Mittel", "low": "Niedrig" },
       "healingOpts": {
@@ -3428,6 +3511,9 @@ const de: TranslationSchema = {
       "loadError": "AI-Konfiguration konnte nicht geladen werden",
       "saved": "AI-Konfiguration gespeichert",
       "saveFailed": "Speichern fehlgeschlagen",
+      "engineTitle": "Veröffentlichte Engine (Quelle der Wahrheit für Chat)",
+      "engineHint": "ELAYA Chat liest immer die veröffentlichte Live-Engine — Deltas, Range, Preisregeln und diese Erklärung. Automatisches Modell-Training ist noch nicht aktiv; die Werte sind versioniert für spätere Kalibrierung.",
+      "openEngine": "Prognose-Engine öffnen",
       "prompts": {
         "nachsorge": "Nachsorge (Foto-Check)",
         "verblassung": "Verblassungsanalyse",
@@ -3894,6 +3980,30 @@ const de: TranslationSchema = {
       "permsUpdated": "Berechtigungen aktualisiert",
       "inviteEmailFailed": "Admin gespeichert, aber Einladungs-E-Mail fehlgeschlagen — EMAIL_PROVIDER / SMTP prüfen, dann Einladung erneut senden"
     },
+    "engineMasterData": {
+      "title": "Engine-Stammdaten",
+      "subtitle": "Zentrale Standardwerte der Prognose-Engine: Basis & Bereich, Fitzpatrick & Haut, Körperstellen, Lifestyle & BMI, Healing & Response.",
+      "explainer": "Das sind dieselben Backend-Werte, die die Prognose-Engine verwendet — keine Kopie. Speichern aktualisiert den gemeinsamen DRAFT; die Prognose-Engine zeigt sofort die Auswirkung auf den aktuellen Case, und erst Veröffentlichen macht ihn LIVE. Laser-Farb-Deltas werden pro Laser im Laser-Katalog gepflegt, Basispreise unter Prognose-Engine → Preise.",
+      "draftPending": "Draft ausstehend — noch nicht live",
+      "inSync": "Kein Draft — LIVE-Werte",
+      "liveVersion": "LIVE-Version {{version}}",
+      "colFactor": "Faktor",
+      "colLive": "LIVE",
+      "colDraft": "DRAFT",
+      "colDelta": "Δ",
+      "openInEngine": "In der Prognose-Engine testen & veröffentlichen",
+      "colorsNote": "Plattform-Farb-Deltas gelten für Laser ohne eigenen Wert. Farb-Deltas pro Laser werden gepflegt im",
+      "openLasers": "Laser-Katalog",
+      "unsaved": "Ungespeicherte Änderungen",
+      "publishHint": "Gespeicherte Drafts werden nach dem Veröffentlichen in der Prognose-Engine LIVE.",
+      "reset": "Zurücksetzen",
+      "saveDraft": "Draft speichern",
+      "saved": "Draft gespeichert — Auswirkung in der Prognose-Engine prüfen und veröffentlichen",
+      "saveFailed": "Draft konnte nicht gespeichert werden",
+      "loadError": "Engine-Stammdaten konnten nicht geladen werden",
+      "readOnly": "Nur Ansicht — nur der Elaya Super-Admin kann Prognosewerte ändern.",
+      "draftNote": "Engine-Stammdaten"
+    },
     "lasers": {
       "title": "Laser-Katalog",
       "subtitle": "Freigegebene Geräte, die Studios auswählen können. Studios dürfen Stammdaten nicht bearbeiten.",
@@ -3924,7 +4034,15 @@ const de: TranslationSchema = {
       "saveFailed": "Speichern fehlgeschlagen",
       "approved": "Freigegeben & zum Katalog hinzugefügt",
       "rejected": "Abgelehnt",
-      "resolveFailed": "Entscheidung fehlgeschlagen"
+      "resolveFailed": "Entscheidung fehlgeschlagen",
+      "colorDeltasTitle": "Farb-Deltas (Prognose-Engine)",
+      "colorDeltasHint": "Zusätzliche Sitzungen pro Farbe mit diesem Laser. Dieselben Werte wie Prognose-Engine → Farben & Laser. Änderungen werden als DRAFT gespeichert und erst nach dem Veröffentlichen in der Prognose-Engine LIVE.",
+      "reviewInEngine": "Auswirkung prüfen & veröffentlichen",
+      "colorDraftPending": "Für diese Farb-Deltas liegt ein Draft vor. LIVE nutzt weiterhin die veröffentlichten Werte, bis in der Prognose-Engine veröffentlicht wird.",
+      "colorDeltasSuperAdminOnly": "Nur der Elaya Super-Admin kann Farb-Deltas ändern.",
+      "colorDraftBadge": "Draft ausstehend",
+      "colorsDrafted": "Farb-Deltas als Draft gespeichert — in der Prognose-Engine veröffentlichen",
+      "liveValue": "LIVE: {{value}}"
     },
     "studioTeam": {
       "title": "Studio-Team",
@@ -4145,7 +4263,7 @@ const de: TranslationSchema = {
       "platformDefault": "Plattform-Standard",
       "priceHowTitle": "Wie wird der Preis berechnet?",
       "priceHowLines": [
-        "Preis = Tattoo-Fläche × Basispreis pro cm². Der Mindestpreis gilt immer. Das Ergebnis wird auf CHF 5 aufgerundet.",
+        "Preis = Tattoo-Fläche × Basispreis pro cm². Der Mindestpreis gilt immer. Das Ergebnis wird auf den konfigurierten CHF-Schritt aufgerundet.",
         "Beispiel: 40 cm² × CHF 3.00 = CHF 120. Mindestpreis CHF 90 → CHF 120 gilt.",
         "Wichtig: Farben ändern den Preis nicht. Farben beeinflussen nur die Sitzungsanzahl.",
         "Das Studio kann seinen eigenen Basispreis pro cm² in den Studio-Einstellungen unter Preise setzen."
@@ -4158,12 +4276,14 @@ const de: TranslationSchema = {
         "skin": "Hauttyp (Fitzpatrick)",
         "location": "Körperstelle",
         "layering": "Layering / Cover-up",
+        "rounding": "Rundung",
         "goal": "Behandlungsziel"
       },
       "fields": {
         "basePricePerCm2": "Basispreis / cm² (CHF)",
         "minPrice": "Mindestpreis / Sitzung (CHF)",
         "pmuPrice": "PMU-Preis (CHF)",
+        "price_round_to": "Sitzungspreis aufrunden auf (CHF)",
         "color_black": "Schwarz",
         "color_mixed": "Gemischt",
         "color_multi": "Mehrfarbig",
@@ -4247,9 +4367,12 @@ const de: TranslationSchema = {
       "lifestyleScoreLine": "Score {{score}} · ×{{mult}}",
       "midConfidence": "Mitte / Konfidenz",
       "activeFactors": "Wirksame Tattoo-Faktoren",
-      "noDeltas": "Keine Tattoo-Deltas ≠ 0 — einfache Prognose (±1 Sitzung um die Mitte).",
+      "noDeltas": "Keine Tattoo-Deltas ≠ 0 — einfache Prognose (Range − / Range + um die Mitte).",
       "loadPreview": "Vorschau laden",
-      "formulaHint": "Formel: (Basis + Tattoo-Deltas) × Lifestyle-Multiplikator → Sitzungsmitte, danach Min/Max-Range. Lifestyle-Score 1 = ×0.85 (optimal), Score 5 = ×1.50 (stark beeinträchtigt). Kunden sehen diese Parameter nicht.",
+      "formulaHint": "Formel: (Basis + Tattoo-Deltas) × Lifestyle-Multiplikator → gerundete Mitte, begrenzt auf Min/Max, danach Range − / Range + um diese Mitte. Color Impact nutzt die Aggregationsregel unten. Kunden sehen diese Parameter nicht.",
+      "colorAggregation": "Farb-Aggregation",
+      "colorAggregationMax": "MAX (schwierigste Farbe oder Farbanzahl)",
+      "colorAggregationSum": "SUMME (schwierigste Farbe + Farbanzahl)",
       "deltaNone": "Kein Einfluss auf Sitzungen",
       "deltaMore": "+{{count}} Sitzung(en) bei normalem Lifestyle",
       "deltaLess": "{{count}} Sitzung(en) weniger bei normalem Lifestyle",
@@ -4325,6 +4448,7 @@ const de: TranslationSchema = {
         }
       },
       "aftercareSection": "Nachsorge-Bereitschaft (zusätzliche Max-Sitzungen)",
+      "liveValue": "LIVE: {{value}}",
       "avgUpTo": "Ø bis",
       "score": "Score",
       "multiplier": "Multiplikator",
@@ -4348,6 +4472,8 @@ const de: TranslationSchema = {
         "scarring": "Narben / Keloid-Risiko (Delta)",
         "density": "Dichte (Delta)",
         "saturation": "Sättigung (Delta)",
+        "shading": "Schattierung (Delta)",
+        "linework": "Linienführung (Delta)",
         "coverup": "Cover-up / Layering (Delta)",
         "age": "Tattoo-Alter (Delta)",
         "depth": "Tiefe (Delta)",
@@ -4409,19 +4535,35 @@ const de: TranslationSchema = {
           "low": "Niedrig",
           "medium": "Mittel",
           "high": "Hoch",
-          "very_high": "Sehr hoch"
+          "very_high": "Sehr hoch",
+          "unknown": "Nicht sicher"
         },
         "saturation": {
           "low": "Niedrig",
           "medium": "Mittel",
           "high": "Hoch",
-          "very_high": "Sehr hoch"
+          "very_high": "Sehr hoch",
+          "unknown": "Nicht sicher"
+        },
+        "shading": {
+          "none": "Kein",
+          "low": "Wenig",
+          "medium": "Mittel",
+          "high": "Viel",
+          "unknown": "Nicht sicher"
+        },
+        "linework": {
+          "fine": "Fein",
+          "medium": "Mittel",
+          "bold": "Kräftig",
+          "mixed": "Gemischt",
+          "unknown": "Nicht sicher"
         },
         "coverup": {
           "none": "Kein",
           "once": "1× überdeckt",
           "multiple": "Mehrfach",
-          "unknown": "Unbekannt"
+          "unknown": "Nicht sicher"
         },
         "age": {
           "under_1": "unter 1 Jahr",
@@ -4429,13 +4571,14 @@ const de: TranslationSchema = {
           "age_4_7": "4–7 Jahre",
           "age_8_15": "8–15 Jahre",
           "over_15": "über 15 Jahre",
-          "unknown": "Unbekannt"
+          "unknown": "Nicht sicher"
         },
         "depth": {
           "shallow": "Oberflächlich",
           "normal": "Normal",
           "deep": "Tief",
-          "very_deep": "Sehr tief"
+          "very_deep": "Sehr tief",
+          "unknown": "Nicht sicher"
         },
         "prior_treatment": {
           "none": "Keine",
@@ -4447,7 +4590,8 @@ const de: TranslationSchema = {
           "professional": "Professionell",
           "cosmetic": "Kosmetisch",
           "coverup": "Cover-up",
-          "mixed": "Gemischt"
+          "mixed": "Gemischt",
+          "unknown": "Nicht sicher"
         },
         "goal": {
           "full_removal": "Komplett",
@@ -4535,11 +4679,9 @@ const de: TranslationSchema = {
           "low": "Niedrig"
         },
         "nutrition": {
-          "very_good": "Sehr gut",
-          "good": "Gut",
-          "fair": "Mittel",
           "poor": "Schlecht",
-          "very_poor": "Sehr schlecht"
+          "fair": "Mittel",
+          "good": "Gut"
         }
       },
       "aftercareFields": {

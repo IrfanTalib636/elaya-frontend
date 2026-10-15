@@ -12,6 +12,8 @@ import { Spinner } from '../ui'
 import NumberStepper from '../ui/NumberStepper'
 import useContent from '../../i18n/useContent'
 import { useEngineCaseOptional } from './EngineCaseContext'
+import { buildEngineCaseInput, defaultEngineCase } from './engineCaseModel'
+import { LIFE_NUTRITION } from '../../constants/intakeEnums'
 
 const COLORS = [
   'black',
@@ -41,9 +43,12 @@ const LOCATIONS = [
   'foot',
   'other',
 ]
-const LEVELS = ['low', 'medium', 'high', 'very_high']
+const LEVELS = ['low', 'medium', 'high', 'very_high', 'unknown']
+const SHADING = ['none', 'low', 'medium', 'high', 'unknown']
+const LINEWORK = ['fine', 'medium', 'bold', 'mixed', 'unknown']
+const DEPTHS = ['shallow', 'normal', 'deep', 'very_deep', 'unknown']
 const COVERUP = ['none', 'once', 'multiple', 'unknown']
-const TC_TYPES = ['amateur', 'professional', 'cosmetic', 'coverup', 'mixed']
+const TC_TYPES = ['amateur', 'professional', 'cosmetic', 'coverup', 'mixed', 'unknown']
 const GOALS = ['full_removal', 'partial_fade', 'lightening_for_coverup']
 const LASER_LEVELS = ['basic', 'unknown', 'advanced', 'premium', 'elite']
 const HEALING = ['normal', 'mixed', 'problematic']
@@ -57,49 +62,12 @@ const STRESS = ['low', 'medium', 'high', 'very_high']
 const ACTIVITY = ['high', 'regular', 'light', 'low']
 const SPORT = ['5+', '3-4', '1-2', '0']
 const HYDRATION = ['good', 'normal', 'low']
-const NUTRITION = ['very_good', 'good', 'fair', 'poor', 'very_poor']
 
 const fieldClass =
   'w-full rounded-[10px] border border-elaya-border bg-studio-bg-4 text-studio-white text-[13px] px-3 py-2 outline-none focus:border-studio-gold/50'
 const labelClass = 'block text-studio-w2 text-[12px] mb-1.5'
 
-const defaultForm = () => ({
-  sizeMode: 'lxb',
-  tc_size_length: 8,
-  tc_size_width: 5,
-  flaeche_cm2: 40,
-  skin_fitzpatrick_type: 'III',
-  tc_body_location_main: 'arm',
-  tc_density: 'medium',
-  tc_saturation: 'medium',
-  tc_coverup: 'none',
-  tc_age_years: 5,
-  tc_prior_treatment: false,
-  tc_prior_treatment_count: 0,
-  tc_type: 'professional',
-  goal_target: 'full_removal',
-  skin_keloid_risk: 'low',
-  laser_profile_level: 'basic',
-  type: 'tattoo',
-  tc_colors_present: ['black'],
-  tc_depth: 'normal',
-  laserId: '',
-  healing_history: 'normal',
-  lightening_rate: 'expected',
-  life_aftercare_commitment: 'medium',
-  life_age: 34,
-  life_height_cm: 170,
-  life_weight_kg: 72,
-  life_smoker: 'no',
-  life_alcohol: 'never',
-  life_sleep_quality: 'good',
-  life_sleep_hours: '7-8',
-  life_stress: 'medium',
-  life_activity: 'regular',
-  life_sport_freq: '1-2',
-  life_hydration: 'normal',
-  life_nutrition: 'good',
-})
+const defaultForm = defaultEngineCase
 
 const fmtChf = (n) =>
   n == null
@@ -109,9 +77,10 @@ const fmtChf = (n) =>
         maximumFractionDigits: 0,
       })}`
 
-const SelectField = ({ label, value, onChange, options, optionLabel }) => (
+const SelectField = ({ label, hint, value, onChange, options, optionLabel }) => (
   <div>
     <label className={labelClass}>{label}</label>
+    {hint ? <p className="text-studio-w3 text-[11px] leading-snug mb-1.5 -mt-0.5">{hint}</p> : null}
     <select className={fieldClass} value={value} onChange={(e) => onChange(e.target.value)}>
       {options.map((opt) => (
         <option key={opt} value={opt}>
@@ -176,51 +145,10 @@ const EngineCaseSimulator = ({
   )
   const activeColorDeltas = selectedLaser?.color_deltas || colorDeltas
 
-  const caseInput = useMemo(() => {
-    const colors = form.tc_colors_present || []
-    const input = {
-      type: form.type === 'pmu' ? 'pmu' : 'tattoo',
-      tc_size_length: form.sizeMode === 'lxb' ? Number(form.tc_size_length) || 0 : undefined,
-      tc_size_width: form.sizeMode === 'lxb' ? Number(form.tc_size_width) || 0 : undefined,
-      flaeche_cm2: form.sizeMode === 'direkt' ? Number(form.flaeche_cm2) || 0 : area,
-      skin_fitzpatrick_type: form.skin_fitzpatrick_type,
-      tc_body_location_main: form.tc_body_location_main,
-      tc_density: form.tc_density,
-      tc_saturation: form.tc_saturation,
-      tc_coverup: form.tc_coverup,
-      tc_age_years: Number(form.tc_age_years) || 0,
-      tc_prior_treatment: !!form.tc_prior_treatment,
-      tc_prior_treatment_count: form.tc_prior_treatment
-        ? Number(form.tc_prior_treatment_count) || 1
-        : 0,
-      tc_type: form.tc_type,
-      goal_target: form.goal_target,
-      skin_keloid_risk: form.skin_keloid_risk,
-      laser_profile_level: form.laser_profile_level,
-      tc_colors_present: colors,
-      tc_depth: form.tc_depth || 'normal',
-      ...(selectedLaser?.id ? { laser_device_id: selectedLaser.id } : {}),
-      healing_history: form.healing_history || undefined,
-      lightening_rate: form.lightening_rate || undefined,
-      life_aftercare_commitment: form.life_aftercare_commitment,
-      life_age: Number(form.life_age) || undefined,
-      life_height_cm: Number(form.life_height_cm) || undefined,
-      life_weight_kg: Number(form.life_weight_kg) || undefined,
-      life_smoker: form.life_smoker,
-      life_alcohol: form.life_alcohol,
-      life_sleep_quality: form.life_sleep_quality,
-      life_sleep_hours: form.life_sleep_hours,
-      life_stress: form.life_stress,
-      life_activity: form.life_activity,
-      life_sport_freq: form.life_sport_freq,
-      life_hydration: form.life_hydration,
-      life_nutrition: form.life_nutrition,
-      ...(activeColorDeltas && Object.keys(activeColorDeltas).length
-        ? { laser_color_deltas: activeColorDeltas }
-        : {}),
-    }
-    return input
-  }, [form, area, activeColorDeltas, selectedLaser])
+  const caseInput = useMemo(
+    () => buildEngineCaseInput(form, selectedLaser),
+    [form, selectedLaser]
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -536,6 +464,7 @@ const EngineCaseSimulator = ({
             />
             <SelectField
               label={copy.density || 'Density'}
+              hint={copy.densityHint}
               value={form.tc_density}
               onChange={(v) => set('tc_density', v)}
               options={LEVELS}
@@ -543,10 +472,27 @@ const EngineCaseSimulator = ({
             />
             <SelectField
               label={copy.saturation || 'Saturation'}
+              hint={copy.saturationHint}
               value={form.tc_saturation}
               onChange={(v) => set('tc_saturation', v)}
               options={LEVELS}
               optionLabel={levelLabel}
+            />
+            <SelectField
+              label={copy.shading || 'Shading'}
+              hint={copy.shadingHint}
+              value={form.tc_shading}
+              onChange={(v) => set('tc_shading', v)}
+              options={SHADING}
+              optionLabel={(v) => copy.shadingOptions?.[v] || levelLabel(v)}
+            />
+            <SelectField
+              label={copy.linework || 'Line style'}
+              hint={copy.lineworkHint}
+              value={form.tc_linework}
+              onChange={(v) => set('tc_linework', v)}
+              options={LINEWORK}
+              optionLabel={(v) => copy.lineworkOptions?.[v] || levelLabel(v)}
             />
             <SelectField
               label={copy.coverup || 'Cover-up'}
@@ -566,8 +512,8 @@ const EngineCaseSimulator = ({
               label={copy.depth || 'Ink depth'}
               value={form.tc_depth || 'normal'}
               onChange={(v) => set('tc_depth', v)}
-              options={['shallow', 'normal', 'deep', 'very_deep']}
-              optionLabel={(v) => copy.depthOptions?.[v] || v}
+              options={DEPTHS}
+              optionLabel={(v) => copy.depthOptions?.[v] || levelLabel(v)}
             />
             <SelectField
               label={copy.tattooType || 'Tattoo type'}
@@ -734,7 +680,7 @@ const EngineCaseSimulator = ({
               label={copy.nutrition || 'Nutrition'}
               value={form.life_nutrition}
               onChange={(v) => set('life_nutrition', v)}
-              options={NUTRITION}
+              options={LIFE_NUTRITION}
               optionLabel={nutritionLabel}
             />
             <SelectField

@@ -10,6 +10,7 @@ import {
   labelFor,
   bodyLocationLabel,
 } from '../../constants/caseIntake'
+import { canonicalizeNutrition, LIFE_NUTRITION as LIFE_NUTRITION_VALUES } from '../../constants/intakeEnums'
 import { buildPmuBodyLabel } from '../../constants/pmuIntake'
 
 // ── Shared UI bits ────────────────────────────────────────────────────────
@@ -184,6 +185,7 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
   const QUALITY_LEVEL = caseForm.qualityLevel
   const SHADING_LEVEL = caseForm.shadingLevel
   const LINEWORK_LEVEL = caseForm.lineworkLevel
+  const DEPTH_LEVEL = caseForm.depthLevel
   const INK_COLORS = caseForm.inkColors
   const FITZPATRICK = caseForm.fitzpatrick
   const RISK_LEVEL = caseForm.riskLevel
@@ -196,7 +198,8 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
   const LIFE_SLEEP_QUALITY = caseForm.lifeSleepQuality
   const LIFE_STRESS = caseForm.lifeStress
   const LIFE_HYDRATION = caseForm.lifeHydration
-  const LIFE_NUTRITION = caseForm.lifeNutrition
+  const nutritionLabels = Object.fromEntries(caseForm.lifeNutrition || [])
+  const LIFE_NUTRITION = LIFE_NUTRITION_VALUES.map((value) => [value, nutritionLabels[value] || value])
   const GOAL_TARGETS = caseForm.goalTargets
   const ZONE_DICHTE = caseForm.zoneDichte
   const PHOTO_STD_CHECKLIST = caseForm.photoChecklist
@@ -252,7 +255,9 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
           if (value == null || value === '') continue
           // Never overwrite something already entered in this form.
           if (current[key] !== '' && current[key] != null) continue
-          patch[key] = String(value)
+          const nextValue =
+            key === 'life_nutrition' ? canonicalizeNutrition(String(value)) : String(value)
+          patch[key] = nextValue
           applied[key] = true
         }
 
@@ -350,7 +355,7 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
           return ''
         }
         if (!form.tc_colors_present.length) return v.colorsRequired
-        if (!form.tc_density || !form.tc_saturation || !form.tc_shading || !form.tc_linework) {
+        if (!form.tc_density || !form.tc_saturation || !form.tc_shading || !form.tc_linework || !form.tc_depth) {
           return v.propertiesRequired
         }
         if (!form.tc_size_length || !form.tc_size_width) return v.sizeRequired
@@ -362,7 +367,9 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
         if (!form.skin_sun_zone) return v.sunRequired
         return ''
       case 3:
-        if (!form.life_smoker || !form.life_alcohol || !form.life_activity) return v.lifestyleRequired
+        if (!form.life_smoker || !form.life_alcohol || !form.life_activity || !form.life_sport_freq) {
+          return v.lifestyleRequired
+        }
         if (!form.life_sleep_hours || !form.life_sleep_quality || !form.life_stress) return v.sleepRequired
         if (!form.life_height_cm || !form.life_weight_kg) return v.bodyMassRequired
         if (!form.life_hydration || !form.life_nutrition) return v.hydrationRequired
@@ -458,6 +465,7 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
       tc_saturation: form.zonen_aktiv ? undefined : form.tc_saturation || undefined,
       tc_shading: form.zonen_aktiv ? undefined : form.tc_shading || undefined,
       tc_linework: form.zonen_aktiv ? undefined : form.tc_linework || undefined,
+      tc_depth: form.zonen_aktiv ? undefined : form.tc_depth || undefined,
       tc_size_length: form.zonen_aktiv ? undefined : num(form.tc_size_length),
       tc_size_width: form.zonen_aktiv ? undefined : num(form.tc_size_width),
       skin_fitzpatrick_type: form.skin_fitzpatrick_type || undefined,
@@ -760,7 +768,7 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
                 </div>
               </div>
               <div>
-                <FieldLabel>{ui.properties.density}</FieldLabel>
+                <FieldLabel hint={ui.properties.densityHint}>{ui.properties.density}</FieldLabel>
                 <OptGrid>
                   {ZONE_DICHTE.map(([v, l]) => (
                     <Opt key={v} active={z.dichte === v} onClick={() => setZone(z._id, { dichte: v })}>{l}</Opt>
@@ -850,15 +858,16 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
         </div>
 
         {[
-          ['tc_density', ui.properties.colorDensity, QUALITY_LEVEL],
-          ['tc_saturation', ui.properties.saturation, QUALITY_LEVEL],
-          ['tc_shading', ui.properties.shading, SHADING_LEVEL],
-          ['tc_linework', ui.properties.linework, LINEWORK_LEVEL],
-        ].map(([field, label, opts]) => (
+          ['tc_density', ui.properties.colorDensity, QUALITY_LEVEL, ui.properties.densityHint],
+          ['tc_saturation', ui.properties.saturation, QUALITY_LEVEL, ui.properties.saturationHint],
+          ['tc_shading', ui.properties.shading, SHADING_LEVEL, ui.properties.shadingHint],
+          ['tc_linework', ui.properties.linework, LINEWORK_LEVEL, ui.properties.lineworkHint],
+          ['tc_depth', ui.properties.depth, DEPTH_LEVEL],
+        ].map(([field, label, opts, hint]) => (
           <div key={field}>
-            <FieldLabel>{label} *</FieldLabel>
+            <FieldLabel hint={hint}>{label} *</FieldLabel>
             <OptGrid>
-              {opts.map(([v, l]) => (
+              {(opts || []).map(([v, l]) => (
                 <Opt key={v} active={form[field] === v} onClick={() => set(field, v)}>{l}</Opt>
               ))}
             </OptGrid>

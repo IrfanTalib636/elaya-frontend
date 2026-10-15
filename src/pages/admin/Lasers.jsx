@@ -10,13 +10,20 @@ import {
 } from '../../api/adminPhase4'
 import { getApiErrorMessage } from '../../lib/apiError'
 import useContent from '../../i18n/useContent'
+import useAuthStore from '../../store/authStore'
+import { ROLES } from '../../constants/roles'
+import LaserColorDeltasEditor from '../../components/lasers/LaserColorDeltasEditor'
+import { sameLaserColors } from '../../components/lasers/laserColors'
 
-const emptyForm = () => ({
+const emptyForm = (colors = {}) => ({
   manufacturer: '',
   model: '',
   wavelengths: '',
   notes: '',
   active: true,
+  colors: { ...colors },
+  liveColors: { ...colors },
+  colorsPending: false,
 })
 
 const parseWavelengths = (raw) =>
@@ -28,8 +35,10 @@ const parseWavelengths = (raw) =>
 export default function AdminLasers() {
   const { adminPages } = useContent()
   const copy = adminPages.lasers || {}
+  const canEditColors = useAuthStore((s) => s.user?.role) === ROLES.SUPER_ADMIN
   const [loading, setLoading] = useState(true)
   const [devices, setDevices] = useState([])
+  const [defaultColors, setDefaultColors] = useState({})
   const [requests, setRequests] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
@@ -43,6 +52,9 @@ export default function AdminLasers() {
         listLaserRequests({ status: 'pending' }),
       ])
       setDevices(d.data.data.devices || [])
+      const defaults = d.data.data.default_color_deltas || {}
+      setDefaultColors(defaults)
+      setForm((f) => (f.manufacturer || f.model ? f : emptyForm(defaults)))
       setRequests(r.data.data.requests || [])
     } catch (err) {
       toast.error(getApiErrorMessage(err, copy.loadError || 'Failed to load lasers'))
@@ -57,18 +69,22 @@ export default function AdminLasers() {
 
   const startEdit = (device) => {
     setEditingId(device.id)
+    const live = device.color_deltas || {}
     setForm({
       manufacturer: device.manufacturer || '',
       model: device.model || '',
       wavelengths: (device.wavelengths_nm || []).join(', '),
       notes: device.notes || '',
       active: device.active !== false,
+      colors: { ...(device.color_deltas_draft || live) },
+      liveColors: { ...live },
+      colorsPending: Boolean(device.color_deltas_pending),
     })
   }
 
   const cancelEdit = () => {
     setEditingId(null)
-    setForm(emptyForm())
+    setForm(emptyForm(defaultColors))
   }
 
   const handleSave = async () => {
@@ -78,16 +94,22 @@ export default function AdminLasers() {
     }
     setSaving(true)
     try {
+      const current = editingId
+        ? devices.find((d) => d.id === editingId)
+        : null
+      const savedColors = current ? current.color_deltas_draft || current.color_deltas : form.liveColors
+      const colorsChanged = canEditColors && !sameLaserColors(form.colors, savedColors)
       const payload = {
         manufacturer: form.manufacturer.trim(),
         model: form.model.trim(),
         wavelengths_nm: parseWavelengths(form.wavelengths),
         notes: form.notes,
         active: form.active,
+        ...(colorsChanged ? { color_deltas: form.colors } : {}),
       }
-      if (editingId) await updateLaser(editingId, payload)
-      else await createLaser(payload)
+      const res = editingId ? await updateLaser(editingId, payload) : await createLaser(payload)
       toast.success(editingId ? copy.updated : copy.created)
+      if (res.data?.data?.colors_drafted) toast.success(copy.colorsDrafted)
       cancelEdit()
       await load()
     } catch (err) {
@@ -154,6 +176,13 @@ export default function AdminLasers() {
           />
           {copy.activeSelectable}
         </label>
+        <LaserColorDeltasEditor
+          values={form.colors}
+          liveValues={form.liveColors}
+          pending={form.colorsPending}
+          disabled={!canEditColors}
+          onChange={(colors) => setForm((f) => ({ ...f, colors }))}
+        />
         <div className="flex gap-2 justify-end">
           {editingId ? (
             <Button size="sm" variant="ghost" onClick={cancelEdit} disabled={saving}>
@@ -220,6 +249,11 @@ export default function AdminLasers() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              {d.color_deltas_pending ? (
+                <Badge variant="default" value="entwurf">
+                  {copy.colorDraftBadge}
+                </Badge>
+              ) : null}
               <Badge variant={d.active ? 'status' : 'default'} value={d.active ? 'aktiv' : 'gesperrt'}>
                 {d.active ? copy.active : copy.inactive}
               </Badge>

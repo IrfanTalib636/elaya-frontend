@@ -131,8 +131,6 @@ const staffRoleLabel = (t, rolle) => {
 
 // ── Pricing tab ────────────────────────────────────────────────────────────
 const PricingTab = () => {
-  const { t } = useTranslation()
-
   const loadPricing = useCallback(async () => {
     const res = await getStudioConfig()
     const cfg = res.data.data.studio_config
@@ -152,7 +150,6 @@ const PricingTab = () => {
     <PricingRulesPanel
       canEdit={false}
       loadPricing={loadPricing}
-      coinWertLabel={t('settingsPage.pricing.chfPerCoin')}
     />
   )
 }

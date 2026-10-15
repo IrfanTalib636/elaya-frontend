@@ -10,13 +10,26 @@ export const PRICING_GROUPS = [
   },
 ]
 
+export const ENGINE_PRICING_GROUPS = [
+  {
+    id: 'rounding',
+    title: 'Rounding',
+    fields: [
+      { key: 'price_round_to', label: 'Round session price up to (CHF)', step: '1' },
+    ],
+  },
+]
+
 export const PRICING_LABELS = Object.fromEntries(
   PRICING_GROUPS.flatMap((group) => group.fields.map(({ key, label }) => [key, label]))
 )
 
-export const pricingValuesFromConfig = (studioPricing = {}) =>
+const allPricingGroups = (includeEngineRules) =>
+  includeEngineRules ? [...PRICING_GROUPS, ...ENGINE_PRICING_GROUPS] : PRICING_GROUPS
+
+export const pricingValuesFromConfig = (studioPricing = {}, { includeEngineRules = false } = {}) =>
   Object.fromEntries(
-    PRICING_GROUPS.flatMap((group) =>
+    allPricingGroups(includeEngineRules).flatMap((group) =>
       group.fields.map(({ key }) => [
         key,
         studioPricing?.[key] != null ? String(studioPricing[key]) : '',

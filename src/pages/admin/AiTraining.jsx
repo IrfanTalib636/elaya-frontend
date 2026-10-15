@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { PageHeader, Card, Button, Spinner } from '../../components/ui'
+import { Link } from 'react-router-dom'
 import { getAiConfig, updateAiConfig } from '../../api/adminPhase4'
+import { getEngineHowItWorks } from '../../api/adminConfig'
 import { getApiErrorMessage } from '../../lib/apiError'
 import useContent from '../../i18n/useContent'
 
 const PROMPT_KEYS = ['nachsorge', 'verblassung', 'customer_chat', 'studio_chat']
 
 export default function AdminAiTraining() {
-  const { adminPages } = useContent()
+  const { adminPages, i18n } = useContent()
   const copy = adminPages.aiTraining || {}
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -16,6 +18,7 @@ export default function AdminAiTraining() {
   const [prompts, setPrompts] = useState({})
   const [activeKey, setActiveKey] = useState('nachsorge')
   const [reason, setReason] = useState('')
+  const [engine, setEngine] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -24,12 +27,18 @@ export default function AdminAiTraining() {
       const cfg = res.data.data.ai_config || {}
       setPrompts(cfg.prompts || {})
       setModelName(cfg.model_name || '')
+      try {
+        const engineRes = await getEngineHowItWorks((i18n?.language || 'de').startsWith('en') ? 'en' : 'de')
+        setEngine(engineRes.data.data)
+      } catch {
+        setEngine(null)
+      }
     } catch (err) {
       toast.error(getApiErrorMessage(err, copy.loadError || 'Failed to load AI config'))
     } finally {
       setLoading(false)
     }
-  }, [copy.loadError])
+  }, [copy.loadError, i18n?.language])
 
   useEffect(() => {
     void load()
@@ -64,6 +73,37 @@ export default function AdminAiTraining() {
   return (
     <div className="max-w-[960px] flex flex-col gap-5">
       <PageHeader title={copy.title} subtitle={copy.subtitle} />
+
+      {engine?.facts || engine?.published_facts ? (
+        <Card className="flex flex-col gap-2">
+          <p className="text-[13px] font-semibold text-studio-white m-0">
+            {copy.engineTitle || 'Published Engine (source of truth for Chat)'}
+          </p>
+          <p className="text-[12px] text-studio-w1 m-0 leading-relaxed">
+            {copy.engineHint ||
+              'ELAYA Chat always reads the published Live Engine. Automatic model training is not yet active — the current published configuration is versioned and used as the only rule source.'}
+          </p>
+          <p className="text-[12px] text-studio-w2 m-0">
+            session_prediction v{engine.versions?.session_prediction || 0}
+            {' · '}
+            default_pricing v{engine.versions?.default_pricing || 0}
+            {' · '}
+            engine_explainer v{engine.versions?.engine_explainer || 0}
+          </p>
+          <p className="text-[12px] text-studio-w1 m-0">
+            Base {(engine.published_facts || engine.facts).base_sessions} · range −
+            {(engine.published_facts || engine.facts).range_minus} / +
+            {(engine.published_facts || engine.facts).range_plus} ·{' '}
+            {(engine.published_facts || engine.facts).color_aggregation_rule}
+          </p>
+          <Link
+            to="/admin/engine?view=admin"
+            className="text-[12px] font-semibold text-studio-gold-2 no-underline hover:underline w-fit"
+          >
+            {copy.openEngine || 'Open Prediction Engine'}
+          </Link>
+        </Card>
+      ) : null}
 
       <Card className="flex flex-col gap-3">
         <label className="text-[12px] font-semibold text-studio-white">

@@ -1,3 +1,5 @@
+import { LIFE_NUTRITION } from '../../constants/intakeEnums'
+
 export const SESSION_BASE_FIELDS = [
   { key: 'base_sessions', step: '1', hintKey: 'base_sessions' },
   { key: 'min_sessions', step: '1' },
@@ -75,6 +77,7 @@ export const TATTOO_DELTA_GROUPS = [
       { key: 'medium' },
       { key: 'high' },
       { key: 'very_high' },
+      { key: 'unknown' },
     ],
   },
   {
@@ -84,6 +87,27 @@ export const TATTOO_DELTA_GROUPS = [
       { key: 'medium' },
       { key: 'high' },
       { key: 'very_high' },
+      { key: 'unknown' },
+    ],
+  },
+  {
+    key: 'shading',
+    fields: [
+      { key: 'none' },
+      { key: 'low' },
+      { key: 'medium' },
+      { key: 'high' },
+      { key: 'unknown' },
+    ],
+  },
+  {
+    key: 'linework',
+    fields: [
+      { key: 'fine' },
+      { key: 'medium' },
+      { key: 'bold' },
+      { key: 'mixed' },
+      { key: 'unknown' },
     ],
   },
   {
@@ -113,6 +137,7 @@ export const TATTOO_DELTA_GROUPS = [
       { key: 'normal' },
       { key: 'deep' },
       { key: 'very_deep' },
+      { key: 'unknown' },
     ],
   },
   {
@@ -131,6 +156,7 @@ export const TATTOO_DELTA_GROUPS = [
       { key: 'cosmetic' },
       { key: 'coverup' },
       { key: 'mixed' },
+      { key: 'unknown' },
     ],
   },
   {
@@ -246,13 +272,7 @@ export const LIFESTYLE_SCORE_GROUPS = [
   },
   {
     key: 'nutrition',
-    fields: [
-      { key: 'very_good' },
-      { key: 'good' },
-      { key: 'fair' },
-      { key: 'poor' },
-      { key: 'very_poor' },
-    ],
+    fields: LIFE_NUTRITION.map((key) => ({ key })),
   },
 ]
 
@@ -268,6 +288,8 @@ export const TATTOO_GROUP_SECTION = {
   scarring: 'fitzpatrick',
   density: 'fitzpatrick',
   saturation: 'fitzpatrick',
+  shading: 'fitzpatrick',
+  linework: 'fitzpatrick',
   coverup: 'fitzpatrick',
   age: 'fitzpatrick',
   depth: 'fitzpatrick',
@@ -307,6 +329,8 @@ export const buildSessionPredictionPayload = (values = {}) => {
   }
 
   return {
+  treatment_key: values.treatment_key || 'tattoo',
+  color_aggregation: values.color_aggregation === 'sum' ? 'sum' : 'max',
   base_sessions: toNumber(values.base_sessions, 8),
   min_sessions: toNumber(values.min_sessions, 3),
   max_sessions: toNumber(values.max_sessions, 20),
@@ -341,6 +365,10 @@ export const buildSessionPredictionPayload = (values = {}) => {
   ),
   lifestyle_bmi_floors: (values.lifestyle_bmi_floors || DEFAULT_BMI_FLOORS).map((row) => ({
     min_bmi: toNumber(row.min_bmi, 30),
+    min_score: toNumber(row.min_score, 4),
+  })),
+  lifestyle_smoker_cigs: (values.lifestyle_smoker_cigs || []).map((row) => ({
+    min_cigs: toNumber(row.min_cigs, 0),
     min_score: toNumber(row.min_score, 4),
   })),
   ...(Object.keys(laserColorOverrides).length

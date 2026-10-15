@@ -152,7 +152,7 @@ const AdminEngine = () => {
   const handleSessionsPreview = useCallback(rememberPreview(setSessionsPreview), [])
 
   return (
-    <EngineCaseProvider>
+    <EngineCaseProvider refreshKey={panelEpoch}>
     <div className="p-6 max-w-[1440px]">
       <PageHeader
         title={copy.title || 'Prediction Engine'}
@@ -217,7 +217,14 @@ const AdminEngine = () => {
           </nav>
 
           <div className="min-w-0 flex flex-col gap-5">
-            {activeSection === 'how' ? <EngineHowItWorks /> : null}
+            {activeSection === 'how' ? (
+              <EngineHowItWorks
+                canEdit={canEditRules}
+                refreshKey={panelEpoch}
+                onPublished={() => void handleLifecyclePublished('engine_explainer')}
+                onDraftDiscarded={(life) => handleDraftDiscarded('engine_explainer', life)}
+              />
+            ) : null}
 
             {activeSection === 'pricing' ? (
               <>
@@ -234,12 +241,12 @@ const AdminEngine = () => {
                 <PricingRulesPanel
                   key={`pricing-${panelEpoch}`}
                   canEdit={canEditRules}
+                  includeEngineRules
                   loadPricing={loadPricing}
                   savePricing={canEditRules ? savePricing : undefined}
                   saveLabel={t('adminPages.settings.saveDraft', {
                     defaultValue: 'Save draft',
                   })}
-                  coinWertLabel={t('settingsPage.pricing.chfPerCoin')}
                   onPreviewValues={handlePricingPreview}
                 />
               </>

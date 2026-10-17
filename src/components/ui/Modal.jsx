@@ -4,7 +4,7 @@ import { X } from 'lucide-react'
 
 const getModalRoot = () => document.getElementById('modal-root') || document.body
 
-const Modal = ({ title, onClose, children, width = 'max-w-lg', scrollResetKey }) => {
+const Modal = ({ title, onClose, children, width = 'max-w-lg', scrollResetKey, open = true }) => {
   const bodyRef = useRef(null)
   const [mounted, setMounted] = useState(false)
 
@@ -36,7 +36,7 @@ const Modal = ({ title, onClose, children, width = 'max-w-lg', scrollResetKey })
     if (el) el.scrollTop = 0
   }, [scrollResetKey])
 
-  if (!mounted) return null
+  if (!mounted || open === false) return null
 
   return createPortal(
     <div

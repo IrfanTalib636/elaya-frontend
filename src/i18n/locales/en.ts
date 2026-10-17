@@ -104,11 +104,67 @@ const en = {
     "elayaChat": "Elaya Chat",
     "platformChat": "Support chat",
     "activity": "History",
+    "actions": "Actions",
     "shop": "Avora Shop",
     "transfers": "Studio transfer",
     "elaycoins": "Elaycoins",
     "simulator": "Case Simulator",
     "settings": "Settings"
+  },
+  "studioActions": {
+    "title": "Open actions",
+    "subtitle": "Work the studio still has to do. A task stays open until that action is finished.",
+    "openCount": "Open tasks",
+    "urgentCount": "Urgent",
+    "empty": "No open tasks",
+    "emptyHint": "New cases, medical reviews and aftercare that need a reply show up here on their own.",
+    "viewAll": "View all tasks",
+    "openButton": "Open",
+    "responsible": "Responsible",
+    "ageUnderHour": "under 1 hour",
+    "ageHours": "{{count}} hours",
+    "ageDays": "{{count}} days",
+    "loadError": "Could not load open tasks.",
+    "priorities": {
+      "hoch": "Urgent",
+      "mittel": "Normal",
+      "niedrig": "Low"
+    },
+    "types": {
+      "confirm_price": "Confirm price",
+      "review_medical": "Review medical information",
+      "review_case": "Review new case",
+      "review_aftercare": "Review aftercare photo",
+      "healing_issue": "Healing issue",
+      "followup_cancellation": "Follow up after cancellation",
+      "waiting_appointment": "Waiting for an appointment"
+    },
+    "filters": {
+      "allTypes": "All types",
+      "allPriorities": "All priorities"
+    },
+    "dashboardEmpty": "Nothing is waiting on the studio."
+  },
+  "adminActions": {
+    "title": "Open actions",
+    "subtitle": "Platform-wide tasks that still need a studio or an admin. They close only when the action is done.",
+    "empty": "No open tasks for these filters.",
+    "loadError": "Could not load open tasks.",
+    "allStudios": "All studios",
+    "allTypes": "All types",
+    "allPriorities": "All priorities",
+    "anyAge": "Any age",
+    "age24": "Open 24 hours or more",
+    "age72": "Open 72 hours or more",
+    "statusOpen": "Open",
+    "columns": {
+      "customer": "Customer",
+      "case": "Case",
+      "action": "Required action",
+      "priority": "Priority",
+      "age": "Open for",
+      "studio": "Studio"
+    }
   },
   "studioActivity": {
     "title": "Appointment history",
@@ -183,6 +239,7 @@ const en = {
       { "id": "studioChat", "label": "Studio Chat" },
       { "id": "customers", "label": "Customers" },
       { "id": "crm", "label": "CRM & Leads" },
+      { "id": "actions", "label": "Actions" },
       { "id": "engine", "label": "Engine" },
       { "id": "engineMasterData", "label": "Engine master data" },
       { "id": "medical", "label": "Medical & Safety" },
@@ -2105,6 +2162,10 @@ const en = {
       "lockoutsLoading": "Loading lockouts…",
       "dateRequired": "Date *",
       "timeRequired": "Time *",
+      "selectDateFirst": "Select a date first…",
+      "selectTime": "Select a time…",
+      "slotsLoading": "Loading available times…",
+      "noSlots": "No free times on this day.",
       "type": "Type",
       "durationMin": "Duration (min)",
       "consultationExempt": "Consultation appointments are exempt from treatment lockouts.",

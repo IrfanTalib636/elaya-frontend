@@ -39,6 +39,7 @@ const StudioChat           = lazy(() => import('./pages/studio/Chat'))
 const StudioElayaChat      = lazy(() => import('./pages/studio/ElayaChat'))
 const StudioPlatformChat   = lazy(() => import('./pages/studio/PlatformChat'))
 const StudioActivity       = lazy(() => import('./pages/studio/Activity'))
+const StudioActions        = lazy(() => import('./pages/studio/Actions'))
 const StudioSimulator      = lazy(() => import('./pages/studio/Simulator'))
 
 const AdminLogin           = lazy(() => import('./pages/admin/Login'))
@@ -52,6 +53,7 @@ const AdminStudioChat      = lazy(() => import('./pages/admin/StudioChat'))
 const AdminCustomers       = lazy(() => import('./pages/admin/Customers'))
 const AdminCustomerDetail  = lazy(() => import('./pages/admin/CustomerDetail'))
 const AdminCrm             = lazy(() => import('./pages/admin/Crm'))
+const AdminActions         = lazy(() => import('./pages/admin/Actions'))
 const AdminEngine          = lazy(() => import('./pages/admin/Engine'))
 const AdminMedical         = lazy(() => import('./pages/admin/Medical'))
 const AdminDocuments       = lazy(() => import('./pages/admin/Documents'))
@@ -134,6 +136,7 @@ const AppInner = () => {
             <Route path="aftercare"     element={<StudioAftercare />} />
             <Route path="crm"           element={<StudioCrm />} />
             <Route path="activity"      element={<StudioActivity />} />
+            <Route path="actions"       element={<StudioActions />} />
             <Route path="elaya"         element={<StudioElayaChat />} />
             <Route path="platform-chat" element={<StudioPlatformChat />} />
             <Route path="chat"          element={<StudioChat />} />
@@ -166,6 +169,7 @@ const AppInner = () => {
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="customers/:customerId" element={<AdminCustomerDetail />} />
             <Route path="crm" element={<AdminCrm />} />
+            <Route path="actions" element={<AdminActions />} />
             <Route path="engine" element={<AdminEngine />} />
             <Route path="engine-master-data" element={<AdminEngineMasterData />} />
             <Route path="medical" element={<AdminMedical />} />

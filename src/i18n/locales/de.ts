@@ -106,11 +106,67 @@ const de: TranslationSchema = {
     "elayaChat": "Elaya Chat",
     "platformChat": "Support-Chat",
     "activity": "Verlauf",
+    "actions": "Aktionen",
     "shop": "Avora Shop",
     "transfers": "Studio-Wechsel",
     "elaycoins": "Elaycoins",
     "simulator": "Fall-Simulator",
     "settings": "Einstellungen"
+  },
+  "studioActions": {
+    "title": "Offene Aktionen",
+    "subtitle": "Was das Studio noch erledigen muss. Eine Aufgabe bleibt offen, bis die Aktion wirklich abgeschlossen ist.",
+    "openCount": "Offene Aufgaben",
+    "urgentCount": "Dringend",
+    "empty": "Keine offenen Aufgaben",
+    "emptyHint": "Neue Fälle, medizinische Prüfungen und Nachsorge, die eine Antwort brauchen, erscheinen hier von selbst.",
+    "viewAll": "Alle Aufgaben",
+    "openButton": "Öffnen",
+    "responsible": "Zuständig",
+    "ageUnderHour": "unter 1 Stunde",
+    "ageHours": "{{count}} Stunden",
+    "ageDays": "{{count}} Tage",
+    "loadError": "Offene Aufgaben konnten nicht geladen werden.",
+    "priorities": {
+      "hoch": "Dringend",
+      "mittel": "Normal",
+      "niedrig": "Niedrig"
+    },
+    "types": {
+      "confirm_price": "Preis bestätigen",
+      "review_medical": "Medizinische Angaben prüfen",
+      "review_case": "Neuen Fall prüfen",
+      "review_aftercare": "Nachsorgefoto prüfen",
+      "healing_issue": "Heilung braucht Aufmerksamkeit",
+      "followup_cancellation": "Nachfassen nach Absage",
+      "waiting_appointment": "Kunde wartet auf einen Termin"
+    },
+    "filters": {
+      "allTypes": "Alle Arten",
+      "allPriorities": "Alle Prioritäten"
+    },
+    "dashboardEmpty": "Gerade wartet nichts auf das Studio."
+  },
+  "adminActions": {
+    "title": "Offene Aktionen",
+    "subtitle": "Aufgaben auf der ganzen Plattform, die noch eine Antwort brauchen. Sie schliessen sich erst, wenn die Aktion erledigt ist.",
+    "empty": "Keine offenen Aufgaben für diese Filter.",
+    "loadError": "Offene Aufgaben konnten nicht geladen werden.",
+    "allStudios": "Alle Studios",
+    "allTypes": "Alle Arten",
+    "allPriorities": "Alle Prioritäten",
+    "anyAge": "Jedes Alter",
+    "age24": "Offen seit 24 Stunden oder mehr",
+    "age72": "Offen seit 72 Stunden oder mehr",
+    "statusOpen": "Offen",
+    "columns": {
+      "customer": "Kunde",
+      "case": "Fall",
+      "action": "Nötige Aktion",
+      "priority": "Priorität",
+      "age": "Offen seit",
+      "studio": "Studio"
+    }
   },
   "studioActivity": {
     "title": "Terminverlauf",
@@ -185,6 +241,7 @@ const de: TranslationSchema = {
       { "id": "studioChat", "label": "Studio-Chat" },
       { "id": "customers", "label": "Kunden" },
       { "id": "crm", "label": "CRM & Anfragen" },
+      { "id": "actions", "label": "Aktionen" },
       { "id": "engine", "label": "Prognose-Engine" },
       { "id": "engineMasterData", "label": "Engine-Stammdaten" },
       { "id": "medical", "label": "Medizin & Sicherheit" },
@@ -2107,6 +2164,10 @@ const de: TranslationSchema = {
       "lockoutsLoading": "Sperrfristen werden geladen…",
       "dateRequired": "Datum *",
       "timeRequired": "Uhrzeit *",
+      "selectDateFirst": "Zuerst ein Datum wählen…",
+      "selectTime": "Uhrzeit wählen…",
+      "slotsLoading": "Freie Zeiten werden geladen…",
+      "noSlots": "An diesem Tag sind keine freien Zeiten.",
       "type": "Typ",
       "durationMin": "Dauer (Min.)",
       "consultationExempt": "Beratungstermine sind von Behandlungs-Sperrfristen ausgenommen.",

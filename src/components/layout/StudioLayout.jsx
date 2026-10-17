@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Calendar, CalendarDays, BarChart2, Heart,
   ShoppingBag, Coins, Settings, LogOut, ChevronLeft, ChevronRight,
   FolderOpen, ClipboardList, ArrowLeftRight, MessageCircle, ListChecks,
-  History, Sparkles, Headphones, Microscope, Lock,
+  History, Sparkles, Headphones, Microscope, Lock, ListTodo,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../ElayaLogo'
@@ -14,6 +14,9 @@ import AdminStudioWorkspaceBanner from '../admin/AdminStudioWorkspaceBanner'
 import useAuthStore from '../../store/authStore'
 import useContent from '../../i18n/useContent'
 import { getEffectiveFeatures } from '../../api/config'
+import { getStudioActionSummary } from '../../api/openActions'
+import { notifyOpenActionsChanged, subscribeOpenActionsChanged } from '../../lib/openActionsSync'
+import { useSocketEvent } from '../../hooks/useSocketEvent'
 
 /**
  * Studio route → required feature key. Backend enforces the real gate;
@@ -51,7 +54,7 @@ const FeatureLocked = ({ label }) => (
 )
 
 // ── NavItem ────────────────────────────────────────────────────────────────
-const NavItem = ({ to, icon: Icon, label, collapsed, end }) => (
+const NavItem = ({ to, icon: Icon, label, collapsed, end, dot }) => (
   <NavLink
     to={to}
     end={end}
@@ -65,14 +68,29 @@ const NavItem = ({ to, icon: Icon, label, collapsed, end }) => (
       }`
     }
   >
-    <Icon size={15} className="shrink-0" />
+    <span className="relative shrink-0">
+      <Icon size={15} />
+      {dot && collapsed ? (
+        <span
+          className={`absolute -top-1 -right-1 h-2 w-2 rounded-full ${
+            dot === 'red' ? 'bg-elaya-error' : 'bg-elaya-success'
+          }`}
+        />
+      ) : null}
+    </span>
 
-    {/* Always rendered — hidden via CSS when collapsed to avoid removeChild errors */}
     <span className={`truncate transition-all duration-150 ${collapsed ? 'w-0 overflow-hidden opacity-0' : 'flex-1'}`}>
       {label}
     </span>
 
-    {/* Tooltip: always in DOM, only visible via opacity when collapsed */}
+    {dot && !collapsed ? (
+      <span
+        className={`h-2 w-2 shrink-0 rounded-full ${
+          dot === 'red' ? 'bg-elaya-error' : 'bg-elaya-success'
+        }`}
+      />
+    ) : null}
+
     <span className={`pointer-events-none absolute left-full ml-2 px-2.5 py-1.5 rounded-[8px] border border-elaya-border bg-studio-bg-3 text-studio-white text-[12px] font-medium whitespace-nowrap shadow-lg transition-opacity z-100 ${collapsed ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
       {label}
     </span>
@@ -93,6 +111,7 @@ const StudioLayout = ({ children }) => {
   // Effective feature flags for the current studio — drives nav visibility
   // and a soft route guard. Backend still enforces via requireFeature.
   const [features, setFeatures] = useState(null)
+  const [actionDot, setActionDot] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -107,6 +126,32 @@ const StudioLayout = ({ children }) => {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const load = () => {
+      getStudioActionSummary()
+        .then((res) => {
+          if (cancelled) return
+          const open = res.data?.data?.open || 0
+          const urgent = res.data?.data?.urgent || 0
+          setActionDot(urgent > 0 ? 'red' : open > 0 ? 'green' : null)
+        })
+        .catch(() => {
+          if (!cancelled) setActionDot(null)
+        })
+    }
+    load()
+    const timer = setInterval(load, 45000)
+    const unsubscribe = subscribeOpenActionsChanged(load)
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+      unsubscribe()
+    }
+  }, [location.pathname])
+
+  useSocketEvent('open_actions:changed', () => notifyOpenActionsChanged())
 
   const featuresLoaded = features !== null
   const isOn = (key) => !featuresLoaded || features[key] !== false
@@ -126,6 +171,7 @@ const StudioLayout = ({ children }) => {
         { to: '/studio/aftercare',    icon: Heart,           label: studioNav.aftercare },
         { to: '/studio/crm',          icon: ListChecks,      label: studioNav.crm, feature: 'crm_leads' },
         { to: '/studio/activity',     icon: History,         label: studioNav.activity },
+        { to: '/studio/actions',      icon: ListTodo,        label: studioNav.actions, dot: actionDot },
         { to: '/studio/elaya',         icon: Sparkles,        label: studioNav.elayaChat, feature: 'ki_studio_assistent' },
         { to: '/studio/platform-chat', icon: Headphones,      label: studioNav.platformChat, feature: 'studio_chat' },
         { to: '/studio/chat',          icon: MessageCircle,   label: studioNav.chat, feature: 'chat_studio_kunde' },
@@ -170,7 +216,7 @@ const StudioLayout = ({ children }) => {
     })
 
   const handleLogout = async () => {
-    if (studioWorkspace?.studioId) {
+    if (user?.impersonation?.active && studioWorkspace?.studioId) {
       await exitStudioWorkspace()
       toast.success(toastMessages.logoutSuccess)
       navigate('/admin/studios')
@@ -224,6 +270,7 @@ const StudioLayout = ({ children }) => {
                   label={item.label}
                   collapsed={collapsed}
                   end={item.end}
+                  dot={item.dot}
                 />
               ))}
             </div>
@@ -271,7 +318,7 @@ const StudioLayout = ({ children }) => {
 
       {/* ── Main content ── */}
       <main className={`flex-1 min-h-screen bg-studio-bg transition-[margin-left] duration-200 ease-in-out ${collapsed ? 'ml-14' : 'ml-studio-sidebar'}`}>
-        {studioWorkspace?.studioId ? <AdminStudioWorkspaceBanner /> : null}
+        {user?.impersonation?.active && studioWorkspace?.studioId ? <AdminStudioWorkspaceBanner /> : null}
         <div className="sticky top-0 z-40 flex justify-end items-center gap-2 px-4 py-2 border-b border-elaya-border/60 bg-studio-bg/90 backdrop-blur-sm">
           <ThemeSwitcher />
           <StudioNotificationBell />

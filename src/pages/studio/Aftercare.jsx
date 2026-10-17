@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Heart, Phone } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { listNachsorge, reviewNachsorge } from '../../api/nachsorge'
+import { listNachsorge, getNachsorge, reviewNachsorge } from '../../api/nachsorge'
+import { finishOpenAction } from '../../lib/openActionsSync'
 import { fetchPhotoBlobUrl } from '../../api/files'
 import { Card, Button, Spinner, PageHeader, Modal, Pagination, Select } from '../../components/ui'
 import useContent from '../../i18n/useContent'
@@ -187,6 +188,7 @@ const Aftercare = () => {
   const { t, studioPages } = useContent()
   const copy = studioPages.aftercare
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const tableHeaders = [
     copy.headers.date, copy.headers.customer, copy.headers.case, copy.headers.ampel,
     copy.headers.title, copy.headers.daysAfter, copy.headers.contact,
@@ -214,6 +216,26 @@ const Aftercare = () => {
   }, [copy.loadError, setChecks])
 
   useEffect(() => { load(page) }, [page, load])
+
+  const checkId = searchParams.get('check')
+  useEffect(() => {
+    if (!checkId) return undefined
+    let cancelled = false
+    getNachsorge(checkId)
+      .then((res) => {
+        if (!cancelled && res.data?.data?.check) setDetail(res.data.data.check)
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (cancelled) return
+        const next = new URLSearchParams(searchParams)
+        next.delete('check')
+        setSearchParams(next, { replace: true })
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [checkId, searchParams, setSearchParams])
 
   // Ampel filter is client-side — the backend list endpoint only filters by case_id.
   const visibleChecks = filter === 'alle' ? checks : checks.filter((c) => c.ampel === filter)
@@ -441,6 +463,7 @@ const Aftercare = () => {
               onSaved={(updated) => {
                 setDetail(updated)
                 setChecks((prev) => prev.map((row) => (row.id === updated.id ? { ...row, ...updated } : row)))
+                finishOpenAction(navigate)
               }}
             />
 

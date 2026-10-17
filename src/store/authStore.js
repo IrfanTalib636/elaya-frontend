@@ -108,9 +108,7 @@ const useAuthStore = create(
                 reason: imp.reason || '',
                 adminEmail: imp.admin_email || '',
               }
-            : get().studioWorkspace && isStudioWorkspaceActive()
-              ? get().studioWorkspace
-              : null,
+            : null,
         })
         return profile
       },
@@ -227,6 +225,10 @@ const useAuthStore = create(
       onRehydrateStorage: () => (state) => {
         if (state?.accessToken) {
           localStorage.setItem(TOKEN_KEY, state.accessToken)
+        }
+        // A real studio login must not keep an admin workspace banner from an earlier session.
+        if (state && !state.user?.impersonation?.active && state.studioWorkspace) {
+          useAuthStore.setState({ studioWorkspace: null })
         }
       },
     }

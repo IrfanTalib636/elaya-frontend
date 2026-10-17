@@ -12,6 +12,8 @@ import { resolveHoursForDate } from '../../utils/studioHours'
 import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
 import PreSessionCheck, { EMPTY_PRE_SESSION, preSessionToParams, preSessionToBody } from '../../components/case/PreSessionCheck'
 import GroupBookingModal from '../../components/appointments/GroupBookingModal'
+import TimeSlotSelect from '../../components/appointments/TimeSlotSelect'
+import { finishOpenAction } from '../../lib/openActionsSync'
 import GroupDetailModal from '../../components/appointments/GroupDetailModal'
 import { Button, Spinner, Modal, Input, Select } from '../../components/ui'
 import useAuthStore from '../../store/authStore'
@@ -278,6 +280,7 @@ const NewApptModal = ({
   onCreated,
 }) => {
   const { t, studioPages, language } = useContent()
+  const navigate = useNavigate()
   const copy = studioPages.appointments
   const [form, setForm] = useState({
     ...EMPTY_FORM,
@@ -431,6 +434,7 @@ const NewApptModal = ({
       })
       toast.success(copy.bookSuccess)
       onCreated()
+      finishOpenAction(navigate)
     } catch (err) {
       toast.error(bookingErrorMessage(err, t, language))
     } finally {
@@ -514,7 +518,13 @@ const NewApptModal = ({
             min={showLockoutHint && availability?.fruehestes ? availability.fruehestes : undefined}
             onChange={set('date')}
           />
-          <Input label={copy.timeRequired} type="time" value={form.time} onChange={set('time')} />
+          <TimeSlotSelect
+            caseId={form.case_id}
+            date={form.date}
+            value={form.time}
+            consultationOnly={form.type === 'beratung'}
+            onChange={(time) => setForm((p) => ({ ...p, time }))}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">

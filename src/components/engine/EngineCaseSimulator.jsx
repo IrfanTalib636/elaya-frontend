@@ -254,13 +254,13 @@ const EngineCaseSimulator = ({
   const totalMax = price != null && sMax != null ? price * sMax : null
 
   const lifestyleScore = liveSession?.lifestyle_score
-  const lifestyleAvg = liveSession?.lifestyle_average
+  const lifestyleScoreBefore = liveSession?.lifestyle_score_before_bmi
+  const lifestyleAvg = liveSession?.lifestyle_effective_average ?? liveSession?.lifestyle_average
+  // Average 5 maps to 30. Average 2.50 is 15. BMI does not change this scale.
   const lifestyleIndex =
-    lifestyleAvg != null
-      ? Math.round(Number(lifestyleAvg) * 7)
-      : lifestyleScore != null
-        ? Math.round(Number(lifestyleScore) * 7)
-        : null
+    lifestyleAvg == null || !Number.isFinite(Number(lifestyleAvg))
+      ? null
+      : Math.round(Math.max(0, Math.min(30, (Number(lifestyleAvg) / 5) * 30)))
   const lifestyleAmpel =
     lifestyleIndex == null
       ? null
@@ -787,6 +787,10 @@ const EngineCaseSimulator = ({
                     : ''}
                 </span>
               </div>
+              <p className="text-[10px] text-studio-w3 m-0 mb-1.5">
+                {copy.lifestyleIndexHint ||
+                  'The index places the average on a 0–30 scale. An average of 5 is 30.'}
+              </p>
               <div className="h-2 rounded-full bg-studio-bg-4 overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${
@@ -859,12 +863,112 @@ const EngineCaseSimulator = ({
                         </span>
                       </div>
                     ))}
-                    <div className="flex justify-between text-[11px] text-studio-w2 mt-1">
-                      <span>{copy.lifestyleMult || 'Lifestyle multiplier'}</span>
-                      <span className="text-studio-white">
-                        × {liveSession.lifestyle_multiplier ?? '—'}
-                      </span>
-                    </div>
+                  </>
+                ) : null}
+                {liveSession ? (
+                  <>
+                    <p className="text-[11px] font-semibold text-studio-w3 uppercase m-0 mt-3 mb-1">
+                      {copy.lifestyleBreakdown || 'Lifestyle'}
+                    </p>
+                    <p className="text-[11px] text-studio-w3 m-0 mb-1.5 leading-relaxed">
+                      {copy.lifestyleAverageNote ||
+                        'Sleep quality and sleep hours count as one factor. Activity and sport count as one factor. The BMI floor raises the score only.'}
+                    </p>
+                    {[
+                      [
+                        copy.lifestyleIndex || 'Lifestyle index',
+                        lifestyleIndex != null ? `${lifestyleIndex} / 30` : '—',
+                      ],
+                      [
+                        copy.lifestyleAverage || 'Effective lifestyle average',
+                        lifestyleAvg != null ? Number(lifestyleAvg).toFixed(2) : '—',
+                      ],
+                      [
+                        copy.lifestyleScoreBeforeBmi || 'Lifestyle score before BMI',
+                        lifestyleScoreBefore != null ? String(lifestyleScoreBefore) : '—',
+                      ],
+                      [
+                        copy.bmiValue || 'BMI',
+                        liveSession.lifestyle_bmi != null
+                          ? Number(liveSession.lifestyle_bmi).toFixed(1)
+                          : '—',
+                      ],
+                      [
+                        copy.bmiFloorLabel || 'BMI floor',
+                        liveSession.lifestyle_bmi_floor?.min_bmi != null
+                          ? t('adminPages.engineSimulator.bmiFloorApplied', {
+                              bmi: liveSession.lifestyle_bmi_floor.min_bmi,
+                              score: liveSession.lifestyle_bmi_floor.min_score,
+                              defaultValue: `BMI ≥ ${liveSession.lifestyle_bmi_floor.min_bmi} → minimum score ${liveSession.lifestyle_bmi_floor.min_score}`,
+                            })
+                          : copy.noBmiFloor || 'No BMI floor applied',
+                      ],
+                      [
+                        copy.lifestyleScoreAfterBmi || 'Effective lifestyle score',
+                        lifestyleScore != null ? String(lifestyleScore) : '—',
+                      ],
+                      [
+                        copy.lifestyleApplied || 'Applied multiplier',
+                        liveSession.lifestyle_multiplier != null
+                          ? `×${Number(liveSession.lifestyle_multiplier).toFixed(2)}`
+                          : '—',
+                      ],
+                      [
+                        copy.sessionsBeforeLifestyle || 'Raw sessions before lifestyle',
+                        liveSession.formula?.sum_before_lifestyle != null
+                          ? Number(liveSession.formula.sum_before_lifestyle).toFixed(2)
+                          : '—',
+                      ],
+                      [
+                        copy.sessionsAfterLifestyle || 'Raw sessions after lifestyle',
+                        liveSession.formula?.mid != null
+                          ? Number(liveSession.formula.mid).toFixed(2)
+                          : '—',
+                      ],
+                      [
+                        copy.roundedMidpoint || 'Rounded midpoint',
+                        liveSession.formula?.center ?? liveSession.base ?? '—',
+                      ],
+                      [
+                        copy.sessionRange || 'Session range',
+                        liveSession.formula
+                          ? `−${liveSession.formula.spread_low} / +${liveSession.formula.spread_high}`
+                          : '—',
+                      ],
+                      [
+                        copy.finalPrediction || 'Final session prediction',
+                        sMin != null && sMax != null
+                          ? t('adminPages.engineSimulator.finalPredictionValue', {
+                              min: sMin,
+                              max: sMax,
+                              defaultValue: `${sMin}–${sMax} sessions`,
+                            })
+                          : '—',
+                      ],
+                    ].map(([label, value]) => (
+                      <div
+                        key={label}
+                        className="flex justify-between text-[11px] text-studio-w2 gap-2"
+                      >
+                        <span>{label}</span>
+                        <span className="text-studio-white shrink-0 tabular-nums">{value}</span>
+                      </div>
+                    ))}
+                    {liveSession.lifestyle_factors
+                      ? Object.entries(liveSession.lifestyle_factors)
+                          .filter(([, value]) => value != null)
+                          .map(([key, value]) => (
+                            <div
+                              key={key}
+                              className="flex justify-between text-[11px] text-studio-w3 gap-2"
+                            >
+                              <span>
+                                {copy.lifestyleFactors?.[key] || key}
+                              </span>
+                              <span className="shrink-0 tabular-nums">{Number(value).toFixed(2)}</span>
+                            </div>
+                          ))
+                      : null}
                   </>
                 ) : null}
               </div>

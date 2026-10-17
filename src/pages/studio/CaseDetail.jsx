@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   Plus,
@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCase, updateCase, updateEstimateConfirmation } from '../../api/cases'
+import { finishOpenAction, notifyOpenActionsChanged } from '../../lib/openActionsSync'
 import { fetchPhotoBlobUrl } from '../../api/files'
 import { listSessions } from '../../api/sessions'
 import { listAppointments } from '../../api/appointments'
@@ -510,6 +511,7 @@ const CaseDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { t, studioPages } = useContent()
   const copy = studioPages.caseDetail
   const CASE_STATUSES = [
@@ -569,6 +571,21 @@ const CaseDetail = () => {
     }
     load()
   }, [id, navigate, copy.loadError])
+
+  useEffect(() => {
+    if (loading || !caseData || searchParams.get('focus') !== 'estimate') return undefined
+    const el = document.getElementById('estimate-confirmation')
+    if (!el) return undefined
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('ring-2', 'ring-studio-gold-2', 'rounded-[15px]')
+    const timer = setTimeout(() => {
+      el.classList.remove('ring-2', 'ring-studio-gold-2', 'rounded-[15px]')
+      const next = new URLSearchParams(searchParams)
+      next.delete('focus')
+      setSearchParams(next, { replace: true })
+    }, 2500)
+    return () => clearTimeout(timer)
+  }, [loading, caseData, searchParams, setSearchParams])
 
   const saveStatus = async () => {
     setSavingStatus(true)
@@ -951,29 +968,35 @@ const CaseDetail = () => {
           )}
 
           {/* AI estimate + studio confirmation */}
-          <EstimateConfirmationPanel
-            caseId={id}
-            caseData={caseData}
-            onUpdated={(d) =>
-              setCaseData((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      pricePerSession: d.pricePerSession,
-                      sessionsMin: d.sessionsMin,
-                      sessionsMax: d.sessionsMax,
-                      calculated_pricePerSession: d.calculated_pricePerSession,
-                      calculated_sessionsMin: d.calculated_sessionsMin,
-                      calculated_sessionsMax: d.calculated_sessionsMax,
-                      confirmed_pricePerSession: d.confirmed_pricePerSession,
-                      confirmed_sessionsMin: d.confirmed_sessionsMin,
-                      confirmed_sessionsMax: d.confirmed_sessionsMax,
-                      estimate_confirmation: d.estimate_confirmation,
-                    }
-                  : prev
-              )
-            }
+          <div id="estimate-confirmation">
+            <EstimateConfirmationPanel
+              caseId={id}
+              caseData={caseData}
+              onUpdated={(d) => {
+                const status = d.estimate_confirmation?.status
+                if (status === 'bestaetigt' || status === 'angepasst') finishOpenAction(navigate)
+                else notifyOpenActionsChanged()
+                setCaseData((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        pricePerSession: d.pricePerSession,
+                        sessionsMin: d.sessionsMin,
+                        sessionsMax: d.sessionsMax,
+                        calculated_pricePerSession: d.calculated_pricePerSession,
+                        calculated_sessionsMin: d.calculated_sessionsMin,
+                        calculated_sessionsMax: d.calculated_sessionsMax,
+                        confirmed_pricePerSession: d.confirmed_pricePerSession,
+                        confirmed_sessionsMin: d.confirmed_sessionsMin,
+                        confirmed_sessionsMax: d.confirmed_sessionsMax,
+                        estimate_confirmation: d.estimate_confirmation,
+                        estimate_needs_review: false,
+                      }
+                    : prev
+                )
+              }}
           />
+          </div>
 
         </div>
       </div>

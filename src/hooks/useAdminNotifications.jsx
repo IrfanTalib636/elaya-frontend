@@ -227,10 +227,28 @@ export default function useAdminNotifications({ enabled = true } = {}) {
       }
       if (notification.type === 'studio_transfer_requested') {
         openTransfers()
+        return
+      }
+      if (notification.type === 'open_action') {
+        navigate('/admin/actions')
       }
     },
-    [markRead, openSupportChat, openTransfers]
+    [markRead, navigate, openSupportChat, openTransfers]
   )
+
+  const notifyOpenAction = useCallback(
+    (payload) => {
+      if (!enabled) return
+      const n = payload?.notification
+      if (!n || n.type !== 'open_action') return
+      void refreshUnread()
+      void loadList()
+      showToast(n.title, n.body, () => navigate('/admin/actions'))
+    },
+    [enabled, loadList, navigate, refreshUnread, showToast]
+  )
+
+  useSocketEvent('notification:created', notifyOpenAction, { enabled })
 
   return {
     unreadCount,

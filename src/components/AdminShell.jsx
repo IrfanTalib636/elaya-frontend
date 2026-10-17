@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -24,6 +24,7 @@ import {
   Brain,
   Contact,
   ClipboardList,
+  ListTodo,
   Database,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -32,6 +33,9 @@ import useContent from '../i18n/useContent'
 import ElayaLogo from './ElayaLogo'
 import AdminNotificationBell from './admin/AdminNotificationBell'
 import ThemeSwitcher from './ThemeSwitcher'
+import { getAdminActionSummary } from '../api/openActions'
+import { notifyOpenActionsChanged, subscribeOpenActionsChanged } from '../lib/openActionsSync'
+import { useSocketEvent } from '../hooks/useSocketEvent'
 
 const ICONS = {
   overview: LayoutDashboard,
@@ -55,6 +59,7 @@ const ICONS = {
   studioTeam: Contact,
   ai: Brain,
   audit: ClipboardList,
+  actions: ListTodo,
 }
 
 const PRIMARY_NAV = [
@@ -63,6 +68,7 @@ const PRIMARY_NAV = [
   { to: '/admin/studio-chat', id: 'studioChat' },
   { to: '/admin/customers', id: 'customers' },
   { to: '/admin/crm', id: 'crm' },
+  { to: '/admin/actions', id: 'actions' },
   { to: '/admin/engine', id: 'engine' },
   { to: '/admin/engine-master-data', id: 'engineMasterData' },
   { to: '/admin/medical', id: 'medical' },
@@ -84,7 +90,7 @@ const TOOLS_NAV = [
   { to: '/admin/settings', id: 'settings' },
 ]
 
-const NavItem = ({ to, id, label }) => {
+const NavItem = ({ to, id, label, dot }) => {
   const Icon = ICONS[id] || LayoutDashboard
   return (
     <NavLink
@@ -99,6 +105,13 @@ const NavItem = ({ to, id, label }) => {
     >
       <Icon size={15} className="shrink-0" />
       <span className="truncate flex-1">{label}</span>
+      {dot ? (
+        <span
+          className={`h-2 w-2 shrink-0 rounded-full ${
+            dot === 'red' ? 'bg-elaya-error' : 'bg-elaya-success'
+          }`}
+        />
+      ) : null}
     </NavLink>
   )
 }
@@ -109,9 +122,36 @@ const AdminShell = () => {
   const { logout, user, profile } = useAuthStore()
   const { toast: toastMessages, adminNav, common } = useContent()
   const [query, setQuery] = useState('')
+  const [actionDot, setActionDot] = useState(null)
   const hideFab = location.pathname.startsWith('/admin/studio-chat')
 
   const labelFor = (id) => adminNav.items.find((i) => i.id === id)?.label || id
+
+  useEffect(() => {
+    let cancelled = false
+    const load = () => {
+      getAdminActionSummary()
+        .then((res) => {
+          if (cancelled) return
+          const open = res.data?.data?.open || 0
+          const urgent = res.data?.data?.urgent || 0
+          setActionDot(urgent > 0 ? 'red' : open > 0 ? 'green' : null)
+        })
+        .catch(() => {
+          if (!cancelled) setActionDot(null)
+        })
+    }
+    load()
+    const timer = setInterval(load, 60000)
+    const unsubscribe = subscribeOpenActionsChanged(load)
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+      unsubscribe()
+    }
+  }, [location.pathname])
+
+  useSocketEvent('open_actions:changed', () => notifyOpenActionsChanged())
 
   const displayName = useMemo(() => {
     const fromProfile =
@@ -173,14 +213,24 @@ const AdminShell = () => {
 
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
           {PRIMARY_NAV.map((item) => (
-            <NavItem key={item.to} {...item} label={labelFor(item.id)} />
+            <NavItem
+              key={item.to}
+              {...item}
+              label={labelFor(item.id)}
+              dot={item.id === 'actions' ? actionDot : null}
+            />
           ))}
 
           <p className="text-studio-w3 text-[10px] uppercase tracking-wider px-3 pt-4 pb-1 m-0">
             {adminNav.toolsHeading}
           </p>
           {TOOLS_NAV.map((item) => (
-            <NavItem key={item.to} {...item} label={labelFor(item.id)} />
+            <NavItem
+              key={item.to}
+              {...item}
+              label={labelFor(item.id)}
+              dot={item.id === 'actions' ? actionDot : null}
+            />
           ))}
         </nav>
 

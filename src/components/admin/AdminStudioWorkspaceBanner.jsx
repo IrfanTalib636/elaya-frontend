@@ -14,6 +14,7 @@ const AdminStudioWorkspaceBanner = () => {
   const navigate = useNavigate()
   const { adminPages } = useContent()
   const copy = adminPages.studioWorkspace || {}
+  const user = useAuthStore((s) => s.user)
   const studioWorkspace = useAuthStore((s) => s.studioWorkspace)
   const enableStudioWorkspaceEdit = useAuthStore((s) => s.enableStudioWorkspaceEdit)
   const exitStudioWorkspace = useAuthStore((s) => s.exitStudioWorkspace)
@@ -23,7 +24,7 @@ const AdminStudioWorkspaceBanner = () => {
   const [saving, setSaving] = useState(false)
   const [exiting, setExiting] = useState(false)
 
-  if (!studioWorkspace?.studioId) return null
+  if (!user?.impersonation?.active || !studioWorkspace?.studioId) return null
 
   const name = studioWorkspace.firma || studioWorkspace.studioCode || 'Studio'
   const editMode = !!studioWorkspace.editMode

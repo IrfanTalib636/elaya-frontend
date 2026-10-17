@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { FileCheck2, ImageOff, ShieldAlert } from 'lucide-react'
 import { Button, Card, Modal } from '../ui'
 import { getApiErrorMessage } from '../../lib/apiError'
 import { fetchPhotoBlobUrl } from '../../api/files'
 import { reviewCustomerMedicalClearance } from '../../api/medicalClearance'
+import { finishOpenAction } from '../../lib/openActionsSync'
 
 const STATUS_LABEL = {
   not_required: 'Not required',
@@ -97,6 +99,7 @@ export default function MedicalClearancePanel({
   compact = false,
   readOnly = false,
 }) {
+  const navigate = useNavigate()
   const [clearance, setClearance] = useState(initial || null)
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
@@ -162,6 +165,7 @@ export default function MedicalClearancePanel({
       setClearance(next)
       setNote('')
       onUpdated?.(next)
+      finishOpenAction(navigate)
       toast.success(
         decision === 'verify'
           ? 'Document verified — treatment lock removed'

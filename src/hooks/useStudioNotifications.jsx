@@ -363,6 +363,10 @@ export default function useStudioNotifications({ enabled = true } = {}) {
         }
         return
       }
+      if (notification.type === 'open_action') {
+        navigate(notification.meta?.path || '/studio/actions')
+        return
+      }
       if (notification.type === 'chat') {
         openCustomerChat(notification.conversation_id, null)
       }
@@ -420,6 +424,37 @@ export default function useStudioNotifications({ enabled = true } = {}) {
   )
 
   useSocketEvent('notification:created', notifyMedicalClearance, { enabled })
+
+  const notifyOpenAction = useCallback(
+    (payload) => {
+      if (!enabled) return
+      const n = payload?.notification
+      if (!n || n.type !== 'open_action') return
+      void refreshUnread()
+      void loadList()
+      playNotificationSound()
+      const go = () => navigate(n.meta?.path || '/studio/actions')
+      toast(
+        (t) => (
+          <button
+            type="button"
+            className="text-left w-full bg-transparent border-0 cursor-pointer p-0"
+            onClick={() => {
+              toast.dismiss(t.id)
+              go()
+            }}
+          >
+            <div className="font-semibold text-sm">{n.title}</div>
+            <div className="text-xs opacity-80 mt-0.5">{n.body}</div>
+          </button>
+        ),
+        { duration: 8000 }
+      )
+    },
+    [enabled, loadList, navigate, refreshUnread]
+  )
+
+  useSocketEvent('notification:created', notifyOpenAction, { enabled })
 
   return {
     unreadCount,

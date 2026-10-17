@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { updateStudioFreigabe } from '../../api/anamnesis'
 import { getApiErrorMessage } from '../../lib/apiError'
 import { Button } from '../ui'
 import useContent from '../../i18n/useContent'
+import { finishOpenAction } from '../../lib/openActionsSync'
 
 /** Hide values that were accidentally saved from button labels */
 const isUiChromeText = (value = '') => {
@@ -23,6 +25,7 @@ const isUiChromeText = (value = '') => {
 
 const FreigabePanel = ({ caseId, freigabe, onUpdated }) => {
   const { t, components } = useContent()
+  const navigate = useNavigate()
   const copy = components.anamnesis
   const fg = copy.freigabe
   const [mode, setMode] = useState(null) // null | 'freigeben' | 'ablehnen'
@@ -59,6 +62,7 @@ const FreigabePanel = ({ caseId, freigabe, onUpdated }) => {
         studio_freigabe: res.data.data?.studio_freigabe,
       })
       toast.success(nextStatus === 'freigegeben' ? fg.toastApproved : fg.toastRejected)
+      finishOpenAction(navigate)
     } catch (err) {
       toast.error(getApiErrorMessage(err, copy.freigabeSaveError))
     } finally {

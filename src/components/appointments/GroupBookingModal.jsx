@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Users, Lock } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createAppointment } from '../../api/appointments'
@@ -8,6 +9,8 @@ import { getPublicConfig } from '../../api/config'
 import usePlatformConfigSocket from '../../hooks/usePlatformConfigSocket'
 import { fmtDateLong } from '../../utils/time'
 import { Button, Spinner, Modal, Input, Select } from '../ui'
+import TimeSlotSelect from './TimeSlotSelect'
+import { finishOpenAction } from '../../lib/openActionsSync'
 import useContent from '../../i18n/useContent'
 import {
   DEFAULT_GRUPPEN_CONFIG,
@@ -37,6 +40,7 @@ const SIZE_BADGE = {
 
 const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => {
   const { t, components, language } = useContent()
+  const navigate = useNavigate()
   const copy = components.groupBooking
   const [customerId, setCustomerId] = useState('')
   const [customers, setCustomers] = useState([])
@@ -229,6 +233,7 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
       })
       toast.success(t('components.groupBooking.bookSuccess', { count: selectedIds.length }))
       onCreated()
+      finishOpenAction(navigate)
     } catch (err) {
       toast.error(bookingErrorMessage(err, copy, language))
     } finally {
@@ -376,7 +381,12 @@ const GroupBookingModal = ({ defaultDate, defaultTime, onClose, onCreated }) => 
             min={fruehestes || undefined}
             onChange={(e) => setDate(e.target.value)}
           />
-          <Input label={copy.timeRequired} type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          <TimeSlotSelect
+            caseId={selectedIds[0]}
+            date={date}
+            value={time}
+            onChange={setTime}
+          />
         </div>
 
         <Input

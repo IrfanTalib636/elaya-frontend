@@ -3056,7 +3056,7 @@ const en = {
         "base": "Base session count, min/max range and the ± range around the predicted mid.",
         "colors": "Default colour deltas used as fallbacks, plus colour-count and laser-profile quality. A laser only stores colours you override in the Laser catalog.",
         "fitzpatrick": "Skin type, body location, density, saturation, shading, line style, cover-up, tattoo age, prior treatment, tattoo type and removal goal deltas.",
-        "lifestyle": "The 7-factor lifestyle composite, its score-to-multiplier thresholds, and the BMI floors that raise the composite score.",
+        "lifestyle": "The 7-factor lifestyle composite, the weight of each factor in the average, its score-to-multiplier thresholds, and the BMI floors that raise the composite score.",
         "healing": "Healing history and lightening-rate deltas (once real sessions exist), plus aftercare-commitment extra max sessions."
       },
       "how": {
@@ -3147,7 +3147,7 @@ const en = {
           "title": "How the lifestyle index is calculated",
           "step1Lead": "1. Each factor gives a score",
           "step1Scale": "(1 = very good, 5 = very bad)",
-          "step2": "2. Average of all factors = composite score",
+          "step2": "2. Weighted average of the seven factors = effective lifestyle average. The weight only changes how strongly that factor pulls the average.",
           "step3": "3. The composite score sets the effect:",
           "bands": [
             { "range": "Score 0–1.6", "name": "Very good lifestyle", "effect": "−15% sessions", "tone": "good" },
@@ -3279,7 +3279,9 @@ const en = {
       "lifestyleIndex": "Lifestyle index",
       "lifestyleIndexHint": "The index places the average on a 0–30 scale. An average of 5 is 30.",
       "lifestyleBreakdown": "Lifestyle calculation",
-      "lifestyleAverageNote": "Sleep quality and sleep hours count as one factor. Activity and sport count as one factor. The BMI floor raises the score only.",
+      "lifestyleAverageNote": "Sleep quality and sleep hours count as one factor. Activity and sport count as one factor. Each factor score is multiplied by its weight, then divided by the total weight. The weight does not add sessions. The BMI floor raises the score only.",
+      "weightedTotal": "Weighted total",
+      "totalWeight": "Total weight",
       "lifestyleAverage": "Effective lifestyle average",
       "lifestyleScoreBeforeBmi": "Lifestyle score before BMI",
       "bmiValue": "BMI",
@@ -4482,10 +4484,21 @@ const en = {
       "caseBanner": "Current case from the Case Simulator: {{area}} cm² · {{laser}} · Fitzpatrick {{fitz}} · {{location}}",
       "baseSection": "Base & range",
       "lifestyleComposite": "Lifestyle composite",
-      "lifestyleCompositeHint": "Seven main factors averaged: smoking, alcohol, sleep (quality+hours as one score), stress, activity (incl. sport), hydration, nutrition. Aftercare does not enter the score. BMI ≥30 raises the score to at least 4, ≥35 to 5.",
+      "lifestyleCompositeHint": "Seven main factors: smoking, alcohol, sleep (quality+hours as one score), stress, activity (incl. sport), hydration, nutrition. The effective average is the weighted average of those scores. Aftercare does not enter the score. BMI ≥30 raises the score to at least 4, ≥35 to 5.",
+      "factorWeightsTitle": "Factor weights",
+      "factorWeightsHint": "A weight only changes how strongly that factor pulls the lifestyle average. It does not add sessions. Weighted average = sum of (score × weight) ÷ sum of weights.",
+      "factorWeightLabels": {
+        "smoker": "Smoking",
+        "alcohol": "Alcohol",
+        "sleep_score": "Sleep",
+        "activity": "Activity / Sport",
+        "stress": "Stress",
+        "hydration": "Hydration",
+        "nutrition": "Nutrition"
+      },
       "lifestyleMultipliers": "Lifestyle multipliers",
       "thresholdsTitle": "How do the thresholds work?",
-      "thresholdsIntro": "The lifestyle score is the average of all factors (smoking, alcohol, sleep, and the rest). Each factor gives a value from 1 (very good) to 5 (very bad).",
+      "thresholdsIntro": "The lifestyle average is the weighted average of all factors (smoking, alcohol, sleep, and the rest). Each factor gives a value from 1 (very good) to 5 (very bad). Its weight decides how strongly that value pulls the average.",
       "thresholdsDefine": "The threshold defines: up to which score does a lifestyle level apply?",
       "thresholdsExampleTitle": "Example",
       "thresholdsExamples": [
@@ -4522,8 +4535,8 @@ const en = {
           "title": "How are the factors calculated?",
           "lines": [
             "Each factor gives a score from 1 to 5. 1 = very good for healing. 5 = very bad for healing.",
-            "The average of all factors is the composite score. That score sets the lifestyle level.",
-            "Example: heavy daily smoking (5) + very good sleep (1) + normal stress (2) = average 2.67 → normal."
+            "The effective average is the sum of (factor score × factor weight) divided by the sum of the weights. That average sets the lifestyle level. The weight is not extra sessions.",
+            "Example: smoking 5 × weight 3 = 15, and six lighter factors, total 29 ÷ 11 = 2.64."
           ]
         },
         "thresholdVsEffect": {

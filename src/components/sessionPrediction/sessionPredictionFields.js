@@ -196,6 +196,16 @@ export const TATTOO_DELTA_GROUPS = [
   },
 ]
 
+export const LIFESTYLE_FACTOR_WEIGHTS = [
+  { key: 'smoker', fallback: 3 },
+  { key: 'alcohol', fallback: 2 },
+  { key: 'sleep_score', fallback: 1 },
+  { key: 'activity', fallback: 1 },
+  { key: 'stress', fallback: 1 },
+  { key: 'hydration', fallback: 2 },
+  { key: 'nutrition', fallback: 1 },
+]
+
 export const LIFESTYLE_SCORE_GROUPS = [
   {
     key: 'smoker',
@@ -353,6 +363,12 @@ export const buildSessionPredictionPayload = (values = {}) => {
       Object.fromEntries(
         Object.entries(map || {}).map(([key, val]) => [key, toNumber(val, 1)])
       ),
+    ])
+  ),
+  lifestyle_factor_weights: Object.fromEntries(
+    LIFESTYLE_FACTOR_WEIGHTS.map(({ key, fallback }) => [
+      key,
+      toNumber(values.lifestyle_factor_weights?.[key], fallback),
     ])
   ),
   lifestyle_bands: (values.lifestyle_bands || []).map((band) => ({

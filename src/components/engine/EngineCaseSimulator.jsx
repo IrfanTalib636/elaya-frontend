@@ -69,6 +69,12 @@ const labelClass = 'block text-studio-w2 text-[12px] mb-1.5'
 
 const defaultForm = defaultEngineCase
 
+const formatLifestyleNumber = (value) => {
+  const n = Math.round(Number(value) * 100) / 100
+  if (!Number.isFinite(n)) return '—'
+  return Number.isInteger(n) ? String(n) : String(n)
+}
+
 const fmtChf = (n) =>
   n == null
     ? '—'
@@ -872,9 +878,35 @@ const EngineCaseSimulator = ({
                     </p>
                     <p className="text-[11px] text-studio-w3 m-0 mb-1.5 leading-relaxed">
                       {copy.lifestyleAverageNote ||
-                        'Sleep quality and sleep hours count as one factor. Activity and sport count as one factor. The BMI floor raises the score only.'}
+                        'Sleep quality and sleep hours count as one factor. Activity and sport count as one factor. Each factor is multiplied by its weight, then divided by the total weight. The BMI floor raises the score only.'}
                     </p>
+                    {Array.isArray(liveSession.lifestyle_weight_lines)
+                      ? liveSession.lifestyle_weight_lines.map((line) => (
+                          <div
+                            key={line.key}
+                            className="flex justify-between text-[11px] text-studio-w3 gap-2"
+                          >
+                            <span>{copy.lifestyleFactors?.[line.key] || line.key}</span>
+                            <span className="shrink-0 tabular-nums">
+                              {formatLifestyleNumber(line.score)} × {Number(line.weight).toFixed(1)} ={' '}
+                              {formatLifestyleNumber(line.contribution)}
+                            </span>
+                          </div>
+                        ))
+                      : null}
                     {[
+                      [
+                        copy.weightedTotal || 'Weighted total',
+                        liveSession.lifestyle_weighted_total != null
+                          ? formatLifestyleNumber(liveSession.lifestyle_weighted_total)
+                          : '—',
+                      ],
+                      [
+                        copy.totalWeight || 'Total weight',
+                        liveSession.lifestyle_weight_total != null
+                          ? formatLifestyleNumber(liveSession.lifestyle_weight_total)
+                          : '—',
+                      ],
                       [
                         copy.lifestyleIndex || 'Lifestyle index',
                         lifestyleIndex != null ? `${lifestyleIndex} / 30` : '—',
@@ -954,21 +986,6 @@ const EngineCaseSimulator = ({
                         <span className="text-studio-white shrink-0 tabular-nums">{value}</span>
                       </div>
                     ))}
-                    {liveSession.lifestyle_factors
-                      ? Object.entries(liveSession.lifestyle_factors)
-                          .filter(([, value]) => value != null)
-                          .map(([key, value]) => (
-                            <div
-                              key={key}
-                              className="flex justify-between text-[11px] text-studio-w3 gap-2"
-                            >
-                              <span>
-                                {copy.lifestyleFactors?.[key] || key}
-                              </span>
-                              <span className="shrink-0 tabular-nums">{Number(value).toFixed(2)}</span>
-                            </div>
-                          ))
-                      : null}
                   </>
                 ) : null}
               </div>

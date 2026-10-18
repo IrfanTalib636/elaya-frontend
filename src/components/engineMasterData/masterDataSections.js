@@ -1,6 +1,7 @@
 import {
   AFTERCARE_FIELDS,
   DEFAULT_BMI_FLOORS,
+  LIFESTYLE_FACTOR_WEIGHTS,
   LIFESTYLE_SCORE_GROUPS,
   SESSION_BASE_FIELDS,
   TATTOO_DELTA_GROUPS,
@@ -60,6 +61,15 @@ export const buildMasterDataSections = (copy, values) => [
     id: 'lifestyle',
     engineSection: 'lifestyle',
     groups: [
+      {
+        key: 'weights',
+        title: copy.factorWeightsTitle,
+        rows: LIFESTYLE_FACTOR_WEIGHTS.map((f) => ({
+          path: ['lifestyle_factor_weights', f.key],
+          label: copy.factorWeightLabels?.[f.key] || f.key,
+          step: '0.1',
+        })),
+      },
       ...LIFESTYLE_SCORE_GROUPS.map((g) => ({
         key: g.key,
         title: copy.lifestyleGroupTitles?.[g.key] || g.key,

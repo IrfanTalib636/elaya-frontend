@@ -3058,7 +3058,7 @@ const de: TranslationSchema = {
         "base": "Basis-Sitzungsanzahl, Min/Max-Bereich und die ± Spanne um die vorhergesagte Mitte.",
         "colors": "Standard-Farb-Deltas als Fallback, plus Farbanzahl und Laserprofil-Qualität. Ein Laser speichert nur Farben, die du im Laser-Katalog überschreibst.",
         "fitzpatrick": "Hauttyp-, Körperstelle-, Dichte-, Sättigung-, Schattierung-, Linienführung-, Cover-up-, Tattoo-Alter-, Vorbehandlung-, Tattoo-Art- und Ziel-Deltas.",
-        "lifestyle": "Der 7-Faktoren-Lifestyle-Composite-Score, seine Score-zu-Multiplikator-Schwellen und die BMI-Mindestwerte, die den Composite-Score anheben.",
+        "lifestyle": "Der 7-Faktoren-Lifestyle-Composite, das Gewicht jedes Faktors im Durchschnitt, seine Score-zu-Multiplikator-Schwellen und die BMI-Mindestwerte, die den Composite-Score anheben.",
         "healing": "Healing- und Lightening-Rate-Deltas (sobald echte Sitzungen existieren) sowie Nachsorge-Bereitschaft (+ Max-Sitzungen)."
       },
       "how": {
@@ -3149,7 +3149,7 @@ const de: TranslationSchema = {
           "title": "Wie der Lifestyle-Index berechnet wird",
           "step1Lead": "1. Jeder Faktor gibt einen Score",
           "step1Scale": "(1 = sehr gut, 5 = sehr schlecht)",
-          "step2": "2. Durchschnitt aller Faktoren = Composite Score",
+          "step2": "2. Gewichteter Durchschnitt der sieben Faktoren = effektiver Lifestyle-Durchschnitt. Das Gewicht ändert nur, wie stark der Faktor den Durchschnitt zieht.",
           "step3": "3. Composite Score bestimmt den Einfluss:",
           "bands": [
             { "range": "Score 0–1.6", "name": "Sehr guter Lifestyle", "effect": "−15% Sitzungen", "tone": "good" },
@@ -3281,7 +3281,9 @@ const de: TranslationSchema = {
       "lifestyleIndex": "Lifestyle-Index",
       "lifestyleIndexHint": "Der Index setzt den Durchschnitt auf eine Skala von 0–30. Durchschnitt 5 ist 30.",
       "lifestyleBreakdown": "Lifestyle-Berechnung",
-      "lifestyleAverageNote": "Schlafqualität und Schlafstunden zählen als ein Faktor. Aktivität und Sport zählen als ein Faktor. Die BMI-Untergrenze hebt nur den Score an.",
+      "lifestyleAverageNote": "Schlafqualität und Schlafstunden zählen als ein Faktor. Aktivität und Sport zählen als ein Faktor. Jeder Faktor-Score wird mit seinem Gewicht multipliziert und durch die Gewichtssumme geteilt. Das Gewicht fügt keine Sitzungen hinzu. Die BMI-Untergrenze hebt nur den Score an.",
+      "weightedTotal": "Gewichtete Summe",
+      "totalWeight": "Gewichtssumme",
       "lifestyleAverage": "Effektiver Lifestyle-Durchschnitt",
       "lifestyleScoreBeforeBmi": "Lifestyle-Score vor BMI",
       "bmiValue": "BMI",
@@ -4484,10 +4486,21 @@ const de: TranslationSchema = {
       "caseBanner": "Aktueller Case aus dem Case Simulator: {{area}} cm² · {{laser}} · Fitzpatrick {{fitz}} · {{location}}",
       "baseSection": "Basis & Range",
       "lifestyleComposite": "Lifestyle-Composite",
-      "lifestyleCompositeHint": "Sieben Hauptfaktoren gemittelt: Rauchen, Alkohol, Schlaf (Qualität+Stunden als ein Score), Stress, Aktivität (inkl. Sport), Hydration, Ernährung. Nachsorge fliesst nicht in den Score ein. BMI ≥30 hebt den Score auf mind. 4, ≥35 auf 5.",
+      "lifestyleCompositeHint": "Sieben Hauptfaktoren: Rauchen, Alkohol, Schlaf (Qualität+Stunden als ein Score), Stress, Aktivität (inkl. Sport), Hydration, Ernährung. Der effektive Durchschnitt ist der gewichtete Durchschnitt dieser Scores. Nachsorge fliesst nicht in den Score ein. BMI ≥30 hebt den Score auf mind. 4, ≥35 auf 5.",
+      "factorWeightsTitle": "Faktor-Gewichte",
+      "factorWeightsHint": "Ein Gewicht ändert nur, wie stark der Faktor den Lifestyle-Durchschnitt zieht. Es fügt keine Sitzungen hinzu. Gewichteter Durchschnitt = Summe aus (Score × Gewicht) ÷ Summe der Gewichte.",
+      "factorWeightLabels": {
+        "smoker": "Rauchen",
+        "alcohol": "Alkohol",
+        "sleep_score": "Schlaf",
+        "activity": "Aktivität / Sport",
+        "stress": "Stress",
+        "hydration": "Hydration",
+        "nutrition": "Ernährung"
+      },
       "lifestyleMultipliers": "Lifestyle-Multiplikatoren",
       "thresholdsTitle": "Wie funktionieren die Schwellen?",
-      "thresholdsIntro": "Der Lifestyle-Score ist der Durchschnitt aller Faktoren (Rauchen, Alkohol, Schlaf usw.). Jeder Faktor gibt einen Wert von 1 (sehr gut) bis 5 (sehr schlecht).",
+      "thresholdsIntro": "Der Lifestyle-Durchschnitt ist der gewichtete Durchschnitt aller Faktoren (Rauchen, Alkohol, Schlaf usw.). Jeder Faktor gibt einen Wert von 1 (sehr gut) bis 5 (sehr schlecht). Sein Gewicht bestimmt, wie stark dieser Wert den Durchschnitt zieht.",
       "thresholdsDefine": "Die Schwelle definiert: bis zu welchem Score gilt eine Lifestyle-Stufe?",
       "thresholdsExampleTitle": "Beispiel",
       "thresholdsExamples": [
@@ -4524,8 +4537,8 @@ const de: TranslationSchema = {
           "title": "Wie werden die Faktoren berechnet?",
           "lines": [
             "Jeder Faktor gibt einen Score von 1 bis 5. 1 = sehr gut für die Heilung. 5 = sehr schlecht für die Heilung.",
-            "Der Durchschnitt aller Faktoren ist der Composite Score. Dieser Score bestimmt die Lifestyle-Stufe.",
-            "Beispiel: täglich stark rauchen (5) + sehr gut schlafen (1) + normaler Stress (2) = Durchschnitt 2.67 → Normal."
+            "Der effektive Durchschnitt ist die Summe aus (Faktor-Score × Faktor-Gewicht) geteilt durch die Summe der Gewichte. Dieser Durchschnitt bestimmt die Lifestyle-Stufe. Das Gewicht sind keine zusätzlichen Sitzungen.",
+            "Beispiel: Rauchen 5 × Gewicht 3 = 15, plus sechs leichtere Faktoren, total 29 ÷ 11 = 2.64."
           ]
         },
         "thresholdVsEffect": {

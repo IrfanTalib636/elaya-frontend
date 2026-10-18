@@ -8,6 +8,7 @@ import { caseBmi } from '../engine/engineCaseModel'
 import {
   AFTERCARE_FIELDS,
   DEFAULT_BMI_FLOORS,
+  LIFESTYLE_FACTOR_WEIGHTS,
   LIFESTYLE_SCORE_GROUPS,
   SESSION_BASE_FIELDS,
   TATTOO_DELTA_GROUPS,
@@ -143,6 +144,16 @@ const SessionPredictionForm = ({
   }
 
   const setBase = (key, value) => onChange({ ...values, [key]: value })
+
+  const setWeight = (key, value) => {
+    onChange({
+      ...values,
+      lifestyle_factor_weights: {
+        ...(values.lifestyle_factor_weights || {}),
+        [key]: value,
+      },
+    })
+  }
 
   const setMap = (bucket, group, key, value) => {
     onChange({
@@ -335,6 +346,24 @@ const SessionPredictionForm = ({
               title={copy.notes?.lifestyleFactors?.title}
               lines={copy.notes?.lifestyleFactors?.lines}
             />
+          </div>
+
+          <div>
+            <p className="text-[12px] font-semibold m-0 mb-1">{copy.factorWeightsTitle}</p>
+            <p className="text-[11px] text-studio-w3 m-0 mb-3">{copy.factorWeightsHint}</p>
+            <FieldGrid>
+              {LIFESTYLE_FACTOR_WEIGHTS.map(({ key, fallback }) => (
+                <NumberField
+                  key={key}
+                  id={`sp-weight-${key}`}
+                  label={copy.factorWeightLabels?.[key] || key}
+                  step="0.1"
+                  value={values?.lifestyle_factor_weights?.[key] ?? fallback}
+                  onChange={(v) => setWeight(key, v)}
+                  disabled={disabled}
+                />
+              ))}
+            </FieldGrid>
           </div>
 
           {LIFESTYLE_SCORE_GROUPS.map((group) => (

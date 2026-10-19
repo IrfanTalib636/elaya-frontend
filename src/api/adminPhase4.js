@@ -4,9 +4,11 @@ export const listLasers = (params) => api.get('/lasers', { params })
 export const createLaser = (payload) => api.post('/lasers', payload)
 export const updateLaser = (id, payload) => api.patch(`/lasers/${id}`, payload)
 export const listLaserRequests = (params) => api.get('/lasers/requests', { params })
+export const listMyLaserRequests = () => api.get('/lasers/requests/mine')
 export const resolveLaserRequest = (id, payload) =>
   api.post(`/lasers/requests/${id}/resolve`, payload)
 export const requestLaser = (payload) => api.post('/lasers/requests', payload)
+export const assignLaserToStudio = (payload) => api.post('/lasers/assign-to-studio', payload)
 
 export const getAiConfig = () => api.get('/ai-config')
 export const updateAiConfig = (payload) => api.patch('/ai-config', payload)

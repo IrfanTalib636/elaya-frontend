@@ -428,7 +428,12 @@ const SessionDetail = () => {
   const statusLabel = session.is_no_show ? copy.noShowBadge : session.is_draft ? copy.draftBadge : t('components.badge.completed')
   const statusValue = session.is_no_show ? 'storniert' : session.is_draft ? 'ausstehend' : 'aktiv'
 
-  const hasLaser = session.studio_laser_brand || session.studio_laser_model || session.laser_typ
+  const hasLaser =
+    session.studio_laser_brand ||
+    session.studio_laser_model ||
+    session.laser_typ ||
+    session.laser_device_id ||
+    (session.wavelength_entries || []).length
   const hasResults = !session.is_no_show && (
     session.verblassung_prozent != null
     || session.removal_pct != null
@@ -437,6 +442,9 @@ const SessionDetail = () => {
   )
   const hasPayment = session.zahlung?.betragCHF > 0 || session.zahlung?.zahlungsart
 
+  const wavelengthEntries = Array.isArray(session.wavelength_entries)
+    ? session.wavelength_entries
+    : []
   const wavelengths = session.wavelength_nm?.length
     ? session.wavelength_nm.join(', ') + ' nm'
     : null
@@ -511,12 +519,47 @@ const SessionDetail = () => {
                 <InfoRow label={copy.brand}          value={session.studio_laser_brand} />
                 <InfoRow label={copy.model}         value={session.studio_laser_model} />
                 <InfoRow label={copy.laserType}      value={session.laser_typ} />
-                <InfoRow label={copy.wavelengths}   value={wavelengths} />
-                <InfoRow label={copy.fluence}  value={session.fluence_j_cm2 != null ? `${session.fluence_j_cm2} J/cm²` : null} />
-                <InfoRow label={copy.spotSize}     value={session.spot_size_mm != null ? `${session.spot_size_mm} mm` : null} />
-                <InfoRow label={copy.frequency}       value={session.frequency_hz != null ? `${session.frequency_hz} Hz` : null} />
-                <InfoRow label={copy.passes}         value={session.pass_count != null ? String(session.pass_count) : null} />
+                {!wavelengthEntries.length ? (
+                  <>
+                    <InfoRow label={copy.wavelengths}   value={wavelengths} />
+                    <InfoRow label={copy.fluence}  value={session.fluence_j_cm2 != null ? `${session.fluence_j_cm2} J/cm²` : null} />
+                    <InfoRow label={copy.spotSize}     value={session.spot_size_mm != null ? `${session.spot_size_mm} mm` : null} />
+                    <InfoRow label={copy.frequency}       value={session.frequency_hz != null ? `${session.frequency_hz} Hz` : null} />
+                    <InfoRow label={copy.passes}         value={session.pass_count != null ? String(session.pass_count) : null} />
+                  </>
+                ) : null}
               </div>
+              {wavelengthEntries.length ? (
+                <div className="flex flex-col gap-3 mt-2">
+                  {wavelengthEntries.map((entry, index) => (
+                    <div
+                      key={`${entry.wavelength_nm}-${index}`}
+                      className="grid grid-cols-2 gap-x-8 gap-y-2 p-3 rounded-[8px] border border-elaya-border"
+                    >
+                      <InfoRow
+                        label={`${copy.wavelengths || 'Wavelength'} ${index + 1}`}
+                        value={entry.wavelength_nm != null ? `${entry.wavelength_nm} nm` : null}
+                      />
+                      <InfoRow
+                        label={copy.fluence}
+                        value={entry.fluence_j_cm2 != null ? `${entry.fluence_j_cm2} J/cm²` : null}
+                      />
+                      <InfoRow
+                        label={copy.spotSize || copy.spotMm}
+                        value={entry.spot_size_mm != null ? `${entry.spot_size_mm} mm` : null}
+                      />
+                      <InfoRow
+                        label={copy.frequency || copy.freqHz}
+                        value={entry.frequency_hz != null ? `${entry.frequency_hz} Hz` : null}
+                      />
+                      <InfoRow
+                        label={copy.passes}
+                        value={entry.pass_count != null ? String(entry.pass_count) : null}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : null}
               {session.cooling_used && (
                 <div className="flex items-center gap-2 text-studio-w2 text-[12px]">
                   <span className="w-1.5 h-1.5 rounded-full bg-elaya-success shrink-0" />

@@ -15,11 +15,13 @@ import { getStudioConfig, updateStudioConfig, getEffectiveFeatures } from '../..
 import {
   getStudioSettings,
   updateStudioSettings,
+  listStudioLasers,
   getStudioStripeStatus,
   startStudioStripeConnect,
   refreshStudioStripeConnect,
 } from '../../api/studio'
-import { listLasers } from '../../api/adminPhase4'
+import { requestLaser, listMyLaserRequests } from '../../api/adminPhase4'
+import { uploadStagingPhoto } from '../../api/files'
 import { ROLES } from '../../constants/roles'
 import { WEEKDAYS, MITARBEITER_ROLLEN } from '../../constants/studio'
 import { formatTimeRange12, fmtDateDeLong } from '../../utils/time'
@@ -976,18 +978,30 @@ const RoomsTab = () => {
   const [saving, setSaving] = useState(false)
   const [rooms, setRooms] = useState([])
   const [standorte, setStandorte] = useState([])
-  const [laserCatalog, setLaserCatalog] = useState([])
+  const [laserInventory, setLaserInventory] = useState([])
+  const [myRequests, setMyRequests] = useState([])
+  const [requestOpen, setRequestOpen] = useState(false)
+  const [requestSaving, setRequestSaving] = useState(false)
+  const [requestForm, setRequestForm] = useState({
+    manufacturer: '',
+    model: '',
+    wavelengths: '',
+    notes: '',
+    photo: null,
+  })
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [settingsRes, lasersRes] = await Promise.all([
+      const [settingsRes, lasersRes, reqRes] = await Promise.all([
         getStudioSettings(),
-        listLasers({ active_only: true }).catch(() => null),
+        listStudioLasers().catch(() => null),
+        listMyLaserRequests().catch(() => null),
       ])
       setRooms(settingsRes.data.data.settings.behandlungsraeume ?? [])
       setStandorte(settingsRes.data.data.settings.standorte ?? [])
-      setLaserCatalog(lasersRes?.data?.data?.devices || [])
+      setLaserInventory(lasersRes?.data?.data?.devices || [])
+      setMyRequests(reqRes?.data?.data?.requests || [])
     } catch {
       toast.error(t('settingsPage.rooms.toasts.loadFailed'))
     } finally {
@@ -996,6 +1010,40 @@ const RoomsTab = () => {
   }, [t])
 
   useEffect(() => { load() }, [load])
+
+  const submitLaserRequest = async () => {
+    if (!requestForm.manufacturer.trim() || !requestForm.model.trim()) {
+      toast.error(t('settingsPage.rooms.request.required'))
+      return
+    }
+    setRequestSaving(true)
+    try {
+      let photo_file_id
+      if (requestForm.photo) {
+        const up = await uploadStagingPhoto(requestForm.photo, { slot: 'laser_request' })
+        photo_file_id = up.data?.data?.id || up.data?.data?.file_id
+      }
+      const wavelengths_nm = String(requestForm.wavelengths || '')
+        .split(/[,;\s]+/)
+        .map((s) => Number(s.trim()))
+        .filter((n) => Number.isFinite(n) && n > 0)
+      await requestLaser({
+        manufacturer: requestForm.manufacturer.trim(),
+        model: requestForm.model.trim(),
+        wavelengths_nm,
+        notes: requestForm.notes.trim(),
+        ...(photo_file_id ? { photo_file_id } : {}),
+      })
+      toast.success(t('settingsPage.rooms.request.submitted'))
+      setRequestOpen(false)
+      setRequestForm({ manufacturer: '', model: '', wavelengths: '', notes: '', photo: null })
+      await load()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || t('settingsPage.rooms.request.failed'))
+    } finally {
+      setRequestSaving(false)
+    }
+  }
 
   const updateRoom = (index, field, value) =>
     setRooms((prev) => prev.map((r, i) => (i === index ? { ...r, [field]: value } : r)))
@@ -1059,6 +1107,104 @@ const RoomsTab = () => {
       onSave={handleSave}
     >
       {!canEdit && <ReadOnlyHint />}
+
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => setRequestOpen(true)}
+        >
+          {t('settingsPage.rooms.request.cta')}
+        </Button>
+        <p className="text-studio-w3 text-[12px] m-0">
+          {t('settingsPage.rooms.request.hint')}
+        </p>
+      </div>
+
+      {myRequests.some((r) => r.status === 'pending') ? (
+        <div className="mb-3 p-3 rounded-[10px] border border-elaya-border bg-studio-bg-4">
+          <p className="m-0 mb-2 text-[12px] font-semibold text-studio-white">
+            {t('settingsPage.rooms.request.pendingTitle')}
+          </p>
+          <ul className="m-0 p-0 list-none flex flex-col gap-1">
+            {myRequests
+              .filter((r) => r.status === 'pending')
+              .map((r) => (
+                <li key={r.id} className="text-[12px] text-studio-w2">
+                  {r.manufacturer} {r.model}
+                  {(r.wavelengths_nm || []).length
+                    ? ` · ${(r.wavelengths_nm || []).join(', ')} nm`
+                    : ''}
+                </li>
+              ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {requestOpen ? (
+        <div className="mb-4 p-4 rounded-[12px] border border-studio-gold/40 bg-studio-bg-4 flex flex-col gap-3">
+          <p className="m-0 text-[14px] font-semibold text-studio-white">
+            {t('settingsPage.rooms.request.title')}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label={t('settingsPage.rooms.laserBrand')}
+              value={requestForm.manufacturer}
+              onChange={(e) =>
+                setRequestForm((f) => ({ ...f, manufacturer: e.target.value }))
+              }
+            />
+            <Input
+              label={t('settingsPage.rooms.laserModel')}
+              value={requestForm.model}
+              onChange={(e) => setRequestForm((f) => ({ ...f, model: e.target.value }))}
+            />
+            <Input
+              label={t('settingsPage.rooms.request.wavelengths')}
+              value={requestForm.wavelengths}
+              onChange={(e) =>
+                setRequestForm((f) => ({ ...f, wavelengths: e.target.value }))
+              }
+              placeholder="532, 1064"
+            />
+            <Input
+              label={t('settingsPage.rooms.request.notes')}
+              value={requestForm.notes}
+              onChange={(e) => setRequestForm((f) => ({ ...f, notes: e.target.value }))}
+            />
+          </div>
+          <label className="text-[12px] text-studio-w2 flex flex-col gap-1">
+            {t('settingsPage.rooms.request.photo')}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) =>
+                setRequestForm((f) => ({ ...f, photo: e.target.files?.[0] || null }))
+              }
+            />
+          </label>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setRequestOpen(false)}
+              disabled={requestSaving}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              loading={requestSaving}
+              onClick={() => void submitLaserRequest()}
+            >
+              {t('settingsPage.rooms.request.submit')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {rooms.length === 0 && (
         <p className="text-studio-w3 text-[13px] m-0">{t('settingsPage.rooms.empty')}</p>
@@ -1138,14 +1284,12 @@ const RoomsTab = () => {
                     </label>
                   </div>
                   <Select
-                    label={t('settingsPage.rooms.laserCatalog', {
-                      defaultValue: 'Approved laser',
-                    })}
+                    label={t('settingsPage.rooms.laserCatalog')}
                     value={room.laser_device_id || ''}
                     disabled={!isEditing}
                     onChange={(e) => {
                       const id = e.target.value || null
-                      const device = laserCatalog.find((d) => d.id === id)
+                      const device = laserInventory.find((d) => d.id === id)
                       setRooms((prev) =>
                         prev.map((r, i) =>
                           i === index
@@ -1160,30 +1304,29 @@ const RoomsTab = () => {
                       )
                     }}
                   >
-                    <option value="">
-                      {t('settingsPage.rooms.laserCatalogNone', {
-                        defaultValue: 'Custom / not listed',
-                      })}
-                    </option>
-                    {laserCatalog.map((d) => (
+                    <option value="">{t('settingsPage.rooms.laserCatalogNone')}</option>
+                    {laserInventory.map((d) => (
                       <option key={d.id} value={d.id}>
                         {d.label}
                       </option>
                     ))}
                   </Select>
+                  {laserInventory.length === 0 ? (
+                    <p className="text-studio-w3 text-[11px] m-0 sm:col-span-2">
+                      {t('settingsPage.rooms.inventoryEmpty')}
+                    </p>
+                  ) : null}
                   <Input
                     label={t('settingsPage.rooms.laserBrand')}
                     value={room.laser_brand ?? ''}
-                    onChange={(e) => updateRoom(index, 'laser_brand', e.target.value)}
-                    placeholder={t('settingsPage.rooms.laserBrandPlaceholder')}
-                    disabled={!isEditing || Boolean(room.laser_device_id)}
+                    readOnly
+                    disabled
                   />
                   <Input
                     label={t('settingsPage.rooms.laserModel')}
                     value={room.laser_model ?? ''}
-                    onChange={(e) => updateRoom(index, 'laser_model', e.target.value)}
-                    placeholder={t('settingsPage.rooms.laserModelPlaceholder')}
-                    disabled={!isEditing || Boolean(room.laser_device_id)}
+                    readOnly
+                    disabled
                   />
                   {standorte.length > 0 && (
                     <Select

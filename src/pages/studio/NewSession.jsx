@@ -5,7 +5,7 @@ import toast from 'react-hot-toast'
 import { getCase } from '../../api/cases'
 import { createSession } from '../../api/sessions'
 import { getAppointment } from '../../api/appointments'
-import { getStudioSettings } from '../../api/studio'
+import { getStudioSettings, listStudioLasers } from '../../api/studio'
 import { uploadSessionProgressPhoto } from '../../api/files'
 import { analyzeVerblassung } from '../../api/verblassung'
 import { Card, Button, Input, Select, Spinner, PageHeader } from '../../components/ui'
@@ -45,16 +45,14 @@ const INITIAL = {
   dauer_minuten:       '',
   mitarbeiter_id:      '',
   mitarbeiter_name:    '',
+  raum_id:             '',
   raum_name:           '',
   is_no_show:          false,
+  laser_device_id:     '',
   studio_laser_brand:  '',
   studio_laser_model:  '',
   laser_typ:           '',
-  wavelength_nm:       '',
-  fluence_j_cm2:       '',
-  spot_size_mm:        '',
-  frequency_hz:        '',
-  pass_count:          '',
+  wavelength_entries:  [{ wavelength_nm: '', fluence_j_cm2: '', spot_size_mm: '', frequency_hz: '', pass_count: '' }],
   cooling_used:        false,
   verblassung_prozent: 0,
   removal_pct:         0,
@@ -158,6 +156,8 @@ const NewSession = () => {
   const [linkedAppointment, setLinkedAppointment] = useState(null)
   const [loadingCase, setLoadingCase] = useState(true)
   const [staffRoster, setStaffRoster] = useState([])
+  const [rooms, setRooms] = useState([])
+  const [laserInventory, setLaserInventory] = useState([])
   const [form, setForm] = useState(INITIAL)
   const [savingDraft, setSavingDraft] = useState(false)
   const [savingFinal, setSavingFinal] = useState(false)
@@ -237,10 +237,14 @@ const NewSession = () => {
     load()
     void getStudioSettings()
       .then((res) => {
-        const list = (res.data.data.settings.mitarbeiter || []).filter((m) => m.aktiv !== false)
-        setStaffRoster(list)
+        const settings = res.data.data.settings || {}
+        setStaffRoster((settings.mitarbeiter || []).filter((m) => m.aktiv !== false))
+        setRooms((settings.behandlungsraeume || []).filter((r) => r.aktiv !== false))
       })
       .catch(() => {})
+    void listStudioLasers()
+      .then((res) => setLaserInventory(res.data?.data?.devices || []))
+      .catch(() => setLaserInventory([]))
   }, [
     caseId,
     appointmentId,
@@ -265,10 +269,28 @@ const NewSession = () => {
     []
   )
 
+  const selectedLaser = laserInventory.find((d) => d.id === form.laser_device_id) || null
+  const lasersForRoom = form.raum_id
+    ? (() => {
+        const room = rooms.find((r) => r.id === form.raum_id)
+        if (room?.laser_device_id) {
+          return laserInventory.filter((d) => d.id === room.laser_device_id)
+        }
+        return laserInventory
+      })()
+    : laserInventory
+  const approvedWavelengths = selectedLaser?.wavelengths_nm || []
+
   const buildPayload = (isDraft) => {
-    const wavelengths = form.wavelength_nm
-      ? form.wavelength_nm.split(',').flatMap((n) => { const v = Number(n.trim()); return v ? [v] : [] })
-      : []
+    const wavelength_entries = (form.wavelength_entries || [])
+      .filter((e) => e.wavelength_nm !== '' && e.wavelength_nm != null)
+      .map((e) => ({
+        wavelength_nm: Number(e.wavelength_nm),
+        fluence_j_cm2: e.fluence_j_cm2 !== '' ? Number(e.fluence_j_cm2) : null,
+        spot_size_mm: e.spot_size_mm !== '' ? Number(e.spot_size_mm) : null,
+        frequency_hz: e.frequency_hz !== '' ? Number(e.frequency_hz) : null,
+        pass_count: e.pass_count !== '' ? Number(e.pass_count) : null,
+      }))
 
     const hasPayment = form.zahlung_betragCHF || form.zahlung_zahlungsart
 
@@ -281,19 +303,17 @@ const NewSession = () => {
       dauer_minuten:       form.dauer_minuten     ? Number(form.dauer_minuten)    : undefined,
       mitarbeiter_id:      form.mitarbeiter_id    || undefined,
       mitarbeiter_name:    form.mitarbeiter_name  || undefined,
+      raum_id:             form.raum_id           || undefined,
       raum_name:           form.raum_name         || undefined,
       is_draft:            isDraft,
       is_no_show:          form.is_no_show,
       // Laser (skipped on no-show)
       ...(!form.is_no_show && {
+        laser_device_id:    form.laser_device_id || undefined,
         studio_laser_brand: form.studio_laser_brand || undefined,
         studio_laser_model: form.studio_laser_model || undefined,
         laser_typ:          form.laser_typ          || undefined,
-        wavelength_nm:      wavelengths.length ? wavelengths : undefined,
-        fluence_j_cm2:      form.fluence_j_cm2  ? Number(form.fluence_j_cm2)  : undefined,
-        spot_size_mm:       form.spot_size_mm   ? Number(form.spot_size_mm)   : undefined,
-        frequency_hz:       form.frequency_hz   ? Number(form.frequency_hz)   : undefined,
-        pass_count:         form.pass_count     ? Number(form.pass_count)     : undefined,
+        wavelength_entries: wavelength_entries.length ? wavelength_entries : undefined,
         cooling_used:       form.cooling_used,
         // Results
         verblassung_prozent: Number(form.verblassung_prozent) > 0 ? Number(form.verblassung_prozent) : undefined,
@@ -505,12 +525,50 @@ const NewSession = () => {
                 </option>
               ))}
             </Select>
-            <Input
+            <Select
               label={copy.room}
-              value={form.raum_name}
-              onChange={set('raum_name')}
-              placeholder={copy.roomPh}
-            />
+              value={form.raum_id}
+              onChange={(e) => {
+                const id = e.target.value
+                const room = rooms.find((r) => r.id === id)
+                setForm((p) => {
+                  const nextLaserId =
+                    room?.laser_device_id &&
+                    laserInventory.some((d) => d.id === room.laser_device_id)
+                      ? room.laser_device_id
+                      : p.laser_device_id &&
+                          (!room?.laser_device_id || p.laser_device_id === room.laser_device_id)
+                        ? p.laser_device_id
+                        : room?.laser_device_id || ''
+                  const device = laserInventory.find((d) => d.id === nextLaserId)
+                  return {
+                    ...p,
+                    raum_id: id,
+                    raum_name: room?.name || '',
+                    laser_device_id: nextLaserId || '',
+                    studio_laser_brand: device?.manufacturer || '',
+                    studio_laser_model: device?.model || '',
+                    laser_typ: device?.laser_type || '',
+                    wavelength_entries: [
+                      {
+                        wavelength_nm: '',
+                        fluence_j_cm2: '',
+                        spot_size_mm: '',
+                        frequency_hz: '',
+                        pass_count: '',
+                      },
+                    ],
+                  }
+                })
+              }}
+            >
+              <option value="">{copy.roomPh || 'Select room…'}</option>
+              {rooms.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </Select>
           </div>
           <p className="m-0 text-[11px] text-studio-w3">
             {copy.documentedBy || 'Documented by'}:{' '}
@@ -529,26 +587,189 @@ const NewSession = () => {
         {/* ── Section 2: Laser (hidden on no-show) ── */}
         {!form.is_no_show && (
           <Section title={copy.laserParams}>
+            <Select
+              label={copy.laserDevice || 'Laser'}
+              value={form.laser_device_id}
+              onChange={(e) => {
+                const id = e.target.value
+                const device = laserInventory.find((d) => d.id === id)
+                setForm((p) => ({
+                  ...p,
+                  laser_device_id: id,
+                  studio_laser_brand: device?.manufacturer || '',
+                  studio_laser_model: device?.model || '',
+                  laser_typ: device?.laser_type || '',
+                  wavelength_entries: [
+                    {
+                      wavelength_nm: '',
+                      fluence_j_cm2: '',
+                      spot_size_mm: '',
+                      frequency_hz: '',
+                      pass_count: '',
+                    },
+                  ],
+                }))
+              }}
+            >
+              <option value="">{copy.laserDevicePh || 'Select laser…'}</option>
+              {lasersForRoom.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.label}
+                </option>
+              ))}
+            </Select>
             <div className="grid grid-cols-2 gap-4">
-              <Input label={copy.brand}  value={form.studio_laser_brand} onChange={set('studio_laser_brand')} placeholder="Fotona" />
-              <Input label={copy.model} value={form.studio_laser_model} onChange={set('studio_laser_model')} placeholder="StarWalker MaQX" />
+              <Input label={copy.brand} value={form.studio_laser_brand} readOnly disabled />
+              <Input label={copy.model} value={form.studio_laser_model} readOnly disabled />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Input label={copy.laserType}         value={form.laser_typ}      onChange={set('laser_typ')}      placeholder="Nd:YAG" />
-              <Input
-                label={copy.wavelengths}
-                value={form.wavelength_nm}
-                onChange={set('wavelength_nm')}
-                placeholder="1064, 532"
-                hint={copy.wavelengthsHint}
-              />
-            </div>
-            <div className="grid grid-cols-4 gap-4">
-              <Input label={copy.fluence} type="number" min="0" step="0.1" value={form.fluence_j_cm2} onChange={set('fluence_j_cm2')} placeholder="3.5" />
-              <Input label={copy.spotMm}     type="number" min="0" step="0.1" value={form.spot_size_mm}  onChange={set('spot_size_mm')}  placeholder="6" />
-              <Input label={copy.freqHz} type="number" min="0"            value={form.frequency_hz}  onChange={set('frequency_hz')}  placeholder="2" />
-              <Input label={copy.passes}        type="number" min="0"            value={form.pass_count}    onChange={set('pass_count')}    placeholder="3" />
-            </div>
+            <Input label={copy.laserType} value={form.laser_typ} readOnly disabled />
+            <p className="m-0 text-[11px] text-studio-w3">{copy.laserCatalogHint}</p>
+
+            {(form.wavelength_entries || []).map((entry, index) => (
+              <div
+                key={`wl-${index}`}
+                className="flex flex-col gap-3 p-3 rounded-[10px] border border-elaya-border bg-studio-bg-4"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="m-0 text-[12px] font-semibold text-studio-white">
+                    {copy.wavelengthN || 'Wavelength'} {index + 1}
+                  </p>
+                  {form.wavelength_entries.length > 1 ? (
+                    <button
+                      type="button"
+                      className="text-[11px] text-studio-red border-0 bg-transparent cursor-pointer"
+                      onClick={() =>
+                        setForm((p) => ({
+                          ...p,
+                          wavelength_entries: p.wavelength_entries.filter((_, i) => i !== index),
+                        }))
+                      }
+                    >
+                      {copy.removeWavelength || 'Remove'}
+                    </button>
+                  ) : null}
+                </div>
+                <Select
+                  label={copy.wavelengths}
+                  value={entry.wavelength_nm}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setForm((p) => ({
+                      ...p,
+                      wavelength_entries: p.wavelength_entries.map((row, i) =>
+                        i === index ? { ...row, wavelength_nm: value } : row
+                      ),
+                    }))
+                  }}
+                  disabled={!form.laser_device_id}
+                >
+                  <option value="">{copy.wavelengthPh || 'Select wavelength…'}</option>
+                  {approvedWavelengths
+                    .filter((nm) => {
+                      const used = (form.wavelength_entries || [])
+                        .filter((_, i) => i !== index)
+                        .map((row) => Number(row.wavelength_nm))
+                      return (
+                        Number(entry.wavelength_nm) === Number(nm) ||
+                        !used.includes(Number(nm))
+                      )
+                    })
+                    .map((nm) => (
+                      <option key={nm} value={nm}>
+                        {nm} nm
+                      </option>
+                    ))}
+                </Select>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <Input
+                    label={copy.fluence}
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={entry.fluence_j_cm2}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        wavelength_entries: p.wavelength_entries.map((row, i) =>
+                          i === index ? { ...row, fluence_j_cm2: e.target.value } : row
+                        ),
+                      }))
+                    }
+                    placeholder="3.5"
+                  />
+                  <Input
+                    label={copy.spotMm}
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={entry.spot_size_mm}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        wavelength_entries: p.wavelength_entries.map((row, i) =>
+                          i === index ? { ...row, spot_size_mm: e.target.value } : row
+                        ),
+                      }))
+                    }
+                    placeholder="6"
+                  />
+                  <Input
+                    label={copy.freqHz}
+                    type="number"
+                    min="0"
+                    value={entry.frequency_hz}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        wavelength_entries: p.wavelength_entries.map((row, i) =>
+                          i === index ? { ...row, frequency_hz: e.target.value } : row
+                        ),
+                      }))
+                    }
+                    placeholder="2"
+                  />
+                  <Input
+                    label={copy.passes}
+                    type="number"
+                    min="0"
+                    value={entry.pass_count}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        wavelength_entries: p.wavelength_entries.map((row, i) =>
+                          i === index ? { ...row, pass_count: e.target.value } : row
+                        ),
+                      }))
+                    }
+                    placeholder="3"
+                  />
+                </div>
+              </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={!form.laser_device_id || approvedWavelengths.length === 0}
+              onClick={() =>
+                setForm((p) => ({
+                  ...p,
+                  wavelength_entries: [
+                    ...p.wavelength_entries,
+                    {
+                      wavelength_nm: '',
+                      fluence_j_cm2: '',
+                      spot_size_mm: '',
+                      frequency_hz: '',
+                      pass_count: '',
+                    },
+                  ],
+                }))
+              }
+            >
+              {copy.addWavelength || '+ Add wavelength / parameters'}
+            </Button>
             <Toggle label={copy.cooling} checked={form.cooling_used} onChange={setVal('cooling_used')} />
           </Section>
         )}

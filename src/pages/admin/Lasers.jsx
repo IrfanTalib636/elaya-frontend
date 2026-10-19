@@ -7,6 +7,7 @@ import {
   updateLaser,
   listLaserRequests,
   resolveLaserRequest,
+  assignLaserToStudio,
 } from '../../api/adminPhase4'
 import { getApiErrorMessage } from '../../lib/apiError'
 import useContent from '../../i18n/useContent'
@@ -19,6 +20,7 @@ const emptyForm = (colors = {}) => ({
   manufacturer: '',
   model: '',
   wavelengths: '',
+  laser_type: '',
   notes: '',
   active: true,
   colors: { ...colors },
@@ -43,6 +45,9 @@ export default function AdminLasers() {
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [assignStudioId, setAssignStudioId] = useState('')
+  const [assignLaserId, setAssignLaserId] = useState('')
+  const [assigning, setAssigning] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -74,6 +79,7 @@ export default function AdminLasers() {
       manufacturer: device.manufacturer || '',
       model: device.model || '',
       wavelengths: (device.wavelengths_nm || []).join(', '),
+      laser_type: device.laser_type || '',
       notes: device.notes || '',
       active: device.active !== false,
       colors: { ...(device.color_deltas_draft || live) },
@@ -103,6 +109,7 @@ export default function AdminLasers() {
         manufacturer: form.manufacturer.trim(),
         model: form.model.trim(),
         wavelengths_nm: parseWavelengths(form.wavelengths),
+        laser_type: form.laser_type?.trim() || '',
         notes: form.notes,
         active: form.active,
         ...(colorsChanged ? { color_deltas: form.colors } : {}),
@@ -119,13 +126,34 @@ export default function AdminLasers() {
     }
   }
 
-  const handleResolve = async (id, decision) => {
+  const handleResolve = async (id, decision, extra = {}) => {
     try {
-      await resolveLaserRequest(id, { decision })
+      await resolveLaserRequest(id, { decision, ...extra })
       toast.success(decision === 'approved' ? copy.approved : copy.rejected)
       await load()
     } catch (err) {
       toast.error(getApiErrorMessage(err, copy.resolveFailed || 'Resolve failed'))
+    }
+  }
+
+  const handleAssign = async () => {
+    if (!assignStudioId.trim() || !assignLaserId) {
+      toast.error(copy.required)
+      return
+    }
+    setAssigning(true)
+    try {
+      await assignLaserToStudio({
+        studio_id: assignStudioId.trim(),
+        laser_device_id: assignLaserId,
+      })
+      toast.success(copy.assigned)
+      setAssignStudioId('')
+      setAssignLaserId('')
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, copy.assignFailed))
+    } finally {
+      setAssigning(false)
     }
   }
 
@@ -161,6 +189,12 @@ export default function AdminLasers() {
             hint={copy.wavelengthsHint}
             value={form.wavelengths}
             onChange={(e) => setForm((f) => ({ ...f, wavelengths: e.target.value }))}
+          />
+          <Input
+            label={copy.laserType || 'Laser type'}
+            value={form.laser_type}
+            onChange={(e) => setForm((f) => ({ ...f, laser_type: e.target.value }))}
+            placeholder="Nd:YAG"
           />
           <Input
             label={copy.notes}
@@ -209,13 +243,40 @@ export default function AdminLasers() {
               >
                 <div>
                   <p className="m-0 text-[13px] text-studio-white font-medium">
+                    {t('adminPages.lasers.requestFromStudio', {
+                      studio: req.studio?.firma || copy.studioFallback,
+                      defaultValue: `New laser request from Studio ${req.studio?.firma || copy.studioFallback}`,
+                    })}
+                  </p>
+                  <p className="m-0 text-[13px] text-studio-white font-medium">
                     {req.manufacturer} {req.model}
                   </p>
                   <p className="m-0 text-[11px] text-studio-w3">
-                    {req.studio?.firma || copy.studioFallback} · {req.requested_by || '—'}
+                    {(req.wavelengths_nm || []).map((n) => `${n} nm`).join(' · ') ||
+                      copy.noWavelengths}
+                    {req.notes ? ` · ${req.notes}` : ''}
+                  </p>
+                  <p className="m-0 text-[11px] text-studio-w3">
+                    {req.requested_by || '—'}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 items-center">
+                  <select
+                    className="text-[12px] bg-studio-bg-3 text-studio-white border border-elaya-border rounded-[8px] px-2 py-1"
+                    defaultValue=""
+                    onChange={(e) => {
+                      const laser_device_id = e.target.value
+                      if (!laser_device_id) return
+                      void handleResolve(req.id, 'approved', { laser_device_id })
+                    }}
+                  >
+                    <option value="">{copy.approveExisting}</option>
+                    {devices.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.label}
+                      </option>
+                    ))}
+                  </select>
                   <Button
                     size="sm"
                     variant="secondary"
@@ -232,6 +293,40 @@ export default function AdminLasers() {
           </ul>
         </Card>
       ) : null}
+
+      <Card className="flex flex-col gap-3">
+        <h3 className="m-0 text-[14px] font-semibold text-studio-white">
+          {copy.assignToStudio}
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Input
+            label={copy.assignStudioId}
+            value={assignStudioId}
+            onChange={(e) => setAssignStudioId(e.target.value)}
+            placeholder="Mongo studio ObjectId"
+          />
+          <label className="flex flex-col gap-1 text-[12px] text-studio-w2">
+            {copy.assignLaserId}
+            <select
+              className="text-[13px] bg-studio-bg-3 text-studio-white border border-elaya-border rounded-[8px] px-2 py-2"
+              value={assignLaserId}
+              onChange={(e) => setAssignLaserId(e.target.value)}
+            >
+              <option value="">—</option>
+              {devices.filter((d) => d.active !== false).map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="flex justify-end">
+          <Button size="sm" loading={assigning} onClick={() => void handleAssign()}>
+            {copy.assignSubmit}
+          </Button>
+        </div>
+      </Card>
 
       <Card className="flex flex-col gap-2">
         <h3 className="m-0 text-[14px] font-semibold text-studio-white mb-1">

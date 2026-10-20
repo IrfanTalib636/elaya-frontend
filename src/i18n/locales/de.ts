@@ -2270,6 +2270,13 @@ const de: TranslationSchema = {
       "recommendedAction": "Empfohlene Aktion",
       "progressScore": " · Progress-Score {{score}}",
       "courseCustomer": "Verlauf (Kunde)",
+      "visualProgression": "Visueller Verlauf (KI)",
+      "progressionDirection": {
+        "improved": "Verbesserung",
+        "worsened": "Verschlechterung",
+        "unchanged": "Keine klare Änderung",
+        "unclear": "Unklar"
+      },
       "summary": "Zusammenfassung",
       "redFlags": "Red flags",
       "yes": "Ja",
@@ -2304,7 +2311,9 @@ const de: TranslationSchema = {
       "placeholder": "Nachricht schreiben…",
       "sendAria": "Senden",
       "newMessageFrom": "Neue Nachricht von {name}",
-      "newCustomerMessage": "Neue Kundennachricht"
+      "newCustomerMessage": "Neue Kundennachricht",
+      "systemLabel": "System",
+      "openAftercare": "Nachsorge-Check öffnen"
     },
     "platformChat": {
       "title": "Support-Chat",

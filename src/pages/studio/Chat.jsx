@@ -374,7 +374,56 @@ export default function StudioChatPage() {
                   </p>
                 ) : (
                   messages.map((m) => {
+                    const isSystem =
+                      m.sender_role === 'system' || m.typ === 'system'
+                    const aftercareMeta =
+                      m.meta?.kind === 'aftercare_alert' ? m.meta : null
                     const mine = m.sender_role === 'studio'
+                    if (isSystem || aftercareMeta) {
+                      return (
+                        <div key={m.id} className="flex justify-center">
+                          <div className="max-w-[90%] w-full rounded-[14px] px-3.5 py-3 text-[13px] leading-relaxed border border-elaya-error/35 bg-elaya-error/10 text-studio-w1">
+                            <p className="m-0 font-semibold text-elaya-error text-[12px] uppercase tracking-wide">
+                              {aftercareMeta
+                                ? `Aftercare Alert – Case #${aftercareMeta.case_display_id || '—'}`
+                                : copy.systemLabel || 'System'}
+                            </p>
+                            <p className="m-0 mt-2 whitespace-pre-wrap break-words text-studio-w1">
+                              {m.text}
+                            </p>
+                            {aftercareMeta ? (
+                              <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-studio-w2">
+                                {aftercareMeta.standort_name ? (
+                                  <span>{aftercareMeta.standort_name}</span>
+                                ) : null}
+                                {aftercareMeta.ampel ? (
+                                  <span>Ampel: {aftercareMeta.ampel}</span>
+                                ) : null}
+                                {aftercareMeta.healing_status ? (
+                                  <span>{aftercareMeta.healing_status}</span>
+                                ) : null}
+                              </div>
+                            ) : null}
+                            {aftercareMeta?.nachsorge_check_id ? (
+                              <button
+                                type="button"
+                                className="mt-3 inline-flex items-center px-3 py-1.5 rounded-[10px] bg-studio-gold text-studio-bg text-[12px] font-semibold border-0 cursor-pointer"
+                                onClick={() =>
+                                  navigate(
+                                    `/studio/aftercare?check=${encodeURIComponent(aftercareMeta.nachsorge_check_id)}`
+                                  )
+                                }
+                              >
+                                {copy.openAftercare || 'Nachsorge-Check öffnen'}
+                              </button>
+                            ) : null}
+                            <div className="text-[10px] mt-2 text-studio-w3">
+                              {fmtTime(m.createdAt)}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    }
                     return (
                       <div
                         key={m.id}

@@ -384,6 +384,22 @@ const Aftercare = () => {
                 <p className="text-studio-w1 text-[13px] m-0">{detail.progress_direction_self}</p>
               </DetailBlock>
             )}
+            {(detail.progression_summary || detail.progression_direction) && (
+              <DetailBlock label={copy.visualProgression || 'Visueller Verlauf'}>
+                {detail.progression_direction ? (
+                  <p className="text-studio-gold-2 text-[12px] font-semibold m-0 mb-1">
+                    {(copy.progressionDirection &&
+                      copy.progressionDirection[detail.progression_direction]) ||
+                      detail.progression_direction}
+                  </p>
+                ) : null}
+                {detail.progression_summary ? (
+                  <p className="text-studio-w1 text-[13px] m-0 leading-relaxed">
+                    {detail.progression_summary}
+                  </p>
+                ) : null}
+              </DetailBlock>
+            )}
             {detail.zusammenfassung && (
               <DetailBlock label={copy.summary}>
                 <p className="text-studio-w1 text-[13px] m-0 leading-relaxed">{detail.zusammenfassung}</p>

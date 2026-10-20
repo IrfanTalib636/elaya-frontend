@@ -2268,6 +2268,13 @@ const en = {
       "recommendedAction": "Recommended action",
       "progressScore": " · Progress score {{score}}",
       "courseCustomer": "Course (customer)",
+      "visualProgression": "Visual progression (AI)",
+      "progressionDirection": {
+        "improved": "Improvement",
+        "worsened": "Worsening",
+        "unchanged": "No clear change",
+        "unclear": "Unclear"
+      },
       "summary": "Summary",
       "redFlags": "Red flags",
       "yes": "Yes",
@@ -2302,7 +2309,9 @@ const en = {
       "placeholder": "Write a message…",
       "sendAria": "Send",
       "newMessageFrom": "New message from {name}",
-      "newCustomerMessage": "New customer message"
+      "newCustomerMessage": "New customer message",
+      "systemLabel": "System",
+      "openAftercare": "Open aftercare check"
     },
     "platformChat": {
       "title": "Support chat",

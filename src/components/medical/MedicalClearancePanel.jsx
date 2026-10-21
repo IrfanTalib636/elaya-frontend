@@ -11,9 +11,9 @@ import { finishOpenAction } from '../../lib/openActionsSync'
 const STATUS_LABEL = {
   not_required: 'Not required',
   required: 'Required — waiting for upload',
-  pending_review: 'Pending studio verification',
-  verified: 'Verified — treatment unlocked',
-  rejected: 'Rejected — new document needed',
+  pending_review: 'Pending review — confirm clearance provided',
+  verified: 'Accepted — clearance documented as reviewed',
+  rejected: 'Rejected / insufficient — new document needed',
 }
 
 const isImageMime = (mime, name = '') => {
@@ -88,10 +88,6 @@ const ClearanceDocThumb = ({ fileId, label, mime, onOpen }) => {
   )
 }
 
-/**
- * Studio panel: verify that a doctor's certificate exists for the customer.
- * Explicitly NOT a medical decision — only document existence confirmation.
- */
 export default function MedicalClearancePanel({
   customerId,
   clearance: initial,
@@ -195,10 +191,11 @@ export default function MedicalClearancePanel({
               Medical clearance (customer-level)
             </h3>
             <p className="text-studio-w3 text-[11px] m-0 mt-1 leading-relaxed">
-              Verify that an appropriate doctor&apos;s confirmation exists for laser
-              treatment. You are <strong className="text-studio-w1">not</strong> making a
-              medical decision. Upload alone does not unlock booking — only your
-              verification does. Applies to all tattoo cases of this customer.
+              Confirm that the required medical clearance document has been{' '}
+              <strong className="text-studio-w1">provided and reviewed</strong>. You are{' '}
+              <strong className="text-studio-w1">not</strong> confirming a medical diagnosis.
+              Upload alone does not unlock treatment — only acceptance does. Consultation
+              stays bookable. Applies to this customer&apos;s tattoo cases.
             </p>
           </div>
         </div>
@@ -267,7 +264,7 @@ export default function MedicalClearancePanel({
             />
             <div className="flex flex-wrap gap-2">
               <Button size="sm" loading={saving} onClick={() => void run('verify')}>
-                Verify document — unlock treatment
+                Accepted — clearance provided &amp; reviewed
               </Button>
               <Button
                 size="sm"
@@ -275,7 +272,7 @@ export default function MedicalClearancePanel({
                 loading={saving}
                 onClick={() => void run('reject')}
               >
-                Reject — request new upload
+                Rejected / insufficient
               </Button>
             </div>
           </div>

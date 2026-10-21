@@ -133,6 +133,7 @@ const en = {
     "types": {
       "confirm_price": "Confirm price",
       "review_medical": "Review medical information",
+      "review_clearance": "Review medical clearance",
       "review_case": "Review new case",
       "review_aftercare": "Review aftercare photo",
       "healing_issue": "Healing issue",

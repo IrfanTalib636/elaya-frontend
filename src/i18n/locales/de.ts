@@ -135,6 +135,7 @@ const de: TranslationSchema = {
     "types": {
       "confirm_price": "Preis bestätigen",
       "review_medical": "Medizinische Angaben prüfen",
+      "review_clearance": "Medizinische Freigabe prüfen",
       "review_case": "Neuen Fall prüfen",
       "review_aftercare": "Nachsorgefoto prüfen",
       "healing_issue": "Heilung braucht Aufmerksamkeit",

@@ -10,10 +10,10 @@ import { finishOpenAction } from '../../lib/openActionsSync'
 
 const STATUS_LABEL = {
   not_required: 'Not required',
-  required: 'Required — waiting for upload',
-  pending_review: 'Pending review — confirm clearance provided',
-  verified: 'Accepted — clearance documented as reviewed',
-  rejected: 'Rejected / insufficient — new document needed',
+  required: 'Required. Waiting for upload',
+  pending_review: 'Pending review. Confirm clearance provided',
+  verified: 'Accepted. Clearance documented as reviewed',
+  rejected: 'Rejected / insufficient. New document needed',
 }
 
 const isImageMime = (mime, name = '') => {
@@ -164,8 +164,8 @@ export default function MedicalClearancePanel({
       finishOpenAction(navigate)
       toast.success(
         decision === 'verify'
-          ? 'Document verified — treatment lock removed'
-          : 'Document rejected — customer notified'
+          ? 'Document verified. Treatment lock removed'
+          : 'Document rejected. Customer notified'
       )
     } catch (err) {
       toast.error(getApiErrorMessage(err) || 'Could not update clearance')
@@ -194,7 +194,7 @@ export default function MedicalClearancePanel({
               Confirm that the required medical clearance document has been{' '}
               <strong className="text-studio-w1">provided and reviewed</strong>. You are{' '}
               <strong className="text-studio-w1">not</strong> confirming a medical diagnosis.
-              Upload alone does not unlock treatment — only acceptance does. Consultation
+              Upload alone does not unlock treatment. Only acceptance does. Consultation
               stays bookable. Applies to this customer&apos;s tattoo cases.
             </p>
           </div>
@@ -249,7 +249,7 @@ export default function MedicalClearancePanel({
 
         {readOnly && docs.length > 0 && (
           <p className="text-[11px] text-studio-w3 m-0">
-            Read-only — only the customer&apos;s current studio can verify or reject.
+            Read-only. Only the customer&apos;s current studio can verify or reject.
           </p>
         )}
 
@@ -264,7 +264,7 @@ export default function MedicalClearancePanel({
             />
             <div className="flex flex-wrap gap-2">
               <Button size="sm" loading={saving} onClick={() => void run('verify')}>
-                Accepted — clearance provided &amp; reviewed
+                Accept clearance
               </Button>
               <Button
                 size="sm"
@@ -272,7 +272,7 @@ export default function MedicalClearancePanel({
                 loading={saving}
                 onClick={() => void run('reject')}
               >
-                Rejected / insufficient
+                Reject clearance
               </Button>
             </div>
           </div>
@@ -283,6 +283,25 @@ export default function MedicalClearancePanel({
             Verified {new Date(clearance.verified_at).toLocaleString('de-CH')}
             {clearance.verified_note ? ` · ${clearance.verified_note}` : ''}
           </p>
+        )}
+
+        {(clearance.overrides || []).filter((o) => o && !o.revoked_at).length > 0 && (
+          <div className="text-[11px] text-studio-w2 border-t border-elaya-border pt-2">
+            <p className="m-0 mb-1 font-medium text-studio-w1">
+              Medical Clearance Override (documented)
+            </p>
+            {(clearance.overrides || [])
+              .filter((o) => o && !o.revoked_at)
+              .map((o, i) => (
+                <p key={`${o.condition_key}-${i}`} className="m-0 leading-relaxed">
+                  {o.condition_key || o.med_key}
+                  {o.accepted_at
+                    ? ` · ${new Date(o.accepted_at).toLocaleString('de-CH')}`
+                    : ''}
+                  {o.note ? ` · ${o.note}` : ''}
+                </p>
+              ))}
+          </div>
         )}
       </Card>
 

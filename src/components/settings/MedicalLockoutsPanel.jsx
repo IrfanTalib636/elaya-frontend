@@ -50,6 +50,7 @@ export const DATE_LOCK_FIELDS = [
 
 export const CONDITION_LOCK_KEYS = [
   'antidepressants',
+  'antibiotics',
   'skin_acne_medication',
   'other_unknown_medication',
   'illness_not_recovered',
@@ -57,7 +58,8 @@ export const CONDITION_LOCK_KEYS = [
 
 const DEFAULT_CONDITIONS = {
   antidepressants: 'MEDICAL_CLEARANCE_REQUIRED',
-  skin_acne_medication: 'MEDICAL_CLEARANCE_REQUIRED',
+  antibiotics: 'DATE_LOCK_CLEARANCE_OVERRIDE',
+  skin_acne_medication: 'DATE_LOCK_CLEARANCE_OVERRIDE',
   other_unknown_medication: 'MEDICAL_REVIEW_REQUIRED',
   illness_not_recovered: 'MEDICAL_REVIEW_REQUIRED',
 }
@@ -260,18 +262,24 @@ export default function MedicalLockoutsPanel({
   }
 
   const conditionBadge = (cond) => {
-    const clearance = cond === 'MEDICAL_CLEARANCE_REQUIRED'
+    const label =
+      cond === 'MEDICAL_CLEARANCE_REQUIRED'
+        ? copy.conditionClearance || 'Medical clearance required'
+        : cond === 'DATE_LOCK_CLEARANCE_OVERRIDE'
+          ? copy.conditionDateLockOverride ||
+            'Date lock + medical clearance override'
+          : copy.conditionReview || 'Medical review required'
+    const tone =
+      cond === 'MEDICAL_CLEARANCE_REQUIRED'
+        ? 'bg-studio-amber/15 text-studio-amber'
+        : cond === 'DATE_LOCK_CLEARANCE_OVERRIDE'
+          ? 'bg-sky-500/15 text-sky-300'
+          : 'bg-studio-gold/15 text-studio-gold-2'
     return (
       <span
-        className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-          clearance
-            ? 'bg-studio-amber/15 text-studio-amber'
-            : 'bg-studio-gold/15 text-studio-gold-2'
-        }`}
+        className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${tone}`}
       >
-        {clearance
-          ? copy.conditionClearance || 'Medical clearance required'
-          : copy.conditionReview || 'Medical review required'}
+        {label}
       </span>
     )
   }
@@ -483,6 +491,10 @@ export default function MedicalLockoutsPanel({
                       >
                         <option value="MEDICAL_CLEARANCE_REQUIRED">
                           {copy.conditionClearance || 'Medical clearance required'}
+                        </option>
+                        <option value="DATE_LOCK_CLEARANCE_OVERRIDE">
+                          {copy.conditionDateLockOverride ||
+                            'Date lock + medical clearance override'}
                         </option>
                         <option value="MEDICAL_REVIEW_REQUIRED">
                           {copy.conditionReview || 'Medical review required'}

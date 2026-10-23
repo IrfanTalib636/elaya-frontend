@@ -3488,6 +3488,7 @@ const en = {
       "colDesc": "Description",
       "colCondition": "Condition",
       "conditionClearance": "Medical clearance required",
+      "conditionDateLockOverride": "Date lock + medical clearance override",
       "conditionReview": "Medical review required",
       "calcTitle": "Calculation rule",
       "calc1": "All active locks are evaluated together.",
@@ -3536,9 +3537,13 @@ const en = {
           "label": "Antidepressants",
           "desc": "No fixed daily lockout. Treatment blocked until a verified medical clearance is present."
         },
+        "antibiotics": {
+          "label": "Antibiotics",
+          "desc": "Day-count lock applies from last intake. An accepted medical certificate can document a Medical Clearance Override that lifts that date lock (original lock remains in history)."
+        },
         "skin_acne_medication": {
-          "label": "Skin condition / acne medication",
-          "desc": "No fixed daily lockout. Treatment blocked until a verified medical clearance is present."
+          "label": "Skin condition / acne medication (retinoids)",
+          "desc": "Day-count lock applies from last intake. An accepted medical certificate can document a Medical Clearance Override that lifts that date lock (original lock remains in history)."
         },
         "other_unknown_medication": {
           "label": "Other or unknown medication",

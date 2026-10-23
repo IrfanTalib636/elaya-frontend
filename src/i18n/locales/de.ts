@@ -3490,6 +3490,7 @@ const de: TranslationSchema = {
       "colDesc": "Beschreibung",
       "colCondition": "Bedingung",
       "conditionClearance": "Ärztliche Freigabe erforderlich",
+      "conditionDateLockOverride": "Sperrfrist + Medical Clearance Override",
       "conditionReview": "Ärztliche Prüfung erforderlich",
       "calcTitle": "Berechnungsregel",
       "calc1": "Alle aktiven Sperren werden gemeinsam geprüft.",
@@ -3538,9 +3539,13 @@ const de: TranslationSchema = {
           "label": "Antidepressiva",
           "desc": "Keine pauschale Tagesfrist. Behandlung gesperrt bis geprüfte ärztliche Freigabe vorliegt."
         },
+        "antibiotics": {
+          "label": "Antibiotika",
+          "desc": "Tages-Sperrfrist ab letzter Einnahme. Ein akzeptiertes Attest kann einen Medical Clearance Override dokumentieren und diese Sperrfrist aufheben (Original bleibt in der Historie)."
+        },
         "skin_acne_medication": {
-          "label": "Medikamente Hauterkrankung / Akne",
-          "desc": "Keine pauschale Tagesfrist. Behandlung gesperrt bis geprüfte ärztliche Freigabe vorliegt."
+          "label": "Medikamente Hauterkrankung / Akne (Retinoide)",
+          "desc": "Tages-Sperrfrist ab letzter Einnahme. Ein akzeptiertes Attest kann einen Medical Clearance Override dokumentieren und diese Sperrfrist aufheben (Original bleibt in der Historie)."
         },
         "other_unknown_medication": {
           "label": "Andere oder unbekannte Medikamente",

@@ -1,4 +1,5 @@
 import api from '../lib/axios'
+import { optimizeImageForUpload } from '../utils/optimizeImageForUpload'
 
 export const listAdminProducts = (params) =>
   api.get('/admin/shop/products', { params })
@@ -8,9 +9,11 @@ export const updateAdminProduct = (id, payload) =>
   api.patch(`/admin/shop/products/${id}`, payload)
 
 /** Multipart upload of one or more product photos. Returns { data: { urls: [...] } }. */
-export const uploadAdminProductImages = (files) => {
+export const uploadAdminProductImages = async (files) => {
   const form = new FormData()
-  for (const file of files) form.append('files', file)
+  for (const file of files) {
+    form.append('files', await optimizeImageForUpload(file))
+  }
   return api.post('/admin/shop/products/upload-image', form)
 }
 export const deleteAdminProductImage = (productId, url) =>

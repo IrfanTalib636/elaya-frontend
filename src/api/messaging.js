@@ -3,6 +3,9 @@ import api from '../lib/axios'
 export const listConversations = (params) =>
   api.get('/messaging/conversations', { params })
 
+/** Total unread customer↔studio messages for nav badges. */
+export const getMessagingUnreadCount = () => api.get('/messaging/unread-count')
+
 export const getOrCreateConversation = (body = {}) =>
   api.post('/messaging/conversations', body)
 

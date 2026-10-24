@@ -36,6 +36,7 @@ import ThemeSwitcher from './ThemeSwitcher'
 import { getAdminActionSummary } from '../api/openActions'
 import { notifyOpenActionsChanged, subscribeOpenActionsChanged } from '../lib/openActionsSync'
 import { useSocketEvent } from '../hooks/useSocketEvent'
+import { useChatUnreadBadges } from '../hooks/useChatUnreadBadges'
 
 const ICONS = {
   overview: LayoutDashboard,
@@ -90,7 +91,7 @@ const TOOLS_NAV = [
   { to: '/admin/settings', id: 'settings' },
 ]
 
-const NavItem = ({ to, id, label, dot }) => {
+const NavItem = ({ to, id, label, dot, badge }) => {
   const Icon = ICONS[id] || LayoutDashboard
   return (
     <NavLink
@@ -105,7 +106,12 @@ const NavItem = ({ to, id, label, dot }) => {
     >
       <Icon size={15} className="shrink-0" />
       <span className="truncate flex-1">{label}</span>
-      {dot ? (
+      {badge ? (
+        <span className="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-studio-gold text-[10px] font-bold text-studio-bg flex items-center justify-center">
+          {badge}
+        </span>
+      ) : null}
+      {!badge && dot ? (
         <span
           className={`h-2 w-2 shrink-0 rounded-full ${
             dot === 'red' ? 'bg-elaya-error' : 'bg-elaya-success'
@@ -123,6 +129,8 @@ const AdminShell = () => {
   const { toast: toastMessages, adminNav, common } = useContent()
   const [query, setQuery] = useState('')
   const [actionDot, setActionDot] = useState(null)
+  const { platformBadge, platformUnread } = useChatUnreadBadges({ platformChat: true })
+  const studioChatDot = platformUnread > 0 ? 'red' : null
   const hideFab = location.pathname.startsWith('/admin/studio-chat')
 
   const labelFor = (id) => adminNav.items.find((i) => i.id === id)?.label || id
@@ -217,7 +225,14 @@ const AdminShell = () => {
               key={item.to}
               {...item}
               label={labelFor(item.id)}
-              dot={item.id === 'actions' ? actionDot : null}
+              badge={null}
+              dot={
+                item.id === 'studioChat'
+                  ? studioChatDot
+                  : item.id === 'actions'
+                    ? actionDot
+                    : null
+              }
             />
           ))}
 
@@ -270,6 +285,11 @@ const AdminShell = () => {
           className="fixed bottom-6 right-6 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-studio-gold text-white shadow-lg shadow-studio-gold/30 no-underline hover:bg-studio-gold-2 transition-colors"
         >
           <MessageSquare size={22} />
+          {platformUnread > 0 ? (
+            <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-elaya-error text-white text-[11px] font-bold flex items-center justify-center border-2 border-studio-bg">
+              {platformBadge}
+            </span>
+          ) : null}
         </NavLink>
       ) : null}
     </div>

@@ -3,6 +3,10 @@ import api from '../lib/axios'
 export const listPlatformConversations = (params) =>
   api.get('/platform-messaging/conversations', { params })
 
+/** Total unread admin↔studio support messages for nav / dashboard badges. */
+export const getPlatformMessagingUnreadCount = () =>
+  api.get('/platform-messaging/unread-count')
+
 export const openPlatformConversation = (body = {}) =>
   api.post('/platform-messaging/conversations', body)
 

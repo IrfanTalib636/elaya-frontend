@@ -111,7 +111,7 @@ export const studioNav = {
   chat:         'Customer chat',
   elayaChat:    'Elaya Chat',
   activity:     'History',
-  shop:         'Avora Shop',
+  shop:         'Elaya Shop',
   transfers:    'Studio transfer',
   elaycoins:    'Elaycoins',
   settings:     'Settings',

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, Calendar, TrendingUp, Heart, ArrowRight, ListTodo } from 'lucide-react'
+import { Users, Calendar, TrendingUp, Heart, ArrowRight, ListTodo, MessageCircle } from 'lucide-react'
+import { useChatUnreadBadges } from '../../hooks/useChatUnreadBadges'
 import useAuthStore from '../../store/authStore'
 import { listCustomers } from '../../api/customers'
 import { listAppointments } from '../../api/appointments'
@@ -61,6 +62,10 @@ const StudioOverview = () => {
   const copy = studioPages.overview
   const profile = useAuthStore((s) => s.profile)
   const user = useAuthStore((s) => s.user)
+  const { totalUnread, customerUnread, platformUnread } = useChatUnreadBadges({
+    customerChat: true,
+    platformChat: true,
+  })
 
   const [loading, setLoading] = useState(true)
   const [kpis, setKpis] = useState({ customers: 0, todayAppts: 0, weekRevenue: 0, openAftercare: 0 })
@@ -170,11 +175,25 @@ const StudioOverview = () => {
         </Button>
       </PageHeader>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <KpiCard icon={Users}      label={copy.kpiActiveCustomers}  value={kpis.customers}           color="text-studio-gold-2" />
         <KpiCard icon={Calendar}   label={copy.kpiTodayAppointments} value={kpis.todayAppts}          color="text-studio-teal"   />
         <KpiCard icon={TrendingUp} label={copy.kpiWeekRevenue}      value={fmtCHF(kpis.weekRevenue)} color="text-studio-gold-2" />
         <KpiCard icon={Heart}      label={copy.kpiOpenAftercare}    value={kpis.openAftercare}       color="text-studio-amber"  />
+        <button
+          type="button"
+          className="text-left bg-transparent border-0 p-0 cursor-pointer"
+          onClick={() =>
+            navigate(customerUnread > 0 ? '/studio/chat' : platformUnread > 0 ? '/studio/platform-chat' : '/studio/chat')
+          }
+        >
+          <KpiCard
+            icon={MessageCircle}
+            label={copy.kpiUnreadMessages || 'Unread messages'}
+            value={totalUnread}
+            color={totalUnread > 0 ? 'text-elaya-error' : 'text-studio-gold-2'}
+          />
+        </button>
       </div>
 
       <Card padding="none" className="mb-8">

@@ -14,6 +14,7 @@ import { Spinner } from '../../components/ui'
 import { getShopFinance } from '../../api/adminShop'
 import { listAdminStudios } from '../../api/adminStudios'
 import useContent from '../../i18n/useContent'
+import { useChatUnreadBadges } from '../../hooks/useChatUnreadBadges'
 
 const QUICK_LINKS = [
   { id: 'studios', to: '/admin/studios', Icon: Building2 },
@@ -28,6 +29,7 @@ const AdminOverview = () => {
   const { displayName } = useOutletContext() || {}
   const { adminPages, i18n } = useContent()
   const copy = adminPages.overview
+  const { platformUnread, platformBadge } = useChatUnreadBadges({ platformChat: true })
 
   const [loading, setLoading] = useState(true)
   const [finance, setFinance] = useState(null)
@@ -134,7 +136,7 @@ const AdminOverview = () => {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
         <div className="relative overflow-hidden rounded-2xl border border-elaya-border bg-studio-bg-3 p-5">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-studio-gold" />
           <div className="flex items-start justify-between gap-3">
@@ -163,6 +165,28 @@ const AdminOverview = () => {
             <Receipt className="text-studio-gold-2 opacity-80" size={26} />
           </div>
         </div>
+        <Link
+          to="/admin/studio-chat"
+          className="relative overflow-hidden rounded-2xl border border-elaya-border bg-studio-bg-3 p-5 no-underline text-inherit hover:border-studio-gold/40 transition-colors"
+        >
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-studio-gold" />
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-studio-w2 text-[12px] m-0 uppercase tracking-wide">
+                {copy.unreadMessages || 'Unread messages'}
+              </p>
+              <p className="text-[40px] font-bold text-studio-white m-0 mt-2 leading-none">
+                {platformUnread}
+              </p>
+              <p className="text-studio-w2 text-[12px] m-0 mt-2">
+                {platformUnread > 0
+                  ? (copy.unreadMessagesHint || 'Open Studio Chat to reply')
+                  : (copy.unreadMessagesEmpty || 'Inbox is clear')}
+              </p>
+            </div>
+            <MessageSquare className="text-studio-gold-2 opacity-80" size={26} />
+          </div>
+        </Link>
       </div>
 
       <section className="mb-10">
@@ -172,19 +196,30 @@ const AdminOverview = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {QUICK_LINKS.map(({ id, to, Icon }) => {
             const item = copy.quick?.[id] || {}
+            const showChatBadge = id === 'studioChat' && platformBadge
             return (
               <Link
                 key={id}
                 to={to}
                 className="rounded-2xl border border-elaya-border bg-studio-bg-3 p-5 no-underline text-inherit hover:border-studio-gold/40 transition-colors group flex items-start gap-3"
               >
-                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-studio-bg-4 text-studio-gold-2 border border-elaya-border">
+                <span className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-studio-bg-4 text-studio-gold-2 border border-elaya-border">
                   <Icon size={18} />
+                  {showChatBadge ? (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-studio-gold text-[10px] font-bold text-studio-bg flex items-center justify-center">
+                      {platformBadge}
+                    </span>
+                  ) : null}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center justify-between gap-2">
-                    <span className="text-studio-white text-[14px] font-semibold">
+                    <span className="text-studio-white text-[14px] font-semibold inline-flex items-center gap-2">
                       {item.title}
+                      {showChatBadge ? (
+                        <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-studio-gold text-[10px] font-bold text-studio-bg flex items-center justify-center">
+                          {platformBadge}
+                        </span>
+                      ) : null}
                     </span>
                     <ChevronRight
                       size={14}

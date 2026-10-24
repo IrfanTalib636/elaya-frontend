@@ -17,6 +17,7 @@ import { getEffectiveFeatures } from '../../api/config'
 import { getStudioActionSummary } from '../../api/openActions'
 import { notifyOpenActionsChanged, subscribeOpenActionsChanged } from '../../lib/openActionsSync'
 import { useSocketEvent } from '../../hooks/useSocketEvent'
+import { useChatUnreadBadges } from '../../hooks/useChatUnreadBadges'
 
 /**
  * Studio route → required feature key. Backend enforces the real gate;
@@ -53,8 +54,21 @@ const FeatureLocked = ({ label }) => (
   </div>
 )
 
+const UnreadPill = ({ value, collapsed }) => {
+  if (!value) return null
+  return (
+    <span
+      className={`shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-studio-gold text-[10px] font-bold text-studio-bg flex items-center justify-center ${
+        collapsed ? 'absolute -top-1.5 -right-2' : ''
+      }`}
+    >
+      {value}
+    </span>
+  )
+}
+
 // ── NavItem ────────────────────────────────────────────────────────────────
-const NavItem = ({ to, icon: Icon, label, collapsed, end, dot }) => (
+const NavItem = ({ to, icon: Icon, label, collapsed, end, dot, badge }) => (
   <NavLink
     to={to}
     end={end}
@@ -70,7 +84,8 @@ const NavItem = ({ to, icon: Icon, label, collapsed, end, dot }) => (
   >
     <span className="relative shrink-0">
       <Icon size={15} />
-      {dot && collapsed ? (
+      {badge && collapsed ? <UnreadPill value={badge} collapsed /> : null}
+      {!badge && dot && collapsed ? (
         <span
           className={`absolute -top-1 -right-1 h-2 w-2 rounded-full ${
             dot === 'red' ? 'bg-elaya-error' : 'bg-elaya-success'
@@ -83,7 +98,8 @@ const NavItem = ({ to, icon: Icon, label, collapsed, end, dot }) => (
       {label}
     </span>
 
-    {dot && !collapsed ? (
+    {badge && !collapsed ? <UnreadPill value={badge} /> : null}
+    {!badge && dot && !collapsed ? (
       <span
         className={`h-2 w-2 shrink-0 rounded-full ${
           dot === 'red' ? 'bg-elaya-error' : 'bg-elaya-success'
@@ -93,6 +109,7 @@ const NavItem = ({ to, icon: Icon, label, collapsed, end, dot }) => (
 
     <span className={`pointer-events-none absolute left-full ml-2 px-2.5 py-1.5 rounded-[8px] border border-elaya-border bg-studio-bg-3 text-studio-white text-[12px] font-medium whitespace-nowrap shadow-lg transition-opacity z-100 ${collapsed ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
       {label}
+      {badge ? ` (${badge})` : ''}
     </span>
   </NavLink>
 )
@@ -112,6 +129,12 @@ const StudioLayout = ({ children }) => {
   // and a soft route guard. Backend still enforces via requireFeature.
   const [features, setFeatures] = useState(null)
   const [actionDot, setActionDot] = useState(null)
+  const { customerUnread, platformUnread } = useChatUnreadBadges({
+    customerChat: true,
+    platformChat: true,
+  })
+  const customerChatDot = customerUnread > 0 ? 'red' : null
+  const platformChatDot = platformUnread > 0 ? 'red' : null
 
   useEffect(() => {
     let cancelled = false
@@ -173,8 +196,8 @@ const StudioLayout = ({ children }) => {
         { to: '/studio/activity',     icon: History,         label: studioNav.activity },
         { to: '/studio/actions',      icon: ListTodo,        label: studioNav.actions, dot: actionDot },
         { to: '/studio/elaya',         icon: Sparkles,        label: studioNav.elayaChat, feature: 'ki_studio_assistent' },
-        { to: '/studio/platform-chat', icon: Headphones,      label: studioNav.platformChat, feature: 'studio_chat' },
-        { to: '/studio/chat',          icon: MessageCircle,   label: studioNav.chat, feature: 'chat_studio_kunde' },
+        { to: '/studio/platform-chat', icon: Headphones,      label: studioNav.platformChat, feature: 'studio_chat', dot: platformChatDot },
+        { to: '/studio/chat',          icon: MessageCircle,   label: studioNav.chat, feature: 'chat_studio_kunde', dot: customerChatDot },
       ],
     },
     {
@@ -271,6 +294,7 @@ const StudioLayout = ({ children }) => {
                   collapsed={collapsed}
                   end={item.end}
                   dot={item.dot}
+                  badge={item.badge}
                 />
               ))}
             </div>

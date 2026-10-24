@@ -316,19 +316,27 @@ export default function StudioChatPage() {
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-studio-white text-[13px] font-semibold m-0 truncate">
+                      <p
+                        className={`text-studio-white text-[13px] m-0 truncate ${
+                          unread > 0 ? 'font-bold' : 'font-medium'
+                        }`}
+                      >
                         {customerName(c.customer, copy.customerFallback)}
                       </p>
                       {unread > 0 ? (
-                        <span className="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-studio-gold text-[10px] font-bold text-studio-bg flex items-center justify-center">
+                        <span className="shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-elaya-error text-[10px] font-bold text-white flex items-center justify-center">
                           {unread > 9 ? '9+' : unread}
                         </span>
                       ) : null}
                     </div>
-                    <p className="text-studio-w3 text-[12px] m-0 mt-1 truncate">
+                    <p
+                      className={`text-[12px] m-0 mt-1 truncate ${
+                        unread > 0 ? 'text-studio-w1 font-medium' : 'text-studio-w3 font-normal'
+                      }`}
+                    >
                       {c.last_message_preview || copy.noMessagesYet}
                     </p>
-                    <p className="text-studio-w3 text-[10px] m-0 mt-1">
+                    <p className="text-studio-w3 text-[10px] m-0 mt-1 font-normal">
                       {fmtTime(c.last_message_at)}
                     </p>
                   </button>

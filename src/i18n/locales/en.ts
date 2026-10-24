@@ -255,7 +255,7 @@ const en = {
       { "id": "ai", "label": "AI Training" },
       { "id": "users", "label": "Admin users" },
       { "id": "studioTeam", "label": "Studio team" },
-      { "id": "shop", "label": "ElayShop" },
+      { "id": "shop", "label": "Elaya Shop" },
       { "id": "settings", "label": "Settings" }
     ]
   },

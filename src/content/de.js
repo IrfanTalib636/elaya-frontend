@@ -192,7 +192,7 @@ export const adminNav = {
     { id: 'features', icon: '🎛️', label: 'Pakete & Features' },
     { id: 'audit', icon: '📋', label: 'Audit-Log' },
     { id: 'ai', icon: '🤖', label: 'Elaya KI' },
-    { id: 'shop', icon: '🛍️', label: 'ElayShop' },
+    { id: 'shop', icon: '🛍️', label: 'Elaya Shop' },
     { id: 'settings', icon: '⚙️', label: 'Einstellungen' },
   ],
 }

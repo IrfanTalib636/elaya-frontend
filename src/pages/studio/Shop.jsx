@@ -4,6 +4,7 @@ import { listShopOrders, listShopCatalogProducts } from '../../api/shop'
 import { Card, PageHeader, Spinner, Pagination, EmptyState, Modal, Badge } from '../../components/ui'
 import { PAGE_SIZE } from '../../constants/pagination'
 import useContent from '../../i18n/useContent'
+import { resolveShopImageUrl } from '../../utils/mediaUrl'
 
 const chfFmt = new Intl.NumberFormat('de-CH', { style: 'currency', currency: 'CHF' })
 const fmtCHF = (n) => chfFmt.format(n ?? 0)
@@ -237,30 +238,54 @@ const StudioShop = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((p) => (
-                    <tr key={p.id} className="border-b border-elaya-border last:border-0 hover:bg-studio-bg-4">
-                      <td className="px-5 py-3 text-studio-white text-[12px] font-medium">
-                        {p.name}
-                        {p.kategorie ? (
-                          <span className="block text-studio-w4 text-[10px] font-normal mt-0.5">{p.kategorie}</span>
-                        ) : null}
-                      </td>
-                      <td className="px-5 py-3 text-studio-w2 text-[12px] font-mono">
-                        {p.artikelnummer || p.product_code || '—'}
-                      </td>
-                      <td className="px-5 py-3 text-studio-teal-2 text-[12px] font-mono font-semibold">
-                        {fmtCHF(p.preis_chf)}
-                      </td>
-                      <td className="px-5 py-3 text-studio-w2 text-[12px]">
-                        {p.lagerbestand == null ? '∞' : p.lagerbestand}
-                      </td>
-                      <td className="px-5 py-3">
-                        <Badge variant="status" value={p.aktiv === false ? 'gesperrt' : 'aktiv'}>
-                          {p.aktiv === false ? copy.inactive : copy.active}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
+                  {products.map((p) =>  (
+                      <tr
+                        key={p.id}
+                        className="border-b border-elaya-border last:border-0 hover:bg-studio-bg-4"
+                      >
+                        <td className="px-5 py-3 text-studio-white text-[12px] font-medium">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={p.bild_url ? resolveShopImageUrl(p.bild_url) : 'require(../../assets/images/placeholder.png)'}
+                              alt={p.name}
+                              className="w-12 h-12 rounded-md object-contain bg-studio-bg-4 flex-shrink-0"
+                              loading="lazy"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                    
+                            <div className="min-w-0">
+                              <div>{p.name}</div>
+                              {p.kategorie && (
+                                <span className="block text-studio-w4 text-[10px] font-normal mt-0.5">
+                                  {p.kategorie}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                    
+                        <td className="px-5 py-3 text-studio-w2 text-[12px] font-mono">
+                          {p.artikelnummer || p.product_code || '—'}
+                        </td>
+                    
+                        <td className="px-5 py-3 text-studio-teal-2 text-[12px] font-mono font-semibold">
+                          {fmtCHF(p.preis_chf)}
+                        </td>
+                    
+                        <td className="px-5 py-3 text-studio-w2 text-[12px]">
+                          {p.lagerbestand == null ? '∞' : p.lagerbestand}
+                        </td>
+                    
+                        <td className="px-5 py-3">
+                          <Badge variant="status" value={p.aktiv === false ? 'gesperrt' : 'aktiv'}>
+                            {p.aktiv === false ? copy.inactive : copy.active}
+                          </Badge>
+                        </td>
+                      </tr>
+                    )
+                  )}
                 </tbody>
               </table>
             </div>

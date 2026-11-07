@@ -9,6 +9,11 @@ export const resolveLaserRequest = (id, payload) =>
   api.post(`/lasers/requests/${id}/resolve`, payload)
 export const requestLaser = (payload) => api.post('/lasers/requests', payload)
 export const assignLaserToStudio = (payload) => api.post('/lasers/assign-to-studio', payload)
+export const unassignLaserFromStudio = (payload) =>
+  api.post('/lasers/unassign-from-studio', payload)
+
+export const listAdminStudioLasers = (studioId) =>
+  api.get(`/studio/studios/${studioId}/lasers`)
 
 export const getAiConfig = () => api.get('/ai-config')
 export const updateAiConfig = (payload) => api.patch('/ai-config', payload)

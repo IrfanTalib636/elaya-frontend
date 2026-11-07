@@ -273,8 +273,13 @@ const NewSession = () => {
   const lasersForRoom = form.raum_id
     ? (() => {
         const room = rooms.find((r) => r.id === form.raum_id)
-        if (room?.laser_device_id) {
-          return laserInventory.filter((d) => d.id === room.laser_device_id)
+        const roomIds = Array.isArray(room?.laser_device_ids) && room.laser_device_ids.length
+          ? room.laser_device_ids.map(String)
+          : room?.laser_device_id
+            ? [String(room.laser_device_id)]
+            : []
+        if (roomIds.length) {
+          return laserInventory.filter((d) => roomIds.includes(String(d.id)))
         }
         return laserInventory
       })()
@@ -532,14 +537,16 @@ const NewSession = () => {
                 const id = e.target.value
                 const room = rooms.find((r) => r.id === id)
                 setForm((p) => {
+                  const roomIds = Array.isArray(room?.laser_device_ids) && room.laser_device_ids.length
+                    ? room.laser_device_ids.map(String)
+                    : room?.laser_device_id
+                      ? [String(room.laser_device_id)]
+                      : []
                   const nextLaserId =
-                    room?.laser_device_id &&
-                    laserInventory.some((d) => d.id === room.laser_device_id)
-                      ? room.laser_device_id
-                      : p.laser_device_id &&
-                          (!room?.laser_device_id || p.laser_device_id === room.laser_device_id)
-                        ? p.laser_device_id
-                        : room?.laser_device_id || ''
+                    p.laser_device_id && roomIds.includes(String(p.laser_device_id))
+                      ? p.laser_device_id
+                      : roomIds.find((rid) => laserInventory.some((d) => String(d.id) === rid)) ||
+                        ''
                   const device = laserInventory.find((d) => d.id === nextLaserId)
                   return {
                     ...p,

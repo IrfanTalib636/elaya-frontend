@@ -967,8 +967,16 @@ const emptyRoom = () => ({
   laser_brand: '',
   laser_model: '',
   laser_device_id: null,
+  laser_device_ids: [],
   standort_id: '',
 })
+
+const roomDeviceIds = (room) => {
+  if (Array.isArray(room?.laser_device_ids) && room.laser_device_ids.length) {
+    return room.laser_device_ids.map(String)
+  }
+  return room?.laser_device_id ? [String(room.laser_device_id)] : []
+}
 
 const RoomsTab = () => {
   const { t } = useTranslation()
@@ -998,7 +1006,13 @@ const RoomsTab = () => {
         listStudioLasers().catch(() => null),
         listMyLaserRequests().catch(() => null),
       ])
-      setRooms(settingsRes.data.data.settings.behandlungsraeume ?? [])
+      setRooms(
+        (settingsRes.data.data.settings.behandlungsraeume ?? []).map((room) => ({
+          ...room,
+          laser_device_ids: roomDeviceIds(room),
+          laser_device_id: roomDeviceIds(room)[0] || null,
+        }))
+      )
       setStandorte(settingsRes.data.data.settings.standorte ?? [])
       setLaserInventory(lasersRes?.data?.data?.devices || [])
       setMyRequests(reqRes?.data?.data?.requests || [])
@@ -1070,18 +1084,23 @@ const RoomsTab = () => {
     }
     setSaving(true)
     try {
-      const payload = rooms.map(
-        ({ id, name, farbe, aktiv, laser_brand, laser_model, laser_device_id, standort_id }) => ({
-          ...(id ? { id } : {}),
-          name: name.trim(),
-          farbe: farbe || '#3B8BD4',
-          aktiv: aktiv !== false,
-          laser_brand: laser_brand ?? '',
-          laser_model: laser_model ?? '',
-          laser_device_id: laser_device_id || null,
-          standort_id: standort_id ?? '',
-        })
-      )
+      const payload = rooms.map((room) => {
+        const ids = roomDeviceIds(room)
+        const devices = ids
+          .map((deviceId) => laserInventory.find((d) => String(d.id) === String(deviceId)))
+          .filter(Boolean)
+        return {
+          ...(room.id ? { id: room.id } : {}),
+          name: String(room.name || '').trim(),
+          farbe: room.farbe || '#3B8BD4',
+          aktiv: room.aktiv !== false,
+          laser_brand: devices.map((d) => d.manufacturer).join(', '),
+          laser_model: devices.map((d) => d.label || d.model).join(' · '),
+          laser_device_ids: ids,
+          laser_device_id: ids[0] || null,
+          standort_id: room.standort_id ?? '',
+        }
+      })
       const res = await updateStudioSettings({ behandlungsraeume: payload })
       setRooms(res.data.data.settings.behandlungsraeume ?? [])
       setIsEditing(false)
@@ -1283,51 +1302,70 @@ const RoomsTab = () => {
                       <span className="text-studio-w2 text-[12px]">{t('settingsPage.rooms.active')}</span>
                     </label>
                   </div>
-                  <Select
-                    label={t('settingsPage.rooms.laserCatalog')}
-                    value={room.laser_device_id || ''}
-                    disabled={!isEditing}
-                    onChange={(e) => {
-                      const id = e.target.value || null
-                      const device = laserInventory.find((d) => d.id === id)
-                      setRooms((prev) =>
-                        prev.map((r, i) =>
-                          i === index
-                            ? {
-                                ...r,
-                                laser_device_id: id,
-                                laser_brand: device?.manufacturer || '',
-                                laser_model: device?.model || '',
-                              }
-                            : r
-                        )
-                      )
-                    }}
-                  >
-                    <option value="">{t('settingsPage.rooms.laserCatalogNone')}</option>
-                    {laserInventory.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.label}
-                      </option>
-                    ))}
-                  </Select>
-                  {laserInventory.length === 0 ? (
-                    <p className="text-studio-w3 text-[11px] m-0 sm:col-span-2">
-                      {t('settingsPage.rooms.inventoryEmpty')}
+                  <div className="sm:col-span-2 flex flex-col gap-2">
+                    <span className="text-studio-w2 text-[12px]">
+                      {t('settingsPage.rooms.laserCatalog')}
+                    </span>
+                    {laserInventory.length === 0 ? (
+                      <p className="text-studio-w3 text-[11px] m-0">
+                        {t('settingsPage.rooms.inventoryEmpty')}
+                      </p>
+                    ) : (
+                      <div className="flex flex-col gap-1.5 rounded-[10px] border border-elaya-border bg-studio-bg-4/40 p-3">
+                        {laserInventory.map((d) => {
+                          const selected = roomDeviceIds(room).includes(String(d.id))
+                          return (
+                            <label
+                              key={d.id}
+                              className={`flex items-center gap-2 text-[12px] ${
+                                isEditing ? 'cursor-pointer text-studio-white' : 'text-studio-w2'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="accent-studio-gold"
+                                disabled={!isEditing}
+                                checked={selected}
+                                onChange={() => {
+                                  if (!isEditing) return
+                                  setRooms((prev) =>
+                                    prev.map((r, i) => {
+                                      if (i !== index) return r
+                                      const current = roomDeviceIds(r)
+                                      const next = selected
+                                        ? current.filter((id) => id !== String(d.id))
+                                        : [...current, String(d.id)]
+                                      const devices = next
+                                        .map((id) =>
+                                          laserInventory.find((dev) => String(dev.id) === id)
+                                        )
+                                        .filter(Boolean)
+                                      return {
+                                        ...r,
+                                        laser_device_ids: next,
+                                        laser_device_id: next[0] || null,
+                                        laser_brand: devices
+                                          .map((dev) => dev.manufacturer)
+                                          .join(', '),
+                                        laser_model: devices
+                                          .map((dev) => dev.label || dev.model)
+                                          .join(' · '),
+                                      }
+                                    })
+                                  )
+                                }}
+                              />
+                              <span>{d.label}</span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    )}
+                    <p className="text-studio-w3 text-[11px] m-0">
+                      {t('settingsPage.rooms.laserMultiHint') ||
+                        'Select one or more approved lasers for this room.'}
                     </p>
-                  ) : null}
-                  <Input
-                    label={t('settingsPage.rooms.laserBrand')}
-                    value={room.laser_brand ?? ''}
-                    readOnly
-                    disabled
-                  />
-                  <Input
-                    label={t('settingsPage.rooms.laserModel')}
-                    value={room.laser_model ?? ''}
-                    readOnly
-                    disabled
-                  />
+                  </div>
                   {standorte.length > 0 && (
                     <Select
                       label={t('settingsPage.rooms.location')}

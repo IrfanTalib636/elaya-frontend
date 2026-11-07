@@ -13,6 +13,12 @@ import {
 } from '../../components/ui'
 import { listAdminStudios, patchStudioStatus } from '../../api/adminStudios'
 import { getStudioConfigAdmin, updateStudioConfigAdmin } from '../../api/adminConfig'
+import {
+  listLasers,
+  listAdminStudioLasers,
+  assignLaserToStudio,
+  unassignLaserFromStudio,
+} from '../../api/adminPhase4'
 import PricingConfigForm from '../../components/pricing/PricingConfigForm'
 import {
   pricingValuesFromConfig,
@@ -96,6 +102,13 @@ const AdminStudios = () => {
   const [sperrenForm, setSperrenForm] = useState({})
   const [terminForm, setTerminForm] = useState({})
 
+  const [lasersStudio, setLasersStudio] = useState(null)
+  const [lasersLoading, setLasersLoading] = useState(false)
+  const [assignedLasers, setAssignedLasers] = useState([])
+  const [catalogLasers, setCatalogLasers] = useState([])
+  const [addLaserId, setAddLaserId] = useState('')
+  const [lasersSaving, setLasersSaving] = useState(false)
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
@@ -135,6 +148,63 @@ const AdminStudios = () => {
       load()
     } catch {
       toast.error(copy.statusUpdateFailed)
+    }
+  }
+
+  const openAssignedLasers = async (studio) => {
+    const id = studio.id || studio._id
+    setLasersStudio(studio)
+    setAddLaserId('')
+    setLasersLoading(true)
+    try {
+      const [assignedRes, catalogRes] = await Promise.all([
+        listAdminStudioLasers(id),
+        listLasers(),
+      ])
+      setAssignedLasers(assignedRes.data?.data?.devices || [])
+      setCatalogLasers(
+        (catalogRes.data?.data?.devices || []).filter((d) => d.active !== false)
+      )
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, copy.lasersLoadError || 'Could not load lasers'))
+      setLasersStudio(null)
+    } finally {
+      setLasersLoading(false)
+    }
+  }
+
+  const handleAssignLaser = async () => {
+    if (!lasersStudio || !addLaserId) return
+    const studioId = lasersStudio.id || lasersStudio._id
+    setLasersSaving(true)
+    try {
+      await assignLaserToStudio({ studio_id: studioId, laser_device_id: addLaserId })
+      toast.success(copy.laserAssigned || 'Laser assigned')
+      setAddLaserId('')
+      const assignedRes = await listAdminStudioLasers(studioId)
+      setAssignedLasers(assignedRes.data?.data?.devices || [])
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, copy.laserAssignFailed || 'Could not assign laser'))
+    } finally {
+      setLasersSaving(false)
+    }
+  }
+
+  const handleRemoveLaser = async (laserDeviceId) => {
+    if (!lasersStudio || !laserDeviceId) return
+    const studioId = lasersStudio.id || lasersStudio._id
+    setLasersSaving(true)
+    try {
+      await unassignLaserFromStudio({
+        studio_id: studioId,
+        laser_device_id: laserDeviceId,
+      })
+      toast.success(copy.laserRemoved || 'Laser removed')
+      setAssignedLasers((prev) => prev.filter((d) => d.id !== laserDeviceId))
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, copy.laserRemoveFailed || 'Could not remove laser'))
+    } finally {
+      setLasersSaving(false)
     }
   }
 
@@ -236,6 +306,9 @@ const AdminStudios = () => {
                     onClick={() => navigate(`/admin/studios/${id}/workspace`)}
                   >
                     {copy.openLists || 'Data lists'}
+                  </Button>
+                  <Button variant="ghost" onClick={() => void openAssignedLasers(s)}>
+                    {copy.assignedLasers || 'Assigned lasers'}
                   </Button>
                   <Button variant="ghost" onClick={() => openPricing(s)}>
                     {copy.prices}
@@ -422,6 +495,91 @@ const AdminStudios = () => {
               >
                 {copy.save}
               </Button>
+            </div>
+          )}
+        </Modal>
+      ) : null}
+
+      {lasersStudio ? (
+        <Modal
+          onClose={() => setLasersStudio(null)}
+          title={t('adminPages.studios.assignedLasersTitle', {
+            name: lasersStudio.firma || lasersStudio.studio_code || '',
+            defaultValue: `Assigned lasers · ${lasersStudio.firma || lasersStudio.studio_code || ''}`,
+          })}
+          width="max-w-2xl"
+        >
+          {lasersLoading ? (
+            <div className="flex justify-center py-12">
+              <Spinner size="lg" />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <p className="text-[12px] text-admin-muted m-0">
+                {copy.assignedLasersHint ||
+                  'Lasers come from the central Super Admin catalog. Assign multiple devices if the studio has several rooms or machines.'}
+              </p>
+
+              {assignedLasers.length === 0 ? (
+                <p className="text-[13px] text-admin-muted m-0">
+                  {copy.assignedLasersEmpty || 'No lasers assigned yet.'}
+                </p>
+              ) : (
+                <ul className="m-0 p-0 list-none divide-y divide-elaya-border rounded-[10px] border border-elaya-border overflow-hidden">
+                  {assignedLasers.map((device) => (
+                    <li
+                      key={device.id}
+                      className="flex items-center justify-between gap-3 px-3 py-2.5 bg-studio-bg-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="m-0 text-[13px] font-semibold text-studio-white truncate">
+                          {device.label}
+                        </p>
+                        <p className="m-0 text-[11px] text-admin-muted truncate">
+                          {[device.manufacturer, device.model].filter(Boolean).join(' · ')}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={lasersSaving}
+                        onClick={() => void handleRemoveLaser(device.id)}
+                      >
+                        {copy.removeLaser || 'Remove'}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+                <label className="flex flex-col gap-1 text-[12px] text-admin-muted flex-1">
+                  {copy.addLaser || 'Add laser from catalog'}
+                  <select
+                    className="text-[13px] bg-studio-bg-3 text-studio-white border border-elaya-border rounded-[8px] px-2 py-2"
+                    value={addLaserId}
+                    onChange={(e) => setAddLaserId(e.target.value)}
+                    disabled={lasersSaving}
+                  >
+                    <option value="">—</option>
+                    {catalogLasers
+                      .filter((d) => !assignedLasers.some((a) => a.id === d.id))
+                      .map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.label}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <Button
+                  size="sm"
+                  loading={lasersSaving}
+                  disabled={!addLaserId}
+                  onClick={() => void handleAssignLaser()}
+                >
+                  {copy.assignLaser || 'Assign'}
+                </Button>
+              </div>
             </div>
           )}
         </Modal>

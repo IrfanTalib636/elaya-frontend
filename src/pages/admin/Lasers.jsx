@@ -9,6 +9,7 @@ import {
   resolveLaserRequest,
   assignLaserToStudio,
 } from '../../api/adminPhase4'
+import { listAdminStudios } from '../../api/adminStudios'
 import { getApiErrorMessage } from '../../lib/apiError'
 import useContent from '../../i18n/useContent'
 import useAuthStore from '../../store/authStore'
@@ -48,19 +49,27 @@ export default function AdminLasers() {
   const [assignStudioId, setAssignStudioId] = useState('')
   const [assignLaserId, setAssignLaserId] = useState('')
   const [assigning, setAssigning] = useState(false)
+  const [studios, setStudios] = useState([])
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [d, r] = await Promise.all([
+      const [d, r, s] = await Promise.all([
         listLasers(),
         listLaserRequests({ status: 'pending' }),
+        listAdminStudios({ limit: 200 }).catch(() => null),
       ])
       setDevices(d.data.data.devices || [])
       const defaults = d.data.data.default_color_deltas || {}
       setDefaultColors(defaults)
       setForm((f) => (f.manufacturer || f.model ? f : emptyForm(defaults)))
       setRequests(r.data.data.requests || [])
+      const studioRows = s?.data?.data?.studios ?? s?.data?.data ?? []
+      setStudios(
+        (Array.isArray(studioRows) ? studioRows : []).filter(
+          (row) => String(row.status || '').toLowerCase() === 'aktiv'
+        )
+      )
     } catch (err) {
       toast.error(getApiErrorMessage(err, copy.loadError || 'Failed to load lasers'))
     } finally {
@@ -137,14 +146,14 @@ export default function AdminLasers() {
   }
 
   const handleAssign = async () => {
-    if (!assignStudioId.trim() || !assignLaserId) {
-      toast.error(copy.required)
+    if (!assignStudioId || !assignLaserId) {
+      toast.error(copy.assignSelectRequired || copy.required)
       return
     }
     setAssigning(true)
     try {
       await assignLaserToStudio({
-        studio_id: assignStudioId.trim(),
+        studio_id: assignStudioId,
         laser_device_id: assignLaserId,
       })
       toast.success(copy.assigned)
@@ -299,12 +308,26 @@ export default function AdminLasers() {
           {copy.assignToStudio}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Input
-            label={copy.assignStudioId}
-            value={assignStudioId}
-            onChange={(e) => setAssignStudioId(e.target.value)}
-            placeholder="Mongo studio ObjectId"
-          />
+          <label className="flex flex-col gap-1 text-[12px] text-studio-w2">
+            {copy.assignStudio || copy.assignStudioId}
+            <select
+              className="text-[13px] bg-studio-bg-3 text-studio-white border border-elaya-border rounded-[8px] px-2 py-2"
+              value={assignStudioId}
+              onChange={(e) => setAssignStudioId(e.target.value)}
+            >
+              <option value="">{copy.assignStudioPlaceholder || 'Select studio…'}</option>
+              {studios.map((s) => {
+                const id = String(s.id || s._id)
+                const label = s.firma || s.studio_code || id
+                return (
+                  <option key={id} value={id}>
+                    {label}
+                    {s.studio_code ? ` (${s.studio_code})` : ''}
+                  </option>
+                )
+              })}
+            </select>
+          </label>
           <label className="flex flex-col gap-1 text-[12px] text-studio-w2">
             {copy.assignLaserId}
             <select

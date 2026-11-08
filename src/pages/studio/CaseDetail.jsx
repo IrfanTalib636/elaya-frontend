@@ -154,8 +154,11 @@ const SessionRow = ({ s, onClick, copy, t }) => {
  * Zone intake photo thumbnail. Images are private, so the bytes are fetched
  * with the session's credentials and shown from a revocable object URL.
  */
-const ZonePhotoThumb = ({ fileId, alt }) => {
+const ZonePhotoThumb = ({ fileId, alt, large = false }) => {
   const [url, setUrl] = useState('')
+  const box = large
+    ? 'w-full aspect-square max-w-[160px] rounded-[10px]'
+    : 'w-10 h-10 rounded-[6px]'
 
   useEffect(() => {
     if (!fileId) {
@@ -185,8 +188,8 @@ const ZonePhotoThumb = ({ fileId, alt }) => {
 
   if (!url) {
     return (
-      <div className="w-10 h-10 rounded-[6px] border border-elaya-border bg-studio-bg-4 flex items-center justify-center">
-        <ImageOff size={14} className="text-studio-w4" />
+      <div className={`${box} border border-elaya-border bg-studio-bg-4 flex items-center justify-center`}>
+        <ImageOff size={large ? 20 : 14} className="text-studio-w4" />
       </div>
     )
   }
@@ -195,7 +198,7 @@ const ZonePhotoThumb = ({ fileId, alt }) => {
     <img
       src={url}
       alt={alt}
-      className="w-10 h-10 rounded-[6px] border border-elaya-border object-contain bg-studio-bg-4"
+      className={`${box} border border-elaya-border object-cover bg-studio-bg-4`}
     />
   )
 }
@@ -387,13 +390,44 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
           }
         />
         <InfoRow
-          label={ep.sessionRange}
+          label={ep.originalPrediction || ep.sessionRange}
           value={
-            ['bestaetigt', 'angepasst'].includes(status) && caseData.confirmed_sessionsMin != null
-              ? sessionsLabel(caseData.confirmed_sessionsMin, caseData.confirmed_sessionsMax)
-              : sessionsLabel(caseData.sessionsMin, caseData.sessionsMax)
+            caseData.original_sessionsMin != null && caseData.original_sessionsMax != null
+              ? sessionsLabel(caseData.original_sessionsMin, caseData.original_sessionsMax)
+              : ['bestaetigt', 'angepasst'].includes(status) && caseData.confirmed_sessionsMin != null
+                ? sessionsLabel(caseData.confirmed_sessionsMin, caseData.confirmed_sessionsMax)
+                : sessionsLabel(caseData.sessionsMin, caseData.sessionsMax)
           }
         />
+        <InfoRow
+          label={ep.completedSessions || 'Completed'}
+          value={String(caseData.sessionsDone ?? 0)}
+        />
+        {caseData.removal > 0 && (
+          <InfoRow
+            label={ep.aiFading || 'AI fading'}
+            value={`${Math.round(caseData.removal)}%`}
+          />
+        )}
+        <InfoRow
+          label={ep.currentPrediction || ep.sessionRange}
+          value={
+            caseData.current_sessionsMin != null && caseData.current_sessionsMax != null
+              ? sessionsLabel(caseData.current_sessionsMin, caseData.current_sessionsMax)
+              : ['bestaetigt', 'angepasst'].includes(status) && caseData.confirmed_sessionsMin != null
+                ? sessionsLabel(caseData.confirmed_sessionsMin, caseData.confirmed_sessionsMax)
+                : sessionsLabel(caseData.sessionsMin, caseData.sessionsMax)
+          }
+        />
+        {(caseData.remaining_sessionsMin != null || caseData.remaining_sessionsMax != null) && (
+          <InfoRow
+            label={ep.remainingSessions || 'Remaining'}
+            value={sessionsLabel(
+              caseData.remaining_sessionsMin ?? 0,
+              caseData.remaining_sessionsMax ?? 0
+            )}
+          />
+        )}
         {status !== 'offen' && caseData.calculated_sessionsMin != null && (
           <InfoRow
             label={ep.calculatedSessions}
@@ -745,10 +779,22 @@ const CaseDetail = () => {
             {/* Session progress inside anamnesis */}
             <div className="mt-5 pt-4 border-t border-elaya-border">
               <p className="text-studio-w3 text-[10px] font-semibold uppercase tracking-wider mb-2">Sitzungsfortschritt</p>
-              <SessionProgressBar done={caseData.sessionsDone} total={caseData.sessions} />
-              {caseData.sessionsMin != null && (
+              <SessionProgressBar
+                done={caseData.sessionsDone}
+                total={
+                  caseData.current_sessionsMax ||
+                  caseData.sessions ||
+                  caseData.sessionsMax ||
+                  caseData.original_sessionsMax ||
+                  0
+                }
+              />
+              {(caseData.current_sessionsMin != null || caseData.sessionsMin != null) && (
                 <p className="text-studio-w3 text-[11px] mt-1.5 m-0">
-                  Geschätzt: {caseData.sessionsMin}–{caseData.sessionsMax} Sitzungen
+                  Aktuell: {caseData.current_sessionsMin ?? caseData.sessionsMin}–{caseData.current_sessionsMax ?? caseData.sessionsMax} Sitzungen
+                  {caseData.original_sessionsMin != null
+                    ? ` · Original: ${caseData.original_sessionsMin}–${caseData.original_sessionsMax}`
+                    : ''}
                 </p>
               )}
             </div>
@@ -802,6 +848,87 @@ const CaseDetail = () => {
             key={`docs-${caseData?.unterschrift?.zeitstempel || 'none'}-${caseData?.unterschrift_anamnese?.zeitstempel || 'none'}`}
             caseId={id}
           />
+
+          {/* Photo timeline / comparison */}
+          {(() => {
+            const completed = sessions.filter((s) => !s.is_draft && !s.is_no_show)
+            const withPhotos = completed
+              .filter((s) => s.fortschritt_foto_file_id)
+              .sort((a, b) => (a.session_number ?? 0) - (b.session_number ?? 0))
+            const latest = withPhotos[withPhotos.length - 1]
+            const previous = withPhotos.length >= 2 ? withPhotos[withPhotos.length - 2] : null
+            if (!latest) return null
+            const baselineId = caseData.baseline_photo_file_id
+            return (
+              <Card className="flex flex-col gap-4">
+                <h2 className="text-[14px] font-semibold text-studio-white m-0">
+                  {copy.photoTimelineTitle || 'Photo timeline'}
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <p className="text-studio-w3 text-[11px] m-0 font-semibold uppercase tracking-wider">
+                      {copy.compareBaselineCurrent}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-studio-w3 text-[10px]">{copy.photoBaseline}</span>
+                        {baselineId ? (
+                          <ZonePhotoThumb large fileId={baselineId} alt={copy.photoBaseline} />
+                        ) : (
+                          <span className="text-studio-w4 text-[11px]">{copy.photoMissing}</span>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-studio-w3 text-[10px]">{copy.photoCurrent}</span>
+                        <ZonePhotoThumb large fileId={latest.fortschritt_foto_file_id} alt={copy.photoCurrent} />
+                      </div>
+                    </div>
+                  </div>
+                  {previous ? (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-studio-w3 text-[11px] m-0 font-semibold uppercase tracking-wider">
+                        {copy.comparePrevCurrent}
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-studio-w3 text-[10px]">{copy.photoPrevious}</span>
+                          <ZonePhotoThumb large fileId={previous.fortschritt_foto_file_id} alt={copy.photoPrevious} />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-studio-w3 text-[10px]">{copy.photoCurrent}</span>
+                          <ZonePhotoThumb large fileId={latest.fortschritt_foto_file_id} alt={copy.photoCurrent} />
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+                <div className="flex flex-col gap-3 pt-2 border-t border-elaya-border">
+                  {withPhotos.map((s) => (
+                    <div key={s.id} className="flex items-center gap-3">
+                      <ZonePhotoThumb
+                        fileId={s.fortschritt_foto_file_id}
+                        alt={`Session ${s.session_number}`}
+                      />
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <span className="text-studio-w1 text-[12px] font-semibold">
+                          #{s.session_number} · {fmtDate(s.treatment_date)}
+                        </span>
+                        <span className="text-studio-w3 text-[11px]">
+                          {s.comparison_eligible === false
+                            ? '—'
+                            : t('studioPages.caseDetail.sessionFadePct', {
+                                pct: Math.round(
+                                  s.percent_estimate ?? s.verblassung_prozent ?? s.removal_pct ?? 0
+                                ),
+                              })}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )
+          })()}
 
           {/* Sessions log */}
           <Card padding="none">

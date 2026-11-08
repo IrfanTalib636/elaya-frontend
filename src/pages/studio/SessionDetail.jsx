@@ -139,6 +139,16 @@ const ProgressPhotoSection = ({ session, onUploaded }) => {
     }
   }
 
+  const beforeId =
+    session.verblassung_ki?.foto_vorher_file_id ||
+    session.foto_vorher_file_id ||
+    null
+  const afterId =
+    session.verblassung_ki?.foto_aktuell_file_id ||
+    session.foto_aktuell_file_id ||
+    fileId ||
+    null
+
   return (
     <Section title={copy.photoTitle}>
       {previewUrl ? (
@@ -150,6 +160,35 @@ const ProgressPhotoSection = ({ session, onUploaded }) => {
           {fileId ? '…' : copy.photoEmpty}
         </p>
       )}
+      {(beforeId || afterId) && beforeId !== afterId ? (
+        <div className="flex flex-col gap-2 pt-2 border-t border-elaya-border">
+          <span className="text-studio-w3 text-[11px] font-semibold uppercase tracking-wider">
+            {copy.photoCompareTitle || 'Visual comparison'}
+          </span>
+          <div className="grid grid-cols-2 gap-3 max-w-[420px]">
+            <div className="flex flex-col gap-1">
+              <span className="text-studio-w3 text-[10px]">{copy.photoBefore || 'Before'}</span>
+              {beforeId ? (
+                <UnusualReactionPhoto fileId={beforeId} alt={copy.photoBefore} />
+              ) : (
+                <span className="text-studio-w4 text-[11px]">—</span>
+              )}
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-studio-w3 text-[10px]">{copy.photoAfter || 'After'}</span>
+              {afterId ? (
+                <UnusualReactionPhoto fileId={afterId} alt={copy.photoAfter} />
+              ) : previewUrl ? (
+                <div className="rounded-[10px] border border-elaya-border overflow-hidden max-w-[220px]">
+                  <img src={previewUrl} alt={copy.photoAfter || ''} className="w-full object-cover" />
+                </div>
+              ) : (
+                <span className="text-studio-w4 text-[11px]">—</span>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div>
         <Button
           size="sm"

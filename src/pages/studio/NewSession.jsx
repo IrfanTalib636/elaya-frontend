@@ -6,7 +6,7 @@ import { getCase } from '../../api/cases'
 import { createSession } from '../../api/sessions'
 import { getAppointment } from '../../api/appointments'
 import { getStudioSettings, listStudioLasers } from '../../api/studio'
-import { uploadSessionProgressPhoto } from '../../api/files'
+import { uploadSessionProgressPhoto, uploadSessionUnusualReactionPhoto } from '../../api/files'
 import { analyzeVerblassung } from '../../api/verblassung'
 import { Card, Button, Input, Select, Spinner, PageHeader } from '../../components/ui'
 import useContent from '../../i18n/useContent'
@@ -54,17 +54,27 @@ const INITIAL = {
   laser_typ:           '',
   wavelength_entries:  [{ wavelength_nm: '', fluence_j_cm2: '', spot_size_mm: '', frequency_hz: '', pass_count: '' }],
   cooling_used:        false,
-  verblassung_prozent: 0,
-  removal_pct:         0,
-  pain_score_0_10:     0,
-  endpoint_reaction:   '',
-  adverse_event_flag:  false,
-  adverse_event_type:  '',
+  endpoint_reactions:  [],
+  endpoint_reaction_note: '',
+  unusual_immediate_reaction: false,
+  unusual_reaction_type: '',
+  unusual_reaction_description: '',
+  unusual_reaction_action_taken: '',
+  unusual_reaction_treatment_stopped: false,
   special_notes:       '',
   zahlung_betragCHF:   '',
   zahlung_zahlungsart: '',
   zahlung_rabatt:      '',
 }
+
+const ENDPOINT_REACTION_KEYS = [
+  'frosting',
+  'redness',
+  'swelling',
+  'pinpoint_bleeding',
+  'none',
+  'other',
+]
 
 // ── Sub-components ────────────────────────────────────────────────────────
 const Section = ({ title, children }) => (
@@ -76,48 +86,18 @@ const Section = ({ title, children }) => (
   </Card>
 )
 
-const SliderField = ({ label, value = 0, onChange, min = 0, max = 100, unit = '%' }) => {
-  const inputRef = useRef(null)
-  const [display, setDisplay] = useState(value)
-
-  // Only sync from parent when value changes externally (e.g. form reset), not on every drag
-  useEffect(() => {
-    if (inputRef.current && Number(inputRef.current.value) !== value) {
-      inputRef.current.value = value
-      setDisplay(value)
-    }
-  }, [value])
-
-  const handleInput = (e) => {
-    const n = Number(e.target.value)
-    setDisplay(n)
-    onChange(n)
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <span className="text-studio-white text-[12px] font-semibold">{label}</span>
-        <span translate="no" className="text-studio-gold-2 text-[14px] font-bold tabular-nums">
-          {display}{unit}
-        </span>
-      </div>
-      <input
-        ref={inputRef}
-        type="range"
-        min={min}
-        max={max}
-        defaultValue={value}
-        onInput={handleInput}
-        className="w-full cursor-pointer accent-[#1E6FD9]"
-      />
-      <div className="flex justify-between text-studio-w4 text-[10px]">
-        <span>{min}{unit}</span>
-        <span>{max}{unit}</span>
-      </div>
-    </div>
-  )
-}
+const Chip = ({ active, onClick, children }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`px-2.5 py-1 rounded-[7px] text-[11px] border transition-colors cursor-pointer
+      ${active
+        ? 'border-studio-teal-2 bg-studio-teal-2/15 text-studio-teal-2'
+        : 'border-elaya-border bg-transparent text-studio-w2 hover:text-studio-white'}`}
+  >
+    {children}
+  </button>
+)
 
 const Toggle = ({ label, checked, onChange, hint }) => (
   <div className="flex items-center justify-between py-1">
@@ -166,6 +146,9 @@ const NewSession = () => {
   const [photoFile, setPhotoFile] = useState(null)
   const [photoPreview, setPhotoPreview] = useState('')
   const [autoAnalyze, setAutoAnalyze] = useState(true)
+  const unusualPhotoInputRef = useRef(null)
+  const [unusualPhotoFile, setUnusualPhotoFile] = useState(null)
+  const [unusualPhotoPreview, setUnusualPhotoPreview] = useState('')
 
   useEffect(() => () => {
     if (photoPreview) URL.revokeObjectURL(photoPreview)
@@ -261,13 +244,29 @@ const NewSession = () => {
     []
   )
 
-  const setVerblassung = useCallback((v) => setForm((p) => ({ ...p, verblassung_prozent: v })), [])
-  const setRemoval     = useCallback((v) => setForm((p) => ({ ...p, removal_pct: v })),         [])
-  const setPain        = useCallback((v) => setForm((p) => ({ ...p, pain_score_0_10: v })),     [])
   const setVal = useCallback(
     (field) => (val) => setForm((p) => ({ ...p, [field]: val })),
     []
   )
+
+  const toggleEndpointReaction = useCallback((key) => {
+    setForm((p) => {
+      const current = Array.isArray(p.endpoint_reactions) ? p.endpoint_reactions : []
+      if (key === 'none') {
+        const next = current.includes('none') ? [] : ['none']
+        return { ...p, endpoint_reactions: next, endpoint_reaction_note: next.includes('other') ? p.endpoint_reaction_note : '' }
+      }
+      const withoutNone = current.filter((k) => k !== 'none')
+      const next = withoutNone.includes(key)
+        ? withoutNone.filter((k) => k !== key)
+        : [...withoutNone, key]
+      return {
+        ...p,
+        endpoint_reactions: next,
+        endpoint_reaction_note: next.includes('other') ? p.endpoint_reaction_note : '',
+      }
+    })
+  }, [])
 
   const selectedLaser = laserInventory.find((d) => d.id === form.laser_device_id) || null
   const lasersForRoom = form.raum_id
@@ -320,13 +319,23 @@ const NewSession = () => {
         laser_typ:          form.laser_typ          || undefined,
         wavelength_entries: wavelength_entries.length ? wavelength_entries : undefined,
         cooling_used:       form.cooling_used,
-        // Results
-        verblassung_prozent: Number(form.verblassung_prozent) > 0 ? Number(form.verblassung_prozent) : undefined,
-        removal_pct:         Number(form.removal_pct) > 0 ? Number(form.removal_pct) : undefined,
-        pain_score_0_10:     form.pain_score_0_10,
-        endpoint_reaction:   form.endpoint_reaction || undefined,
-        adverse_event_flag:  form.adverse_event_flag,
-        adverse_event_type:  form.adverse_event_flag ? form.adverse_event_type : undefined,
+        endpoint_reactions: form.endpoint_reactions || [],
+        endpoint_reaction_note: form.endpoint_reactions?.includes('other')
+          ? (form.endpoint_reaction_note || undefined)
+          : undefined,
+        unusual_immediate_reaction: form.unusual_immediate_reaction,
+        unusual_reaction_type: form.unusual_immediate_reaction
+          ? (form.unusual_reaction_type || undefined)
+          : undefined,
+        unusual_reaction_description: form.unusual_immediate_reaction
+          ? (form.unusual_reaction_description || undefined)
+          : undefined,
+        unusual_reaction_action_taken: form.unusual_immediate_reaction
+          ? (form.unusual_reaction_action_taken || undefined)
+          : undefined,
+        unusual_reaction_treatment_stopped: form.unusual_immediate_reaction
+          ? !!form.unusual_reaction_treatment_stopped
+          : false,
       }),
       special_notes: form.special_notes || undefined,
       ...(hasPayment && {
@@ -360,6 +369,25 @@ const NewSession = () => {
     })
   }
 
+  const selectUnusualPhoto = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUnusualPhotoFile(file)
+    setUnusualPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return URL.createObjectURL(file)
+    })
+  }
+
+  const removeUnusualPhoto = () => {
+    setUnusualPhotoFile(null)
+    setUnusualPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return ''
+    })
+  }
+
   const handleSave = async (isDraft) => {
     if (!form.treatment_date) {
       toast.error(copy.dateRequired)
@@ -375,18 +403,26 @@ const NewSession = () => {
       const sessionId = res.data.data.session?.id
 
       const wantsPhoto = !form.is_no_show && photoFile && sessionId
+      const wantsUnusualPhoto =
+        !form.is_no_show && form.unusual_immediate_reaction && unusualPhotoFile && sessionId
 
-      if (wantsPhoto) {
+      if (wantsPhoto || wantsUnusualPhoto) {
         const flowToast = toast.loading(copy.photoUploading)
         let uploaded = false
         try {
-          await uploadSessionProgressPhoto(sessionId, photoFile)
-          uploaded = true
+          if (wantsPhoto) {
+            await uploadSessionProgressPhoto(sessionId, photoFile)
+            uploaded = true
+          }
+          if (wantsUnusualPhoto) {
+            await uploadSessionUnusualReactionPhoto(sessionId, unusualPhotoFile)
+            uploaded = true
+          }
         } catch {
           toast.error(copy.photoFailed, { id: flowToast })
         }
 
-        if (uploaded && autoAnalyze && kiAvailable && !isDraft) {
+        if (uploaded && wantsPhoto && autoAnalyze && kiAvailable && !isDraft) {
           toast.loading(copy.aiAnalyzing, { id: flowToast })
           try {
             await analyzeVerblassung({ session_id: sessionId, persist: true })
@@ -781,80 +817,152 @@ const NewSession = () => {
           </Section>
         )}
 
-        {/* ── Section 3: Results (hidden on no-show) ── */}
+        {/* ── Section 3: Immediate outcome (hidden on no-show) ── */}
         {!form.is_no_show && (
           <Section title={copy.outcome}>
-            <SliderField label={copy.fadeStudio}  value={form.verblassung_prozent} onChange={setVerblassung} />
-            <SliderField label={copy.removal}   value={form.removal_pct}         onChange={setRemoval} />
-            <SliderField label={copy.painScale} value={form.pain_score_0_10}     onChange={setPain} min={0} max={10} unit="/10" />
-            <Input
-              label={copy.endpoint}
-              value={form.endpoint_reaction}
-              onChange={set('endpoint_reaction')}
-              placeholder={copy.endpointPh}
-            />
-            <Toggle
-              label={copy.adverse}
-              hint={copy.adverseHint}
-              checked={form.adverse_event_flag}
-              onChange={setVal('adverse_event_flag')}
-            />
-            {form.adverse_event_flag && (
-              <Input
-                label={copy.adverseType}
-                value={form.adverse_event_type}
-                onChange={set('adverse_event_type')}
-                placeholder={copy.adverseTypePh}
-              />
-            )}
-          </Section>
-        )}
+            <p className="text-studio-w3 text-[11px] m-0 -mt-1">{copy.outcomeHint}</p>
 
-        {/* ── Section 3b: Progress photo (hidden on no-show) ── */}
-        {!form.is_no_show && (
-          <Section title={copy.photoTitle}>
-            {photoPreview ? (
-              <div className="relative rounded-[12px] border border-elaya-border bg-studio-bg-4 overflow-hidden max-w-[280px]">
-                <img src={photoPreview} alt={copy.photoAlt} className="w-full aspect-square object-cover" />
+            <div className="flex flex-col gap-2">
+              <span className="text-studio-white text-[12px] font-semibold">{copy.endpoint}</span>
+              <div className="flex flex-wrap gap-1.5">
+                {ENDPOINT_REACTION_KEYS.map((key) => (
+                  <Chip
+                    key={key}
+                    active={(form.endpoint_reactions || []).includes(key)}
+                    onClick={() => toggleEndpointReaction(key)}
+                  >
+                    {copy.endpointOptions?.[key] || key}
+                  </Chip>
+                ))}
+              </div>
+              {(form.endpoint_reactions || []).includes('other') && (
+                <Input
+                  label={copy.endpointOtherNote}
+                  value={form.endpoint_reaction_note}
+                  onChange={set('endpoint_reaction_note')}
+                  placeholder={copy.endpointOtherNotePh}
+                />
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2 pt-1 border-t border-elaya-border">
+              <span className="text-studio-white text-[12px] font-semibold">{copy.photoTitle}</span>
+              {photoPreview ? (
+                <div className="relative rounded-[12px] border border-elaya-border bg-studio-bg-4 overflow-hidden max-w-[280px]">
+                  <img src={photoPreview} alt={copy.photoAlt} className="w-full aspect-square object-cover" />
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center cursor-pointer border-0 hover:bg-black/80"
+                    aria-label={copy.photoRemoveAria}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
                 <button
                   type="button"
-                  onClick={removePhoto}
-                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center cursor-pointer border-0 hover:bg-black/80"
-                  aria-label={copy.photoRemoveAria}
+                  onClick={() => photoInputRef.current?.click()}
+                  className="w-full max-w-[280px] flex flex-col items-center justify-center gap-2 py-8 cursor-pointer bg-studio-bg-4/50 border border-dashed border-elaya-border rounded-[12px] text-studio-w3 hover:text-studio-w2 transition-colors"
                 >
-                  <X size={14} />
+                  <Camera size={24} strokeWidth={1.5} />
+                  <span className="text-[11px]">{copy.photoSelect}</span>
                 </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => photoInputRef.current?.click()}
-                className="w-full max-w-[280px] flex flex-col items-center justify-center gap-2 py-8 cursor-pointer bg-studio-bg-4/50 border border-dashed border-elaya-border rounded-[12px] text-studio-w3 hover:text-studio-w2 transition-colors"
-              >
-                <Camera size={24} strokeWidth={1.5} />
-                <span className="text-[11px]">{copy.photoSelect}</span>
-              </button>
-            )}
-            <input
-              ref={photoInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={selectPhoto}
-            />
-            <p className="text-studio-w3 text-[11px] m-0">
-              {kiAvailable
-                ? copy.photoHintNext
-                : copy.photoHintFirst}
-            </p>
-            {photoFile && kiAvailable && (
-              <Toggle
-                label={copy.aiAuto}
-                hint={copy.aiAutoHint}
-                checked={autoAnalyze}
-                onChange={setAutoAnalyze}
+              )}
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={selectPhoto}
               />
-            )}
+              <p className="text-studio-w3 text-[11px] m-0">
+                {kiAvailable ? copy.photoHintNext : copy.photoHintFirst}
+              </p>
+              {photoFile && kiAvailable && (
+                <Toggle
+                  label={copy.aiAuto}
+                  hint={copy.aiAutoHint}
+                  checked={autoAnalyze}
+                  onChange={setAutoAnalyze}
+                />
+              )}
+            </div>
+
+            <div className="flex flex-col gap-3 pt-1 border-t border-elaya-border">
+              <Toggle
+                label={copy.unusual}
+                hint={copy.unusualHint}
+                checked={form.unusual_immediate_reaction}
+                onChange={(val) => {
+                  setVal('unusual_immediate_reaction')(val)
+                  if (!val) removeUnusualPhoto()
+                }}
+              />
+              {form.unusual_immediate_reaction && (
+                <>
+                  <Input
+                    label={copy.unusualType}
+                    value={form.unusual_reaction_type}
+                    onChange={set('unusual_reaction_type')}
+                    placeholder={copy.unusualTypePh}
+                  />
+                  <Input
+                    label={copy.unusualDescription}
+                    value={form.unusual_reaction_description}
+                    onChange={set('unusual_reaction_description')}
+                    placeholder={copy.unusualDescriptionPh}
+                  />
+                  <div className="flex flex-col gap-2">
+                    <span className="text-studio-w1 text-[12px] font-semibold">{copy.unusualPhoto}</span>
+                    {unusualPhotoPreview ? (
+                      <div className="relative rounded-[12px] border border-elaya-border bg-studio-bg-4 overflow-hidden max-w-[220px]">
+                        <img
+                          src={unusualPhotoPreview}
+                          alt={copy.unusualPhotoAlt}
+                          className="w-full aspect-square object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={removeUnusualPhoto}
+                          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center cursor-pointer border-0 hover:bg-black/80"
+                          aria-label={copy.photoRemoveAria}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => unusualPhotoInputRef.current?.click()}
+                        className="w-full max-w-[220px] flex flex-col items-center justify-center gap-2 py-6 cursor-pointer bg-studio-bg-4/50 border border-dashed border-elaya-border rounded-[12px] text-studio-w3 hover:text-studio-w2 transition-colors"
+                      >
+                        <Camera size={20} strokeWidth={1.5} />
+                        <span className="text-[11px]">{copy.photoSelect}</span>
+                      </button>
+                    )}
+                    <input
+                      ref={unusualPhotoInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={selectUnusualPhoto}
+                    />
+                  </div>
+                  <Input
+                    label={copy.unusualAction}
+                    value={form.unusual_reaction_action_taken}
+                    onChange={set('unusual_reaction_action_taken')}
+                    placeholder={copy.unusualActionPh}
+                  />
+                  <Toggle
+                    label={copy.unusualStopped}
+                    checked={form.unusual_reaction_treatment_stopped}
+                    onChange={setVal('unusual_reaction_treatment_stopped')}
+                  />
+                </>
+              )}
+            </div>
           </Section>
         )}
 

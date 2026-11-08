@@ -49,6 +49,42 @@ const ResultBar = ({ label, value = 0, max = 100, unit = '%' }) => {
   )
 }
 
+const UnusualReactionPhoto = ({ fileId, alt }) => {
+  const [url, setUrl] = useState('')
+
+  useEffect(() => {
+    if (!fileId) {
+      setUrl('')
+      return undefined
+    }
+    let cancelled = false
+    let objectUrl = ''
+    ;(async () => {
+      try {
+        objectUrl = await fetchPhotoBlobUrl(fileId)
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl)
+          return
+        }
+        setUrl(objectUrl)
+      } catch {
+        if (!cancelled) setUrl('')
+      }
+    })()
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [fileId])
+
+  if (!url) return null
+  return (
+    <div className="rounded-[10px] border border-elaya-border overflow-hidden max-w-[220px] mt-1">
+      <img src={url} alt={alt || ''} className="w-full object-cover" />
+    </div>
+  )
+}
+
 // ── Progress photo ────────────────────────────────────────────────────────
 const ProgressPhotoSection = ({ session, onUploaded }) => {
   const { studioPages } = useContent()
@@ -434,11 +470,17 @@ const SessionDetail = () => {
     session.laser_typ ||
     session.laser_device_id ||
     (session.wavelength_entries || []).length
+  const endpointReactions = Array.isArray(session.endpoint_reactions)
+    ? session.endpoint_reactions
+    : []
   const hasResults = !session.is_no_show && (
     session.verblassung_prozent != null
     || session.removal_pct != null
     || session.lightening_internal_pct != null
+    || endpointReactions.length > 0
     || session.endpoint_reaction
+    || session.unusual_immediate_reaction
+    || session.adverse_event_flag
   )
   const hasPayment = session.zahlung?.betragCHF > 0 || session.zahlung?.zahlungsart
 
@@ -569,7 +611,7 @@ const SessionDetail = () => {
             </Section>
           )}
 
-          {/* Treatment results */}
+          {/* Treatment results — immediate reaction (fade % stays AI/legacy display when present) */}
           {hasResults && (
             <Section title={copy.outcome}>
               {session.comparison_eligible !== false && session.verblassung_prozent != null ? (
@@ -580,16 +622,52 @@ const SessionDetail = () => {
               {session.comparison_eligible !== false && session.removal_pct != null && (
                 <ResultBar label={copy.removal} value={session.removal_pct} />
               )}
-              {session.pain_score_0_10 != null && (
-                <ResultBar label={copy.painScale} value={session.pain_score_0_10} max={10} unit="/10" />
-              )}
-              {session.endpoint_reaction && (
+              {endpointReactions.length > 0 ? (
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-studio-w3 text-[10px] font-semibold uppercase tracking-wider">
+                    {copy.endpoint}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {endpointReactions.map((key) => (
+                      <span
+                        key={key}
+                        className="px-2.5 py-1 rounded-[7px] text-[11px] border border-studio-teal-2/40 bg-studio-teal-2/10 text-studio-teal-2"
+                      >
+                        {copy.endpointOptions?.[key] || key}
+                      </span>
+                    ))}
+                  </div>
+                  {endpointReactions.includes('other') && session.endpoint_reaction_note ? (
+                    <span className="text-studio-w1 text-[13px]">{session.endpoint_reaction_note}</span>
+                  ) : null}
+                </div>
+              ) : session.endpoint_reaction ? (
                 <InfoRow label={copy.endpoint} value={session.endpoint_reaction} />
-              )}
-              {session.adverse_event_flag && (
-                <div className="flex flex-col gap-1 px-3 py-2 rounded-[8px] bg-elaya-error/10 border border-elaya-error/20">
-                  <span className="text-elaya-error text-[11px] font-semibold uppercase tracking-wider">{copy.adverseEvent}</span>
-                  <span className="text-studio-w1 text-[13px]">{session.adverse_event_type || '—'}</span>
+              ) : null}
+              {(session.unusual_immediate_reaction || session.adverse_event_flag) && (
+                <div className="flex flex-col gap-2 px-3 py-2 rounded-[8px] bg-elaya-error/10 border border-elaya-error/20">
+                  <span className="text-elaya-error text-[11px] font-semibold uppercase tracking-wider">
+                    {copy.unusual || copy.adverseEvent}
+                  </span>
+                  {(session.unusual_reaction_type || session.adverse_event_type) && (
+                    <InfoRow
+                      label={copy.unusualType || copy.adverseEvent}
+                      value={session.unusual_reaction_type || session.adverse_event_type}
+                    />
+                  )}
+                  {session.unusual_reaction_description && (
+                    <InfoRow label={copy.unusualDescription} value={session.unusual_reaction_description} />
+                  )}
+                  {session.unusual_reaction_action_taken && (
+                    <InfoRow label={copy.unusualAction} value={session.unusual_reaction_action_taken} />
+                  )}
+                  <InfoRow
+                    label={copy.unusualStopped}
+                    value={session.unusual_reaction_treatment_stopped ? copy.yes : copy.no}
+                  />
+                  {session.unusual_reaction_photo_file_id && (
+                    <UnusualReactionPhoto fileId={session.unusual_reaction_photo_file_id} alt={copy.unusualPhotoAlt} />
+                  )}
                 </div>
               )}
             </Section>

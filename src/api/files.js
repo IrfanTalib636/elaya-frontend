@@ -25,6 +25,13 @@ export const uploadSessionProgressPhoto = async (sessionId, file) => {
   return api.post(`/files/sessions/${sessionId}/progress`, form)
 }
 
+export const uploadSessionUnusualReactionPhoto = async (sessionId, file) => {
+  const prepared = await optimizeImageForUpload(file)
+  const form = new FormData()
+  form.append('file', prepared)
+  return api.post(`/files/sessions/${sessionId}/unusual-reaction`, form)
+}
+
 export const deleteStagingPhoto = (fileId) => api.delete(`/files/${fileId}`)
 
 export const fetchPhotoBlobUrl = async (fileId) => {

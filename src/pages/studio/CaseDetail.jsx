@@ -20,6 +20,7 @@ import CaseIntakePhotos from '../../components/case/CaseIntakePhotos'
 import CasePricingPanel from '../../components/case/CasePricingPanel'
 import CaseAnamnesisPanel from '../../components/anamnesis/CaseAnamnesisPanel'
 import CaseSignaturePanel from '../../components/signature/CaseSignaturePanel'
+import CaseDocumentsPanel from '../../components/documents/CaseDocumentsPanel'
 import MedicalAmpelDot from '../../components/medical/MedicalAmpelDot'
 import MedicalClearancePanel from '../../components/medical/MedicalClearancePanel'
 import { Card, Badge, Button, Spinner, PageHeader, Modal, Input } from '../../components/ui'
@@ -794,6 +795,12 @@ const CaseDetail = () => {
               const res = await getCase(id)
               setCaseData(res.data.data.case)
             }}
+          />
+
+          {/* Versioned signed PDFs */}
+          <CaseDocumentsPanel
+            key={`docs-${caseData?.unterschrift?.zeitstempel || 'none'}-${caseData?.unterschrift_anamnese?.zeitstempel || 'none'}`}
+            caseId={id}
           />
 
           {/* Sessions log */}

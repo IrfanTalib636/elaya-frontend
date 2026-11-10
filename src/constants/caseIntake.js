@@ -42,6 +42,8 @@ export const INITIAL_CASE_FORM = {
   tc_coverup: 'none',
   tc_prior_treatment: null,
   tc_prior_treatment_count: '',
+  tc_prior_last_treatment_date: '',
+  tc_prior_studio: '',
   tc_colors_present: [],
   tc_density: '',
   tc_saturation: '',

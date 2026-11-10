@@ -202,6 +202,8 @@ export const caseForm = {
       ageRequired: 'Bitte Tattoo-Alter wählen.',
       typeRequired: 'Bitte Tattoo-Typ wählen.',
       priorRequired: 'Bitte Vorbehandlungen angeben.',
+      priorCountRequired: 'Bitte Anzahl der Laser-Sitzungen vor ELAYA angeben.',
+      priorLastDateRequired: 'Bitte Datum der letzten Behandlung vor ELAYA angeben.',
       zonesMin: 'Mindestens 2 Zonen erforderlich.',
       zonesIncomplete: 'Bitte alle Zonen vollständig ausfüllen.',
       colorsRequired: 'Bitte mindestens eine Farbe wählen.',
@@ -252,10 +254,15 @@ export const caseForm = {
       tattooType: 'Tattoo-Typ *',
       coverup: 'Cover-Up *',
       coverupHint: 'Wurde über ein älteres Tattoo tätowiert?',
-      priorTreatment: 'Vorbehandlungen *',
-      priorHint: 'Bereits laser-behandelt?',
-      priorCount: 'Anzahl Vorbehandlungen',
-      priorCountPlaceholder: 'z. B. 3',
+      priorTreatment: 'Wurde dieses Tattoo bereits behandelt? *',
+      priorHint: 'Bereits ausserhalb von ELAYA laser-behandelt (z. B. INKFREE)?',
+      priorCount: 'Anzahl bisheriger Laser-Sitzungen *',
+      priorCountPlaceholder: 'z. B. 4',
+      priorLastDate: 'Datum der letzten Behandlung *',
+      priorStudio: 'Bisheriges Studio (optional)',
+      priorStudioPlaceholder: 'z. B. INKFREE',
+      priorBaselineHint:
+        'Das aktuelle Intake-Foto wird zur ELAYA-Baseline. ELAYA-Sitzungen starten bei 0; frühere Sitzungen werden separat für Buchungsintervalle gespeichert.',
     },
 
     pmu: {
@@ -366,7 +373,8 @@ export const caseForm = {
 
     photos: {
       title: 'Erstfotos (optional)',
-      intro: 'Fotos werden sicher auf unserem Server gespeichert — kein öffentlicher Link. Sie können diesen Schritt überspringen; der Kunde kann Fotos später in der App hochladen.',
+      intro:
+        'Fotos werden sicher auf unserem Server gespeichert — kein öffentlicher Link. Das Hauptfoto wird zur ELAYA-Baseline / Referenz für den Verblassungsvergleich. Sie können diesen Schritt überspringen; der Kunde kann Fotos später in der App hochladen.',
       main: 'Hauptfoto',
       mainHint: 'Ganzes Tattoo',
       detail: 'Detailfoto',

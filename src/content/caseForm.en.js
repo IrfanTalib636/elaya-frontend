@@ -201,6 +201,8 @@ export const caseForm = {
       ageRequired: 'Please select tattoo age.',
       typeRequired: 'Please select tattoo type.',
       priorRequired: 'Please indicate prior treatments.',
+      priorCountRequired: 'Enter how many laser sessions were done before ELAYA.',
+      priorLastDateRequired: 'Enter the date of the last treatment before ELAYA.',
       zonesMin: 'At least 2 zones required.',
       zonesIncomplete: 'Please complete all zones.',
       colorsRequired: 'Please select at least one color.',
@@ -251,10 +253,15 @@ export const caseForm = {
       tattooType: 'Tattoo type *',
       coverup: 'Cover-up *',
       coverupHint: 'Tattooed over an older tattoo?',
-      priorTreatment: 'Prior treatments *',
-      priorHint: 'Already treated with laser?',
-      priorCount: 'Number of prior treatments',
-      priorCountPlaceholder: 'e.g. 3',
+      priorTreatment: 'Has this tattoo already been treated before? *',
+      priorHint: 'Already laser-treated outside ELAYA (e.g. INKFREE)?',
+      priorCount: 'Number of previous laser sessions *',
+      priorCountPlaceholder: 'e.g. 4',
+      priorLastDate: 'Date of last treatment *',
+      priorStudio: 'Previous studio (optional)',
+      priorStudioPlaceholder: 'e.g. INKFREE',
+      priorBaselineHint:
+        'The current intake photo becomes the ELAYA baseline. ELAYA sessions start at 0; prior sessions are stored separately for booking intervals.',
     },
 
     pmu: {
@@ -365,7 +372,8 @@ export const caseForm = {
 
     photos: {
       title: 'Initial photos (optional)',
-      intro: 'Photos are stored securely on our server — no public link. You can skip this step; the customer can upload photos later in the app.',
+      intro:
+        'Photos are stored securely on our server — no public link. The main photo becomes the ELAYA baseline / reference for fading comparison. You can skip this step; the customer can upload photos later in the app.',
       main: 'Main photo',
       mainHint: 'Full tattoo',
       detail: 'Detail photo',

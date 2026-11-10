@@ -347,6 +347,12 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
         if (!form.tc_age_bucket) return v.ageRequired
         if (!form.tc_type) return v.typeRequired
         if (form.tc_prior_treatment === null) return v.priorRequired
+        if (form.tc_prior_treatment === true) {
+          if (!form.tc_prior_treatment_count || Number(form.tc_prior_treatment_count) < 1) {
+            return v.priorCountRequired
+          }
+          if (!form.tc_prior_last_treatment_date) return v.priorLastDateRequired
+        }
         return ''
       case 1:
         if (form.zonen_aktiv) {
@@ -460,6 +466,12 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
       tc_coverup: form.tc_coverup || 'none',
       tc_prior_treatment: form.tc_prior_treatment,
       tc_prior_treatment_count: form.tc_prior_treatment === true ? num(form.tc_prior_treatment_count) : undefined,
+      tc_prior_last_treatment_date:
+        form.tc_prior_treatment === true && form.tc_prior_last_treatment_date
+          ? form.tc_prior_last_treatment_date
+          : null,
+      tc_prior_studio:
+        form.tc_prior_treatment === true ? (form.tc_prior_studio || '').trim() : '',
       tc_colors_present: form.zonen_aktiv ? [] : form.tc_colors_present,
       tc_density: form.zonen_aktiv ? undefined : form.tc_density || undefined,
       tc_saturation: form.zonen_aktiv ? undefined : form.tc_saturation || undefined,
@@ -697,16 +709,29 @@ const CaseForm = ({ onSubmit, loading, onCancel, customerId, onStepChange }) => 
               <Opt active={form.tc_prior_treatment === true} onClick={() => set('tc_prior_treatment', true)}>{ui.yes}</Opt>
             </OptGrid>
             {form.tc_prior_treatment === true && (
-              <div className="mt-2">
+              <div className="mt-2 flex flex-col gap-2">
                 <Input
                   label={ui.basics.priorCount}
                   type="number"
-                  min="0"
+                  min="1"
                   max="99"
                   value={form.tc_prior_treatment_count}
                   onChange={(e) => set('tc_prior_treatment_count', e.target.value)}
                   placeholder={ui.basics.priorCountPlaceholder}
                 />
+                <Input
+                  label={ui.basics.priorLastDate}
+                  type="date"
+                  value={form.tc_prior_last_treatment_date}
+                  onChange={(e) => set('tc_prior_last_treatment_date', e.target.value)}
+                />
+                <Input
+                  label={ui.basics.priorStudio}
+                  value={form.tc_prior_studio}
+                  onChange={(e) => set('tc_prior_studio', e.target.value)}
+                  placeholder={ui.basics.priorStudioPlaceholder}
+                />
+                <p className="text-studio-w3 text-[11px] m-0">{ui.basics.priorBaselineHint}</p>
               </div>
             )}
           </div>

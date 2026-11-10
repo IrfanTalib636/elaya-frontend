@@ -403,6 +403,40 @@ const EstimateConfirmationPanel = ({ caseId, caseData, onUpdated }) => {
           label={ep.completedSessions || 'Completed'}
           value={String(caseData.sessionsDone ?? 0)}
         />
+        {caseData.tc_prior_treatment ? (
+          <>
+            <InfoRow
+              label={ep.treatmentsBeforeElaya || 'Before ELAYA'}
+              value={String(
+                caseData.prior_treatments_before_elaya ??
+                  caseData.tc_prior_treatment_count ??
+                  0
+              )}
+            />
+            <InfoRow
+              label={ep.elayaSessions || 'ELAYA sessions'}
+              value={String(caseData.elaya_sessions_done ?? caseData.sessionsDone ?? 0)}
+            />
+            {caseData.tc_prior_last_treatment_date ? (
+              <InfoRow
+                label={ep.priorLastTreatment || 'Last treatment (prior)'}
+                value={fmtDate(caseData.tc_prior_last_treatment_date)}
+              />
+            ) : null}
+            {caseData.elaya_tracking_started_at ? (
+              <InfoRow
+                label={ep.elayaTrackingStarted || 'ELAYA tracking started'}
+                value={fmtDate(caseData.elaya_tracking_started_at)}
+              />
+            ) : null}
+            {caseData.tc_prior_studio ? (
+              <InfoRow
+                label={ep.priorStudio || 'Previous studio'}
+                value={caseData.tc_prior_studio}
+              />
+            ) : null}
+          </>
+        ) : null}
         {caseData.removal > 0 && (
           <InfoRow
             label={ep.aiFading || 'AI fading'}

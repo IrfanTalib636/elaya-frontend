@@ -909,6 +909,12 @@ const CaseDetail = () => {
                         fileId={s.fortschritt_foto_file_id}
                         alt={`Session ${s.session_number}`}
                       />
+                      {s.post_treatment_foto_file_id ? (
+                        <ZonePhotoThumb
+                          fileId={s.post_treatment_foto_file_id}
+                          alt={copy.photoPostReaction || 'Post reaction'}
+                        />
+                      ) : null}
                       <div className="flex flex-col gap-0.5 min-w-0">
                         <span className="text-studio-w1 text-[12px] font-semibold">
                           #{s.session_number} · {fmtDate(s.treatment_date)}
@@ -921,6 +927,9 @@ const CaseDetail = () => {
                                   s.percent_estimate ?? s.verblassung_prozent ?? s.removal_pct ?? 0
                                 ),
                               })}
+                          {s.post_treatment_foto_file_id
+                            ? ` · ${copy.photoPostReaction || 'Reaction photo'}`
+                            : ''}
                         </span>
                       </div>
                     </div>

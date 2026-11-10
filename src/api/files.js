@@ -25,6 +25,13 @@ export const uploadSessionProgressPhoto = async (sessionId, file) => {
   return api.post(`/files/sessions/${sessionId}/progress`, form)
 }
 
+export const uploadSessionPostTreatmentPhoto = async (sessionId, file) => {
+  const prepared = await optimizeImageForUpload(file)
+  const form = new FormData()
+  form.append('file', prepared)
+  return api.post(`/files/sessions/${sessionId}/post-treatment`, form)
+}
+
 export const uploadSessionUnusualReactionPhoto = async (sessionId, file) => {
   const prepared = await optimizeImageForUpload(file)
   const form = new FormData()

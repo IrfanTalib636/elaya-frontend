@@ -6,7 +6,11 @@ import { getCase } from '../../api/cases'
 import { createSession } from '../../api/sessions'
 import { getAppointment } from '../../api/appointments'
 import { getStudioSettings, listStudioLasers } from '../../api/studio'
-import { uploadSessionProgressPhoto, uploadSessionUnusualReactionPhoto } from '../../api/files'
+import {
+  uploadSessionProgressPhoto,
+  uploadSessionPostTreatmentPhoto,
+  uploadSessionUnusualReactionPhoto,
+} from '../../api/files'
 import { analyzeVerblassung } from '../../api/verblassung'
 import { Card, Button, Input, Select, Spinner, PageHeader } from '../../components/ui'
 import useContent from '../../i18n/useContent'
@@ -142,23 +146,28 @@ const NewSession = () => {
   const [savingDraft, setSavingDraft] = useState(false)
   const [savingFinal, setSavingFinal] = useState(false)
 
-  const photoInputRef = useRef(null)
-  const [photoFile, setPhotoFile] = useState(null)
-  const [photoPreview, setPhotoPreview] = useState('')
+  const prePhotoInputRef = useRef(null)
+  const [prePhotoFile, setPrePhotoFile] = useState(null)
+  const [prePhotoPreview, setPrePhotoPreview] = useState('')
   const [autoAnalyze, setAutoAnalyze] = useState(true)
+  const postPhotoInputRef = useRef(null)
+  const [postPhotoFile, setPostPhotoFile] = useState(null)
+  const [postPhotoPreview, setPostPhotoPreview] = useState('')
   const unusualPhotoInputRef = useRef(null)
   const [unusualPhotoFile, setUnusualPhotoFile] = useState(null)
   const [unusualPhotoPreview, setUnusualPhotoPreview] = useState('')
 
   useEffect(() => () => {
-    if (photoPreview) URL.revokeObjectURL(photoPreview)
-  }, [photoPreview])
+    if (prePhotoPreview) URL.revokeObjectURL(prePhotoPreview)
+  }, [prePhotoPreview])
+
+  useEffect(() => () => {
+    if (postPhotoPreview) URL.revokeObjectURL(postPhotoPreview)
+  }, [postPhotoPreview])
 
   const saving = savingDraft || savingFinal
   const zones = caseData?.zonen_aktiv ? (caseData.zonen ?? []) : []
   const selectedZone = zones.find((z) => z.zonen_id === form.zonen_id) ?? null
-  // Zones are treated as independent tattoos, so the session number and the
-  // availability of the AI comparison follow the selected zone, not the case.
   const nextSession = zones.length
     ? (selectedZone?.sitzungen_erledigt ?? 0) + 1
     : (caseData?.sessionsDone ?? 0) + 1
@@ -176,9 +185,6 @@ const NewSession = () => {
         const res = await getCase(caseId)
         const loaded = res.data.data.case
         setCaseData(loaded)
-
-        // Preselect the zone when the studio arrived from a specific zone row,
-        // or when the case only has one zone to choose from.
         const caseZones = loaded?.zonen_aktiv ? (loaded.zonen ?? []) : []
         const preset =
           caseZones.find((z) => z.zonen_id === presetZoneId) ??
@@ -350,20 +356,39 @@ const NewSession = () => {
     }
   }
 
-  const selectPhoto = (e) => {
+  const selectPrePhoto = (e) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
-    setPhotoFile(file)
-    setPhotoPreview((prev) => {
+    setPrePhotoFile(file)
+    setPrePhotoPreview((prev) => {
       if (prev) URL.revokeObjectURL(prev)
       return URL.createObjectURL(file)
     })
   }
 
-  const removePhoto = () => {
-    setPhotoFile(null)
-    setPhotoPreview((prev) => {
+  const removePrePhoto = () => {
+    setPrePhotoFile(null)
+    setPrePhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return ''
+    })
+  }
+
+  const selectPostPhoto = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setPostPhotoFile(file)
+    setPostPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return URL.createObjectURL(file)
+    })
+  }
+
+  const removePostPhoto = () => {
+    setPostPhotoFile(null)
+    setPostPhotoPreview((prev) => {
       if (prev) URL.revokeObjectURL(prev)
       return ''
     })
@@ -402,16 +427,21 @@ const NewSession = () => {
       const res = await createSession(buildPayload(isDraft))
       const sessionId = res.data.data.session?.id
 
-      const wantsPhoto = !form.is_no_show && photoFile && sessionId
+      const wantsPrePhoto = !form.is_no_show && prePhotoFile && sessionId
+      const wantsPostPhoto = !form.is_no_show && postPhotoFile && sessionId
       const wantsUnusualPhoto =
         !form.is_no_show && form.unusual_immediate_reaction && unusualPhotoFile && sessionId
 
-      if (wantsPhoto || wantsUnusualPhoto) {
+      if (wantsPrePhoto || wantsPostPhoto || wantsUnusualPhoto) {
         const flowToast = toast.loading(copy.photoUploading)
         let uploaded = false
         try {
-          if (wantsPhoto) {
-            await uploadSessionProgressPhoto(sessionId, photoFile)
+          if (wantsPrePhoto) {
+            await uploadSessionProgressPhoto(sessionId, prePhotoFile)
+            uploaded = true
+          }
+          if (wantsPostPhoto) {
+            await uploadSessionPostTreatmentPhoto(sessionId, postPhotoFile)
             uploaded = true
           }
           if (wantsUnusualPhoto) {
@@ -422,7 +452,7 @@ const NewSession = () => {
           toast.error(copy.photoFailed, { id: flowToast })
         }
 
-        if (uploaded && wantsPhoto && autoAnalyze && kiAvailable && !isDraft) {
+        if (uploaded && wantsPrePhoto && autoAnalyze && kiAvailable && !isDraft) {
           toast.loading(copy.aiAnalyzing, { id: flowToast })
           try {
             await analyzeVerblassung({ session_id: sessionId, persist: true })
@@ -626,6 +656,55 @@ const NewSession = () => {
             onChange={setVal('is_no_show')}
           />
         </Section>
+
+        {!form.is_no_show && (
+          <Section title={copy.prePhotoTitle}>
+            <p className="text-studio-w3 text-[11px] m-0 -mt-1">
+              {kiAvailable ? copy.prePhotoHintNext : copy.prePhotoHintFirst}
+            </p>
+            {prePhotoPreview ? (
+              <div className="relative rounded-[12px] border border-elaya-border bg-studio-bg-4 overflow-hidden max-w-[280px]">
+                <img
+                  src={prePhotoPreview}
+                  alt={copy.prePhotoAlt}
+                  className="w-full aspect-square object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={removePrePhoto}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center cursor-pointer border-0 hover:bg-black/80"
+                  aria-label={copy.photoRemoveAria}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => prePhotoInputRef.current?.click()}
+                className="w-full max-w-[280px] flex flex-col items-center justify-center gap-2 py-8 cursor-pointer bg-studio-bg-4/50 border border-dashed border-elaya-border rounded-[12px] text-studio-w3 hover:text-studio-w2 transition-colors"
+              >
+                <Camera size={24} strokeWidth={1.5} />
+                <span className="text-[11px]">{copy.photoSelect}</span>
+              </button>
+            )}
+            <input
+              ref={prePhotoInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={selectPrePhoto}
+            />
+            {prePhotoFile && kiAvailable && (
+              <Toggle
+                label={copy.aiAuto}
+                hint={copy.aiAutoHint}
+                checked={autoAnalyze}
+                onChange={setAutoAnalyze}
+              />
+            )}
+          </Section>
+        )}
 
         {/* ── Section 2: Laser (hidden on no-show) ── */}
         {!form.is_no_show && (
@@ -847,12 +926,16 @@ const NewSession = () => {
 
             <div className="flex flex-col gap-2 pt-1 border-t border-elaya-border">
               <span className="text-studio-white text-[12px] font-semibold">{copy.photoTitle}</span>
-              {photoPreview ? (
+              {postPhotoPreview ? (
                 <div className="relative rounded-[12px] border border-elaya-border bg-studio-bg-4 overflow-hidden max-w-[280px]">
-                  <img src={photoPreview} alt={copy.photoAlt} className="w-full aspect-square object-cover" />
+                  <img
+                    src={postPhotoPreview}
+                    alt={copy.photoAlt}
+                    className="w-full aspect-square object-cover"
+                  />
                   <button
                     type="button"
-                    onClick={removePhoto}
+                    onClick={removePostPhoto}
                     className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center cursor-pointer border-0 hover:bg-black/80"
                     aria-label={copy.photoRemoveAria}
                   >
@@ -862,7 +945,7 @@ const NewSession = () => {
               ) : (
                 <button
                   type="button"
-                  onClick={() => photoInputRef.current?.click()}
+                  onClick={() => postPhotoInputRef.current?.click()}
                   className="w-full max-w-[280px] flex flex-col items-center justify-center gap-2 py-8 cursor-pointer bg-studio-bg-4/50 border border-dashed border-elaya-border rounded-[12px] text-studio-w3 hover:text-studio-w2 transition-colors"
                 >
                   <Camera size={24} strokeWidth={1.5} />
@@ -870,23 +953,13 @@ const NewSession = () => {
                 </button>
               )}
               <input
-                ref={photoInputRef}
+                ref={postPhotoInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 className="hidden"
-                onChange={selectPhoto}
+                onChange={selectPostPhoto}
               />
-              <p className="text-studio-w3 text-[11px] m-0">
-                {kiAvailable ? copy.photoHintNext : copy.photoHintFirst}
-              </p>
-              {photoFile && kiAvailable && (
-                <Toggle
-                  label={copy.aiAuto}
-                  hint={copy.aiAutoHint}
-                  checked={autoAnalyze}
-                  onChange={setAutoAnalyze}
-                />
-              )}
+              <p className="text-studio-w3 text-[11px] m-0">{copy.postPhotoHint}</p>
             </div>
 
             <div className="flex flex-col gap-3 pt-1 border-t border-elaya-border">

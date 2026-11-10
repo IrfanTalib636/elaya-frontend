@@ -3,7 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Pencil, Camera, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getSession, updateSession } from '../../api/sessions'
-import { fetchPhotoBlobUrl, uploadSessionProgressPhoto } from '../../api/files'
+import {
+  fetchPhotoBlobUrl,
+  uploadSessionProgressPhoto,
+  uploadSessionPostTreatmentPhoto,
+} from '../../api/files'
 import { analyzeVerblassung } from '../../api/verblassung'
 import { Card, Badge, Button, Spinner, PageHeader } from '../../components/ui'
 import useContent from '../../i18n/useContent'
@@ -85,7 +89,7 @@ const UnusualReactionPhoto = ({ fileId, alt }) => {
   )
 }
 
-// ── Progress photo ────────────────────────────────────────────────────────
+// ── Pre-treatment photo (AI fading) ───────────────────────────────────────
 const ProgressPhotoSection = ({ session, onUploaded }) => {
   const { studioPages } = useContent()
   const copy = studioPages.sessionDetail
@@ -150,14 +154,17 @@ const ProgressPhotoSection = ({ session, onUploaded }) => {
     null
 
   return (
-    <Section title={copy.photoTitle}>
+    <Section title={copy.prePhotoTitle || copy.photoTitle}>
+      <p className="text-studio-w3 text-[11px] m-0 -mt-1">
+        {copy.prePhotoHint || ''}
+      </p>
       {previewUrl ? (
         <div className="rounded-[12px] border border-elaya-border bg-studio-bg-4 overflow-hidden max-w-[320px]">
-          <img src={previewUrl} alt={copy.photoAlt} className="w-full object-cover" />
+          <img src={previewUrl} alt={copy.prePhotoAlt || copy.photoAlt} className="w-full object-cover" />
         </div>
       ) : (
         <p className="text-studio-w2 text-[13px] m-0">
-          {fileId ? '…' : copy.photoEmpty}
+          {fileId ? '…' : (copy.prePhotoEmpty || copy.photoEmpty)}
         </p>
       )}
       {(beforeId || afterId) && beforeId !== afterId ? (
@@ -198,6 +205,92 @@ const ProgressPhotoSection = ({ session, onUploaded }) => {
         >
           <Camera size={13} />
           {fileId ? copy.photoReplace : copy.photoUpload}
+        </Button>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={handleSelect}
+      />
+    </Section>
+  )
+}
+
+// ── Post-treatment reaction photo (not used for AI) ───────────────────────
+const PostTreatmentPhotoSection = ({ session, onUploaded }) => {
+  const { studioPages } = useContent()
+  const copy = studioPages.sessionDetail
+  const inputRef = useRef(null)
+  const [previewUrl, setPreviewUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const fileId = session.post_treatment_foto_file_id
+
+  useEffect(() => {
+    if (!fileId) {
+      setPreviewUrl('')
+      return undefined
+    }
+    let cancelled = false
+    let objectUrl = ''
+    ;(async () => {
+      try {
+        objectUrl = await fetchPhotoBlobUrl(fileId)
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl)
+          return
+        }
+        setPreviewUrl(objectUrl)
+      } catch {
+        if (!cancelled) setPreviewUrl('')
+      }
+    })()
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [fileId])
+
+  const handleSelect = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploading(true)
+    try {
+      await uploadSessionPostTreatmentPhoto(session.id, file)
+      toast.success(copy.postPhotoSaved || copy.photoSaved)
+      onUploaded()
+    } catch (err) {
+      toast.error(err.response?.data?.message ?? copy.photoError)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <Section title={copy.postPhotoTitle || 'Post-treatment photo'}>
+      <p className="text-studio-w3 text-[11px] m-0 -mt-1">
+        {copy.postPhotoHint || ''}
+      </p>
+      {previewUrl ? (
+        <div className="rounded-[12px] border border-elaya-border bg-studio-bg-4 overflow-hidden max-w-[320px]">
+          <img src={previewUrl} alt={copy.postPhotoAlt || ''} className="w-full object-cover" />
+        </div>
+      ) : (
+        <p className="text-studio-w2 text-[13px] m-0">
+          {fileId ? '…' : (copy.postPhotoEmpty || '—')}
+        </p>
+      )}
+      <div>
+        <Button
+          size="sm"
+          variant="secondary"
+          loading={uploading}
+          onClick={() => inputRef.current?.click()}
+        >
+          <Camera size={13} />
+          {fileId ? (copy.postPhotoReplace || copy.photoReplace) : (copy.postPhotoUpload || copy.photoUpload)}
         </Button>
       </div>
       <input
@@ -716,6 +809,7 @@ const SessionDetail = () => {
           {!session.is_no_show && (
             <>
               <ProgressPhotoSection session={session} onUploaded={reload} />
+              <PostTreatmentPhotoSection session={session} onUploaded={reload} />
               <LighteningLogicSection session={session} onSaved={setSession} />
               <VerblassungKiSection session={session} onAnalyzed={reload} />
             </>

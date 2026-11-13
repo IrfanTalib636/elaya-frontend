@@ -1,10 +1,8 @@
-/**
- * Styled <select> matching the Input style.
- */
 const Select = ({
   label,
   error,
   hint,
+  required = false,
   children,
   className = '',
   id,
@@ -17,6 +15,7 @@ const Select = ({
       {label && (
         <label htmlFor={fieldId} className="text-studio-white text-[12px] font-semibold">
           {label}
+          {required ? <span className="text-studio-red ml-0.5">*</span> : null}
         </label>
       )}
       <select

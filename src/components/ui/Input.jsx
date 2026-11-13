@@ -1,11 +1,8 @@
-/**
- * Consistent text input matching the auth form style.
- * Pass `label`, `error`, `hint` as props for the field wrapper.
- */
 const Input = ({
   label,
   error,
   hint,
+  required = false,
   className = '',
   id,
   ...props
@@ -17,6 +14,7 @@ const Input = ({
       {label && (
         <label htmlFor={fieldId} className="text-studio-white text-[12px] font-semibold">
           {label}
+          {required ? <span className="text-studio-red ml-0.5">*</span> : null}
         </label>
       )}
       <input

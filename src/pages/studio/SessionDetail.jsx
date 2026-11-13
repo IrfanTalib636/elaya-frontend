@@ -11,6 +11,7 @@ import {
 import { analyzeVerblassung } from '../../api/verblassung'
 import { Card, Badge, Button, Spinner, PageHeader } from '../../components/ui'
 import useContent from '../../i18n/useContent'
+import { validateSessionFormForCompletion } from '../../utils/sessionCompletionValidation'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 const fmtDate = (d) =>
@@ -153,12 +154,27 @@ const ProgressPhotoSection = ({ session, onUploaded }) => {
     fileId ||
     null
 
+  const photoSkipped = !!session.pre_photo_unavailable
+
   return (
     <Section title={copy.prePhotoTitle || copy.photoTitle}>
       <p className="text-studio-w3 text-[11px] m-0 -mt-1">
         {copy.prePhotoHint || ''}
       </p>
-      {previewUrl ? (
+      {photoSkipped ? (
+        <div className="flex flex-col gap-1 px-3 py-2 rounded-[8px] bg-elaya-warning/10 border border-elaya-warning/20">
+          <span className="text-elaya-warning text-[11px] font-semibold uppercase tracking-wider">
+            {copy.prePhotoUnavailable || 'Photo cannot be taken'}
+          </span>
+          <span className="text-studio-w1 text-[13px]">
+            {session.pre_photo_unavailable_reason || '—'}
+          </span>
+          <span className="text-studio-w3 text-[11px]">
+            {copy.prePhotoUnavailableAiSkip ||
+              'No AI fading analysis or automatic forecast recalculation for this session.'}
+          </span>
+        </div>
+      ) : previewUrl ? (
         <div className="rounded-[12px] border border-elaya-border bg-studio-bg-4 overflow-hidden max-w-[320px]">
           <img src={previewUrl} alt={copy.prePhotoAlt || copy.photoAlt} className="w-full object-cover" />
         </div>
@@ -196,17 +212,19 @@ const ProgressPhotoSection = ({ session, onUploaded }) => {
           </div>
         </div>
       ) : null}
-      <div>
-        <Button
-          size="sm"
-          variant="secondary"
-          loading={uploading}
-          onClick={() => inputRef.current?.click()}
-        >
-          <Camera size={13} />
-          {fileId ? copy.photoReplace : copy.photoUpload}
-        </Button>
-      </div>
+      {!photoSkipped ? (
+        <div>
+          <Button
+            size="sm"
+            variant="secondary"
+            loading={uploading}
+            onClick={() => inputRef.current?.click()}
+          >
+            <Camera size={13} />
+            {fileId ? copy.photoReplace : copy.photoUpload}
+          </Button>
+        </div>
+      ) : null}
       <input
         ref={inputRef}
         type="file"
@@ -439,7 +457,19 @@ const VerblassungKiSection = ({ session, onAnalyzed }) => {
   const [analyzing, setAnalyzing] = useState(false)
   const ki = session.verblassung_ki
   const hasPhoto = !!session.fortschritt_foto_file_id
+  const photoSkipped = !!session.pre_photo_unavailable
   const kiAvailable = session.ki_analysis_available !== false && Number(session.session_number) >= 2
+
+  if (photoSkipped) {
+    return (
+      <Section title={copy.aiTitle}>
+        <p className="text-studio-w2 text-[13px] m-0 leading-relaxed">
+          {copy.prePhotoUnavailableAiSkip ||
+            'No AI fading analysis or automatic forecast recalculation for this session.'}
+        </p>
+      </Section>
+    )
+  }
 
   if (!kiAvailable) {
     return (
@@ -539,6 +569,7 @@ const VerblassungKiSection = ({ session, onAnalyzed }) => {
 const SessionDetail = () => {
   const { t, studioPages } = useContent()
   const copy = studioPages.sessionDetail
+  const newSessionCopy = studioPages.newSession
   const { id } = useParams()
   const navigate = useNavigate()
 
@@ -579,13 +610,51 @@ const SessionDetail = () => {
   }
 
   const finalizeDraft = async () => {
+    if (!session) return
+    const validation = validateSessionFormForCompletion({
+      form: {
+        treatment_date: session.treatment_date
+          ? String(session.treatment_date).slice(0, 10)
+          : '',
+        is_no_show: !!session.is_no_show,
+        mitarbeiter_id: session.mitarbeiter_id || '',
+        mitarbeiter_name: session.mitarbeiter_name || '',
+        dauer_minuten: session.dauer_minuten,
+        laser_device_id: session.laser_device_id || session.laser_id || '',
+        wavelength_entries: session.wavelength_entries || [],
+        cooling_used: session.cooling_used,
+        endpoint_reactions: session.endpoint_reactions || [],
+        endpoint_reaction_note: session.endpoint_reaction_note || '',
+        unusual_immediate_reaction: !!session.unusual_immediate_reaction,
+        unusual_reaction_type: session.unusual_reaction_type || '',
+        unusual_reaction_description: session.unusual_reaction_description || '',
+        unusual_reaction_action_taken: session.unusual_reaction_action_taken || '',
+        pre_photo_unavailable: !!session.pre_photo_unavailable,
+        pre_photo_unavailable_reason: session.pre_photo_unavailable_reason || '',
+      },
+      hasExistingPrePhoto: !!session.fortschritt_foto_file_id,
+      copy: {
+        ...newSessionCopy,
+        dateRequired: newSessionCopy.dateRequired || copy.finalizeError,
+      },
+    })
+    if (!validation.ok) {
+      toast.error(validation.messages[0] || newSessionCopy.validationFailed || copy.finalizeError)
+      return
+    }
+
     setFinalizing(true)
     try {
       const res = await updateSession(id, { is_draft: false })
       setSession(res.data.data.session)
       toast.success(copy.finalizeSuccess)
     } catch (err) {
-      toast.error(err.response?.data?.message ?? copy.finalizeError)
+      const apiErrors = err.response?.data?.errors
+      toast.error(
+        (Array.isArray(apiErrors) && apiErrors[0]) ||
+          err.response?.data?.message ||
+          copy.finalizeError
+      )
     } finally {
       setFinalizing(false)
     }
@@ -734,12 +803,16 @@ const SessionDetail = () => {
                   ))}
                 </div>
               ) : null}
-              {session.cooling_used && (
+              {session.cooling_used === true || session.cooling_used === false ? (
                 <div className="flex items-center gap-2 text-studio-w2 text-[12px]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-elaya-success shrink-0" />
-                  {copy.coolingUsed}
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      session.cooling_used ? 'bg-elaya-success' : 'bg-studio-w3'
+                    }`}
+                  />
+                  {copy.cooling}: {session.cooling_used ? (copy.yes || 'Yes') : (copy.no || 'No')}
                 </div>
-              )}
+              ) : null}
             </Section>
           )}
 

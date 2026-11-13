@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Camera, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getCase } from '../../api/cases'
-import { createSession } from '../../api/sessions'
+import { createSession, updateSession } from '../../api/sessions'
 import { getAppointment } from '../../api/appointments'
 import { getStudioSettings, listStudioLasers } from '../../api/studio'
 import {
@@ -15,6 +15,7 @@ import { analyzeVerblassung } from '../../api/verblassung'
 import { Card, Button, Input, Select, Spinner, PageHeader } from '../../components/ui'
 import useContent from '../../i18n/useContent'
 import useAuthStore from '../../store/authStore'
+import { validateSessionFormForCompletion } from '../../utils/sessionCompletionValidation'
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const toDateInput = (iso) => {
@@ -42,6 +43,22 @@ const appointmentCaseId = (appt) => {
 const zoneLabel = (zone) =>
   [zone.zonen_id, zone.bezeichnung || zone.koerperstelle].filter(Boolean).join(' · ')
 
+/** Fallback when catalog row has empty laser_type (matches backend inferLaserType). */
+const inferLaserType = (manufacturer, model) => {
+  const key = `${String(manufacturer || '').trim()}|${String(model || '').trim()}`.toLowerCase()
+  const known = {
+    'candela|picoway': 'Picosecond',
+    'cynosure|picosure': 'Picosecond',
+    'fotona|starwalker': 'Q-switched / Picosecond',
+    'lutronic|picoplus': 'Picosecond',
+  }
+  if (known[key]) return known[key]
+  const blob = `${manufacturer || ''} ${model || ''}`.toLowerCase()
+  if (blob.includes('pico')) return 'Picosecond'
+  if (blob.includes('q-switch') || blob.includes('qswitch')) return 'Q-switched'
+  return ''
+}
+
 const INITIAL = {
   zonen_id:            '',
   treatment_date:      '',
@@ -57,7 +74,7 @@ const INITIAL = {
   studio_laser_model:  '',
   laser_typ:           '',
   wavelength_entries:  [{ wavelength_nm: '', fluence_j_cm2: '', spot_size_mm: '', frequency_hz: '', pass_count: '' }],
-  cooling_used:        false,
+  cooling_used:        null,
   endpoint_reactions:  [],
   endpoint_reaction_note: '',
   unusual_immediate_reaction: false,
@@ -65,6 +82,8 @@ const INITIAL = {
   unusual_reaction_description: '',
   unusual_reaction_action_taken: '',
   unusual_reaction_treatment_stopped: false,
+  pre_photo_unavailable: false,
+  pre_photo_unavailable_reason: '',
   special_notes:       '',
   zahlung_betragCHF:   '',
   zahlung_zahlungsart: '',
@@ -145,6 +164,7 @@ const NewSession = () => {
   const [form, setForm] = useState(INITIAL)
   const [savingDraft, setSavingDraft] = useState(false)
   const [savingFinal, setSavingFinal] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({})
 
   const prePhotoInputRef = useRef(null)
   const [prePhotoFile, setPrePhotoFile] = useState(null)
@@ -232,7 +252,16 @@ const NewSession = () => {
       })
       .catch(() => {})
     void listStudioLasers()
-      .then((res) => setLaserInventory(res.data?.data?.devices || []))
+      .then((res) => {
+        const devices = (res.data?.data?.devices || []).map((d) => ({
+          ...d,
+          laser_type:
+            (d.laser_type && String(d.laser_type).trim()) ||
+            inferLaserType(d.manufacturer, d.model) ||
+            '',
+        }))
+        setLaserInventory(devices)
+      })
       .catch(() => setLaserInventory([]))
   }, [
     caseId,
@@ -342,6 +371,10 @@ const NewSession = () => {
         unusual_reaction_treatment_stopped: form.unusual_immediate_reaction
           ? !!form.unusual_reaction_treatment_stopped
           : false,
+        pre_photo_unavailable: !!form.pre_photo_unavailable,
+        pre_photo_unavailable_reason: form.pre_photo_unavailable
+          ? (form.pre_photo_unavailable_reason || undefined)
+          : undefined,
       }),
       special_notes: form.special_notes || undefined,
       ...(hasPayment && {
@@ -361,6 +394,17 @@ const NewSession = () => {
     e.target.value = ''
     if (!file) return
     setPrePhotoFile(file)
+    setForm((p) => ({
+      ...p,
+      pre_photo_unavailable: false,
+      pre_photo_unavailable_reason: '',
+    }))
+    setFieldErrors((prev) => {
+      const next = { ...prev }
+      delete next.pre_photo
+      delete next.pre_photo_unavailable_reason
+      return next
+    })
     setPrePhotoPreview((prev) => {
       if (prev) URL.revokeObjectURL(prev)
       return URL.createObjectURL(file)
@@ -414,45 +458,83 @@ const NewSession = () => {
   }
 
   const handleSave = async (isDraft) => {
-    if (!form.treatment_date) {
-      toast.error(copy.dateRequired)
-      return
+    if (isDraft) {
+      if (!form.treatment_date) {
+        toast.error(copy.dateRequired)
+        return
+      }
+      if (zoneMissing) {
+        toast.error(copy.zoneRequired)
+        return
+      }
+    } else {
+      const result = validateSessionFormForCompletion({
+        form,
+        prePhotoFile,
+        zoneMissing,
+        copy,
+      })
+      setFieldErrors(result.errors)
+      if (!result.ok) {
+        toast.error(result.messages[0] || copy.validationFailed)
+        return
+      }
     }
-    if (zoneMissing) {
-      toast.error(copy.zoneRequired)
-      return
-    }
+
     isDraft ? setSavingDraft(true) : setSavingFinal(true)
     try {
-      const res = await createSession(buildPayload(isDraft))
+      const skipPrePhoto = !!form.is_no_show || !!form.pre_photo_unavailable
+      // Completing with a required photo: create draft → upload → finalize so
+      // the backend can enforce photo presence on completion.
+      const createAsDraft = isDraft || (!skipPrePhoto && !!prePhotoFile)
+      const res = await createSession(buildPayload(createAsDraft))
       const sessionId = res.data.data.session?.id
 
-      const wantsPrePhoto = !form.is_no_show && prePhotoFile && sessionId
+      const wantsPrePhoto = !form.is_no_show && !form.pre_photo_unavailable && prePhotoFile && sessionId
       const wantsPostPhoto = !form.is_no_show && postPhotoFile && sessionId
       const wantsUnusualPhoto =
         !form.is_no_show && form.unusual_immediate_reaction && unusualPhotoFile && sessionId
 
+      let preUploaded = false
       if (wantsPrePhoto || wantsPostPhoto || wantsUnusualPhoto) {
         const flowToast = toast.loading(copy.photoUploading)
-        let uploaded = false
         try {
           if (wantsPrePhoto) {
             await uploadSessionProgressPhoto(sessionId, prePhotoFile)
-            uploaded = true
+            preUploaded = true
           }
           if (wantsPostPhoto) {
             await uploadSessionPostTreatmentPhoto(sessionId, postPhotoFile)
-            uploaded = true
           }
           if (wantsUnusualPhoto) {
             await uploadSessionUnusualReactionPhoto(sessionId, unusualPhotoFile)
-            uploaded = true
           }
         } catch {
           toast.error(copy.photoFailed, { id: flowToast })
+          if (!isDraft && !skipPrePhoto) {
+            navigate(sessionId ? `/studio/sessions/${sessionId}` : `/studio/cases/${caseId}`)
+            return
+          }
         }
 
-        if (uploaded && wantsPrePhoto && autoAnalyze && kiAvailable && !isDraft) {
+        if (!isDraft && !skipPrePhoto && !preUploaded) {
+          toast.error(copy.prePhotoUploadRequired || copy.photoFailed, { id: flowToast })
+          navigate(sessionId ? `/studio/sessions/${sessionId}` : `/studio/cases/${caseId}`)
+          return
+        }
+
+        if (createAsDraft && !isDraft && sessionId) {
+          await updateSession(sessionId, { is_draft: false })
+        }
+
+        const runAi =
+          preUploaded &&
+          autoAnalyze &&
+          kiAvailable &&
+          !isDraft &&
+          !form.pre_photo_unavailable
+
+        if (runAi) {
           toast.loading(copy.aiAnalyzing, { id: flowToast })
           try {
             await analyzeVerblassung({ session_id: sessionId, persist: true })
@@ -460,16 +542,26 @@ const NewSession = () => {
           } catch {
             toast.error(copy.aiFailed, { id: flowToast })
           }
-        } else if (uploaded) {
+        } else if (preUploaded || wantsPostPhoto || wantsUnusualPhoto) {
           toast.success(isDraft ? copy.draftWithPhoto : copy.sessionDone, { id: flowToast })
+        } else if (!isDraft) {
+          toast.success(copy.sessionDone, { id: flowToast })
         }
       } else {
+        if (createAsDraft && !isDraft && sessionId) {
+          await updateSession(sessionId, { is_draft: false })
+        }
         toast.success(isDraft ? copy.draftSaved : copy.sessionDone)
       }
 
       navigate(sessionId ? `/studio/sessions/${sessionId}` : `/studio/cases/${caseId}`)
     } catch (err) {
-      toast.error(err.response?.data?.message ?? copy.saveError)
+      const apiErrors = err.response?.data?.errors
+      if (Array.isArray(apiErrors) && apiErrors.length) {
+        toast.error(apiErrors[0])
+      } else {
+        toast.error(err.response?.data?.message ?? copy.saveError)
+      }
     } finally {
       isDraft ? setSavingDraft(false) : setSavingFinal(false)
     }
@@ -525,6 +617,17 @@ const NewSession = () => {
               })}
             </p>
           ) : null}
+          {Object.keys(fieldErrors).length > 0 ? (
+            <div className="rounded-[10px] border border-studio-red/40 bg-studio-red/10 px-3 py-2">
+              <p className="m-0 text-[12px] font-semibold text-studio-red">
+                {copy.validationTitle || 'Please complete the required fields'}
+              </p>
+              <p className="m-0 mt-1 text-[11px] text-studio-red/90">
+                {Object.values(fieldErrors)[0]}
+              </p>
+            </div>
+          ) : null}
+
           {zones.length ? (
             <div className="flex flex-col gap-1.5">
               <Select
@@ -532,6 +635,8 @@ const NewSession = () => {
                 value={form.zonen_id}
                 onChange={set('zonen_id')}
                 hint={copy.zoneHint}
+                required
+                error={fieldErrors.zonen_id}
               >
                 <option value="">{copy.zonePlaceholder}</option>
                 {zones.map((z) => (
@@ -556,6 +661,8 @@ const NewSession = () => {
               type="date"
               value={form.treatment_date}
               onChange={set('treatment_date')}
+              required
+              error={fieldErrors.treatment_date}
             />
             <Input
               label={copy.time}
@@ -570,6 +677,8 @@ const NewSession = () => {
               value={form.dauer_minuten}
               onChange={set('dauer_minuten')}
               placeholder="45"
+              required
+              error={fieldErrors.dauer_minuten}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -587,6 +696,8 @@ const NewSession = () => {
                     : '',
                 }))
               }}
+              required
+              error={fieldErrors.mitarbeiter_id}
             >
               <option value="">{copy.staffPh || 'Select staff profile…'}</option>
               {staffRoster.map((m) => (
@@ -621,7 +732,10 @@ const NewSession = () => {
                     laser_device_id: nextLaserId || '',
                     studio_laser_brand: device?.manufacturer || '',
                     studio_laser_model: device?.model || '',
-                    laser_typ: device?.laser_type || '',
+                    laser_typ:
+                      device?.laser_type ||
+                      inferLaserType(device?.manufacturer, device?.model) ||
+                      '',
                     wavelength_entries: [
                       {
                         wavelength_nm: '',
@@ -658,11 +772,14 @@ const NewSession = () => {
         </Section>
 
         {!form.is_no_show && (
-          <Section title={copy.prePhotoTitle}>
+          <Section title={`${copy.prePhotoTitle} *`}>
             <p className="text-studio-w3 text-[11px] m-0 -mt-1">
               {kiAvailable ? copy.prePhotoHintNext : copy.prePhotoHintFirst}
             </p>
-            {prePhotoPreview ? (
+            {fieldErrors.pre_photo ? (
+              <p className="m-0 text-[11px] text-studio-red">{fieldErrors.pre_photo}</p>
+            ) : null}
+            {!form.pre_photo_unavailable && prePhotoPreview ? (
               <div className="relative rounded-[12px] border border-elaya-border bg-studio-bg-4 overflow-hidden max-w-[280px]">
                 <img
                   src={prePhotoPreview}
@@ -678,7 +795,7 @@ const NewSession = () => {
                   <X size={14} />
                 </button>
               </div>
-            ) : (
+            ) : !form.pre_photo_unavailable ? (
               <button
                 type="button"
                 onClick={() => prePhotoInputRef.current?.click()}
@@ -687,7 +804,7 @@ const NewSession = () => {
                 <Camera size={24} strokeWidth={1.5} />
                 <span className="text-[11px]">{copy.photoSelect}</span>
               </button>
-            )}
+            ) : null}
             <input
               ref={prePhotoInputRef}
               type="file"
@@ -695,7 +812,30 @@ const NewSession = () => {
               className="hidden"
               onChange={selectPrePhoto}
             />
-            {prePhotoFile && kiAvailable && (
+            <Toggle
+              label={copy.prePhotoUnavailable || 'Photo cannot be taken'}
+              hint={copy.prePhotoUnavailableHint}
+              checked={!!form.pre_photo_unavailable}
+              onChange={(checked) => {
+                setForm((p) => ({
+                  ...p,
+                  pre_photo_unavailable: checked,
+                  pre_photo_unavailable_reason: checked ? p.pre_photo_unavailable_reason : '',
+                }))
+                if (checked) removePrePhoto()
+              }}
+            />
+            {form.pre_photo_unavailable ? (
+              <Input
+                label={copy.prePhotoSkipReason || 'Reason'}
+                value={form.pre_photo_unavailable_reason}
+                onChange={set('pre_photo_unavailable_reason')}
+                placeholder={copy.prePhotoSkipReasonPh}
+                required
+                error={fieldErrors.pre_photo_unavailable_reason}
+              />
+            ) : null}
+            {prePhotoFile && kiAvailable && !form.pre_photo_unavailable && (
               <Toggle
                 label={copy.aiAuto}
                 hint={copy.aiAutoHint}
@@ -720,7 +860,10 @@ const NewSession = () => {
                   laser_device_id: id,
                   studio_laser_brand: device?.manufacturer || '',
                   studio_laser_model: device?.model || '',
-                  laser_typ: device?.laser_type || '',
+                  laser_typ:
+                    device?.laser_type ||
+                    inferLaserType(device?.manufacturer, device?.model) ||
+                    '',
                   wavelength_entries: [
                     {
                       wavelength_nm: '',
@@ -732,6 +875,8 @@ const NewSession = () => {
                   ],
                 }))
               }}
+              required
+              error={fieldErrors.laser_device_id}
             >
               <option value="">{copy.laserDevicePh || 'Select laser…'}</option>
               {lasersForRoom.map((d) => (
@@ -744,8 +889,19 @@ const NewSession = () => {
               <Input label={copy.brand} value={form.studio_laser_brand} readOnly disabled />
               <Input label={copy.model} value={form.studio_laser_model} readOnly disabled />
             </div>
-            <Input label={copy.laserType} value={form.laser_typ} readOnly disabled />
+            <Input
+              label={copy.laserType}
+              value={form.laser_typ || '—'}
+              readOnly
+              disabled
+              hint={!form.laser_typ ? copy.laserTypeMissingHint : undefined}
+            />
             <p className="m-0 text-[11px] text-studio-w3">{copy.laserCatalogHint}</p>
+            {fieldErrors.wavelength_entries || fieldErrors.wavelength_0 ? (
+              <p className="m-0 text-[11px] text-studio-red">
+                {fieldErrors.wavelength_entries || fieldErrors.wavelength_0}
+              </p>
+            ) : null}
 
             {(form.wavelength_entries || []).map((entry, index) => (
               <div
@@ -784,6 +940,8 @@ const NewSession = () => {
                     }))
                   }}
                   disabled={!form.laser_device_id}
+                  required
+                  error={fieldErrors[`wavelength_${index}`]}
                 >
                   <option value="">{copy.wavelengthPh || 'Select wavelength…'}</option>
                   {approvedWavelengths
@@ -818,6 +976,7 @@ const NewSession = () => {
                       }))
                     }
                     placeholder="3.5"
+                    required
                   />
                   <Input
                     label={copy.spotMm}
@@ -834,6 +993,7 @@ const NewSession = () => {
                       }))
                     }
                     placeholder="6"
+                    required
                   />
                   <Input
                     label={copy.freqHz}
@@ -849,6 +1009,7 @@ const NewSession = () => {
                       }))
                     }
                     placeholder="2"
+                    required
                   />
                   <Input
                     label={copy.passes}
@@ -864,6 +1025,7 @@ const NewSession = () => {
                       }))
                     }
                     placeholder="3"
+                    required
                   />
                 </div>
               </div>
@@ -892,7 +1054,28 @@ const NewSession = () => {
             >
               {copy.addWavelength || '+ Add wavelength / parameters'}
             </Button>
-            <Toggle label={copy.cooling} checked={form.cooling_used} onChange={setVal('cooling_used')} />
+            <div className="flex flex-col gap-2">
+              <span className="text-studio-white text-[12px] font-semibold">
+                {copy.cooling} <span className="text-studio-red">*</span>
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                <Chip
+                  active={form.cooling_used === true}
+                  onClick={() => setForm((p) => ({ ...p, cooling_used: true }))}
+                >
+                  {copy.yes || 'Yes'}
+                </Chip>
+                <Chip
+                  active={form.cooling_used === false}
+                  onClick={() => setForm((p) => ({ ...p, cooling_used: false }))}
+                >
+                  {copy.no || 'No'}
+                </Chip>
+              </div>
+              {fieldErrors.cooling_used ? (
+                <p className="m-0 text-[11px] text-studio-red">{fieldErrors.cooling_used}</p>
+              ) : null}
+            </div>
           </Section>
         )}
 
@@ -902,7 +1085,12 @@ const NewSession = () => {
             <p className="text-studio-w3 text-[11px] m-0 -mt-1">{copy.outcomeHint}</p>
 
             <div className="flex flex-col gap-2">
-              <span className="text-studio-white text-[12px] font-semibold">{copy.endpoint}</span>
+              <span className="text-studio-white text-[12px] font-semibold">
+                {copy.endpoint} <span className="text-studio-red">*</span>
+              </span>
+              {fieldErrors.endpoint_reactions ? (
+                <p className="m-0 text-[11px] text-studio-red">{fieldErrors.endpoint_reactions}</p>
+              ) : null}
               <div className="flex flex-wrap gap-1.5">
                 {ENDPOINT_REACTION_KEYS.map((key) => (
                   <Chip
@@ -920,6 +1108,8 @@ const NewSession = () => {
                   value={form.endpoint_reaction_note}
                   onChange={set('endpoint_reaction_note')}
                   placeholder={copy.endpointOtherNotePh}
+                  required
+                  error={fieldErrors.endpoint_reaction_note}
                 />
               )}
             </div>
@@ -979,12 +1169,16 @@ const NewSession = () => {
                     value={form.unusual_reaction_type}
                     onChange={set('unusual_reaction_type')}
                     placeholder={copy.unusualTypePh}
+                    required
+                    error={fieldErrors.unusual_reaction_type}
                   />
                   <Input
                     label={copy.unusualDescription}
                     value={form.unusual_reaction_description}
                     onChange={set('unusual_reaction_description')}
                     placeholder={copy.unusualDescriptionPh}
+                    required
+                    error={fieldErrors.unusual_reaction_description}
                   />
                   <div className="flex flex-col gap-2">
                     <span className="text-studio-w1 text-[12px] font-semibold">{copy.unusualPhoto}</span>
@@ -1027,6 +1221,8 @@ const NewSession = () => {
                     value={form.unusual_reaction_action_taken}
                     onChange={set('unusual_reaction_action_taken')}
                     placeholder={copy.unusualActionPh}
+                    required
+                    error={fieldErrors.unusual_reaction_action_taken}
                   />
                   <Toggle
                     label={copy.unusualStopped}

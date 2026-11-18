@@ -163,13 +163,12 @@ const StudioRegister = () => {
         </p>
       </div>
 
-      <button
-        type="button"
-        onClick={() => navigate('/')}
-        className="mt-6 text-studio-w2 text-[12px] bg-transparent border-0 cursor-pointer hover:text-studio-white transition-colors"
+      <a
+        href="https://www.elaya.io"
+        className="mt-6 text-studio-w2 text-[12px] no-underline hover:text-studio-white transition-colors"
       >
         ← {common.back}
-      </button>
+      </a>
     </div>
   )
 }

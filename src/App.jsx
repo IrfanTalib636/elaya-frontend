@@ -10,7 +10,6 @@ import SocketProvider from './socket/SocketProvider'
 import { STUDIO_ROLES, ADMIN_ROLES } from './constants/roles'
 
 // ── Page chunks (each becomes a separate build chunk) ──────────────────────
-const LandingPage          = lazy(() => import('./pages/LandingPage'))
 const NotFoundPage         = lazy(() => import('./pages/NotFoundPage'))
 
 const StudioLogin          = lazy(() => import('./pages/studio/Login'))
@@ -104,7 +103,21 @@ const AppInner = () => {
 
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          {/* Per-host entry: admin.elaya.io → admin login, studio.elaya.io → studio login */}
+          <Route
+            path="/"
+            element={
+              <Navigate
+                to={
+                  typeof window !== 'undefined' && window.location.hostname.startsWith('admin.')
+                    ? '/admin/login'
+                    : '/studio/login'
+                }
+                replace
+              />
+            }
+          />
+          <Route path="/login" element={<Navigate to="/studio/login" replace />} />
 
           {/* Studio auth — guest only */}
           <Route path="/studio/login"           element={<GuestRoute><StudioLogin /></GuestRoute>} />

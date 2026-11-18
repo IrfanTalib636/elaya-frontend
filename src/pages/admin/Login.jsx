@@ -141,13 +141,12 @@ const AdminLogin = () => {
         </form>
       </div>
 
-      <button
-        type="button"
-        onClick={() => navigate('/')}
-        className="mt-6 text-studio-w2 text-[12px] bg-transparent border-0 cursor-pointer hover:text-studio-white transition-colors font-sans"
+      <a
+        href="https://www.elaya.io"
+        className="mt-6 text-studio-w2 text-[12px] no-underline hover:text-studio-white transition-colors font-sans"
       >
         ← {common.back}
-      </button>
+      </a>
     </div>
   )
 }

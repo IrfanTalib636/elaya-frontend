@@ -1682,7 +1682,13 @@ const StripeTab = () => {
       if (!url) throw new Error('No onboarding URL')
       window.location.href = url
     } catch (err) {
-      toast.error(err?.response?.data?.message || t('settingsPage.stripe.toasts.connectFailed'))
+      const serverMsg = String(err?.response?.data?.message || '')
+      const connectNotEnabled = /Stripe Connect is not enabled|signed up for Connect/i.test(serverMsg)
+      toast.error(
+        connectNotEnabled
+          ? t('settingsPage.stripe.toasts.connectNotEnabled')
+          : serverMsg || t('settingsPage.stripe.toasts.connectFailed')
+      )
       setBusy(false)
     }
   }
@@ -1746,6 +1752,9 @@ const StripeTab = () => {
           )}
           <p className="text-studio-w4 text-[11px] m-0">
             {t('settingsPage.stripe.testModeHint')}
+          </p>
+          <p className="text-studio-w4 text-[11px] m-0">
+            {t('settingsPage.stripe.connectPlatformHint')}
           </p>
         </div>
       )}

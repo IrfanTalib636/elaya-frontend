@@ -1728,10 +1728,12 @@ const de: TranslationSchema = {
       "refreshStatus": "Status aktualisieren",
       "adminOnly": "Nur Studio-Admin kann Stripe verbinden.",
       "testModeHint": "Im Stripe-Testmodus kannst du die Onboarding-Formulare mit Testdaten ausfüllen. Später werden die Live-Keys des Clients eingetragen.",
+      "connectPlatformHint": "Falls die Verbindung fehlschlägt: Das ELAYA-Stripe-Plattformkonto muss Stripe Connect unter dashboard.stripe.com/connect freischalten (Testmodus).",
       "toasts": {
         "loadFailed": "Stripe-Status konnte nicht geladen werden",
         "statusUpdated": "Stripe-Status aktualisiert",
-        "connectFailed": "Stripe Connect fehlgeschlagen"
+        "connectFailed": "Stripe Connect fehlgeschlagen",
+        "connectNotEnabled": "Stripe Connect ist auf dem Plattformkonto noch nicht aktiviert. Bitte Connect-Signup im Stripe Dashboard (Testmodus) abschliessen und erneut versuchen."
       }
     }
   },

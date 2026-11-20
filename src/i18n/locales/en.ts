@@ -1726,10 +1726,12 @@ const en = {
       "refreshStatus": "Refresh status",
       "adminOnly": "Only a studio admin can connect Stripe.",
       "testModeHint": "In Stripe test mode you can fill onboarding forms with test data. Live client keys will be added later.",
+      "connectPlatformHint": "If connect fails: the ELAYA Stripe platform account must complete Stripe Connect signup at dashboard.stripe.com/connect (Test mode).",
       "toasts": {
         "loadFailed": "Could not load Stripe status",
         "statusUpdated": "Stripe status updated",
-        "connectFailed": "Stripe Connect failed"
+        "connectFailed": "Stripe Connect failed",
+        "connectNotEnabled": "Stripe Connect is not enabled on the platform account yet. Complete Connect signup in the Stripe Dashboard (Test mode), then try again."
       }
     }
   },

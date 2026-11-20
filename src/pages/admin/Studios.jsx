@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { Copy } from 'lucide-react'
 import {
   Card,
   PageHeader,
@@ -286,8 +287,24 @@ const AdminStudios = () => {
               <Card key={id} className="flex items-center justify-between gap-4">
                 <div>
                   <p className="font-semibold m-0">{s.firma}</p>
-                  <p className="text-[12px] text-admin-muted m-0">
-                    {s.studio_code} · {s.email}
+                  <p className="text-[12px] text-admin-muted m-0 flex items-center gap-1.5 flex-wrap">
+                    <span className="font-mono tracking-wide">{s.studio_code}</span>
+                    {s.studio_code ? (
+                      <button
+                        type="button"
+                        aria-label={copy.copyCode || 'Copy studio code'}
+                        className="inline-flex items-center justify-center p-1 rounded-md border-0 bg-transparent text-admin-muted hover:text-admin-text cursor-pointer"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(s.studio_code).then(
+                            () => toast.success(copy.codeCopied || 'Studio code copied'),
+                            () => toast.error(copy.saveFailed || 'Copy failed'),
+                          )
+                        }}
+                      >
+                        <Copy size={12} />
+                      </button>
+                    ) : null}
+                    <span>· {s.email}</span>
                   </p>
                   <Badge className="mt-1" variant="status" value={s.status}>
                     {s.status}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Monitor, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Layers, MapPin, ShieldAlert, KeyRound, Coins, Bell } from 'lucide-react'
+import { Monitor, User, DollarSign, Clock, Grid, Users, Plus, Trash2, Pencil, CreditCard, Layers, MapPin, ShieldAlert, KeyRound, Coins, Bell, Copy } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Card, PageHeader, Input, Button, Spinner, Select, Badge } from '../../components/ui'
 import AppearanceSettings from '../../components/settings/AppearanceSettings'
@@ -68,6 +68,46 @@ const InfoRow = ({ label, value, children }) => {
         {children ?? (value || t('settingsPage.shared.emptyValue'))}
       </span>
     </div>
+  )
+}
+
+const copyToClipboard = async (text) => {
+  if (!text) return false
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    return false
+  }
+}
+
+const StudioCodeRow = ({ code }) => {
+  const { t } = useTranslation()
+  const empty = t('settingsPage.shared.emptyValue')
+
+  const handleCopy = async () => {
+    if (!code) return
+    const ok = await copyToClipboard(code)
+    if (ok) toast.success(t('toast.copied'))
+    else toast.error(t('toast.copyFailed'))
+  }
+
+  return (
+    <InfoRow label={t('settingsPage.profile.studioCode')}>
+      <span className="inline-flex items-center justify-end gap-2">
+        <span className="font-mono tracking-wide">{code || empty}</span>
+        {code ? (
+          <button
+            type="button"
+            onClick={() => void handleCopy()}
+            aria-label={t('settingsPage.profile.copyCode')}
+            className="inline-flex items-center justify-center p-1.5 rounded-lg border-0 bg-studio-bg-4 text-studio-w2 hover:text-studio-gold-2 cursor-pointer transition-colors"
+          >
+            <Copy size={13} />
+          </button>
+        ) : null}
+      </span>
+    </InfoRow>
   )
 }
 
@@ -259,7 +299,7 @@ const ProfileTab = () => {
           <InfoRow label={t('settingsPage.profile.notes')} value={form.notizen} />
           <div className="h-px bg-elaya-border" />
           <InfoRow label={t('common.email')} value={readOnly.email} />
-          <InfoRow label={t('settingsPage.profile.studioCode')} value={readOnly.studio_code} />
+          <StudioCodeRow code={readOnly.studio_code} />
           <InfoRow label={t('commonUi.status')}>
             {readOnly.status
               ? <Badge variant="status" value={readOnly.status}>{readOnly.status}</Badge>
@@ -294,7 +334,7 @@ const ProfileTab = () => {
           <div className="h-px bg-elaya-border" />
 
           <InfoRow label={t('common.email')} value={readOnly.email} />
-          <InfoRow label={t('settingsPage.profile.studioCode')} value={readOnly.studio_code} />
+          <StudioCodeRow code={readOnly.studio_code} />
           <InfoRow label={t('commonUi.status')}>
             {readOnly.status
               ? <Badge variant="status" value={readOnly.status}>{readOnly.status}</Badge>

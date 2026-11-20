@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Calendar, CalendarDays, BarChart2, Heart,
   ShoppingBag, Coins, Settings, LogOut, ChevronLeft, ChevronRight,
   FolderOpen, ClipboardList, ArrowLeftRight, MessageCircle, ListChecks,
-  History, Sparkles, Headphones, Microscope, Lock, ListTodo,
+  History, Sparkles, Headphones, Microscope, Lock, ListTodo, Copy,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ElayaLogo from '../ElayaLogo'
@@ -314,9 +314,24 @@ const StudioLayout = ({ children }) => {
             <span className="text-studio-white text-[12px] font-semibold truncate">
               {studioName || user?.email || ''}
             </span>
-            <span className="text-studio-w3 text-[10px] truncate">
-              {profile?.studio_code ?? ''}
-            </span>
+            {profile?.studio_code ? (
+              <button
+                type="button"
+                title={profile.studio_code}
+                onClick={() => {
+                  void navigator.clipboard.writeText(profile.studio_code).then(
+                    () => toast.success(toastMessages.copied || 'Copied'),
+                    () => toast.error(toastMessages.copyFailed || 'Copy failed'),
+                  )
+                }}
+                className="group inline-flex items-center gap-1 max-w-full border-0 bg-transparent p-0 text-left cursor-pointer"
+              >
+                <span className="text-studio-w3 text-[10px] font-mono tracking-wide truncate group-hover:text-studio-gold-2">
+                  {profile.studio_code}
+                </span>
+                <Copy size={10} className="shrink-0 text-studio-w3 group-hover:text-studio-gold-2" />
+              </button>
+            ) : null}
           </div>
 
           {/* Logout — icon-only when collapsed, full row when expanded */}

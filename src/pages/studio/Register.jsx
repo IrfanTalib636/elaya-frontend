@@ -8,7 +8,6 @@ import { getApiErrorMessage } from '../../lib/apiError'
 
 const INITIAL_FORM = {
   firma: '',
-  studioCode: '',
   email: '',
   telefon: '',
   ort: '',
@@ -47,7 +46,7 @@ const StudioRegister = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    const required = ['firma', 'studioCode', 'email', 'password', 'confirmPassword']
+    const required = ['firma', 'email', 'password', 'confirmPassword']
     if (required.some((key) => !form[key]?.trim())) {
       setError(common.required)
       return
@@ -67,9 +66,8 @@ const StudioRegister = () => {
     setError('')
 
     try {
-      await registerStudio({
+      const { data } = await registerStudio({
         firma: form.firma.trim(),
-        studio_code: form.studioCode.trim().toUpperCase(),
         email: form.email.trim(),
         telefon: form.telefon.trim(),
         ort: form.ort.trim(),
@@ -77,7 +75,15 @@ const StudioRegister = () => {
         password: form.password,
       })
 
-      toast.success(toastMessages.registerSuccess)
+      const code = data?.data?.studio?.studio_code
+      toast.success(
+        code
+          ? (toastMessages.registerSuccessWithCode || toastMessages.registerSuccess).replace(
+              '{{code}}',
+              code,
+            )
+          : toastMessages.registerSuccess,
+      )
       navigate('/studio/login', { replace: true })
     } catch (err) {
       const message = getApiErrorMessage(err)
@@ -108,16 +114,6 @@ const StudioRegister = () => {
             <Input name="firma" value={form.firma} onChange={handleChange} placeholder="Ink & Free Studio" />
           </Field>
 
-          <Field label={studioAuth.studioCode}>
-            <Input
-              name="studioCode"
-              value={form.studioCode}
-              onChange={handleChange}
-              placeholder="INKFREE"
-              className="uppercase"
-            />
-          </Field>
-
           <Field label={common.email}>
             <Input name="email" type="email" value={form.email} onChange={handleChange} placeholder="studio@beispiel.de" />
           </Field>
@@ -130,6 +126,10 @@ const StudioRegister = () => {
               <Input name="ort" value={form.ort} onChange={handleChange} placeholder="Zürich" />
             </Field>
           </div>
+
+          <p className="text-studio-w3 text-[11px] m-0 -mt-1">
+            {studioAuth.studioCodeAutoHint}
+          </p>
 
           <Field label={common.password}>
             <Input name="password" type="password" value={form.password} onChange={handleChange} placeholder="••••••••" />

@@ -20,3 +20,11 @@ export const sendMessage = (conversationId, body) =>
 
 export const markConversationRead = (conversationId, body = {}) =>
   api.post(`/messaging/conversations/${conversationId}/read`, body)
+
+export const pinConversation = (conversationId, pinned) =>
+  api.patch(`/messaging/conversations/${conversationId}/pin`, { pinned: Boolean(pinned) })
+
+export const deleteConversations = (conversationIds) =>
+  api.post('/messaging/conversations/delete', {
+    conversation_ids: conversationIds,
+  })

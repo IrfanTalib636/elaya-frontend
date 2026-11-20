@@ -2338,7 +2338,20 @@ const de: TranslationSchema = {
       "newMessageFrom": "Neue Nachricht von {name}",
       "newCustomerMessage": "Neue Kundennachricht",
       "systemLabel": "System",
-      "openAftercare": "Nachsorge-Check öffnen"
+      "openAftercare": "Nachsorge-Check öffnen",
+      "selectAll": "Alle auswählen",
+      "unselectAll": "Auswahl aufheben",
+      "deleteSelected": "Ausgewählte löschen",
+      "pinSelected": "Chat anheften",
+      "unpinSelected": "Anheften lösen",
+      "deleteConfirmOne": "Diesen Chat und alle Nachrichten löschen? Das kann nicht rückgängig gemacht werden.",
+      "deleteConfirmMany": "{{count}} Chats und alle Nachrichten löschen? Das kann nicht rückgängig gemacht werden.",
+      "deleteSuccess": "Chat gelöscht",
+      "deleteSuccessMany": "{{count}} Chats gelöscht",
+      "deleteFailed": "Chat konnte nicht gelöscht werden",
+      "pinSuccess": "Chat angeheftet",
+      "unpinSuccess": "Anheften gelöst",
+      "pinFailed": "Anheften konnte nicht aktualisiert werden"
     },
     "platformChat": {
       "title": "Support-Chat",

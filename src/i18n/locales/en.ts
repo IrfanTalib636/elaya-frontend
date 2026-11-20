@@ -2336,7 +2336,20 @@ const en = {
       "newMessageFrom": "New message from {name}",
       "newCustomerMessage": "New customer message",
       "systemLabel": "System",
-      "openAftercare": "Open aftercare check"
+      "openAftercare": "Open aftercare check",
+      "selectAll": "Select all",
+      "unselectAll": "Unselect all",
+      "deleteSelected": "Delete selected",
+      "pinSelected": "Pin chat",
+      "unpinSelected": "Unpin chat",
+      "deleteConfirmOne": "Delete this chat and all its messages? This cannot be undone.",
+      "deleteConfirmMany": "Delete {{count}} chats and all their messages? This cannot be undone.",
+      "deleteSuccess": "Chat deleted",
+      "deleteSuccessMany": "{{count}} chats deleted",
+      "deleteFailed": "Could not delete chat",
+      "pinSuccess": "Chat pinned",
+      "unpinSuccess": "Chat unpinned",
+      "pinFailed": "Could not update pin"
     },
     "platformChat": {
       "title": "Support chat",

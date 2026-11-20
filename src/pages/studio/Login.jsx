@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import ElayaLogo from '../../components/ElayaLogo'
+import bannerLogo from '../../assets/bannerLogo.png'
 import useContent from '../../i18n/useContent'
 import useAuthStore from '../../store/authStore'
 import { STUDIO_ROLES } from '../../constants/roles'
@@ -78,7 +78,11 @@ const StudioLogin = () => {
     <div className="min-h-screen bg-studio-bg flex flex-col items-center justify-center font-sans px-4">
       <div className="w-full max-w-[380px] bg-studio-bg-3 border border-elaya-border rounded-2xl p-8 flex flex-col gap-6">
         <div className="flex flex-col items-center gap-3">
-          <ElayaLogo size="md" />
+          <img
+            src={bannerLogo}
+            alt="Elaya"
+            className="h-16 w-auto max-w-[240px] object-contain"
+          />
           <div className="text-center">
             <h1 className="text-studio-white font-bold text-xl m-0 leading-tight">
               {studioAuth.loginTitle}
